@@ -37,34 +37,9 @@ Check [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) before Tier 3 p
 
 ### Monitoring Long-Running Jobs
 
-For long parity experiments (especially energy stage), use the `--monitor` flag to enable automatic job tracking and desktop notifications:
+For long parity experiments (especially the energy stage), pass `--monitor` to `slavv parity launch-exact-run` (or `resume-exact-run`) to enable background job tracking and desktop notifications.
 
-```powershell
-# Start monitored parity job
-slavv parity launch-exact-run \
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
-  --force-rerun-from energy \
-  --stop-after network \
-  --monitor
-
-# Check active jobs
-slavv jobs list
-
-# View job history
-slavv jobs history --run-dir workspace/runs/oracle_180709_E/crop_M_exact
-
-# Check daemon status
-slavv jobs daemon status
-```
-
-The monitoring daemon will:
-- Track job progress in the background
-- Send desktop notifications on completion/failure  
-- Prevent duplicate writers on the same run directory
-- Maintain job history across sessions
-
-For more details, see [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md).
+See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for the full command reference (starting monitored jobs, listing/inspecting job history, and daemon status).
 
 ---
 
@@ -229,7 +204,7 @@ slavv parity resume-exact-run `
 
 Or `init-exact-run ... --resume` with the same `--dataset-root`, `--oracle-root`, and `--dest-run-root` as the original bootstrap.
 
-Legacy helper `scripts/resume_pipeline_run.py` delegates to `resume-exact-run` when `99_Metadata/experiment_provenance.json` exists.
+Use `slavv parity resume-exact-run` to resume an interrupted run when `99_Metadata/experiment_provenance.json` exists.
 
 ---
 

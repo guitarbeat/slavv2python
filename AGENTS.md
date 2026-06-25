@@ -162,18 +162,18 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 
 ## Repository Map
 
-> **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`.
+> **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `workspace/`.
 
-**Four Top-Level Folders:**
+**Four Top-Level Folders** (plus vendored `external/` third-party source):
 - **`slavv_python/`** — Production package code (installed via pip)
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Local experiment artifacts (gitignored, personal)
+- **`docs/`** — Maintained reference docs and archival investigation notes
 
 ```text
 slavv2python/
 ├── slavv_python/                       # PRODUCTION PACKAGE (pip installable)
 │   ├── engine/                         # Pipeline orchestration & lifecycle
-│   │   ├── context.py                  # Re-export barrel (RunContext, StageController)
 │   │   └── state/                      # Run tracking, snapshots, resume
 │   │       ├── run_ledger.py           # RunContext implementation
 │   │       └── stage_handle.py         # StageController implementation
@@ -185,7 +185,7 @@ slavv2python/
 │   │   ├── edges/                      # Watershed, tracing, selection, cleanup
 │   │   │   ├── discovery.py            # Edge discovery strategy seam
 │   │   │   ├── manager.py              # Edge lifecycle (run + run_resumable)
-│   │   │   └── matlab_algorithms/      # MATLAB-shaped parity shims
+│   │   │   └── matlab_get_edges_by_watershed.py, matlab_watershed_heap.py, ...  # Flat MATLAB-shaped edge modules
 │   │   └── network/                    # Strand assembly, graph construction
 │   │       └── manager.py              # Network lifecycle (run + run_resumable)
 │   ├── image/                          # Image normalization, tiling
@@ -257,7 +257,7 @@ Read these first when working on relevant surfaces:
 |:---------|:-----|:--------|
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
-| Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/` |
+| Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results, and cold-start protocol |

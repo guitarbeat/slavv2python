@@ -1,3 +1,5 @@
+> **Archived / point-in-time snapshot (2026-06-09).** Historical; not maintained as current.
+
 # Documentation Audit & Improvement Plan
 
 **Date**: 2026-06-09  

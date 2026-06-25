@@ -92,7 +92,7 @@ python -m pytest -m "unit or integration"
 - Intermediate datasets (`workspace/datasets/crop_for_testing.tif`)
 
 **When NOT to Add Here:**
-- Anything that other developers need (belongs in `slavv_python/`, `tests/`, or `scripts/`)
+- Anything that other developers need (belongs in `slavv_python/` or `tests/`)
 - Documentation (belongs in `docs/`)
 - Reusable test fixtures (belongs in `tests/support/`)
 

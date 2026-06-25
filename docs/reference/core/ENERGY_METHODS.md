@@ -225,6 +225,7 @@ When adding a new energy backend, update these surfaces together:
 - Keep library code on `logging`; do not add `print()` calls in
   `slavv_python/pipeline/energy/energy.py`.
 - Preserve `float32` outputs for persisted energy volumes unless there is a
-  deliberate format change.
+  deliberate format change. Note that core computation runs in `float64` (compute
+  in `float64`, persist as `float32`); see [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md).
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.

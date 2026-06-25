@@ -118,7 +118,9 @@ Repository Root
 │   │   ├── 0006-network-lifecycle-manager.md
 │   │   ├── 0007-vertex-lifecycle-manager.md
 │   │   ├── 0008-exact-proof-coordinator.md
-│   │   └── 0009-parity-pre-gate-tiers.md
+│   │   ├── 0009-parity-pre-gate-tiers.md
+│   │   ├── 0010-random-component-parity-suite.md
+│   │   └── 0011-energy-float-certification-policy.md
 │   │
 │   └── investigations/ ← Archival deep dives (context, not current tasks)
 │       ├── v22-pointer-corruption/ ← Historical investigation
@@ -126,10 +128,6 @@ Repository Root
 │
 ├── tests/
 │   └── README.md ← Test placement rules
-│
-└── .kiro/
-    └── specs/ ← Kiro spec files
-        └── parity-job-monitoring/ ← Monitoring system spec
 ```
 
 ---
@@ -245,7 +243,7 @@ TECHNICAL_ARCHITECTURE.md (system design)
 | **Specs** | plans/ | Requirements + implementation | phase-1-exact-route-spec.md |
 | **Guides** | reference/workflow/ | How-to documentation | PARITY_PRE_GATE.md, PYTHON_NAMING_GUIDE.md |
 | **Reference** | reference/core/ | Technical details | TECHNICAL_ARCHITECTURE.md, GLOSSARY.md |
-| **Decisions** | adr/ | Why we made choices | ADR 0001-0009 |
+| **Decisions** | adr/ | Why we made choices | ADR 0001-0011 |
 | **Solutions** | solutions/ | Documented fixes | Compound docs with YAML |
 | **History** | investigations/ | Archival deep dives | v22-pointer-corruption/ |
 | **Meta** | docs/ | About documentation | DOCUMENTATION_MAP.md |
@@ -303,5 +301,5 @@ Proposal → Discussion → adr/ (decision) → Implementation → TECHNICAL_ARC
 
 ---
 
-**Last Updated**: 2026-06-16  
+**Last Updated**: 2026-06-24  
 **Related**: [README.md](README.md)

@@ -38,16 +38,16 @@ edges = results.edges
 Streamlit and shared-state code should hold a typed run envelope, not a plain dict:
 
 - preferred schema: `slavv_python.schema.app_run.AppRunState`
-- preferred session accessor: `slavv_python.interface.shared_state.get_app_run(session)`
+- preferred session accessor: `slavv_python.schema.app_run.get_app_run(session)`
 - preferred storage: `session_state["processing_results"]` as `AppRunState` (wraps `PipelineResult`)
 - defer dict serialization to export/share boundaries only (`normalize_state_results`, `exports`, `share_report`)
 
 Example:
 
 ```python
-from slavv_python.interface.shared_state import get_app_run, store_processing_session_state
+from slavv_python.schema.app_run import AppRunState, get_app_run
 
-store_processing_session_state(session_state, pipeline_result, parameters=parameters)
+session_state["processing_results"] = AppRunState.from_value(pipeline_result)
 app_run = get_app_run(st.session_state)
 vertices = app_run.pipeline.vertices  # typed; Mapping access also works on AppRunState
 ```
@@ -62,10 +62,9 @@ Use domain-first package names for maintained internal surfaces:
 - `slavv_python.pipeline.edges`
 - `slavv_python.engine.state` (`run_ledger`, `stage_handle`)
 - `slavv_python.schema.app_run` (`AppRunState`)
-- `slavv_python.workflows.pipeline`
-- `slavv_python.workflows.pipeline_setup`
-- `slavv_python.workflows.pipeline_stages`
+- `slavv_python.workflows.session`
 - `slavv_python.workflows.profiles`
+- `slavv_python.engine.orchestrator`
 - `slavv_python.interface.cli`
 - `slavv_python.interface.streamlit`
 

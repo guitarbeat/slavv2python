@@ -9,7 +9,7 @@ resolution_type: code_fix
 # MATLAB Stride Phase Lead (Energy Spatial Shift)
 
 ## Problem
-During Energy stage parity certification for the `180709_E` volume, a significant spatial mismatch (aリード of ~15 pixels) was observed between the Python energy map and the MATLAB oracle. Even with orientation aligned to `[Y, X, Z]`, the values at the origin did not match, and the entire structure appeared shifted along the X and Y axes.
+During Energy stage parity certification for the `180709_E` volume, a significant spatial mismatch (a lead of ~15 pixels) was observed between the Python energy map and the MATLAB oracle. Even with orientation aligned to `[Y, X, Z]`, the values at the origin did not match, and the entire structure appeared shifted along the X and Y axes.
 
 ## Evidence
 `slavv parity prove-exact` reported massive value mismatches at the origin. Analytical inspection of the coarse-grid interpolation meshes showed that Python was starting at index `0`, while the MATLAB oracle lead suggested it was starting at a non-zero offset. 

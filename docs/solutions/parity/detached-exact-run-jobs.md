@@ -43,7 +43,7 @@ Use run-local artifacts first: `99_Metadata/parity_job.json`, `parity_job.pid`, 
 Unit coverage passed for the detached launcher and monitor discovery:
 
 ```powershell
-python -m pytest tests/unit/apps/test_monitor_service.py tests/unit/parity/parity_experiment/test_parity_experiment_comprehensive.py -q
+python -m pytest tests/unit/interface/test_monitor_service.py tests/unit/parity/test_parity_experiment_comprehensive.py -q
 ```
 
 Result: `13 passed`.

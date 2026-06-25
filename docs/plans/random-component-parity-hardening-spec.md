@@ -1,7 +1,7 @@
 ---
 title: "Random Component Parity Suite — Implementation Hardening and Refactoring"
 type: spec
-status: draft
+status: complete
 date: 2026-06-24
 topic: random-component-parity-maintainability
 related:
@@ -11,7 +11,9 @@ related:
 
 # Random Component Parity Suite — Implementation Hardening Spec
 
-**Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite + full SLAVV Python port of the MATLAB source (`vectorize_V200.m` and core functions). All phases complete (strong separation, public API in `random_component/` package, `slavv_vectorize.py` as full Python equivalent, main file lean at ~859 lines, full verification passed).
+> ✅ COMPLETE (2026-06-24) — retained for reference. Live follow-up = random-component-references-deepening-plan.md. Residual: main file is ~866 lines, still above the ~700-line target (R4); extraction tracked by the deepening plan.
+
+**Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite + a high-level Python SLAVV facade over the MATLAB source (`vectorize_V200.m` and core functions). All phases complete (strong separation, public API in `random_component/` package, `slavv_vectorize.py` as a high-level orchestration facade over the exact-parity stage managers, main file at ~866 lines, full verification passed).
 
 Tasks live in this spec during active work (now complete); status and live runs live in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) under the random component section. The user-facing workflow stays in [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).
 
@@ -224,9 +226,9 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Builders and orchestration live in / use the `random_component` package.
 - [x] (Minor) `python_reference` / `_energy_samples` already conditional on include_hessian for heavy work; added comments for clarity. No unnecessary structures computed for structural path.
 - [x] All reports remain byte-compatible with Phase 0 baseline for structural fields.
-- [x] Main file shrunk to ~859 lines by moving builders to package.
+- [x] Main file shrunk (builders moved to package); currently ~866 lines (still above the ~700-line target in R4 — residual extraction tracked by the references deepening plan).
 - [x] Phase 3 complete per strong recommendations (orchestration uses models/builders, reference conditional clarified, main file leaner).
-- [x] Full Python port of MATLAB SLAVV source created in `slavv_python/pipeline/slavv_vectorize.py` (see `vectorize_python` + direct ports of `get_energy_v202`, `get_vertices_v200`, etc., matching `vectorize_V200.m` and core functions in `external/Vectorization-Public/source/`). Delegates to stage managers.
+- [x] High-level Python SLAVV facade created in `slavv_python/pipeline/slavv_vectorize.py`: `vectorize_python` orchestrates the exact-parity stage managers (equivalent of `vectorize_V200.m`). The module also exposes thin `get_*_python` convenience wrappers — `get_energy_v202_python` delegates to the real `EnergyManager`, while the `get_vertices_v200_python` / `get_edges_by_watershed_python` / `choose_edges_v200_python` / `get_network_v190_python` wrappers are simplified demonstration shims. The exact-parity implementations live in the stage managers and `matlab_get_*` modules, not in those wrappers.
 - [ ] Follow-up architecture deepening: see new plan `docs/plans/random-component-references-deepening-plan.md` (top recommendation from improve-codebase-architecture review). Extract dedicated deep "RandomComponentReferences" module to eliminate remaining circularity and concentrate reference math.
 
 ### Phase 4 — Test Surface & Compatibility
@@ -243,12 +245,12 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Artifacts confirmed usable: report.json, report.txt, manifest.json, reports/*.json (6), inputs/. All present and parseable.
 
 ### Phase 6 — Documentation, Polish, Landing
-- [x] Updated `PARITY_RANDOM_COMPONENT_SUITE.md` with "Internal structure" section + "How to hack on the suite" guidance + full SLAVV Python port docs (`slavv_vectorize.py` as Python version of MATLAB `vectorize_V200` + core functions).
+- [x] Updated `PARITY_RANDOM_COMPONENT_SUITE.md` with "Internal structure" section + "How to hack on the suite" guidance + Python SLAVV facade docs (`slavv_vectorize.py` as the high-level orchestrator over the stage managers).
 - [x] Improved module docstrings (main + package), added implementation notes.
 - [x] schema_version kept at 2 (output shape unchanged; added comments).
 - [x] Ran ruff (format + check), mypy (clean on package), full parity tests (20 passed).
-- [x] `slavv_python/pipeline/slavv_vectorize.py` added as the complete Python port of the SLAVV MATLAB source (`vectorize_python` + direct ports of core `get_*_V*` functions).
-- [x] Docs updated across README.md, docs/README.md, PROGRESS.md, this spec, and PARITY_RANDOM_COMPONENT_SUITE.md to document the full Python SLAVV port and internal structure.
+- [x] `slavv_python/pipeline/slavv_vectorize.py` added as the high-level Python SLAVV facade (`vectorize_python` orchestrating the exact-parity stage managers; thin `get_*_python` convenience wrappers, with the real parity logic in the stage managers / `matlab_get_*` modules).
+- [x] Docs updated across README.md, docs/README.md, PROGRESS.md, this spec, and PARITY_RANDOM_COMPONENT_SUITE.md to document the Python SLAVV facade and internal structure.
 - [x] Changes landed. Spec marked complete. (Residual: future extraction of more compare helpers noted in plan; see references deepening plan.)
 
 ---

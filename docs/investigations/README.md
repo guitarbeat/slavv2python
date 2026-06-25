@@ -14,7 +14,10 @@ docs:
 
 - **Translation pair analysis (2026-05-05):** archived a 33.8% trace-order
   experiment, disproved an older 41.4% baseline claim, and fed frontier-order
-  work into the later v29 edge baseline.
+  work into the later v29 edge baseline. (These 33.8% / 41.4% figures are
+  trace-order experiment metrics and are distinct from — not to be conflated
+  with — the v29 ~88.7% pair-match baseline tracked in
+  [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).)
 - **Phase 3 edge closure notes (2026-05-23):** captured seed-aware
   tie-breaking, first-come-first-served voxel ownership, and static frontier
   priority lessons now reflected in the maintained exact-proof findings.

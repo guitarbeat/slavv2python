@@ -46,33 +46,12 @@ python -m mypy
 
 ## 🔬 Parity Workflow (Quick)
 
-```powershell
-# 1. Check status
-slavv jobs list
-# Read: docs/reference/core/EXACT_PROOF_FINDINGS.md
+The full cold-start protocol and command list live in one place — do not
+duplicate them here.
 
-# 2. Start monitored run
-slavv parity resume-exact-run \
-  --dest-run-root workspace/runs/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
-  --force-rerun-from energy \
-  --stop-after network \
-  --skip-preflight \
-  --monitor
-
-# 3. Check progress
-slavv jobs list
-slavv monitor --run-dir workspace/runs/crop_M_exact --once
-
-# 4. When complete, run proof
-slavv parity prove-exact \
-  --source-run-root workspace/runs/crop_M_exact \
-  --dest-run-root workspace/runs/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
-  --stage energy
-```
-
-**Full guide:** [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md)
+**Start here:** [docs/README.md § Parity Closure Fast Path](README.md#-parity-closure-fast-path)
+→ [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) (live status)
+→ [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md) (commands)
 
 ---
 
@@ -194,5 +173,5 @@ What are you working on?
 
 ---
 
-**Last Updated**: 2026-06-09  
+**Last Updated**: 2026-06-24  
 **Related**: [README.md](README.md), [AGENTS.md](../AGENTS.md), [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md)

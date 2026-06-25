@@ -2,11 +2,7 @@
 
 ---
 
-### 🛰️ Live Mission Dashboard
-**Mission**: Phase 1 Parity Certification (Full `180709_E`)
-**Status**: 🟡 Energy reruns in progress (PIDs: `12152`, `6640`)
-**Last Achievement**: 📐 Bit-perfect [Y, X, Z] grid alignment anchored (2026-06-11)
-**Critical Path**: [PROGRESS.md](docs/PROGRESS.md) · [TODO.md](docs/TODO.md) · [FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
+> **Live parity status:** see [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) for the current source of truth on exact-route proof state.
 
 ---
 
@@ -85,11 +81,10 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## What Is In This Repo
 
-> **New to the codebase?** See [FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for a detailed explanation of when to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`.
+> **New to the codebase?** See [FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for a detailed explanation of when to use `slavv_python/` vs `tests/` vs `workspace/`.
 
 - `slavv_python/`: Production package code (installed via pip)
 - `tests/`: Automated test suite (runs in CI)
-- `scripts/`: Developer utility scripts (committed but not installed) — [README](scripts/README.md)
 - `workspace/`: Local experiment data (gitignored, personal) — [README](workspace/README.md)
 - `docs/`: Maintained reference docs plus archival investigation notes
 
@@ -97,7 +92,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ### Essential Entry Points
 - [Milestone Progress](docs/PROGRESS.md) ⭐ — **START HERE:** High-level history and current mission status
-- [Agent & Workflow Guide](docs/AGENTS.md) ⭐ — AI agent instructions, domain glossary, workflows
+- [Agent & Workflow Guide](AGENTS.md) ⭐ — AI agent instructions, domain glossary, workflows
 - [Developer Dashboard (Tasks)](docs/TODO.md) — Active tasks and checkboxes
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) ⭐ — Live parity status, active runs, blockers
 

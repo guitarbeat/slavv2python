@@ -24,7 +24,7 @@ blockers.
 
 When these sources differ, use this order:
 
-1. Released MATLAB slavv_python under `external/Vectorization-Public/slavv_python/`
+1. Released MATLAB slavv_python under `external/Vectorization-Public/source/`
 2. Preserved MATLAB artifacts validated by `prove-exact`
 3. The paper PDF at `docs/reference/papers/journal.pcbi.1009451.pdf`
 4. Maintained Python docs such as `MATLAB_PARITY_MAPPING.md`
@@ -82,7 +82,7 @@ boundaries while delegating into the maintained modular Python code.
 | --- | --- | --- | --- |
 | Energy / size image generation | Complete on the maintained native Python path | Exact-compatible; certified-run proof pending | Crop rerun pending after MATLAB chunking and `interp3` `Inf`-propagation fixes |
 | Vertex extraction | Complete on the maintained native Python path | Verified on prior surfaces; certified-run proof pending | Downstream of energy proof closure |
-| Edge extraction | Complete on the maintained native Python path | Source-aligned; v29 88.7% diagnostic baseline | Downstream of energy and vertex proof closure |
+| Edge extraction | Complete on the maintained native Python path | Source-aligned; v29 88.7% is an informal diagnostic baseline (not the Phase 1 strict-zero bar) | Downstream of energy and vertex proof closure |
 | Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 | Network / strand assembly | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 
@@ -147,7 +147,7 @@ Completed work:
 1. Implemented bit-accurate tie-breaking using exact equality and Fortran-order linear index priority.
 2. Plugged precision leaks by enforcing `float64` across all watershed maps and suppression factors.
 3. Tightened candidate filtering with hard $d/R$ cutoffs matching MATLAB's `get_edges_by_watershed`.
-4. Reached the **88.7%** match rate milestone.
+4. Reached the **88.7%** match rate (v29). This is an informal diagnostic baseline until `prove-exact` reports zero, not the Phase 1 strict-zero certification bar.
 
 ### Phase 3: Certification and Release
 
@@ -189,7 +189,7 @@ These are the reference surfaces still under investigation:
    Audit strand ordering and network assembly only after the upstream edge proof
    surfaces are materially closer; the current preferred surface delegates into
    `slavv_python/pipeline/network/`.
-6. `slavv parity` and `slavv_python/analytics/parity/matlab_exact_proof.py`
+6. `slavv parity` and `slavv_python/analytics/parity/proofs.py`
    Preserve the proof harness as the acceptance gate for native-first exact
    reruns, with disposable trial runs under `workspace/runs/`, preserved MATLAB truth
    under `workspace/oracles/`, and promoted summaries under `workspace/reports/`.

@@ -1,3 +1,5 @@
+> **Archived / point-in-time snapshot (2026-06-09).** Historical; not maintained as current.
+
 # Repository Cleanup Summary
 
 **Date**: 2026-06-09  

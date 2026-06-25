@@ -50,6 +50,7 @@
 - [x] **Padded-FFT coarse-slice contract** — `_matlab_coarse_local_slices` + regression; Energy proof still open (see findings).
 - [x] **Numba Painting Fix** — Ported round-half-up logic to `_choose_vertices_loop_numba`.
 - [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.
+- [ ] **Reconcile `slavv_vectorize.py` convenience wrappers** — The standalone `get_vertices_v200_python` / `get_edges_by_watershed_python` / `choose_edges_v200_python` / `get_network_v190_python` in `slavv_python/pipeline/slavv_vectorize.py` are simplified `scipy`/`skimage` demonstration shims, **not** exact-parity code (the real logic is in the stage managers + `matlab_get_*` modules). Either route them through the managers or remove them so the facade can't be mistaken for the parity engine. Docs softened 2026-06-24.
 - [ ] **Crop tier-2 gate** — After crop Energy passes, `prove-exact-sequence` on `180709_E_crop_M` (all four stages strict-zero).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`.
 
@@ -82,7 +83,7 @@ Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate*
 
 ## Maintenance
 
-- [x] Contributor guide — `CONTRIBUTING.md`
+- [x] Contributor guide — `docs/CONTRIBUTING.md`
 - [x] Parity run evidence template — [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md)
 - [x] Glossary / architecture — `GLOSSARY.md`, `TECHNICAL_ARCHITECTURE.md`
 - [x] Parity pre-gate & certification guides — `PARITY_PRE_GATE.md`, `PARITY_CERTIFICATION_GUIDE.md`

@@ -52,7 +52,7 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
 - **`VertexManager.run_resumable()`** — same pipeline with `candidates.pkl`, `cropped_candidates.pkl`, `chosen_mask.pkl` artifacts.
 - **`vertices/detection.py`** — MATLAB-style candidate scan and selection (no longer under `edges/`).
-- **`extraction.py` / `resumable.py`** — thin delegates preserving public imports.
+- **`__init__.py` / `painting.py` / `results.py`** — package entry delegating to `VertexManager.run_resumable`, plus painting and results helpers.
 
 ### Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
@@ -114,4 +114,4 @@ For large 2-photon volumes (e.g. 512x512x64), the engine uses:
 - **Disk-Backed Storage**: Large 4D energy stacks can be stored in `Zarr` format to avoid OOM (Out-of-Memory) errors.
 
 ### Bit-Accurate Precision
-Following the **May 2026 breakthrough**, all core watershed and energy calculations are forced to `float64` to prevent tie-breaking divergences caused by lower-precision accumulation. Exact-route meshes preserve MATLAB `linspace` roundoff drift to ensure bit-perfect interpolation at octave boundaries.
+Following the **May 2026 breakthrough**, all core watershed and energy calculations are forced to `float64` to prevent tie-breaking divergences caused by lower-precision accumulation. (Computation runs in `float64`; persisted energy volumes are still written as `float32` — compute in `float64`, persist as `float32` — see [ENERGY_METHODS.md](ENERGY_METHODS.md).) Exact-route meshes preserve MATLAB `linspace` roundoff drift to ensure bit-perfect interpolation at octave boundaries.

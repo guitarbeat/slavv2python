@@ -1,6 +1,6 @@
 # SLAVV milestone background
 
-**Last synthesized:** 2026-06-22
+**Last synthesized:** 2026-06-24
 
 This page is a stable orientation summary, not a live dashboard. Current tasks
 are in [TODO.md](TODO.md); verified parity runs, proofs, and blockers are in
@@ -13,7 +13,7 @@ Energy → Vertices → Edges → Network. The crop harness is the required pre-
 
 | Stage | Current certification status |
 |---|---|
-| Energy | Crop writer complete; strict crop proof fails on scale-winner and float64-value mismatches. |
+| Energy | Crop writer complete; scale-winner mismatches RESOLVED (0 vs oracle v2, batch_260624-105705); strict crop proof still fails on ~3,810,126 float64 ULP value mismatches on `energy.energy`. |
 | Vertices | Pending a strict-zero crop Energy proof. |
 | Edges | Pending upstream proof; prior informal pair-match baselines are not certification. |
 | Network | Pending upstream proof. |
@@ -29,7 +29,7 @@ Energy → Vertices → Edges → Network. The crop harness is the required pre-
 - The current proof exposed that a successful writer and local probes do not
   establish certification: full-vector `np.equal` and exact scale winners are
   the gate.
-- Full Python port of the SLAVV MATLAB source created (`slavv_python/pipeline/slavv_vectorize.py` + stage managers) providing `vectorize_python` (equivalent of `vectorize_V200.m`) and direct ports of core functions (`get_energy_v202`, `get_vertices_v200`, etc.). See `PARITY_RANDOM_COMPONENT_SUITE.md` for details.
+- High-level Python SLAVV facade created (`slavv_python/pipeline/slavv_vectorize.py` + stage managers) providing `vectorize_python` (orchestrator equivalent of `vectorize_V200.m`) and thin `get_*_python` convenience wrappers. The exact-parity logic lives in the stage managers and `matlab_get_*` modules. See `PARITY_RANDOM_COMPONENT_SUITE.md` for details.
 
 ## Navigation
 

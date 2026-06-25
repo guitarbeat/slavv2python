@@ -138,7 +138,7 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 *Status*: Incorporated into the current worktree, but not yet certified. See [Latest crop Energy proof (2026-06-22)](#latest-crop-energy-proof-2026-06-22).
 
-**Implementation hardening:** Active plan at [random-component-parity-hardening-spec.md](../plans/random-component-parity-hardening-spec.md) (Phase 0 complete: spec landed + baseline captured + unit tests green). Future changes to the suite (decomposition, models, separation of structural gate from advisory) should follow that spec. Baseline artifacts in `workspace/scratch/random_component_baseline/`.
+**Implementation hardening:** Active plan at [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md) (Phase 0 complete: spec landed + baseline captured + unit tests green). Future changes to the suite (decomposition, models, separation of structural gate from advisory) should follow that spec. Baseline artifacts in `workspace/scratch/random_component_baseline/`.
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
@@ -167,7 +167,7 @@ Scratch diagnostics: `workspace/scratch/crop_coarse_slice_probe_python.json`, `w
 # Rerun crop Energy first; do not start canonical while this is pending.
 slavv parity resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --force-rerun-from energy `
   --stop-after energy `
   --skip-preflight
@@ -175,13 +175,13 @@ slavv parity resume-exact-run `
 slavv parity prove-exact `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --stage energy
 
 # Only after crop Energy passes, refresh downstream crop checkpoints.
 slavv parity resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --force-rerun-from vertices `
   --stop-after network `
   --skip-preflight
@@ -189,7 +189,7 @@ slavv parity resume-exact-run `
 slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M
+  --oracle-root workspace/oracles/180709_E_crop_M_v2
 
 # After crop sequence passes, rerun canonical from Energy.
 slavv parity resume-exact-run `

@@ -1,7 +1,10 @@
 # ADR 0003: Edge Lifecycle Manager
 
 ## Status
-Accepted (implemented 2026-05-27)
+Accepted
+
+## Date
+Implemented 2026-05-27
 
 ## Context
 The "Edges" stage is the most algorithmically complex part of the SLAVV pipeline, involving multiple discovery strategies (Tracing vs. Watershed), conflict-aware selection (Conflict Painting), and structural post-processing (Bridge Insertion). 

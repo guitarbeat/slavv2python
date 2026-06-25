@@ -17,7 +17,8 @@ The public product goal is now distinct from the exact MATLAB proof track:
   related public defaults, while still running the maintained Python pipeline.
 
 Exact MATLAB parity remains a developer workflow owned by the parity docs and
-the `parity_experiment.py` tooling. It is no longer the public entrypoint.
+the `slavv parity` CLI (backed by the `slavv_python/analytics/parity/` modules).
+It is no longer the public entrypoint.
 
 ## CLI Workflow
 

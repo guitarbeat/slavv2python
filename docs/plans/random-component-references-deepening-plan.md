@@ -13,11 +13,11 @@ related:
 
 **Goal (per improve-codebase-architecture skill):** Turn the current shallow reference computation into a **deep module** with high **leverage** (callers get rich refs from tiny interface) and high **locality** (bugs, changes, and verification concentrate in one place).
 
-Uses terminology from LANGUAGE.md: Module, Interface, Seam, Depth, Leverage, Locality, Deletion test, Adapter.
+Uses architecture terminology (Module, Interface, Seam, Depth, Leverage, Locality, Deletion test, Adapter) from the improve-codebase-architecture skill's `LANGUAGE.md` (`.agents/skills/improve-codebase-architecture/LANGUAGE.md`).
 
 ## Current State (Shallow)
 
-The reference computation lives primarily inside `tests/support/random_component_parity.py` (still ~859 lines after Phase 1-3 extraction).
+The reference computation lives primarily inside `tests/support/random_component_parity.py` (still ~866 lines after Phase 1-3 extraction).
 
 - `materialize_corpus`, `python_reference`, `_python_case_reference`, `_energy_samples`
 - Low-level helpers (`_compare_values`, `_as_list`, etc.) are also here and pulled into `gate.py` / `diagnostics.py` via lazy imports.

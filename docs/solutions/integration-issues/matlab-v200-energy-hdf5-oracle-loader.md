@@ -41,7 +41,7 @@ MATLAB `vectorize_V200` crop batches store energy in a **split layout**: a metad
 
 ## Solution
 
-Teach `slavv_python/analytics/parity/matlab_exact_proof.py` to detect and load MATLAB energy HDF5 bundles.
+Teach `slavv_python/analytics/parity/matlab_vector_loader.py` to detect and load MATLAB energy HDF5 bundles.
 
 **Batch layout (crop example `batch_260527-220010`):**
 
@@ -77,7 +77,7 @@ slavv parity promote-oracle `
 **Regression test:**
 
 ```powershell
-pytest tests/unit/analysis/parity/test_matlab_exact_proof.py::test_find_matlab_vector_paths_prefers_hdf5_energy_companion -v
+pytest tests/unit/analytics/parity/test_matlab_exact_proof.py::test_find_matlab_vector_paths_prefers_hdf5_energy_companion -v
 ```
 
 ## Why This Works
@@ -105,5 +105,5 @@ slavv parity prove-exact-sequence `
 
 - [PARITY_PRE_GATE.md](../../reference/workflow/PARITY_PRE_GATE.md) — tier-2 crop harness workflow
 - [PARITY_CERTIFICATION_GUIDE.md](../../reference/workflow/PARITY_CERTIFICATION_GUIDE.md) — `prove-exact-sequence` gates
-- `slavv_python/analytics/parity/matlab_exact_proof.py` — loader implementation
-- `scripts/matlab/vectorize_180709_E_crop_M.m` — headless crop vectorization driver
+- `slavv_python/analytics/parity/matlab_vector_loader.py` — loader implementation
+- `workspace/scratch/vectorize_180709_E_crop_M.m` — headless crop vectorization driver

@@ -1,3 +1,5 @@
+> **Archived / point-in-time snapshot.** Dormant template — not a live chapter; copy elsewhere before use.
+
 # Chapter Title
 
 Status: Active chapter

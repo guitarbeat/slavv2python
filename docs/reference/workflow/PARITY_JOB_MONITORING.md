@@ -28,7 +28,7 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  parity_experiment.py                                        │
+│  slavv parity launch-exact-run (analytics/parity/)           │
 │  - Validates no active writer on run-dir                     │
 │  - Spawns detached Python subprocess                         │
 │  - Registers job in JobRegistry                              │
@@ -56,7 +56,6 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
          │  - Active jobs   │                  │  - Toast popups │
          │  - Job history   │                  │  - Tray icon    │
          └─────────────────┘                  └─────────────────┘
-**Last Updated:** 2026-06-10
 
 ---
 
@@ -314,7 +313,7 @@ The monitoring system **respects** existing run-local metadata:
 
 - Reads `99_Metadata/parity_job.pid` for PID tracking
 - Reads `99_Metadata/parity_job.json` for progress updates
-- Does **not** replace these files (still written by `parity_experiment.py`)
+- Does **not** replace these files (still written by the `slavv parity` exact-run commands / `slavv_python/analytics/parity/` modules)
 - Uses them as checkpoints during monitoring
 
 **Metadata precedence:**
@@ -613,4 +612,4 @@ Potential improvements tracked in [TODO.md](../../TODO.md):
 
 ---
 
-**Last Updated:** 2026-06-09
+**Last Updated:** 2026-06-24

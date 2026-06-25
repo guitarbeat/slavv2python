@@ -8,6 +8,7 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **The Loop**: Spending multiple days perfecting the MATLAB-exact chunking logic (`get_starts_and_counts_V200`, saturated arithmetic, boundary alignment).
 *   **The Reality**: Any chunking lattice larger than `[1, 1, 1]` introduces FFT boundary artifacts that break bit-perfect parity with the global FFT used in MATLAB.
 *   **Guidance**: **Stop trying to fix chunked parity.** For certification, we MUST use a single global chunk. Chunking logic is for runtime performance, not for the "Exact Route" certification.
+*   **Context**: This single-global-chunk guidance applies to the CANONICAL full volume. The crop harness oracle deliberately uses lattice `[3,3,2]` (`max_voxels_per_node_energy=6000`) to match the MATLAB crop batch — see [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md). The two are not contradictory.
 
 ## 2. Marginal Memory Optimization Cycles
 *   **The Loop**: Implementing a series of 10-20% memory improvements (in-place scale updates, sparse FFT re-population) while still attempting to hold too many intermediates in memory.
@@ -53,14 +54,11 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *Last Updated: 2026-06-13*
 
 ## 10. The Coordinate Grid Expansion Trap
-*   **The Loop**: Addressing ArrayMemoryError issues in xact_mesh.py by attempting to optimize chunking (get_chunking_lattice_v190), while preserving the legacy MATLAB shim for _interp3_matlab_linear_inf which demanded a full 4D dense coordinate array (3, Y, X, Z).
+*   **The Loop**: Addressing ArrayMemoryError issues in exact_mesh.py by attempting to optimize chunking (get_chunking_lattice_v190), while preserving the legacy MATLAB shim for _interp3_matlab_linear_inf which demanded a full 4D dense coordinate array (3, Y, X, Z).
 *   **The Reality**: For canonical chunks, expanding three 1D linspace arrays into a dense (3, 512, 512, 64) block consumes >400MB of overhead per chunk, driving constant OOM crashes regardless of other kernel optimizations.
-*   **Guidance**: Never expand 
-p.meshgrid fully in memory when working with large volumes. Use sparse=True and broadcast dynamically (
-p.broadcast_to()) at the point of evaluation.
+*   **Guidance**: Never expand np.meshgrid fully in memory when working with large volumes. Use sparse=True and broadcast dynamically (np.broadcast_to()) at the point of evaluation.
 
 ## 11. The Emulation vs. Acceleration Dilemma
 *   **The Loop**: To achieve Phase 1 bit-perfect parity, the Python codebase was warped to emulate MATLAB's memory layout (Fortran order), bespoke rounding (_matlab_round), and edge cases.
-*   **The Reality**: This "Bug-for-Bug" compatibility guarantees exactness but severely punishes Python performance and blocks the adoption of C-backed ecosystem tools (e.g., scipy.ndimage, 
-umba).
+*   **The Reality**: This "Bug-for-Bug" compatibility guarantees exactness but severely punishes Python performance and blocks the adoption of C-backed ecosystem tools (e.g., scipy.ndimage, Numba).
 *   **Guidance**: Exact parity is a milestone, not a permanent architecture. Once the exact proof gate is passed, immediately branch to Phase 2 to unwind the emulation layers and restore native C-order [Z, Y, X] processing, accepting topological isomorphism over bit-perfect equivalence.

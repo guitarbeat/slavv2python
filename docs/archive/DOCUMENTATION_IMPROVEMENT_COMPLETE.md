@@ -1,3 +1,5 @@
+> **Archived / point-in-time (2026-06-09).** Historical snapshot; not maintained as current.
+
 # Documentation Improvement Complete
 
 **Date**: 2026-06-09  
@@ -310,10 +312,10 @@ docs: Phase 2 & 3 - Consolidation and structure enhancement
 ## Related Documentation
 
 - [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md) - Original audit findings
-- [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) - Visual structure guide
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - One-page cheat sheet
+- [DOCUMENTATION_MAP.md](../DOCUMENTATION_MAP.md) - Visual structure guide
+- [QUICK_REFERENCE.md](../QUICK_REFERENCE.md) - One-page cheat sheet
 - [README.md](README.md) - Simplified documentation index
-- [AGENTS.md](../AGENTS.md) - AI agent guide with enhancements
+- [AGENTS.md](../../AGENTS.md) - AI agent guide with enhancements
 
 ---
 

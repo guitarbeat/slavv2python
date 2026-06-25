@@ -15,6 +15,15 @@ For current behavior and proof status, prefer:
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-06-24
+
+### Added
+
+- **Random Component Parity Suite** (ADR 0010): Seeded white-noise MATLAB R2019a/Python differential loop for fast Energy building-block checks (linspace, `interp3`, padded shape, valid flags). Structural fields gate CI; Hessian float ULP is advisory only. Includes the accompanying package refactor documented in [ADR 0010](adr/0010-random-component-parity-suite.md).
+- **High-level Python SLAVV facade** (`slavv_python/pipeline/slavv_vectorize.py`): `vectorize_python(image, params)` orchestrator equivalent to `vectorize_V200.m`, plus thin `get_*_python` convenience wrappers over the exact-parity stage managers.
+- **ADR 0011 (Proposed)** — Energy float certification policy: strict scale winners vs bounded float64 ULP tolerance on `energy.energy` ([adr/0011-energy-float-certification-policy.md](adr/0011-energy-float-certification-policy.md)).
+- **Crop Energy oracle v2**: Refreshed MATLAB oracle vectors for the `180709_E` crop Energy proof.
+
 ## [Unreleased] - 2026-06-09
 
 ### Added

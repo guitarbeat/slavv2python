@@ -1,7 +1,10 @@
 # ADR 0004: Deep Modules for Watershed Discovery
 
-**Date**: 2026-05-26
-**Status**: Accepted
+## Status
+Accepted
+
+## Date
+2026-05-26
 
 ## Context
 

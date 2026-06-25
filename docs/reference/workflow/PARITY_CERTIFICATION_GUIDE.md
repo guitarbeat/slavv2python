@@ -56,11 +56,10 @@ slavv parity init-exact-run `
   --dataset-root workspace/datasets/<dataset_id> `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
-  --stop-after network `
-  --monitor
+  --stop-after network
 ```
 
-For long-running jobs, add the `--monitor` flag to enable automatic tracking and desktop notifications. See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for details.
+For long-running jobs, add the `--monitor` flag when you start the run with `slavv parity launch-exact-run` (or `resume-exact-run`) to enable automatic tracking and desktop notifications. See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for details.
 
 ### 1a. Ensure the canonical oracle has energy
 

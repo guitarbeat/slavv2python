@@ -1,3 +1,10 @@
+> **STALE / ARCHIVED — HISTORICAL ONLY (do not treat as current).**
+> This review describes a vertices tie-break fix (stable argsort on energies only, *without* a
+> linear-index tie-break) that was **NOT merged**. Current behavior is `sort_vertex_order`
+> (`np.lexsort((linear_indices, vertex_energies))` — energy + column-major linear-index tie-break)
+> in `slavv_python/pipeline/vertices/results.py`. This document also references files that have since
+> been **deleted** (`PROJECT.md`, `ORIGINAL_REQUEST.md`). Read as a point-in-time snapshot only.
+
 # Teamwork-Preview Review: Vertices Parity Work
 
 **Date**: 2026-06-09  

@@ -113,7 +113,7 @@ python -m tests.support.export_random_matching_reference `
 
 The Random Component Parity Suite and full SLAVV pipeline were refactored (see [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md) and the architecture deepening plan) for maintainability, depth, and exact MATLAB parity while preserving behavior.
 
-- **Full SLAVV Python port of MATLAB source**: See `slavv_python/pipeline/slavv_vectorize.py` for `vectorize_python` (Python equivalent of MATLAB `vectorize_V200.m`) and direct ports of core functions: `get_energy_v202_python`, `get_vertices_v200_python`, `get_edges_by_watershed_python`, etc. This provides a complete Python version of the SLAVV source in `external/Vectorization-Public/source/`.
+- **Python SLAVV facade over MATLAB source**: See `slavv_python/pipeline/slavv_vectorize.py` for `vectorize_python` (high-level orchestrator equivalent to MATLAB `vectorize_V200.m`, delegating to the exact-parity stage managers). The module also exposes thin `get_*_python` convenience wrappers (`get_energy_v202_python`, `get_vertices_v200_python`, `get_edges_by_watershed_python`, etc.); `get_energy_v202_python` delegates to the real manager, while the vertices/edges/choose/network wrappers are simplified demonstration shims. The exact-parity implementations live in `pipeline/{energy,vertices,edges,network}/` and the `matlab_get_*` modules.
   - Delegates to stage managers for production use (`EnergyManager`, `VertexManager`, etc.).
   - Supports both Paper Path and Exact Route (via `PipelinePolicy`).
 
@@ -131,14 +131,14 @@ The Random Component Parity Suite and full SLAVV pipeline were refactored (see [
 - For Hessian ULP / diagnostics changes → `diagnostics.py`.
 - Report shape changes → `reports.py` (keep legacy compat).
 - Reference computation (linspace, `interp3`, energy samples, full `get_energy_V202` style) → `slavv_energy_filter.py` (clean Python port) + `matlab_get_energy_v202_chunked.py` (exact/chunked) or production `energy/` modules. Future: dedicated deep `references.py` module per architecture plan.
-- Full pipeline orchestration / MATLAB source ports → `slavv_vectorize.py` (high-level) + submodules in `pipeline/{energy,vertices,edges,network}/`.
+- Full pipeline orchestration / MATLAB source mapping → `slavv_vectorize.py` (high-level facade) + the exact-parity submodules in `pipeline/{energy,vertices,edges,network}/`.
 - Add public helpers to `random_component/__init__.py`.
 - Keep the main file lean (<1000 lines); extract to package (ongoing per architecture review).
 - `compare_references` is the old entry for tests/compat — prefer the new public builders/gate in fresh code.
 - Always verify structural gate against the Phase 0 baseline after changes (see Phase 5 in the spec).
 - For exact parity work: Use the random component suite + `prove-exact` before/after long runs. See pre-gate tiers.
 
-The Python SLAVV is the direct equivalent of the MATLAB source in `external/Vectorization-Public/source/`, with the same stages, chunking, Fourier-domain filtering, principal energy, watershed/tracing, etc. (see `slavv_vectorize.py` for mappings).
+The Python SLAVV pipeline (the stage managers) is the equivalent of the MATLAB source in `external/Vectorization-Public/source/`, with the same stages, chunking, Fourier-domain filtering, principal energy, watershed/tracing, etc. `slavv_vectorize.py` provides the high-level mapping and orchestration; the exact-parity engines are the stage managers and `matlab_get_*` modules.
 
 ---
 

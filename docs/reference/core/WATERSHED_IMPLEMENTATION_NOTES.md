@@ -38,9 +38,11 @@ To achieve bit-perfect MATLAB parity, the engine realigns the physical volume (S
 | :--- | :--- | :--- |
 | `vertex_index_map` | `uint32` | Stores 1-based vertex IDs (0 = unclaimed). |
 | `pointer_map` | `uint64` | Stores 1-based indices into the scale-specific strel LUT. |
-| `energy_map_temp` | `float32` | Stores the *original* (unpenalized) energies for frontier sorting. |
+| `energy_map_temp` | `float64`[^dtype] | Stores the *original* (unpenalized) energies for frontier sorting. |
 | `d_over_r_map` | `float64` | Accumulates normalized distances ($r/R$) along traces. |
 | `branch_order_map` | `uint8` | Tracks the branch depth from the origin vertex. |
+
+[^dtype]: Core watershed maps (including `energy_map_temp` in `VoxelClaimMap`, see `slavv_python/pipeline/edges/matlab_watershed_heap.py`) are computed in `float64` per the double-precision alignment fix to avoid tie-breaking divergence; persisted energy volumes remain `float32`. See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) and [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
 
 ---
 
@@ -86,9 +88,9 @@ Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `tests/unit/
 When `edges.connections` remains red after upstream gates pass, start from the
 released MATLAB source and the maintained proof artifacts:
 
-- Measure with `scripts/parity_experiment.py prove-exact` or
+- Measure with `slavv parity prove-exact` or
   `prove-exact-sequence`; do not use informal match rates as an acceptance bar.
-- Audit against `external/Vectorization-Public/slavv_python/get_edges_by_watershed.m`.
+- Audit against `external/Vectorization-Public/source/get_edges_by_watershed.m`.
   Commented MATLAB code is not behavior; verify the line is active before porting
   an idea.
 - For a specific missing pair, compare `current_strel_energies`, adjusted local

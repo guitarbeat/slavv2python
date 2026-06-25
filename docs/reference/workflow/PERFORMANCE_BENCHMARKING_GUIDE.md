@@ -22,7 +22,7 @@ Use these core metrics when evaluating changes to the pipeline:
 ### 1. CPU Profiling (cProfile)
 Identify bottlenecks in the watershed loop or energy calculations.
 ```powershell
-python -m cProfile -s cumulative scripts/parity_experiment.py ... > profile.txt
+python -m cProfile -s cumulative -m slavv_python.analytics.parity launch-exact-run ... > profile.txt
 ```
 
 ### 2. Memory Profiling
@@ -64,7 +64,7 @@ Rerun the baseline experiment and compare metrics. Document the delta in the pul
 
 ---
 
-## 📚 Reference Baselines (May 2026)
+## 📚 Reference Baselines (May 2026) (unverified; provenance not captured)
 
 *Baseline measurements taken on standard developer workstation (32GB RAM, i7 CPU).*
 

@@ -29,8 +29,8 @@ Treat `investigations/` as historical context, not as an executable spec.
 2. [Developer Dashboard (TODO.md)](TODO.md) — Active tasks and checkboxes
 3. [Glossary](reference/core/GLOSSARY.md) — Extended domain terminology
 
-### 🔬 Parity Work & Full SLAVV Python Port
-- **Full Python SLAVV** (equivalent of MATLAB source in `external/Vectorization-Public/source/`): `slavv_python/pipeline/slavv_vectorize.py` — `vectorize_python(image, params)` is the Python version of `vectorize_V200.m`. Includes direct ports of `get_energy_v202_python`, `get_vertices_v200_python`, etc.
+### 🔬 Parity Work & Python SLAVV Facade
+- **Python SLAVV facade** (high-level entry over the exact-parity stage managers): `slavv_python/pipeline/slavv_vectorize.py` — `vectorize_python(image, params)` is the Python orchestrator equivalent to `vectorize_V200.m`. It also exposes thin `get_*_python` convenience wrappers; the exact-parity implementations live in `pipeline/{energy,vertices,edges,network}/` and the `matlab_get_*` modules, not in those wrappers.
   - Use stage managers (`EnergyManager.run`, `VertexManager.run`, etc.) or the high-level wrapper.
   - Exact parity route available via policy + random component suite.
 - **See [Parity Closure Fast Path](#-parity-closure-fast-path) below for complete workflow.**
@@ -70,8 +70,8 @@ Treat `investigations/` as historical context, not as an executable spec.
 3. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow
 4. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
 5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
-6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP. See also full SLAVV port.
-7. **[Full Python SLAVV Port](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md#internal-structure-post-hardening-refactor)** — `slavv_vectorize.py` + stage managers matching MATLAB `vectorize_V200` + core functions.
+6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP. See also the Python SLAVV facade.
+7. **[Python SLAVV Facade](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md#internal-structure-post-hardening-refactor)** — `slavv_vectorize.py` (high-level orchestrator) + stage managers matching MATLAB `vectorize_V200`.
 8. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Proposed): strict scales vs bounded ULP on `energy.energy`
 9. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
 10. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
@@ -150,7 +150,7 @@ See [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) for the complete hierarchy.
 
 ## Core Maintained References
 
-- [Folder Purpose Guide](reference/core/FOLDER_PURPOSE_GUIDE.md) — When to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`
+- [Folder Purpose Guide](reference/core/FOLDER_PURPOSE_GUIDE.md) — When to use `slavv_python/` vs `tests/` vs `workspace/`
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)

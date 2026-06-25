@@ -11,7 +11,7 @@ Use `MATLAB_METHOD_IMPLEMENTATION_PLAN.md` for claim boundaries and
 
 ## Scope
 
-- Canonical MATLAB slavv_python lives under `external/Vectorization-Public/slavv_python/`.
+- Canonical MATLAB slavv_python lives under `external/Vectorization-Public/source/`.
 - MATLAB ports live beside their stage package under `slavv_python/pipeline/`
   with `matlab_*` filenames (see [PYTHON_NAMING_GUIDE.md](../workflow/PYTHON_NAMING_GUIDE.md#matlab-parity-filename-convention)).
 - The canonical exact route is `comparison_exact_network=True` with
@@ -54,7 +54,7 @@ The active MATLAB sources for the native-first exact target are:
 
 | MATLAB surface | Live Python surface | Status | Notes |
 | --- | --- | --- | --- |
-| `vectorize_V200.m` | `slavv_python/engine/orchestrator.py`, `slavv_python/workflows/pipeline_stages.py` | Source-aligned orchestration | Stage order mirrors MATLAB; stage facades live under `slavv_python/pipeline/`. |
+| `vectorize_V200.m` | `slavv_python/engine/orchestrator.py` | Source-aligned orchestration | Stage order mirrors MATLAB; stage facades live under `slavv_python/pipeline/`. |
 | `get_energy_V202.m` | `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py`, `slavv_python/pipeline/energy/chunking.py` | Native exact-compatible surface | Chunk lattice, octave merge, `interp3` mesh. Helpers: `get_chunking_lattice_V190.m`, `get_starts_and_counts_V200.m`. |
 | `energy_filter_V200.m` | `slavv_python/pipeline/energy/matlab_energy_filter_v200.py`, `slavv_python/pipeline/energy/matlab_principal_energy.py` | Native exact-compatible surface | Matched-filter FFT path and principal-energy eigen step. |
 | `get_energy_V202.m` (orchestration) | `slavv_python/pipeline/energy/energy.py`, `slavv_python/pipeline/energy/manager.py`, `slavv_python/pipeline/energy/resumable.py`, `slavv_python/pipeline/energy/provenance.py` | Native exact-compatible surface | Stage facade and resumable writer; not a line-for-line `.m` port. |
