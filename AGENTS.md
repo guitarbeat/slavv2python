@@ -130,7 +130,7 @@ Preserved MATLAB truth vectors and metadata for a specific dataset, stored under
 A disposable developer execution under `workspace/runs/` that compares Python checkpoints against an [Oracle](#oracle) via the parity experiment harness.
 
 ### Certification
-The state in which sequential exact-parity gates report zero missing and zero extra for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
+The state in which sequential exact-parity gates report zero missing and zero extra on discrete/topological fields, and `np.allclose` agreement on continuous float fields (per [ADR 0011](docs/adr/0011-energy-float-certification-policy.md)), for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
 
 ### Canonical Volume
 The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.

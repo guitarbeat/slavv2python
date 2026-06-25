@@ -100,7 +100,7 @@ git push origin main
 | **Pipeline** | Energy → Vertices → Edges → Network stages |
 | **Oracle** | Preserved MATLAB truth vectors for comparison |
 | **Parity Run** | Python run compared against MATLAB oracle |
-| **Certification** | Zero missing/extra on all stages (strict) |
+| **Certification** | Zero missing/extra on discrete/topological fields; `np.allclose` on continuous floats (ADR 0011) |
 | **Canonical Volume** | Full `180709_E` volume for Phase 1 cert |
 | **Crop Harness** | `180709_E_crop_M` subvolume for faster testing |
 | **Vertex** | Point of interest with 3D position and radius |
@@ -169,7 +169,7 @@ What are you working on?
 ✅ Run `preflight-exact` before 4+ hour jobs
 
 ❌ Don't use "close enough" for parity  
-✅ Strict zero missing/extra required
+✅ Zero missing/extra on discrete/topological fields; `np.allclose` on continuous floats (ADR 0011)
 
 ---
 

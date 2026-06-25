@@ -72,7 +72,7 @@ Treat `investigations/` as historical context, not as an executable spec.
 5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
 6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP. See also the Python SLAVV facade.
 7. **[Python SLAVV Facade](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md#internal-structure-post-hardening-refactor)** — `slavv_vectorize.py` (high-level orchestrator) + stage managers matching MATLAB `vectorize_V200`.
-8. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Proposed): strict scales vs bounded ULP on `energy.energy`
+8. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Accepted): `np.allclose` for continuous float fields, strict for discrete/topological
 9. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
 10. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
 

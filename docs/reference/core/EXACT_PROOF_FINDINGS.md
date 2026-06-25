@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-24 (oracle v2; scale strict-zero; **Energy `np.allclose` gate PASSES** — ADR 0011 accepted; downstream unblocked)
+**Last Updated**: 2026-06-25 (oracle v2; **Energy + Vertices CERTIFIED** under ADR 0011 gate; **Edges in progress**)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 

@@ -14,7 +14,7 @@ Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms a
 | 2 — Crop harness | `180709_E_crop_M` (64×256×256 Z×Y×X) | `workspace/oracles/180709_E_crop_M` | Yes, strict zero, sequential | Harness confidence only |
 | 3 — Canonical | Full `180709_E` | `180709_E_batch_190910-103039` | Yes, strict zero, sequential | Phase 1 exact-route **Certification** |
 
-Tiers 2 and 3 use the **same** success bar (zero missing / zero extra per stage). Only tier 3 supports the Phase 1 certification milestone.
+Tiers 2 and 3 use the **same** success bar: strict zero (discrete/topological — zero missing / zero extra per stage) + `np.allclose` (continuous floats, [ADR 0011](../../adr/0011-energy-float-certification-policy.md)). Only tier 3 supports the Phase 1 certification milestone.
 
 Check [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) before Tier 3 proof. The canonical oracle must have a loadable energy artifact before `prove-exact-sequence` can certify the full volume.
 

@@ -80,8 +80,8 @@ boundaries while delegating into the maintained modular Python code.
 
 | Stage | Public paper-workflow claim | Exact-parity claim | Main blocker |
 | --- | --- | --- | --- |
-| Energy / size image generation | Complete on the maintained native Python path | Exact-compatible; certified-run proof pending | Crop rerun pending after MATLAB chunking and `interp3` `Inf`-propagation fixes |
-| Vertex extraction | Complete on the maintained native Python path | Verified on prior surfaces; certified-run proof pending | Downstream of energy proof closure |
+| Energy / size image generation | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
+| Vertex extraction | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
 | Edge extraction | Complete on the maintained native Python path | Source-aligned; v29 88.7% is an informal diagnostic baseline (not the Phase 1 strict-zero bar) | Downstream of energy and vertex proof closure |
 | Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 | Network / strand assembly | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |

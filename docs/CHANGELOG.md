@@ -15,13 +15,23 @@ For current behavior and proof status, prefer:
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-06-25
+
+### Added / Changed
+
+- **Tolerance parity gate (ADR 0011 Accepted)**: Phase 1 certification compares continuous float fields with `np.allclose` (rtol=1e-7, atol=1e-9) and discrete/topological fields strictly; `--strict-floats` forces bit-identity for regression. Wired across stages via a comparator `float_tol`. Pure ULP was rejected (it explodes near zero).
+- **Energy stage CERTIFIED** on crop oracle v2 (`prove-exact --stage energy` passes under the gate; max |Δ| ≈ 2×10⁻¹¹).
+- **Vertices stage CERTIFIED** on crop v2 (positions + scales exact, 13,706 = 13,706; energies sourced from raw `vertices.mat`). Fixed `ellipsoid_offsets` to port MATLAB `construct_structuring_element.m` float-radius membership.
+- **Edges parity fixes**: `edge_number_tolerance` hard-coded to 2 (per `get_edges_V300.m`); conflict painting disabled on the exact route (MATLAB comments out `choose_edges_V200`). Edges moved 9,429 → 13,775 (vs MATLAB 15,511); frontier-ordering parity still open.
+- **Mismatch diagnostics** no longer crash on ragged edge-trace fields (edge stage now emits per-field evidence).
+
 ## [Unreleased] - 2026-06-24
 
 ### Added
 
 - **Random Component Parity Suite** (ADR 0010): Seeded white-noise MATLAB R2019a/Python differential loop for fast Energy building-block checks (linspace, `interp3`, padded shape, valid flags). Structural fields gate CI; Hessian float ULP is advisory only. Includes the accompanying package refactor documented in [ADR 0010](adr/0010-random-component-parity-suite.md).
 - **High-level Python SLAVV facade** (`slavv_python/pipeline/slavv_vectorize.py`): `vectorize_python(image, params)` orchestrator equivalent to `vectorize_V200.m`, plus thin `get_*_python` convenience wrappers over the exact-parity stage managers.
-- **ADR 0011 (Proposed)** — Energy float certification policy: strict scale winners vs bounded float64 ULP tolerance on `energy.energy` ([adr/0011-energy-float-certification-policy.md](adr/0011-energy-float-certification-policy.md)).
+- **ADR 0011** — Energy float certification policy ([adr/0011-energy-float-certification-policy.md](adr/0011-energy-float-certification-policy.md)). Initially proposed as bounded-ULP; **Accepted 2026-06-25** with the gate refined to `np.allclose` (rtol=1e-7, atol=1e-9) on continuous float fields, strict on discrete/topological (see 2026-06-25 entry below).
 - **Crop Energy oracle v2**: Refreshed MATLAB oracle vectors for the `180709_E` crop Energy proof.
 
 ## [Unreleased] - 2026-06-09

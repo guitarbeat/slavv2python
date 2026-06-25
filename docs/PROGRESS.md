@@ -1,6 +1,6 @@
 # SLAVV milestone background
 
-**Last synthesized:** 2026-06-24
+**Last synthesized:** 2026-06-25
 
 This page is a stable orientation summary, not a live dashboard. Current tasks
 are in [TODO.md](TODO.md); verified parity runs, proofs, and blockers are in
@@ -13,9 +13,9 @@ Energy → Vertices → Edges → Network. The crop harness is the required pre-
 
 | Stage | Current certification status |
 |---|---|
-| Energy | Crop writer complete; scale-winner mismatches RESOLVED (0 vs oracle v2, batch_260624-105705); strict crop proof still fails on ~3,810,126 float64 ULP value mismatches on `energy.energy`. |
-| Vertices | Pending a strict-zero crop Energy proof. |
-| Edges | Pending upstream proof; prior informal pair-match baselines are not certification. |
+| Energy | CERTIFIED (crop v2, ADR 0011 gate; batch_260624-105705): scale winners strict 0; `energy.energy` passes `np.allclose` (rtol=1e-7/atol=1e-9, max \|Δ\|≈2×10⁻¹¹). |
+| Vertices | CERTIFIED (crop v2): positions + scales exact (13,706 = 13,706); energies pass under the ADR 0011 `np.allclose` gate. |
+| Edges | In progress (not yet certified); prior informal pair-match baselines are not certification. |
 | Network | Pending upstream proof. |
 
 ## Durable progress
