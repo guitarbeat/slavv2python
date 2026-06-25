@@ -50,8 +50,32 @@ def build_mismatch_diagnostics(
         if field not in python_payload:
             fields.append({"field": field, "kind": "missing", "python": "<missing>"})
             continue
-        matlab_array = np.asarray(matlab_value)
-        python_array = np.asarray(python_payload[field])
+        python_value = python_payload[field]
+        # Variable-length fields (e.g. edge traces: a list of ragged per-edge arrays)
+        # are inhomogeneous; np.asarray raises or yields an object array. Compare
+        # lengths only instead of crashing the whole diagnosis.
+        try:
+            matlab_array = np.asarray(matlab_value)
+            python_array = np.asarray(python_value)
+        except ValueError:
+            matlab_array = python_array = None
+        if (
+            matlab_array is None
+            or python_array is None
+            or matlab_array.dtype == object
+            or python_array.dtype == object
+        ):
+            matlab_len = len(matlab_value) if hasattr(matlab_value, "__len__") else None
+            python_len = len(python_value) if hasattr(python_value, "__len__") else None
+            fields.append(
+                {
+                    "field": field,
+                    "kind": "length_mismatch" if matlab_len != python_len else "sequence_field",
+                    "matlab_len": matlab_len,
+                    "python_len": python_len,
+                }
+            )
+            continue
         if matlab_array.shape != python_array.shape:
             fields.append(
                 {
