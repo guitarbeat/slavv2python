@@ -19,7 +19,7 @@ merged_from:
 
 ## Summary
 
-Establish **program ship confidence** by first certifying the exact parity route on canonical volume **180709_E**, then certifying the paper profile on a defined volume and oracle, using **native** runs (no oracle-injected vertices), **strict zero** missing/extra on every gated stage, and **sequential** certification through energy → vertices → edges → network.
+Establish **program ship confidence** by first certifying the exact parity route on canonical volume **180709_E**, then certifying the paper profile on a defined volume and oracle, using **native** runs (no oracle-injected vertices) and **sequential** certification through energy → vertices → edges → network. Energy and vertices use **strict zero** missing/extra (discrete fields) + `np.allclose` floats ([ADR 0011](../adr/0011-energy-float-certification-policy.md)); **edges and network use the spatial bars in [ADR 0012](../adr/0012-edge-watershed-parity-bar.md)** (voxel ownership-map for edges; endpoint-pair/bifurcation multisets + sub-voxel trace tolerance for network), because the watershed is a chaotic shared-state flood-fill whose exact pair-set is not the right parity measure.
 
 **Definitions**
 
@@ -28,9 +28,9 @@ Establish **program ship confidence** by first certifying the exact parity route
 
 ## Problem frame
 
-The public workflow is verified end-to-end, but the **exact parity track** on edges remains at roughly **88.7%** pair match against the preserved MATLAB oracle (v29 baseline: 135 missing, 371 extra pairs). That gap blocks a credible claim that native Python output matches MATLAB for real extraction work—not just “close enough” for demos.
+The public workflow is verified end-to-end. Energy and vertices are certified (ADR 0011). For **edges**, the watershed per-step math is a faithful MATLAB port (orientation bug fixed); the residual is emergent global-ordering sensitivity of the shared flood-fill, so edges certify on the voxel **ownership-map** (~63.5% agreement vs MATLAB) + per-edge trace tolerance ([ADR 0012](../adr/0012-edge-watershed-parity-bar.md)). The historical **88.7%** pair-match figure is deprecated — it was inflated by a double-transpose bug, and exact pair-set equality is the wrong measure for a chaotic flood-fill. **Network** topology is certified exact (strands/bifurcations) with sub-voxel strand geometry.
 
-Ship confidence requires a **reproducible, strict** certification on a **single canonical volume** rather than informal match-rate milestones. Recent work (e.g. strel linear-index tie-break, manager consolidation) is necessary but not sufficient until `prove-exact` reports **zero missing and zero extra** at each stage in order.
+Ship confidence requires a **reproducible** certification on a **single canonical volume** rather than informal match-rate milestones: strict zero (energy/vertices discrete fields) and the ADR 0012 spatial bars (edges/network), per stage in order.
 
 ## Actors
 
@@ -43,7 +43,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 - **F1. Sequential exact-route certification (phase 1)**
   - **Trigger:** Maintainer initiates or resumes `init-exact-run` on full `180709_E` with oracle `180709_E_batch_190910-103039`.
   - **Actors:** A1, A3
-  - **Steps:** Bootstrap dataset and oracle → run native pipeline through network → run sequential `prove-exact` gates (energy, then vertices, edges, network) → each must show zero missing/extra.
+  - **Steps:** Bootstrap dataset and oracle → run native pipeline through network → run sequential `prove-exact` gates (energy, then vertices, edges, network) → energy/vertices must show zero missing/extra; edges/network must pass their ADR 0012 spatial bars.
   - **Outcome:** Phase 1 exact-route certification is complete on `180709_E` for all four stages.
   - **Covered by:** R1–R6, R9
 
@@ -59,6 +59,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 **Certification bar**
 
 - R1. Success means **`prove-exact` reports zero missing and zero extra** for the stage under test—strict set equality on **discrete/topological fields** (counts, indices, `scale_indices`, connections, positions), not a percentage threshold. **Continuous floating-point fields** (e.g. `energy.energy`, `lumen_radius_microns`) are certified within `np.allclose(rtol=1e-7, atol=1e-9)` per [ADR 0011](../adr/0011-energy-float-certification-policy.md): bit-identical floats are unachievable across MATLAB/NumPy BLAS libraries, and the measured cross-library drift is ≤2×10⁻¹¹. ULP figures are diagnostics only.
+- R1a. **Edges and network supersede R1's strict pair-set bar** per [ADR 0012](../adr/0012-edge-watershed-parity-bar.md). The global watershed is a greedy shared-state flood-fill whose exact emission order (and therefore exact edge-pair set / strand order) is chaotically sensitive, while its per-step math is a faithful MATLAB port. Edges certify on **voxel ownership-map agreement** (Python `vertex_index_map` vs MATLAB, ~63.5% baseline on the crop) + per-edge trace tolerance; network certifies on **strand endpoint-pair and bifurcation multisets** (exact, order-independent) + per-strand geometry within a **sub-voxel** trace tolerance. Discrete inputs (orientation, LUTs, strel offsets, `edge_number_tolerance`) stay bit-faithful. Raw edge-pair overlap is explicitly **not** a certification metric.
 - R2. Certification uses a **native** pipeline: Python discovers vertices; no oracle vertex checkpoint injection for the certified run.
 - R3. **Sequential gating:** Energy must pass before vertices are judged; vertices before edges; edges before network. A failure at any stage blocks **certification** for **that workflow** until resolved.
 - R4. **Canonical volume** for the first milestone is **`180709_E` full volume** (not center crop) for the exact parity route.

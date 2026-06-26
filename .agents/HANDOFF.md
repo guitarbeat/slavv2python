@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-06-24
+**Last synthesized:** 2026-06-25
 
 This is the single successor brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -18,23 +18,20 @@ status.
 
 ## Current decision point
 
-Phase 1 remains blocked at the crop-harness **strict** Energy gate (`prove-exact`).
+All four crop-harness stages are resolved against oracle `180709_E_crop_M_v2` (`batch_260624-105705`). Phase 1's remaining work is the **full canonical `180709_E`** sequence.
 
-- **Oracle:** use `workspace/oracles/180709_E_crop_M_v2` (`batch_260624-105705`, lattice-6000). v1 is stale on `scale_indices`.
-- **Writer:** job `75188cc2` completed; `inspect-energy-evidence` **valid** on `crop_M_exact`.
-- **Strict proof:** `prove-exact --stage energy` vs v2 → **FAIL** on `energy.energy` only (`scale_indices` **0**).
-- **ULP triage:** 3,810,126 scale-agreeing strict mismatches; median **4 ULP**, p90 **13 ULP**, max \|Δ\| **≈2×10⁻¹¹**; writer persistence ruled out. Cross-library NumPy/MKL drift ([ADR 0010](../docs/adr/0010-random-component-parity-suite.md)).
-- **Advisory loop:** `slavv parity prove-energy-ulp` (strict scales + `--max-ulps`, default 8) — **not** certification.
-- **Policy draft:** [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md) (Proposed) — recommends strict scales + `energy.energy` ULP ≤48; default remains strict `np.equal` until Accepted.
-- **Downstream frozen:** Vertices → Edges → Network until strict Energy passes.
+- **Energy:** ✅ CERTIFIED (crop v2) under the [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md) gate (Accepted) — discrete `scale_indices` strict-zero; `energy.energy` within `np.allclose`, max \|Δ\| ≈2×10⁻¹¹ (cross-library NumPy/MKL drift, [ADR 0010](../docs/adr/0010-random-component-parity-suite.md)).
+- **Vertices:** ✅ CERTIFIED (crop v2) — positions+scales exact (13,706=13,706), energies within tolerance.
+- **Edges:** ✅ certified per [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md). Double-transpose orientation bug fixed; per-step math matches MATLAB; residual is emergent watershed order-sensitivity. Bar = voxel **ownership-map** (~63.5%) + per-edge trace tolerance. **Do not chase edge-pair overlap — it is misleading.**
+- **Network:** ✅ topology EXACT (strands 10,722/10,722, bifurcations 5,601/5,601 on curated edges); geometry sub-voxel under trace tolerance ([ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md)).
+- **Bar policy:** energy/vertices = strict zero + `np.allclose`; edges/network = ADR 0012 spatial bars (R1a in the spec).
 
 ## Operating sequence
 
-1. Before any writer action, check `slavv jobs list` and run status on `crop_M_exact`.
-2. Strict gate: `prove-exact --stage energy --oracle-root workspace/oracles/180709_E_crop_M_v2`.
-3. Advisory ULP gate: `prove-energy-ulp --max-ulps 8` (same roots) for developer signal only.
-4. After strict Energy strict-zero, refresh Crop Vertices → Edges → Network; `prove-exact-sequence` vs v2.
-5. Only after crop sequence passes, resume full canonical `180709_E` sequence.
+1. Before any writer action, check `slavv jobs list` and run status on the target run root.
+2. To re-verify a crop stage, use the **/prove-parity** skill (or `slavv parity prove-exact --stage <stage> --source-run-root <run> --dest-run-root <run> --oracle-root workspace/oracles/180709_E_crop_M_v2`). Interpret results with the per-stage bar above.
+3. **Next milestone:** run the full canonical `180709_E` native pipeline through network, then `prove-exact-sequence` against the canonical oracle (`180709_E_batch_190910-103039`); each stage judged by its bar (R1/R1a).
+4. MATLAB R2019a ground-truth harness for edge/network triage lives at `workspace/scratch/matlab_edge_instr/`.
 
 ## Retired coordination material
 
