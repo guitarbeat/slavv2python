@@ -61,10 +61,24 @@ def _build_graph_state(
         v0, v1 = int(start_vertex), int(end_vertex)
         adjacency_list[v0].add(v1)
         adjacency_list[v1].add(v0)
-        key = (v0, v1) if v0 < v1 else (v1, v0)
-        graph_edges.setdefault(key, trace)
-        graph_edge_scales.setdefault(key, scale_trace)
-        graph_edge_energies.setdefault(key, energy_trace)
+        # Undirected edges are keyed by the sorted (min, max) vertex pair. The stored
+        # trace MUST run in the same direction as the key (key[0] -> key[1]) so that
+        # the connection returned by _graph_state_ordered_edges stays aligned with its
+        # trace — sort_network_V180 derives edge orientation (edge_backwards) from the
+        # connection, so a key/trace direction mismatch mis-orients multi-edge strands
+        # (producing junction-duplicate points that then get deduped away). The input
+        # trace runs start -> end, so reverse it when start > end (key flips to v1,v0).
+        if v0 < v1:
+            key = (v0, v1)
+            oriented_trace, oriented_scale, oriented_energy = trace, scale_trace, energy_trace
+        else:
+            key = (v1, v0)
+            oriented_trace = np.asarray(trace)[::-1]
+            oriented_scale = np.asarray(scale_trace)[::-1]
+            oriented_energy = np.asarray(energy_trace)[::-1]
+        graph_edges.setdefault(key, oriented_trace)
+        graph_edge_scales.setdefault(key, oriented_scale)
+        graph_edge_energies.setdefault(key, oriented_energy)
 
     return adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges
 
