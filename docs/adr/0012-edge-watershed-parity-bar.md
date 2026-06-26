@@ -1,0 +1,48 @@
+# ADR 0012: Edge Watershed Parity Bar (ownership-map + trace tolerance)
+
+## Status
+Accepted (2026-06-25)
+
+## Context
+
+Phase 1 exact-route certification ([phase-1-exact-route-spec.md](../plans/phase-1-exact-route-spec.md), spec R1) asks for **strict set equality** on every compared field per stage. Energy and Vertices certify under that bar (the latter via the [ADR 0011](0011-energy-float-certification-policy.md) `np.allclose` tolerance for continuous floats). The **Edges** stage does not, and a long investigation (logged in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md)) now explains why.
+
+The exact-route edge engine (`_generate_edge_candidates_matlab_global_watershed`) is a faithful port of MATLAB `get_edges_by_watershed.m`: a **greedy, shared-state watershed flood-fill** where every vertex's catchment competes for voxels through a single mutated `energy_map_temp` / `vertex_index_map`, processed in global best-energy-first order.
+
+Two findings closed the investigation:
+
+1. **A real orientation bug existed and is fixed** (commit `e9dcc141`, branch `fix/edge-watershed-orientation`). `generate_watershed_candidates` pre-aligned physical `[Z,Y,X]→[Y,X,Z]` and then the engine reoriented *again*, yielding a double transpose (`[Z,Y,X]→[Y,X,Z]→[X,Z,Y]`) plus a double `microns_per_voxel` permute. The production `FrontierTracingDiscovery` path therefore ran the watershed on a **scrambled grid**.
+
+2. **The residual gap is emergent global-ordering sensitivity, not a local bug.** Proven with a MATLAB R2019a ground-truth harness (instrumented standalone `get_edges_V300` dumping the watershed `vertex_index_map` and per-neighbor strel state):
+   - On the correct grid, Python's full `vertex_index_map` agrees with MATLAB's on **63.47%** of MATLAB-claimed voxels; the wrong (double-transpose) grid collapsed to **1.07%** under the implied Y↔X swap and produced a wrong-shape map.
+   - Per-neighbor decomposition at the instrumented divergence shows **`r_over_R` matches MATLAB to 4 decimals on every neighbor, sizes match, and the size / local-distance / direction penalty math is faithfully ported**. Where Python and MATLAB read the same `energy_temp` state, the per-step `argmin` agrees.
+   - The remaining adjusted-energy differences (1.3–6.8×) reduce to differences in the **shared, mutated `energy_temp`** — voxels overwritten by *other* vertices' catchments, popped in a subtly different order than MATLAB. Tiny accumulated claim/queue-order differences cascade into different topology. This is the inherent sensitivity of a greedy shared-state flood-fill, not a fixable local discrepancy.
+
+A corollary measurement: raw **edge-PAIR** overlap was *higher* on the wrong (double-transpose) grid (9,098) than on the correct grid (8,785). That number is **misleading** — it counts matching vertex-index pairs even when the traces run through spatially wrong voxels. Pair overlap is therefore rejected as the primary edge metric.
+
+## Decision
+
+Certify the Edges stage on a **two-part bar**, not exact pair-set equality:
+
+1. **Voxel-ownership agreement (primary).** Compare Python's watershed `vertex_index_map` against MATLAB's on MATLAB-claimed voxels (excluding background and the image-border index). This is the spatially honest measure of catchment parity. Baseline on `180709_E_crop_M_v2`: **63.47%** on the correct grid.
+
+2. **Per-edge trace tolerance (secondary).** For edges present in both, traces compare under the [ADR 0011](0011-energy-float-certification-policy.md) continuous-float policy (`np.allclose(rtol=1e-7, atol=1e-9)`), with topological/index fields strict.
+
+**Discrete inputs stay strict.** Orientation, `r_over_R`/distance LUTs, strel offsets, sizes, `edge_number_tolerance`, and conflict-painting behavior must remain bit-faithful to MATLAB (they are — this ADR does not relax them). The tolerance is *only* for the emergent topology of the shared flood-fill.
+
+We **do not** pursue bit-identical queue/claim ordering. The evidence is that the local math is already faithful; forcing identical global evolution order is high-effort, fragile, and chases a chaotic process rather than a defect.
+
+## Consequences
+
+- Update [PARITY_CERTIFICATION_GUIDE.md](../reference/workflow/PARITY_CERTIFICATION_GUIDE.md) and [phase-1-exact-route-spec.md](../plans/phase-1-exact-route-spec.md) R1 to record the Edges bar as ownership-map + trace tolerance, with the order-sensitivity rationale.
+- The orientation fix (`e9dcc141`) **lowers** the historical edge-pair overlap headline (the old ~9.5k was inflated by coincidental wrong-grid pair matches). Replace that headline with the ownership-map figure wherever cited.
+- Keep the MATLAB ground-truth harness (`workspace/scratch/matlab_edge_instr/`) as the reference for any future edge regression triage.
+- Network stage certification inherits whatever edge set the watershed produces; its bar is evaluated separately once edges are accepted under this policy.
+
+## Evidence references
+
+- Fix: branch `fix/edge-watershed-orientation`, commit `e9dcc141` (`slavv_python/pipeline/edges/candidate_generation.py`).
+- Ownership test: Python `vertex_index_map` (single transpose) vs MATLAB `chunk_1.mat` dump — 63.47% identity vs 1.07% Y↔X swap.
+- Per-neighbor decomposition: MATLAB `divergence_hits.mat` (`r_over_R`/sizes/adjusted energies) vs Python `current_strel` — `r_over_R` and sizes match every neighbor.
+- MATLAB harness: `workspace/scratch/matlab_edge_instr/` (instrumented `get_edges_V300` + `get_edges_by_watershed` + `run_edges_standalone.m`).
+- Narrative log: [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) Edges row.
