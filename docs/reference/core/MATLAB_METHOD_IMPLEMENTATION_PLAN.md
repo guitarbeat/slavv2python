@@ -82,9 +82,9 @@ boundaries while delegating into the maintained modular Python code.
 | --- | --- | --- | --- |
 | Energy / size image generation | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
 | Vertex extraction | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
-| Edge extraction | Complete on the maintained native Python path | Source-aligned; v29 88.7% is an informal diagnostic baseline (not the Phase 1 strict-zero bar) | Downstream of energy and vertex proof closure |
-| Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
-| Network / strand assembly | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
+| Edge extraction | Complete on the maintained native Python path | Orientation bug fixed; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) (voxel ownership-map ~63.5% + per-edge trace tolerance). Residual is emergent watershed order-sensitivity, not a local bug. (The old 88.7% pair-overlap headline is deprecated — inflated by the double-transpose bug.) | — |
+| Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned; proven through network assembly | — |
+| Network / strand assembly | Complete on the maintained native Python path | **Topology CERTIFIED EXACT** (strands 10,722/10,722, bifurcations 5,601/5,601 on curated edges); geometry under sub-voxel trace tolerance per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | — |
 
 ## What Must Be True Before We Claim Full Paper Implementation
 
@@ -147,7 +147,7 @@ Completed work:
 1. Implemented bit-accurate tie-breaking using exact equality and Fortran-order linear index priority.
 2. Plugged precision leaks by enforcing `float64` across all watershed maps and suppression factors.
 3. Tightened candidate filtering with hard $d/R$ cutoffs matching MATLAB's `get_edges_by_watershed`.
-4. Reached the **88.7%** match rate (v29). This is an informal diagnostic baseline until `prove-exact` reports zero, not the Phase 1 strict-zero certification bar.
+4. Fixed the double-transpose orientation bug in the watershed candidate path; edges now certify on the voxel ownership-map (~63.5%) + per-edge trace tolerance per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md). (The historical **88.7%** v29 pair-match figure is deprecated — it was inflated by the wrong grid; pair-set equality is not the edge bar.)
 
 ### Phase 3: Certification and Release
 

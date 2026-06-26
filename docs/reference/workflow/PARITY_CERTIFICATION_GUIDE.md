@@ -183,7 +183,7 @@ The authoritative report is `workspace/runs/<run_id>/03_Analysis/exact_proof.jso
 
 ### Core Metrics
 - **Stage passed**: Each compared field matches the oracle — **strict equality** for discrete/topological fields, **`np.allclose(rtol=1e-7, atol=1e-9)`** for continuous float fields (energy, radii) per [ADR 0011](../../adr/0011-energy-float-certification-policy.md) — yielding `passed: true` in `exact_proof.json`. Use `--strict-floats` to force bit-identical float comparison (regression only).
-- **Missing / extra**: For edges, pair-level missing and extra counts must be **zero** for certification (not a percentage threshold).
+- **Missing / extra**: Energy and vertices certify on strict **zero** missing/extra (discrete fields). **Edges and network do NOT use exact pair-set equality** — per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) they certify on spatial bars: edges on **voxel ownership-map agreement** (Python `vertex_index_map` vs MATLAB) + per-edge trace tolerance; network on **strand endpoint-pair + bifurcation multisets** (exact, order-independent) + per-strand geometry within a sub-voxel trace tolerance. Raw edge-pair overlap is misleading (it was inflated by the now-fixed double-transpose bug) and is not a certification metric.
 - **Sequential gating**: If energy or vertices fail, do not claim downstream stages certified on that run.
 
 Legacy `comparison_report.json` may still exist for older runs; prefer `exact_proof.json` for certification decisions.

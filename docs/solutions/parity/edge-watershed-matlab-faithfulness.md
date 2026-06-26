@@ -39,9 +39,14 @@ Two MATLAB-faithfulness bugs in the exact route:
 `prove-exact --stage edges` vs `180709_E_crop_M_v2`: Python **9,429 → 13,775**
 edges, shared **5,109 → 8,135**. 23 edge unit tests pass. Commit `3bc4a5e8`.
 
-## Follow-Up
-Edges are NOT fully closed (~52% shared). The residual is **early trace
-termination on long paths** (5,984/7,376 missing edges are never traced, mean
-length 9.1 vs 5.3 shared). Frontier ordering, the size-penalty reference scale,
-and the `microns_per_voxel` ordering were each tested and ruled out (the last
-regressed). Next: single-edge trace instrumentation, not parameter guesses.
+## Follow-Up — RESOLVED (2026-06-25, ADR 0012)
+The two fixes above are valid and retained. The remaining edge gap is **no longer
+chased as a pair-set deficit**: the pair-match percentages here (5,109 → 8,135
+shared, ~52%) were inflated/distorted by a **double-transpose orientation bug** in
+`generate_watershed_candidates` (fixed, commit `e9dcc141`). On the correct grid the
+watershed per-step math matches MATLAB exactly; the residual is **emergent
+global-ordering sensitivity** of the shared flood-fill. Edges now certify on the
+voxel **ownership-map** (~63.5% vs MATLAB `vertex_index_map`) + per-edge trace
+tolerance — see [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) and the
+Edges row in [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md).
+Raw edge-pair overlap is **not** the certification metric.

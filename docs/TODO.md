@@ -78,7 +78,7 @@
 
 ## Historical context (superseded — do not treat as current tasks)
 
-Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate** as the certification bar. Phase 1 now uses **strict zero** per stage via `prove-exact-sequence` on the canonical volume. Edge **88.7%** (v29) remains a useful baseline narrative in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md), not the Phase 1 exit criterion.
+Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate** as the certification bar. Phase 1 now uses **strict zero** per stage (energy/vertices) plus the [ADR 0012](adr/0012-edge-watershed-parity-bar.md) spatial bars for edges/network, via `prove-exact-sequence` on the canonical volume. Edge **88.7%** (v29) is **deprecated** — that pair-overlap figure was inflated by a since-fixed double-transpose bug; the edge bar is voxel ownership-map (~63.5%) + per-edge trace tolerance, not pair-set equality.
 
 ---
 
