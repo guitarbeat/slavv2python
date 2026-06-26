@@ -318,6 +318,14 @@ def _matlab_global_watershed_trace_half(
     step_size_per_origin_radius: float,
 ) -> list[int]:
     """Trace one-half of a watershed edge from endpoint back to origin."""
+    n_voxels = int(pointer_map.size)
+    if not 0 <= int(start_linear) < n_voxels:
+        raise IndexError(
+            f"watershed trace start index {int(start_linear)} out of bounds for a "
+            f"{n_voxels}-voxel map (shape {shape}); the energy/size_map are likely "
+            f"mis-oriented — they must be [Z, Y, X] matching the oracle "
+            f"(check energy_axis_permutation)."
+        )
     trace: list[int] = [int(start_linear)]
     current_linear = int(start_linear)
     seen: set[int] = {current_linear}
@@ -344,6 +352,13 @@ def _matlab_global_watershed_trace_half(
             break
 
         next_linear = int(current_linear - linear_offsets[pointer_value - 1])
+        if not 0 <= next_linear < n_voxels:
+            raise IndexError(
+                f"watershed pointer chain stepped out of bounds to {next_linear} from "
+                f"{current_linear} (map size {n_voxels}, shape {shape}); this indicates a "
+                f"size_map/pointer_map axis-order inconsistency — verify the inputs are "
+                f"oriented [Z, Y, X] (energy_axis_permutation)."
+            )
         if next_linear in seen:
             # Prevent infinite loops from cycles
             break
