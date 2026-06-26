@@ -44,6 +44,12 @@ def compare_exact_artifacts(
                 energy_float_options,
                 float_tol=float_tol,
             )
+        elif stage == "network":
+            mismatch = _compare_network_stage(
+                matlab_payload,
+                python_payload,
+                float_tol=float_tol,
+            )
         else:
             mismatch = _compare_dict(
                 matlab_payload,
@@ -126,6 +132,115 @@ def _compare_energy_stage(
         if mismatch is not None:
             return mismatch, gate_summary
     return None, gate_summary
+
+
+def _strand_endpoint_pairs(strands: list[Any]) -> list[tuple[int, int]]:
+    """Reduce each strand to its sorted endpoint pair.
+
+    MATLAB ``strands2vertices`` stores end-vertex pairs; Python ``strands`` stores
+    full vertex chains. Both reduce to the same bounding pair (chain ends), which is
+    the topology-defining quantity. Sorted so strand direction is irrelevant.
+    """
+    pairs: list[tuple[int, int]] = []
+    for strand in strands:
+        flat = np.asarray(strand).ravel()
+        if flat.size == 0:
+            pairs.append((-1, -1))
+            continue
+        pairs.append(tuple(sorted((int(flat[0]), int(flat[-1])))))
+    return pairs
+
+
+def _canonical_strand_order(strands: list[Any], payload: dict[str, Any]) -> list[int]:
+    """Deterministic strand ordering for matching two strand sets index-by-index.
+
+    Keyed primarily by the sorted endpoint pair (topology), then by geometry-derived
+    tiebreakers so duplicate-endpoint strands pair up once their geometry agrees.
+    """
+    subscripts = payload.get("strand_subscripts", [])
+    keys: list[tuple[Any, ...]] = []
+    for index, strand in enumerate(strands):
+        flat = np.asarray(strand).ravel()
+        pair = tuple(sorted((int(flat[0]), int(flat[-1])))) if flat.size else (-1, -1)
+        sub = np.asarray(subscripts[index]) if index < len(subscripts) else np.zeros((0, 4))
+        n_points = int(sub.shape[0])
+        first = tuple(np.round(sub[0, :3], 3).tolist()) if n_points else (0.0, 0.0, 0.0)
+        keys.append((pair, n_points, first, index))
+    return [key[-1] for key in sorted(keys)]
+
+
+def _reorder_per_strand(value: Any, order: list[int]) -> Any:
+    """Reorder a per-strand field (list of arrays, or a 1-D vector) by ``order``."""
+    if isinstance(value, list):
+        return [value[index] for index in order]
+    array = np.asarray(value)
+    if array.ndim >= 1 and array.shape[0] == len(order):
+        return array[order]
+    return value
+
+
+def _compare_network_stage(
+    matlab_payload: dict[str, Any],
+    python_payload: dict[str, Any],
+    *,
+    float_tol: tuple[float, float] | None = None,
+) -> dict[str, Any] | None:
+    """Compare the Network stage order-independently (ADR 0012 philosophy).
+
+    The watershed/network pipeline emits strands in a different order than MATLAB
+    (inherited from edge order), and MATLAB stores strands as end-vertex pairs while
+    Python stores full chains. So topology is compared as multisets — strand
+    endpoint-pairs and bifurcation vertices — and per-strand geometry is compared
+    after a canonical reorder that matches strands by endpoint pair.
+    """
+    matlab_strands = list(matlab_payload.get("strands", []))
+    python_strands = list(python_payload.get("strands", []))
+
+    # 1. Topology: strand endpoint-pair multiset (order-independent).
+    matlab_pairs = _strand_endpoint_pairs(matlab_strands)
+    python_pairs = _strand_endpoint_pairs(python_strands)
+    if Counter(matlab_pairs) != Counter(python_pairs):
+        return _mismatch(
+            "network",
+            "network.strands",
+            "strand endpoint-pair multiset mismatch",
+            np.asarray(sorted(matlab_pairs), dtype=np.int64),
+            np.asarray(sorted(python_pairs), dtype=np.int64),
+        )
+
+    # 2. Topology: bifurcation-vertex multiset (order-independent).
+    matlab_bif = np.asarray(matlab_payload.get("bifurcations", [])).ravel()
+    python_bif = np.asarray(python_payload.get("bifurcations", [])).ravel()
+    if Counter(matlab_bif.tolist()) != Counter(python_bif.tolist()):
+        return _mismatch(
+            "network",
+            "network.bifurcations",
+            "bifurcation multiset mismatch",
+            matlab_bif,
+            python_bif,
+        )
+
+    # 3. Geometry: compare per-strand fields after canonical (endpoint-keyed) reorder.
+    matlab_order = _canonical_strand_order(matlab_strands, matlab_payload)
+    python_order = _canonical_strand_order(python_strands, python_payload)
+    for field in (
+        "strand_subscripts",
+        "strand_energy_traces",
+        "mean_strand_energies",
+        "vessel_directions",
+    ):
+        if field not in matlab_payload or field not in python_payload:
+            continue
+        mismatch = _compare_value(
+            _reorder_per_strand(matlab_payload[field], matlab_order),
+            _reorder_per_strand(python_payload[field], python_order),
+            path="network",
+            field_path=f"network.{field}",
+            float_tol=float_tol,
+        )
+        if mismatch is not None:
+            return mismatch
+    return None
 
 
 def _compare_dict(

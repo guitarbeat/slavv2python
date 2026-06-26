@@ -395,7 +395,11 @@ def _matlab_get_strand_objects(
         strand_trace = np.concatenate(edge_traces_at_strand, axis=0)
         strand_scale = np.concatenate(edge_scales_at_strand, axis=0)
         strand_energy = np.concatenate(edge_energies_at_strand, axis=0)
-        rounded_positions = np.rint(10.0 * strand_trace[:, :3]).astype(np.int32, copy=False)
+        # MATLAB get_strand_objects.m dedups with unique(round(10*subs),'rows','stable').
+        # MATLAB round() is round-half-up; np.rint is round-half-to-even, which collapses
+        # a different set of near-duplicate strand voxels at .5 boundaries and shifts the
+        # strand point counts/values off MATLAB. Use round-half-up (floor(x+0.5)).
+        rounded_positions = np.floor(10.0 * strand_trace[:, :3] + 0.5).astype(np.int32, copy=False)
         _unique_rows, unique_indices = np.unique(
             rounded_positions,
             axis=0,

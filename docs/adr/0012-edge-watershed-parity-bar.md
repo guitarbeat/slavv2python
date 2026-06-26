@@ -39,6 +39,16 @@ We **do not** pursue bit-identical queue/claim ordering. The evidence is that th
 - Keep the MATLAB ground-truth harness (`workspace/scratch/matlab_edge_instr/`) as the reference for any future edge regression triage.
 - Network stage certification inherits whatever edge set the watershed produces; its bar is evaluated separately once edges are accepted under this policy.
 
+## Addendum (2026-06-25): Network stage inherits the same bar
+
+The Network stage (`construct_network` → MATLAB `get_network_V190` + `get_strand_objects`) is built deterministically from edges and exhibits the same shape: exact topology, order-dependent emission.
+
+Fed identical MATLAB curated edges + curated vertices (stage isolation), Python reproduces MATLAB's network topology **exactly**: strand endpoint-pair multiset **10,722/10,722**, bifurcation multiset **5,601/5,601** (0 missing/extra). Strands are emitted in a different order (inherited from edge order), and MATLAB stores strands as end-vertex pairs (`strands2vertices`) while Python stores full vertex chains.
+
+**Decision (network):** certify network **topology** order-independently — strand endpoint-pairs and bifurcation vertices as multisets — and compare **per-strand geometry** (`strand_subscripts`, `strand_energy_traces`, `mean_strand_energies`, `vessel_directions`) under trace tolerance after a canonical endpoint-keyed reorder. Implemented as `_compare_network_stage` in `artifact_comparator.py`.
+
+Network geometry parity (Phase B) is a separate, scoped effort: a scale-subscript off-by-one, strand-smoothing drift (~0.02–0.36 voxel; sigma `√2/2` already matches), and a minor multi-edge assembly off-by-one. The strand dedup was aligned to MATLAB round-half-up (`network/operations.py`).
+
 ## Evidence references
 
 - Fix: branch `fix/edge-watershed-orientation`, commit `e9dcc141` (`slavv_python/pipeline/edges/candidate_generation.py`).
