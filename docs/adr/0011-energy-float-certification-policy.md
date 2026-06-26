@@ -119,3 +119,4 @@ If Option B is rejected, **explicitly Accept Option A** and record Phase 1 Energ
 - Advisory ULP: `workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis/exact_proof_energy_ulp.json`
 - Oracle: `workspace/oracles/180709_E_crop_M_v2` (`batch_260624-105705`)
 - CLI: `slavv parity prove-energy-ulp --max-ulps N` (advisory until promoted)
+- **External validation:** [PARITY_METHODOLOGY.md](../reference/core/PARITY_METHODOLOGY.md) — literature confirms tolerance gates (not bit-exactness) are the established practice, and that pure-ULP comparison explodes near zero (the reason this ADR chose `np.allclose`). Precedent: Google CARFAC MATLAB→NumPy port accepted ~1e-6; SLAVV energy drift is ~2e-11.

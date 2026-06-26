@@ -261,6 +261,7 @@ Read these first when working on relevant surfaces:
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results, and cold-start protocol |
+| Parity Methodology | [docs/reference/core/PARITY_METHODOLOGY.md](docs/reference/core/PARITY_METHODOLOGY.md) | Literature-backed rationale for the tolerance-based parity bars (golden-master, allclose vs ULP, order-sensitivity, convention pitfalls); validates ADR 0011/0012 |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
 | Parity Pre-Gate | [docs/reference/workflow/PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) | Three-tier pre-gate (synthetic → crop → canonical) |

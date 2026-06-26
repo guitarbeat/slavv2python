@@ -56,3 +56,4 @@ Network geometry parity (Phase B) is a separate, scoped effort: a scale-subscrip
 - Per-neighbor decomposition: MATLAB `divergence_hits.mat` (`r_over_R`/sizes/adjusted energies) vs Python `current_strel` — `r_over_R` and sizes match every neighbor.
 - MATLAB harness: `workspace/scratch/matlab_edge_instr/` (instrumented `get_edges_V300` + `get_edges_by_watershed` + `run_edges_standalone.m`).
 - Narrative log: [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) Edges row.
+- **External validation:** [PARITY_METHODOLOGY.md](../reference/core/PARITY_METHODOLOGY.md) — segmentation literature confirms that for order-sensitive outputs, exact set-equality / pixel-accuracy is the wrong metric (class-imbalance inflation) and that overlap (Dice/IoU) + boundary/distance (Hausdorff) bars are the correct measure. The ownership-map + multiset + sub-voxel-trace bar here is the watershed analogue.
