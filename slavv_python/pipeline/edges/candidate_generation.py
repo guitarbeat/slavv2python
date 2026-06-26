@@ -36,48 +36,6 @@ logger = logging.getLogger(__name__)
 # --- SPATIAL ALIGNMENT HELPERS ---
 
 
-def _align_to_internal_grid(
-    volume: np.ndarray | None, positions: np.ndarray | None = None
-) -> tuple[np.ndarray | None, np.ndarray | None]:
-    """
-    Realigns physical volumes and coordinates to the internal [Y, X, Z] grid.
-
-    Rationale: MATLAB uses [Y, X, Z] order with Fortran-style memory layout
-    (Y changing fastest). To match bit-perfect tie-breaking, we must align
-    the Python internal grid to this layout.
-    """
-    aligned_vol = None
-    if volume is not None:
-        # Transpose [Z, Y, X] to [Y, X, Z] with Fortran-order copy for MATLAB parity
-        # Permutation (1, 2, 0) matches Y(1), X(2), Z(0)
-        aligned_vol = np.transpose(volume, (1, 2, 0)).copy(order="F")
-
-    aligned_pos = None
-    if positions is not None:
-        # Copy to avoid corrupting the caller's vertex data (needed for standard trace)
-        aligned_pos = positions.copy()
-        # Permute physical [Z, Y, X] coordinate columns into internal [Y, X, Z]
-        # Z=0, Y=1, X=2 => Y=0, X=1, Z=2
-        # Use explicit indexing to match the transposition
-        aligned_pos = aligned_pos[:, [1, 2, 0]]
-
-    return aligned_vol, aligned_pos
-
-
-def _restore_to_physical_grid(traces: list[np.ndarray]) -> None:
-    """Restores generated traces from internal [Y, X, Z] back to physical [Z, Y, X]."""
-    for i, trace_arr in enumerate(traces):
-        if isinstance(trace_arr, np.ndarray) and trace_arr.ndim == 2 and trace_arr.shape[1] >= 3:
-            # Make explicit copies to support memory layout changes downstream
-            fixed_trace = trace_arr.copy()
-            # Internal [Y, X, Z] => Physical [Z, Y, X]
-            # 0:Y, 1:X, 2:Z => 0:Z, 1:Y, 2:X
-            # new col 0 is old col 2 (Z)
-            # new col 1 is old col 0 (Y)
-            # new col 2 is old col 1 (X)
-            traces[i] = fixed_trace[:, [2, 0, 1]]
-
-
 # --- CORE GENERATION STRATEGIES ---
 
 
@@ -98,39 +56,34 @@ def generate_watershed_candidates(
     This is the high-precision route that perfectly mirrors MATLAB's
     deterministic frontier insertion.
     """
-    # 1. Align universe to internal engine grid
-    # These create fresh copies or new views; they do NOT mutate the inputs.
-    energy_zxy, pos_zxy = _align_to_internal_grid(energy, vertex_positions)
-    mask_zxy, _ = _align_to_internal_grid(vertex_center_image)
+    # The watershed engine performs its OWN [Z, Y, X] -> [Y, X, Z] reorientation
+    # internally (np.transpose(energy, (1, 2, 0))) and permutes microns_per_voxel
+    # with [[1, 2, 0]]. We must therefore pass raw physical-order inputs straight
+    # through. Pre-aligning here previously caused a DOUBLE transpose ([Z,Y,X] ->
+    # [Y,X,Z] -> [X,Z,Y]), which scrambled the spatial grid: the watershed's
+    # vertex_index_map agreed with MATLAB on only ~1% of voxels under the implied
+    # Y<->X swap, vs ~63% with the correct single transpose. (The double-transpose's
+    # higher raw edge-PAIR overlap was a coincidental graph artifact, not spatial
+    # parity.) The engine returns traces already in physical [Z, Y, X] order, so no
+    # post-hoc restore is applied.
+    #
+    # microns_per_voxel arrives in MATLAB axis order [dy, dx, dz]; the engine expects
+    # physical [dz, dy, dx] (it re-permutes to [dy, dx, dz] with [[1, 2, 0]]).
+    mpv_engine: np.ndarray = np.asarray(microns_per_voxel, dtype=np.float64).copy()
+    if len(mpv_engine) >= 3:
+        mpv_engine = mpv_engine[[2, 0, 1]]
 
-    # Scale field needs the same transposition if it exists
-    scales_zxy = None
-    if scale_indices is not None:
-        # Transpose [Z, Y, X] to [Y, X, Z] with Fortran-order copy
-        scales_zxy = np.transpose(scale_indices, (1, 2, 0)).copy(order="F")
-
-    # Explicit copy for mpv and permute to [dy, dx, dz]
-    # Physical [dz, dy, dx] => Internal [dy, dx, dz]
-    mpv_zxy: np.ndarray = microns_per_voxel.copy().astype(np.float64)
-    if len(mpv_zxy) >= 3:
-        mpv_zxy = mpv_zxy[[1, 2, 0]]
-
-    # 2. Execute Watershed Engine
     candidates = execute_watershed_engine(
-        cast("Float32Array", energy_zxy),
-        cast("Int16Array", scales_zxy),
-        cast("Float32Array", pos_zxy),
+        cast("Float32Array", energy),
+        cast("Int16Array", scale_indices),
+        cast("Float32Array", vertex_positions),
         vertex_scales,
         lumen_radius_microns,
-        mpv_zxy,
-        cast("np.ndarray", mask_zxy),
+        mpv_engine,
+        cast("np.ndarray", vertex_center_image),
         params,
         **kwargs,
     )
-
-    # 3. Restore results to physical storage layout
-    if "traces" in candidates:
-        _restore_to_physical_grid(candidates["traces"])
 
     return cast("dict[str, Any]", candidates)
 
