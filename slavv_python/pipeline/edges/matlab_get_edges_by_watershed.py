@@ -684,7 +684,12 @@ def _generate_edge_candidates_matlab_global_watershed(
                             size_map=size_map,
                             shape=shape,
                             lumen_radius_microns=lumen_radius_microns,
-                            microns_per_voxel=microns_per_voxel,
+                            # MUST match the strel LUT used when the pointers were
+                            # written (claim path uses mpv_matlab = mpv[[1,2,0]]).
+                            # Using raw microns rebuilds different linear offsets, so
+                            # the pointer chain diverges (and overruns the bound at
+                            # full-volume scale with large strels).
+                            microns_per_voxel=mpv_matlab,
                             step_size_per_origin_radius=step_size_per_origin_radius,
                         )
 
@@ -707,7 +712,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                             size_map=size_map,
                             shape=shape,
                             lumen_radius_microns=lumen_radius_microns,
-                            microns_per_voxel=microns_per_voxel,
+                            microns_per_voxel=mpv_matlab,  # see half_1: match claim-path strel LUT
                             step_size_per_origin_radius=step_size_per_origin_radius,
                         )
                         edge_halves.append((half_1, half_2))
