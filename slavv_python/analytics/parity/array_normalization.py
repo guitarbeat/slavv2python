@@ -237,7 +237,13 @@ def _normalize_spatial_scale_matrix_list(
             continue
         reordered = normalized
         if one_based:
-            reordered = reordered - 1.0
+            # Only the spatial voxel columns (Y, X, Z) are 1-based and need the
+            # 1->0 shift. The scale column (S) is a 1-based scale index in BOTH the
+            # MATLAB strand_subscripts and the Python output — the network strand
+            # smoothing offsets the 0-based edge scale by +1 to match MATLAB's
+            # output convention — so the scale column must NOT be shifted.
+            reordered = reordered.copy()
+            reordered[:, :3] = reordered[:, :3] - 1.0
         # MATLAB spatial is [Y, X, Z, S]. We want Python [Z, Y, X, S].
         reordered = reordered[:, [2, 0, 1, 3]]
         matrices.append(reordered.astype(np.float64, copy=False))
