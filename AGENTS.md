@@ -196,6 +196,7 @@ slavv2python/
 │   │   │   ├── resume.py               # resume-exact-run (clears stale running snapshot)
 │   │   │   ├── bootstrap.py / surfaces.py / params_audit.py  # init-exact-run layout
 │   │   │   ├── counts.py               # Canonical RunCounts helpers
+│   │   │   ├── cli.py + cli_{runs,proofs,diagnostics,edges,support}.py  # slavv parity handlers (facade + themed split)
 │   │   │   ├── crop_export.py          # Export 180709_E tier-M crop (slavv parity export-crop)
 │   │   │   └── trace_comparator.py     # JSONL execution trace differ (slavv parity compare-traces)
 │   │   ├── curation/                   # Automated & ML curators
