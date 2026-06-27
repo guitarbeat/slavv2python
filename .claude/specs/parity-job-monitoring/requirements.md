@@ -105,6 +105,6 @@ slavv jobs history --run-dir workspace/runs/oracle_180709_E/crop_M_exact
 
 ## References
 
-- [Exact Proof Findings](../../docs/reference/core/EXACT_PROOF_FINDINGS.md) - Cold-start protocol section
-- [Detached Exact-Run Jobs Solution](../../docs/solutions/parity/detached-exact-run-jobs.md)
+- [Exact Proof Findings](../../../docs/reference/core/EXACT_PROOF_FINDINGS.md) - Cold-start protocol section
+- [Detached Exact-Run Jobs Solution](../../../docs/solutions/parity/detached-exact-run-jobs.md)
 - Current PID tracking: `workspace/scratch/crop_energy_rerun_latest.pid`, `99_Metadata/parity_job.pid`

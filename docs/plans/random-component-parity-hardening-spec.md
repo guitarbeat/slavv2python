@@ -293,7 +293,7 @@ report = assemble_report(gate, hess, mode=mode)
 ## Related Documents & Code
 
 - [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) — operator workflow (update after refactor)
-- [ADR 0010](../../adr/0010-random-component-parity-suite.md)
+- [ADR 0010](../adr/0010-random-component-parity-suite.md)
 - Current implementation entry point: `tests/support/random_component_parity.py`
 - MATLAB driver: `tests/support/matlab/random_component_reference.m`
 - Export helpers: `export_random_linspace_overrides.py`, `export_random_matching_reference.py`
