@@ -35,6 +35,7 @@ Energy → Vertices → Edges → Network. The crop harness is the required pre-
 
 | Need | Document |
 |---|---|
+| Strategic milestones (narrative) | [ROADMAP.md](ROADMAP.md) |
 | Current successor brief | [HANDOFF.md](../.claude/HANDOFF.md) |
 | Active tasks | [TODO.md](TODO.md) |
 | Exact proof evidence | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) |

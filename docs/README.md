@@ -48,14 +48,15 @@ Treat `investigations/` as historical context, not as an executable spec.
 
 ### Core Entry Points
 1. [Repository README](../README.md)
-2. [Developer dashboard (tasks & planning hub)](TODO.md)
-3. [Tutorial](TUTORIAL.md)
-4. [Agent and workflow guide](../AGENTS.md)
-5. [Contributing](CONTRIBUTING.md)
-6. [Changelog](CHANGELOG.md)
-7. [Reference index](reference/README.md)
-8. [Investigation index](investigations/README.md)
-9. [Test placement guide](../tests/README.md)
+2. [Roadmap (narrative milestones)](ROADMAP.md)
+3. [Developer dashboard (tasks & planning hub)](TODO.md)
+4. [Tutorial](TUTORIAL.md)
+5. [Agent and workflow guide](../AGENTS.md)
+6. [Contributing](CONTRIBUTING.md)
+7. [Changelog](CHANGELOG.md)
+8. [Reference index](reference/README.md)
+9. [Investigation index](investigations/README.md)
+10. [Test placement guide](../tests/README.md)
 
 ---
 
