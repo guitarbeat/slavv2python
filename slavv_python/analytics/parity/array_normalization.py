@@ -62,10 +62,6 @@ def _normalize_optional_matlab_int_vector(
     return _normalize_int_vector(_optional_field(payload, *field_names), one_based=True)
 
 
-def _normalize_matlab_float_matrix(value: Any, *, columns: int) -> np.ndarray:
-    return _normalize_float_matrix(value, columns=columns, one_based=True)
-
-
 def _normalize_matlab_spatial_matrix(value: Any) -> np.ndarray:
     return _normalize_spatial_matrix(value, one_based=True)
 
@@ -86,10 +82,6 @@ def _normalize_optional_matlab_spatial_matrix(
     field_names: tuple[str, ...],
 ) -> np.ndarray:
     return _normalize_spatial_matrix(_optional_field(payload, *field_names), one_based=True)
-
-
-def _normalize_matlab_float_matrix_list(value: Any, *, columns: int) -> list[np.ndarray]:
-    return _normalize_float_matrix_list(value, columns=columns, one_based=True)
 
 
 def _normalize_matlab_spatial_matrix_list(value: Any) -> list[np.ndarray]:
