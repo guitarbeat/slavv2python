@@ -22,8 +22,6 @@ import numpy as np
 from scipy.fft import fftn, ifftn
 from scipy.special import jv
 
-from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
-
 
 def fourier_transform_v2(image: np.ndarray) -> np.ndarray:
     """Python equivalent of fourier_transform_V2.m in the Vectorization source.
@@ -34,7 +32,8 @@ def fourier_transform_v2(image: np.ndarray) -> np.ndarray:
     # Simple 3D FFT; the MATLAB version uses specific padding for the pipeline.
     # For exact match in random component, use the one in the energy shims.
     # This is a clean version.
-    return fftn(image.astype(np.float64))
+    transformed: np.ndarray = fftn(image.astype(np.float64))
+    return transformed
 
 
 def read_volume_tiff_like(image: np.ndarray) -> np.ndarray:
@@ -59,6 +58,9 @@ def derivatives_at(
     Computes curvatures and gradient at a point using Fourier domain matched filter.
     """
     dims = np.array(chunk_dft.shape)
+    y_grid: np.ndarray
+    x_grid: np.ndarray
+    z_grid: np.ndarray
     y_grid, x_grid, z_grid = np.meshgrid(
         np.concatenate([np.arange(dims[0]//2), np.arange(-dims[0]//2, 0)]) / dims[0],
         np.concatenate([np.arange(dims[1]//2), np.arange(-dims[1]//2, 0)]) / dims[1],
@@ -106,7 +108,7 @@ def derivatives_at(
     gradient[1] = sample_ifft(1j * weights[1] * np.sin(2*np.pi*x_grid)/2, matching, chunk_dft, local_ranges, y, x, z)
     gradient[2] = sample_ifft(1j * weights[2] * np.sin(2*np.pi*z_grid)/2, matching, chunk_dft, local_ranges, y, x, z)
 
-    laplacian = np.sum(curvatures[:3])
+    laplacian = float(np.sum(curvatures[:3]))
 
     return {
         'curvatures': curvatures,
@@ -136,7 +138,7 @@ def principal_energy_from_derivatives(gradient, curvatures):
     projections = gradient @ vectors
     principal_energies = principal_values * np.exp( - (projections / principal_values)**2 / 2 )
     principal_energies[2] = min(principal_energies[2], 0)
-    energy_value = np.sum(principal_energies)
+    energy_value = float(np.sum(principal_energies))
     if not np.isfinite(energy_value) or energy_value >= 0:
         energy_value = np.inf
     return energy_value

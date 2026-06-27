@@ -147,7 +147,8 @@ def _strand_endpoint_pairs(strands: list[Any]) -> list[tuple[int, int]]:
         if flat.size == 0:
             pairs.append((-1, -1))
             continue
-        pairs.append(tuple(sorted((int(flat[0]), int(flat[-1])))))
+        lo, hi = sorted((int(flat[0]), int(flat[-1])))
+        pairs.append((lo, hi))
     return pairs
 
 

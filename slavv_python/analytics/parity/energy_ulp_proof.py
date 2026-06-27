@@ -240,11 +240,12 @@ def _float64_ulp_array(actual: np.ndarray, expected: np.ndarray) -> np.ndarray:
     actual_f = np.asarray(actual, dtype=np.float64)
     expected_f = np.asarray(expected, dtype=np.float64)
     equal = actual_f == expected_f
-    ordered = _ordered_float64_bits(actual_f).astype(np.int64)
-    ordered_e = _ordered_float64_bits(expected_f).astype(np.int64)
+    ordered: np.ndarray = _ordered_float64_bits(actual_f).astype(np.int64)
+    ordered_e: np.ndarray = _ordered_float64_bits(expected_f).astype(np.int64)
     ulp = np.abs(ordered - ordered_e)
     ulp[equal] = 0
-    return ulp.astype(np.int64)
+    ulp_int: np.ndarray = ulp.astype(np.int64)
+    return ulp_int
 
 
 def _render_energy_ulp_report(report: dict[str, Any]) -> str:

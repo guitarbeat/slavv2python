@@ -129,15 +129,16 @@ def build_mismatch_diagnostics(
 def _ordered_float64_bits(values: np.ndarray) -> np.ndarray:
     bits = np.asarray(values, dtype=np.float64).view(np.uint64)
     sign = bits >> np.uint64(63)
-    return np.where(sign, np.uint64(0xFFFFFFFFFFFFFFFF) - bits, bits)
+    ordered_bits: np.ndarray = np.where(sign, np.uint64(0xFFFFFFFFFFFFFFFF) - bits, bits)
+    return ordered_bits
 
 
 def _ulp_mismatch_stats(matlab_values: np.ndarray, python_values: np.ndarray) -> dict[str, Any]:
     matlab_f = np.asarray(matlab_values, dtype=np.float64)
     python_f = np.asarray(python_values, dtype=np.float64)
     equal = matlab_f == python_f
-    ordered = _ordered_float64_bits(matlab_f).astype(np.int64)
-    ordered_py = _ordered_float64_bits(python_f).astype(np.int64)
+    ordered: np.ndarray = _ordered_float64_bits(matlab_f).astype(np.int64)
+    ordered_py: np.ndarray = _ordered_float64_bits(python_f).astype(np.int64)
     ulp = np.abs(ordered - ordered_py)
     ulp[equal] = 0
     histogram: dict[str, int] = {}

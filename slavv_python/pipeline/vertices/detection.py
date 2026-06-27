@@ -247,6 +247,9 @@ def ellipsoid_offsets(radii_pixels: np.ndarray, policy: PipelinePolicy | None = 
     # Where an axis radius rounds to 0 the only grid offset is 0 (numerator 0), so
     # the substituted denominator is irrelevant; this just avoids 0/0 -> NaN.
     safe_radii = np.where(radii > 0.0, radii, 1.0)
+    yy: np.ndarray
+    xx: np.ndarray
+    zz: np.ndarray
     yy, xx, zz = np.meshgrid(
         np.arange(2 * r_round[0] + 1),
         np.arange(2 * r_round[1] + 1),
@@ -259,7 +262,8 @@ def ellipsoid_offsets(radii_pixels: np.ndarray, policy: PipelinePolicy | None = 
         + ((zz - r_round[2]) / safe_radii[2]) ** 2
     )
     coords = np.column_stack(np.where(radial_distances_squared <= 1.0))
-    return (coords - r_round).astype(np.int16, copy=False)
+    offsets: np.ndarray = (coords - r_round).astype(np.int16, copy=False)
+    return offsets
 
 
 def _choose_vertices_loop_python(
