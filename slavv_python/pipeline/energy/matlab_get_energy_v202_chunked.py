@@ -491,7 +491,6 @@ def compute_exact_parity_energy_chunked(
             )
 
             for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
-                gc.collect()
                 radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
                 pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
 
@@ -607,6 +606,9 @@ def compute_exact_parity_energy_chunked(
             slice_y = slice(py_y_w_start, py_y_w_start + w_count_y)
             slice_x = slice(py_x_w_start, py_x_w_start + w_count_x)
 
+            # One collection per chunk (not per scale) bounds cyclic garbage
+            # without serializing every scale iteration under the GIL.
+            gc.collect()
             return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
 
         if n_jobs == 1:
