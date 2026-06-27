@@ -1,6 +1,6 @@
 ---
 name: find-agent-skills
-description: Discover and evaluate reusable agent skills for a requested task. Use when the user asks to find, install, adapt, compare, or recommend skills; asks whether an agent can gain a capability; mentions npx skills, OpenClaw skills, Claude/Codex skills, or a skill marketplace; or when a task would benefit from checking this repository's existing .agents/skills before creating new workflow guidance.
+description: Discover and evaluate reusable agent skills for a requested task. Use when the user asks to find, install, adapt, compare, or recommend skills; asks whether an agent can gain a capability; mentions npx skills, OpenClaw skills, Claude/Codex skills, or a skill marketplace; or when a task would benefit from checking this repository's existing .claude/skills before creating new workflow guidance.
 ---
 
 # Find Agent Skills
@@ -9,11 +9,11 @@ Find the smallest trustworthy skill surface that helps with the user's task. Pre
 
 ## Search Order
 
-1. Search this repository's `.agents/skills` first.
+1. Search this repository's `.claude/skills` first.
 2. Search Codex-discoverable tools with `tool_search` when the user asks for a connector, plugin, thread tool, automation, or MCP-backed capability.
 3. Search global/user skills only if local skills do not cover the task.
 4. Search external registries or GitHub only when the user explicitly wants new skills or there is no local fit.
-5. Adapt external skill ideas into `.agents/skills` when the user wants project-specific behavior.
+5. Adapt external skill ideas into `.claude/skills` when the user wants project-specific behavior.
 
 Use `scripts/find_local_skills.py` for a quick local inventory:
 
@@ -43,7 +43,7 @@ Do not recommend a skill based only on a marketplace title, install count, or SE
 
 ## Installing Or Adapting
 
-- For Codex-local project behavior, create or update `.agents/skills/<skill-name>/SKILL.md`.
+- For Codex-local project behavior, create or update `.claude/skills/<skill-name>/SKILL.md`.
 - For global Codex behavior, use the user's global skills directory only when they explicitly ask for a machine-wide install.
 - For app/plugin capabilities, use `tool_search` first, then app/plugin install tools only if the requested tool is unavailable and explicitly requested.
 - For external skill packages, prefer reading the source and adapting the instructions over blind installation.

@@ -159,7 +159,7 @@ bfg.jar
 workspace/
 
 # Agent state and temporary files
-.agents/orchestrations/active/
+.claude/orchestrations/active/
 agent-tools/
 terminals/
 

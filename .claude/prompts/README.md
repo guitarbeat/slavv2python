@@ -377,9 +377,9 @@ description: "Complete workflow for new feature"
 
 ## References
 
-- [.agents/INDEX.md](../INDEX.md) - Complete catalog
-- [.agents/agents/](../agents/README.md) - Agent definitions
-- [.agents/skills/](../skills/README.md) - Skills library
+- [.claude/INDEX.md](../INDEX.md) - Complete catalog
+- [.claude/agents/](../agents/README.md) - Agent definitions
+- [.claude/skills/](../skills/README.md) - Skills library
 - [CONTRIBUTING.md](../../docs/CONTRIBUTING.md) - Development guide
 
 ---

@@ -277,7 +277,7 @@ Critical rules in `.pre-commit-config.yaml`:
   hooks:
     - id: commit-msg-format
       name: Conventional Commit Format
-      # References: .agents/rules/git-commit-message.md
+      # References: .claude/rules/git-commit-message.md
 ```
 
 ### With Documentation
@@ -310,8 +310,8 @@ When rules conflict (rare), priority order:
 
 ## References
 
-- [.agents/INDEX.md](../INDEX.md) - Complete catalog
-- [.agents/instructions/](../instructions/README.md) - Scoped instructions
+- [.claude/INDEX.md](../INDEX.md) - Complete catalog
+- [.claude/instructions/](../instructions/README.md) - Scoped instructions
 - [CONTRIBUTING.md](../../docs/CONTRIBUTING.md) - Contribution guide
 - [pyproject.toml](../../pyproject.toml) - Tool configuration
 

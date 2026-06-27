@@ -217,9 +217,9 @@ Before committing, run: ruff check && pytest -m unit
 
 ## References
 
-- [.agents/INDEX.md](../INDEX.md) - Complete catalog
-- [.agents/rules/](../rules/README.md) - Global rules
-- [.agents/agents/](../agents/README.md) - Agent definitions
+- [.claude/INDEX.md](../INDEX.md) - Complete catalog
+- [.claude/rules/](../rules/README.md) - Global rules
+- [.claude/agents/](../agents/README.md) - Agent definitions
 - [tests/README.md](../../tests/README.md) - Test organization
 
 ---

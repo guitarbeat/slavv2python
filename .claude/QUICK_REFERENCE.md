@@ -68,13 +68,13 @@ Context: <your context>
 
 ### Check Available Agents
 ```
-Open: .agents/INDEX.md
+Open: .claude/INDEX.md
 Section: Agents → Specialist Agents
 ```
 
 ### Find Parity-Related Tools
 ```
-Open: .agents/INDEX.md
+Open: .claude/INDEX.md
 Section: Quick Search → By Task Type → MATLAB Parity
 ```
 
@@ -87,7 +87,7 @@ Section: Quick Search → By Task Type → MATLAB Parity
 
 ### Check Active Orchestrations
 ```
-List: .agents/orchestrations/active/
+List: .claude/orchestrations/active/
 Read: <orchestration>/progress.md
 ```
 
@@ -171,11 +171,9 @@ Document: Decisions as they happen
 |------|---------|-------------|
 | `README.md` | Main guide | Understanding organization |
 | `INDEX.md` | Complete catalog | Finding specific items |
-| `IMPROVEMENT_SUMMARY.md` | Change history | Understanding evolution |
 | `QUICK_REFERENCE.md` | This file | Fast lookups |
 | `agents/README.md` | Agent guide | Creating/using agents |
 | `orchestrations/README.md` | Orchestration guide | Multi-agent work |
-| `archive/README.md` | Archive guide | Historical context |
 
 ---
 
@@ -200,7 +198,7 @@ Skills:          <skill-name>/SKILL.md
 - **Prompts**: 3 workflow templates
 - **Skills**: 28 reusable skills
 - **Active Orchestrations**: 0
-- **Archived**: 11 historical items
+- **Archived**: 0 (historical scratch pruned 2026-06-27)
 
 ---
 

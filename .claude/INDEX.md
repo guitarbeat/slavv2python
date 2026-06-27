@@ -147,17 +147,16 @@ Reusable skills library organized by category.
 ### Active Orchestrations
 
 None. Use the repository-level planning and status documents for Phase 1
-coordination rather than creating a second task ledger under `.agents/`.
+coordination rather than creating a second task ledger under `.claude/`.
 
 **Location**: `orchestrations/active/`
 
 ### Completed Orchestrations
-Archives in `archive/` and `orchestrations/completed/`:
-- `self_vertices_parity/` - Initial vertices parity attempt (2026-06-08)
-- Related sub-agents: explorers, workers, reviewers, challengers, auditors
-- `sentinel/` - Monitoring orchestration
+Completed work lives in `orchestrations/completed/`. The historical
+`archive/` scratch (early `self_vertices_parity` and `sentinel` runs) was
+pruned on 2026-06-27; it remains recoverable from git history if needed.
 
-**Archive Location**: `archive/`  
+**Location**: `orchestrations/completed/`  
 **Guide**: `orchestrations/README.md`
 
 ---
@@ -182,7 +181,7 @@ Project and task specifications.
 - **Prompts**: 3
 - **Skills**: 28
 - **Active Orchestrations**: 0
-- **Archived Orchestrations**: 11
+- **Archived Orchestrations**: 0 (historical scratch pruned 2026-06-27)
 
 ---
 

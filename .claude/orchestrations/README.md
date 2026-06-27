@@ -74,8 +74,8 @@ orchestrations/
 ### 1. Initialize Structure
 
 ```bash
-mkdir .agents/orchestrations/active/<orchestration_name>
-cd .agents/orchestrations/active/<orchestration_name>
+mkdir .claude/orchestrations/active/<orchestration_name>
+cd .claude/orchestrations/active/<orchestration_name>
 ```
 
 ### 2. Create BRIEFING.md
@@ -162,7 +162,7 @@ Last visited: <timestamp>
 2. Write `synthesis.md` with learnings
 3. Extract reusable patterns to `skills/`
 4. Move to `completed/` or `archive/`
-5. Update `.agents/INDEX.md`
+5. Update `.claude/INDEX.md`
 
 ### Archive Criteria
 
@@ -240,8 +240,8 @@ Orchestrations use agents from `agents/`:
 
 ## References
 
-- [.agents/INDEX.md](../INDEX.md) - Complete catalog
-- [.agents/agents/](../agents/README.md) - Agent definitions
+- [.claude/INDEX.md](../INDEX.md) - Complete catalog
+- [.claude/agents/](../agents/README.md) - Agent definitions
 - [docs/TODO.md](../../docs/TODO.md) - Project tasks
 
 ---

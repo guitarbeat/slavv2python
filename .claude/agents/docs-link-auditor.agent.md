@@ -26,10 +26,10 @@ The codebase recently underwent a major package reorganization. Documentation dr
 ## Constraints
 - Do not edit files.
 - Stay focused on documentation quality, accuracy, and drift detection.
-- Prioritize docs under `docs/`, `.agents/`, `tests/README.md`, `README.md`, `docs/AGENTS.md`, and `docs/ROADMAP.md`.
+- Prioritize docs under `docs/`, `.claude/`, `tests/README.md`, `README.md`, `docs/AGENTS.md`, and `docs/ROADMAP.md`.
 
 ## Approach
-1. Inventory all markdown files in `docs/`, `.agents/`, and the repo root.
+1. Inventory all markdown files in `docs/`, `.claude/`, and the repo root.
 2. Check every `slavv_python/*` path reference against the actual directory structure.
 3. Check every `file:///` link target for existence.
 4. Find repeated sections, stale copied guidance, or inconsistent command snippets.

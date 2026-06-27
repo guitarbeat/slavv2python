@@ -38,7 +38,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 **Choose your path based on what you're working on:**
 
 ### I'm working on MATLAB parity
-1. **Read [HANDOFF.md](.agents/HANDOFF.md)** — Current decision point and operating sequence
+1. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Current decision point and operating sequence
 2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers
 3. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
 4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.

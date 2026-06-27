@@ -5,7 +5,7 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 ## 📁 Directory Structure
 
 ```
-.agents/
+.claude/
 ├── README.md                          # This file
 ├── INDEX.md                           # Quick reference catalog
 ├── HANDOFF.md                         # Current parity successor brief
@@ -33,13 +33,10 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 ├── specs/                             # Task and project specifications
 │   └── <project>/                     # Project-specific specs
 │
-├── orchestrations/                    # Orchestration work artifacts
-│   ├── active/                        # Current orchestrations
-│   ├── completed/                     # Archived successful orchestrations
-│   └── README.md                      # Orchestration guide
-│
-└── archive/                           # Historical agent work
-    └── README.md                      # Archive index
+└── orchestrations/                    # Orchestration work artifacts
+    ├── active/                        # Current orchestrations
+    ├── completed/                     # Archived successful orchestrations
+    └── README.md                      # Orchestration guide
 ```
 
 ## 🎯 Quick Start

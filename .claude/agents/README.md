@@ -182,9 +182,9 @@ Example:
 
 ## References
 
-- [.agents/INDEX.md](../INDEX.md) - Complete catalog
-- [.agents/instructions/](../instructions/README.md) - Scoped instructions
-- [.agents/skills/](../skills/README.md) - Reusable skills
+- [.claude/INDEX.md](../INDEX.md) - Complete catalog
+- [.claude/instructions/](../instructions/README.md) - Scoped instructions
+- [.claude/skills/](../skills/README.md) - Reusable skills
 
 ---
 

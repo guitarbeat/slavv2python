@@ -113,7 +113,7 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
                     "Active parity work repeatedly asks agents to check run status, "
                     "prove the first failing stage, record findings, and promote verified fixes."
                 ),
-                target=".agents/skills/parity-proof-compounder/SKILL.md",
+                target=".claude/skills/parity-proof-compounder/SKILL.md",
             )
         )
     elif parity_evidence and not skill_body_contains(
@@ -130,7 +130,7 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
                     "Parity is already covered by docs and prompts, but the generative promotion step "
                     "should explicitly create solution notes or skill edits after verified failures."
                 ),
-                target=".agents/skills/self-improving-agent/SKILL.md",
+                target=".claude/skills/self-improving-agent/SKILL.md",
             )
         )
 
@@ -144,7 +144,7 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
                     "The docs describe a compound-solutions workflow, but there is little searchable "
                     "solution history relative to the amount of parity and integration debugging."
                 ),
-                target=".agents/skills/solution-note-generator/SKILL.md",
+                target=".claude/skills/solution-note-generator/SKILL.md",
             )
         )
     elif solution_count() <= 1:
@@ -174,7 +174,7 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
                     "Run operations are a recurring workflow; strengthen control-cli or add a narrow "
                     "run-monitoring workflow only if agents keep missing the PID/duplicate-writer guard."
                 ),
-                target=".agents/skills/control-cli/SKILL.md",
+                target=".claude/skills/control-cli/SKILL.md",
             )
         )
 
@@ -192,7 +192,7 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
                     "Before creating any new skill, agents should run local skill discovery and decide "
                     "whether the evidence belongs in an existing skill, a solution note, or scratch."
                 ),
-                target=".agents/skills/find-agent-skills/SKILL.md",
+                target=".claude/skills/find-agent-skills/SKILL.md",
             )
         )
 

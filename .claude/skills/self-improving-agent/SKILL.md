@@ -1,6 +1,6 @@
 ---
 name: self-improving-agent
-description: Capture durable corrections, repeated workflow lessons, and agent-process improvements for slavv2python. Use when the user explicitly asks the agent to learn, remember, improve itself, adapt an external self-improvement skill, reflect on completed work, mine repeated corrections, or promote a reusable project workflow into AGENTS.md, docs, solutions, TODO, or .agents/skills.
+description: Capture durable corrections, repeated workflow lessons, and agent-process improvements for slavv2python. Use when the user explicitly asks the agent to learn, remember, improve itself, adapt an external self-improvement skill, reflect on completed work, mine repeated corrections, or promote a reusable project workflow into AGENTS.md, docs, solutions, TODO, or .claude/skills.
 ---
 
 # Self Improving Agent
@@ -44,7 +44,7 @@ If no, do not write memory.
 
 ## Storage Targets
 
-- `.agents/skills/<skill>/SKILL.md`: recurring multi-step agent behavior with clear triggers.
+- `.claude/skills/<skill>/SKILL.md`: recurring multi-step agent behavior with clear triggers.
 - `docs/solutions/<slug>.md`: a concrete fix, parity workflow, or integration resolution that future debugging should find.
 - `docs/reference/core/EXACT_PROOF_FINDINGS.md`: live exact-parity run status, blockers, champion baselines, and parity solution index.
 - `docs/TODO.md`: active tasks and planning hub entries, not detailed run logs.
