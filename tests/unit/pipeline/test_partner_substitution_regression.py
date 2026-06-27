@@ -46,7 +46,13 @@ def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():
         np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
-        {"number_of_edges_per_vertex": 4},
+        # Conflict painting is opt-in (default off to match MATLAB's exact route,
+        # which comments out choose_edges_V200). This test exercises the
+        # conflict-painting partner-substitution feature, so enable it explicitly.
+        {
+            "number_of_edges_per_vertex": 4,
+            "comparison_exact_network_use_conflict_painting": True,
+        },
     )
 
     assert chosen["connections"].tolist() == [[0, 1]]
