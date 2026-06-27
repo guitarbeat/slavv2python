@@ -1,0 +1,92 @@
+"""CLI handlers for exact-route parity proofs."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+from slavv_python.engine.state import load_json_dict
+
+from .coordinator import ExactProofCoordinator
+from .proofs import (
+    run_lut_proof,
+)
+
+if TYPE_CHECKING:
+    import argparse
+
+from .cli_support import _build_exact_proof_source_surface
+
+
+def handle_prove_energy_ulp(args: argparse.Namespace) -> None:
+    """Run advisory Energy ULP proof (strict scales, bounded float ULP)."""
+    from .energy_proof_evidence import require_energy_proof_evidence
+    from .energy_ulp_proof import build_energy_ulp_proof_report, persist_energy_ulp_proof_report
+    from .matlab_vector_loader import load_normalized_matlab_vectors
+    from .python_checkpoint_loader import load_normalized_python_checkpoints
+    from .utils import payload_hash
+
+    run_root = Path(args.source_run_root).expanduser().resolve()
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    require_energy_proof_evidence(dest_run_root)
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    source = _build_exact_proof_source_surface(run_root, oracle_root)
+    if source.matlab_batch_dir is None:
+        raise RuntimeError("Exact proof source is missing MATLAB batch directory")
+    matlab = load_normalized_matlab_vectors(source.matlab_batch_dir, ("energy",))["energy"]
+    python = load_normalized_python_checkpoints(source.checkpoints_dir, ("energy",))["energy"]
+    params = load_json_dict(source.validated_params_path) or {}
+    report = build_energy_ulp_proof_report(
+        np.asarray(matlab["energy"]),
+        np.asarray(python["energy"]),
+        np.asarray(matlab["scale_indices"]),
+        np.asarray(python["scale_indices"]),
+        max_ulps=max(0, int(args.max_ulps)),
+        provenance={
+            "source_run_root": str(run_root),
+            "dest_run_root": str(dest_run_root),
+            "oracle_id": source.oracle_surface.oracle_id,
+            "matlab_batch_dir": str(source.matlab_batch_dir),
+            "params_fingerprint": payload_hash(params),
+        },
+    )
+    path = persist_energy_ulp_proof_report(dest_run_root, report)
+    print(path)
+    if not report["passed"]:
+        import sys
+
+        sys.exit(1)
+
+
+def handle_prove_exact(args: argparse.Namespace) -> None:
+    """Orchestrate a full-artifact exact proof."""
+    run_root = Path(args.source_run_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    report, _, _ = ExactProofCoordinator(source_surface).prove(
+        dest_run_root,
+        stage_arg=getattr(args, "stage", "all"),
+        report_path_arg=getattr(args, "report_path", None),
+        strict_floats=bool(getattr(args, "strict_floats", False)),
+        max_ulps=getattr(args, "max_ulps", None),
+    )
+    if not report.get("passed"):
+        import sys
+
+        sys.exit(1)
+
+
+def handle_prove_luts(args: argparse.Namespace) -> None:
+    """Verify exact parity for lookup tables."""
+    report, _, _ = run_lut_proof(
+        source_run_root=Path(args.source_run_root),
+        dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+    )
+    if not report.get("passed"):
+        import sys
+
+        sys.exit(1)
