@@ -367,6 +367,16 @@ The harness ID itself cannot be renamed; the codename is a maintained alias.
 Prefer memorable-over-cryptic names for artifacts you *do* control as well —
 run directories, oracles, and branches (e.g. `canonical_full_v2`, not a hash).
 
+### Exact-Route Energy Parallelism
+The exact-route Energy stage defaults to `n_jobs=1` (serial), which makes
+full-volume certification a multi-day run. The chunk engine supports **threaded
+parallelism that is provably bit-exact** (ordered merge, pure chunks, no RNG),
+so pass `--n-jobs <N>` to `resume-exact-run` / `launch-exact-run` for a large
+speedup (~5x/chunk at `n_jobs=6` on 8 cores). Changing `n_jobs` requires
+`--force-rerun-from energy` (energy is not mid-stage resumable), and live
+progress shows in the joblib `Done N tasks` log, not `resume_state.json`. See
+[docs/solutions/parity/exact-energy-chunk-parallelism.md](docs/solutions/parity/exact-energy-chunk-parallelism.md).
+
 ### Streamlit App
 ```powershell
 slavv-app
