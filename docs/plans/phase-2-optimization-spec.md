@@ -10,6 +10,9 @@ topic: pythonic-optimization-scalability
 
 **Author**: Engineering Team
 **Prerequisite**: Phase 1 Exact Parity Certification (Zero Missing/Extra)
+**Research input**: [Post-parity optimization & the translation paper](../research/post-parity-optimization-and-paper.md)
+— cited methodology, a bit-preserving vs bit-perturbing technique matrix, and
+publication guidance.
 
 ---
 

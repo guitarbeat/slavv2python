@@ -67,6 +67,10 @@ against the oracle):
 - **Throughput tooling:** `scripts/parity_run_throughput.py` for live run ETAs.
 - **Memory headroom:** continue trimming peak per-chunk memory for larger volumes.
 
+> **Research input:** [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
+> — cited methodology (golden-master differential testing), a bit-preserving vs
+> bit-perturbing technique matrix, and publication guidance for the eventual paper.
+
 ---
 
 ## Phase 3 — Breadth & productization (later)

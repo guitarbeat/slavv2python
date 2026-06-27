@@ -55,8 +55,9 @@ Treat `investigations/` as historical context, not as an executable spec.
 6. [Contributing](CONTRIBUTING.md)
 7. [Changelog](CHANGELOG.md)
 8. [Reference index](reference/README.md)
-9. [Investigation index](investigations/README.md)
-10. [Test placement guide](../tests/README.md)
+9. [Research syntheses](research/README.md)
+10. [Investigation index](investigations/README.md)
+11. [Test placement guide](../tests/README.md)
 
 ---
 
