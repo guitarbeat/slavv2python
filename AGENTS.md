@@ -355,6 +355,18 @@ parity runs. Streamlit remains the browser workflow for processing, analysis,
 curation, and visualization; do not treat Streamlit as the canonical overnight
 parity watcher.
 
+### Run Naming Convention
+Long-running and background jobs are referred to by a memorable **food
+codename** rather than the raw harness-assigned task ID, which is unreadable.
+When launching such a job, assign a codename and announce it alongside the real
+ID for traceability, then refer to it by the codename thereafter:
+
+> 🥐 **Croissant** (`bfeprhlfo`) — canonical full-volume 180709_E certification.
+
+The harness ID itself cannot be renamed; the codename is a maintained alias.
+Prefer memorable-over-cryptic names for artifacts you *do* control as well —
+run directories, oracles, and branches (e.g. `canonical_full_v2`, not a hash).
+
 ### Streamlit App
 ```powershell
 slavv-app
