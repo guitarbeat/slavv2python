@@ -76,7 +76,8 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 
 ## Domain Glossary
 
-> **Note:** This glossary is the **canonical source** for domain terminology. It is automatically loaded into AI agent context. The supplementary file [reference/core/GLOSSARY.md](docs/reference/core/GLOSSARY.md) may contain additional technical details.
+> **Note:** This glossary is the **canonical source** for domain terminology. It is automatically loaded into AI agent context. The supplementary file [reference/core/GLOSSARY.md](docs/reference/core/GLOSSARY.md) is a browsable table view that may add technical detail.
+> **Sync:** when adding or redefining a term, update both this section and `GLOSSARY.md`; if they ever disagree, this section wins.
 
 ### Lowest Linear Index Priority
 The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized.
