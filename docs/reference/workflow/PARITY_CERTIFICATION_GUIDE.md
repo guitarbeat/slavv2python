@@ -186,6 +186,35 @@ The authoritative report is `workspace/runs/<run_id>/03_Analysis/exact_proof.jso
 - **Missing / extra**: Energy and vertices certify on strict **zero** missing/extra (discrete fields). **Edges and network do NOT use exact pair-set equality** — per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) they certify on spatial bars: edges on **voxel ownership-map agreement** (Python `vertex_index_map` vs MATLAB) + per-edge trace tolerance; network on **strand endpoint-pair + bifurcation multisets** (exact, order-independent) + per-strand geometry within a sub-voxel trace tolerance. Raw edge-pair overlap is misleading (it was inflated by the now-fixed double-transpose bug) and is not a certification metric.
 - **Sequential gating**: If energy or vertices fail, do not claim downstream stages certified on that run.
 
+### Reading a result honestly (don't fool yourself)
+
+A green proof is necessary, not sufficient. Before trusting one, run these checks —
+each maps to a real near-miss on this project:
+
+- **Ask what the test case cannot distinguish.** The crop (`180709_E_crop_M`) has
+  **Y = X = 256**, so an axis swap that mis-orients the volume to `[Y, Z, X]` is
+  *invisible* on it — the crop certified while the full volume was silently wrong
+  (see [solutions/parity/resume-energy-orientation](../../solutions/parity/resume-energy-orientation.md)).
+  **A pass on a symmetric/small/single-case fixture is weak evidence for the
+  asymmetric full volume.** Certify on a case whose Z, Y, X are all distinct.
+- **Confirm the shape/orientation before the values.** Check the Python checkpoint
+  shape equals the oracle energy size (`(64,512,512)` for full `180709_E`). A
+  `ValueError: Energy and scale arrays must share shape` (or a transposed shape)
+  means orientation, not a value mismatch — fix that first.
+- **A metric can be right for the wrong reason.** Edge **pair-overlap** looked high
+  while traces ran on a scrambled grid; the mechanistically-grounded
+  **ownership-map %** is the real bar (ADR 0012). Prefer metrics tied to the thing
+  you care about.
+- **Decompose a FAIL; don't read the headline.** "Energy ULP fail (37k voxels)" was
+  actually max \|Δ\| = 1.99×10⁻¹¹ — a near-zero artifact of pure-ULP, which is why
+  the gate is `np.allclose` (ADR 0011). Report the field, the worst voxel, and the
+  absolute delta.
+- **Hypothesis vs verified.** Do not record a root cause as confirmed until a cheap
+  *disconfirming* test survives (the findings log has several "CONFIRMED → RETRACTED"
+  entries that a refuting check would have prevented).
+- **When deduction contradicts the evidence twice, get ground truth** — print the
+  actual arrays/shapes or simulate the real code path; don't reason in circles.
+
 Legacy `comparison_report.json` may still exist for older runs; prefer `exact_proof.json` for certification decisions.
 
 ---
