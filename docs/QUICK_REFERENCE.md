@@ -174,4 +174,4 @@ What are you working on?
 ---
 
 **Last Updated**: 2026-06-24  
-**Related**: [README.md](README.md), [AGENTS.md](../AGENTS.md), [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md)
+**Related**: [README.md](README.md), [AGENTS.md](../AGENTS.md)

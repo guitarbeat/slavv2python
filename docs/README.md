@@ -92,7 +92,45 @@ When resuming parity work from a fresh thread:
 
 ## Documentation Structure
 
-See [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) for the complete hierarchy.
+### Map
+
+```mermaid
+graph TD
+    Start[🤖 AI Agent / 👤 User] --> Entry{Entry Point?}
+
+    Entry -->|New User| README[README.md]
+    Entry -->|AI Agent| AGENTS[AGENTS.md ⭐]
+    Entry -->|Parity Work| EPF[EXACT_PROOF_FINDINGS.md ⭐]
+    Entry -->|Contributor| CONTRIB[CONTRIBUTING.md]
+
+    README --> Tutorial[TUTORIAL.md]
+    README --> DocsIndex[docs/README.md]
+
+    AGENTS --> TODO[TODO.md]
+    AGENTS --> Glossary[Domain Glossary]
+    AGENTS --> DecisionTree[Work Decision Tree]
+
+    EPF --> PreGate[PARITY_PRE_GATE.md]
+    EPF --> CertGuide[PARITY_CERTIFICATION_GUIDE.md]
+    EPF --> Monitor[PARITY_JOB_MONITORING.md]
+
+    CONTRIB --> NamingGuide[PYTHON_NAMING_GUIDE.md]
+    CONTRIB --> TestGuide[tests/README.md]
+
+    DocsIndex --> RefIndex[reference/README.md]
+    DocsIndex --> Plans[plans/]
+    DocsIndex --> Solutions[solutions/]
+
+    RefIndex --> Core[reference/core/]
+    RefIndex --> Workflow[reference/workflow/]
+    Core --> EPF
+    Core --> TechArch[TECHNICAL_ARCHITECTURE.md]
+    Core --> GLO[GLOSSARY.md]
+
+    style AGENTS fill:#4CAF50
+    style EPF fill:#FF9800
+    style README fill:#2196F3
+```
 
 ### Quick Navigation Rules
 

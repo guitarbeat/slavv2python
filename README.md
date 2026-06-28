@@ -91,7 +91,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 ## Documentation
 
 ### Essential Entry Points
-- [Milestone Progress](docs/PROGRESS.md) ⭐ — **START HERE:** High-level history and current mission status
+- [Roadmap](docs/ROADMAP.md) ⭐ — **START HERE:** phase-level milestones and current mission direction
 - [Agent & Workflow Guide](AGENTS.md) ⭐ — AI agent instructions, domain glossary, workflows
 - [Developer Dashboard (Tasks)](docs/TODO.md) — Active tasks and checkboxes
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) ⭐ — Live parity status, active runs, blockers
