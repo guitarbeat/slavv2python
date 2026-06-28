@@ -13,6 +13,11 @@ source fetch → 3-vote adversarial verification → synthesis).
 > needed ≥2/3 verifier votes to survive). The **Refuted claims** section lists
 > what failed verification — do not treat those as established.
 
+> **Data-backed draft figures** generated from real run artifacts are in
+> [figures/](figures/) — the ULP histogram + parity composition (the
+> certification-policy argument) and the bit-exact ~4.1× speedup. Regenerate via
+> `scripts/make_report_figures.py`.
+
 ---
 
 ## Executive summary
