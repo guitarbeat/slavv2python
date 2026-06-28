@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 
 from slavv_python.analytics.parity.constants import (
     EXACT_REQUIRED_PARAMETER_VALUES,
@@ -17,6 +19,7 @@ from slavv_python.analytics.parity.resume import (
     clear_stale_running_snapshot,
     resolve_exact_run_input_file,
     resolve_exact_run_oracle_root,
+    resume_exact_run,
 )
 from slavv_python.engine.constants import STATUS_PENDING, STATUS_RUNNING
 from slavv_python.engine.state import RunContext, atomic_write_json, load_json_dict
@@ -132,3 +135,60 @@ def test_clear_stale_running_snapshot_sets_pending(tmp_path):
     assert clear_stale_running_snapshot(context.run_root) is True
     snapshot = load_json_dict(context.snapshot_path) or {}
     assert snapshot.get("status") == STATUS_PENDING
+
+
+def test_resume_reorients_input_to_oracle_axis_order(tmp_path, monkeypatch):
+    """Regression: resume must reorient the input volume to the oracle's axis
+    order identically to init.
+
+    The pre-fix resume loaded the TIF as raw [Z, Y, X] (transpose_to_yxz=False)
+    then replayed init's stored permutation (derived against a [Y, X, Z] load),
+    double-permuting an asymmetric volume to [Y, Z, X]. Here oracle [Z,Y,X] is
+    (4, 8, 6); the buggy path would hand the pipeline (8, 6, 4).
+    """
+    dest = tmp_path / "run"
+    dest.mkdir()
+    _write_validated_params(dest)
+    atomic_write_json(
+        dest / EXPERIMENT_PROVENANCE_PATH,
+        {
+            "oracle_size_of_image": [4, 8, 6],
+            "input_axis_permutation": [2, 0, 1],
+            "stop_after": "energy",
+        },
+    )
+
+    oracle_zyx = (4, 8, 6)
+    loaded_yxz = np.zeros((8, 6, 4), dtype=np.float64)  # transpose_to_yxz=True load
+    loaded_zyx = np.zeros((4, 8, 6), dtype=np.float64)  # transpose_to_yxz=False load
+
+    def fake_load(_path, transpose_to_yxz=True):
+        return loaded_yxz if transpose_to_yxz else loaded_zyx
+
+    captured: dict[str, tuple[int, ...]] = {}
+    pipeline = MagicMock()
+    pipeline.run.side_effect = lambda image, *a, **k: captured.update(
+        shape=tuple(np.asarray(image).shape)
+    )
+    fake_oracle = MagicMock()
+    fake_oracle.dataset_hash = ""
+
+    def _no_dataset_surface(*_args, **_kwargs):
+        raise ValueError("no dataset surface")
+
+    base = "slavv_python.analytics.parity.resume."
+    monkeypatch.setattr(base + "resolve_exact_run_input_file", lambda *a, **k: tmp_path / "v.tif")
+    monkeypatch.setattr(base + "resolve_exact_run_dataset_surface", _no_dataset_surface)
+    monkeypatch.setattr(base + "resolve_exact_run_oracle_root", lambda *a, **k: tmp_path / "oracle")
+    monkeypatch.setattr(base + "load_oracle_surface", lambda *a, **k: fake_oracle)
+    monkeypatch.setattr(base + "load_tiff_volume", fake_load)
+    monkeypatch.setattr(base + "clear_stale_running_snapshot", lambda *a, **k: False)
+    monkeypatch.setattr(base + "SlavvPipeline", lambda: pipeline)
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.bootstrap.oracle_energy_size_of_image",
+        lambda *_a, **_k: oracle_zyx,
+    )
+
+    resume_exact_run(dest, oracle_root=tmp_path / "oracle", skip_preflight=True)
+
+    assert captured["shape"] == oracle_zyx
