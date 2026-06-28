@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-25 (oracle v2; **Energy + Vertices CERTIFIED** under ADR 0011 gate; **Edges: orientation bug fixed, residual is watershed order-sensitivity → ADR 0012 ownership-map bar**)
+**Last Updated**: 2026-06-28 (oracle v2; **Energy + Vertices CERTIFIED** (crop) under ADR 0011 gate; **Edges: orientation bug fixed, residual is watershed order-sensitivity → ADR 0012 ownership-map bar**; **Canonical full run recomputing** after a resume/init reorientation bug fix — `canonical_full_v3`, `n_jobs=6`)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -31,6 +31,8 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
 | **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`). `inspect-energy-evidence` **valid**. `prove-exact --stage energy` vs v2: ✅ **PASS** (allclose gate, exit 0) — `scale_indices` 0; `energy` max \|Δ\| 1.99×10⁻¹¹; `lumen_radius` max \|Δ\| 7.1×10⁻¹⁵. **Vertices/Edges/Network now unblocked** (sequential). |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop tier-2 sequence passes (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
+| **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646` (full `180709_E`, lattice-6000). Promoted; energy size `(64,512,512)`. |
+| **Canonical full run** | `workspace/runs/oracle_180709_E/canonical_full_v3` | 🔄 **In progress** (`n_jobs=6`, bit-exact threaded energy per [solutions/exact-energy-chunk-parallelism](../../solutions/parity/exact-energy-chunk-parallelism.md)). First attempt (`canonical_full_v2`) completed all 4 stages but the proof **failed at the energy gate** — Python energy `(512,64,512)` vs oracle `(64,512,512)` from a **resume/init reorientation bug** (resume double-permuted; crop dodged it via Y=X symmetry). **Fixed** (`fix(parity)` resume reorients like init) + regression test; recomputing now. See [solutions/resume-energy-orientation](../../solutions/parity/resume-energy-orientation.md). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
