@@ -17,3 +17,7 @@ concrete actions from it into [plans/](../plans/) or [TODO.md](../TODO.md).
   — methodology, performance techniques (bit-preserving vs bit-perturbing), and
   publication guidance for Phase 2/3. Generated via the deep-research workflow,
   2026-06-27.
+- [Review: the original SLAVV methodology paper](slavv-original-paper-review.md)
+  — Mihelic et al. 2021 (PLOS Comp Biol): the method of record, with transcribed
+  equations, validation framework, and what the port adds.
+- [Report figures](figures/) — data-backed draft figures for the paper.
