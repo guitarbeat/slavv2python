@@ -357,6 +357,19 @@ parity runs. Streamlit remains the browser workflow for processing, analysis,
 curation, and visualization; do not treat Streamlit as the canonical overnight
 parity watcher.
 
+**Checking a long run (e.g. canonical energy):** prefer the run's own signals
+over tailing the harness log.
+```powershell
+# One-shot verdict (RUNNING/STALLED/COMPLETED/FAILED) + liveness + stage, run-dir only:
+python scripts\check_parity_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
+# Live energy chunk rate + ETA (needs the run log with joblib "Done N tasks"):
+python scripts\parity_run_throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
+```
+Interpretation rules (learned the hard way):
+- **Liveness = heartbeat *age*** (`resume_state.heartbeat_at` / `run_snapshot.updated_at`), **not** `started_at` — start-time clocks go stale across restarts.
+- Under `n_jobs>1`, **run-dir progress is the merge cursor and lags the parallel compute**; the joblib `Done N tasks` log is the leading indicator. Never compute an ETA from the run-dir progress.
+- A `(512,64,512)`-shaped energy checkpoint means an **orientation** problem, not values — confirm shape before interpreting a proof failure.
+
 ### Run Naming Convention
 Long-running and background jobs are referred to by a memorable **food
 codename** rather than the raw harness-assigned task ID, which is unreadable.

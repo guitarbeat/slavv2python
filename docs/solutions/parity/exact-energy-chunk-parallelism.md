@@ -63,10 +63,15 @@ speedup**, cutting energy from ~37 h to ~9–10 h and the full sequence to
 ~14–16 h.
 
 ## Caveats
-- With `n_jobs>1`, the per-chunk progress callback (and `02_Energy/resume_state.json`
-  heartbeat) only updates **after each octave's parallel batch completes** —
-  mid-octave the file looks empty. Track live progress via joblib's verbose
-  `Done N tasks | elapsed` lines in the run log instead.
+- With `n_jobs>1`, the run-dir progress (`02_Energy/resume_state.json` units,
+  `run_snapshot.json` progress) is the **merge cursor**, which **lags the parallel
+  compute** — joblib computes all chunks concurrently, then the progress callback
+  fires during the serial merge. So `resume_state` can read ~600 while the joblib
+  log shows ~2800 *computed*. For live energy rate/ETA, use the joblib
+  `Done N tasks | elapsed` lines (`scripts/parity_run_throughput.py --log`); for a
+  liveness/verdict check, use `scripts/check_parity_run.py --run-dir` (it reads the
+  heartbeat **age**, not the lagging cursor). Do **not** derive an ETA from the
+  run-dir progress — it lags and produces nonsense.
 - The energy stage is **not mid-stage resumable** (`resumable: false`), so
   changing `n_jobs` requires `--force-rerun-from energy` (restart from scratch).
 - Peak memory scales ~linearly with `n_jobs` (each thread holds a chunk's
