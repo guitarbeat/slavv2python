@@ -21,12 +21,12 @@ from slavv_python.pipeline.edges.edge_types import (
     Int64Array,
 )
 from slavv_python.pipeline.edges.frontier_events import _build_frontier_candidate_lifecycle
+from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+    _generate_edge_candidates_matlab_global_watershed,
+)
 from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_edge_budget,
     _matlab_frontier_offsets,
-)
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
-    _generate_edge_candidates_matlab_global_watershed,
 )
 from slavv_python.pipeline.edges.matlab_indexing import (
     _coord_to_matlab_linear_index,

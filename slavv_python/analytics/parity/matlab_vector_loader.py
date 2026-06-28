@@ -246,7 +246,9 @@ def _true_vertex_energies_from_raw(
         loadmat(raw_path, squeeze_me=True, struct_as_record=False),
     )
     raw_positions = np.asarray(_require_key(raw_payload, "vertex_space_subscripts"))
-    raw_energies = np.asarray(_require_key(raw_payload, "vertex_energies"), dtype=np.float64).ravel()
+    raw_energies = np.asarray(
+        _require_key(raw_payload, "vertex_energies"), dtype=np.float64
+    ).ravel()
     energy_by_position = {
         tuple(int(value) for value in raw_positions[index]): float(raw_energies[index])
         for index in range(raw_positions.shape[0])

@@ -102,9 +102,7 @@ def evaluate_energy_float_gate(
     else:
         # Advisory ULP telemetry (prove-energy-ulp) with near-zero denormal escape.
         float_pass_mask = scale_agree_mask & (
-            energy_equal
-            | (denorm_mask & within_abs_delta)
-            | (within_ulp & within_abs_delta)
+            energy_equal | (denorm_mask & within_abs_delta) | (within_ulp & within_abs_delta)
         )
         if over_ulp:
             failures.append(f"energy_ulp_over_max={over_ulp}")
@@ -133,7 +131,9 @@ def evaluate_energy_float_gate(
         "failed_voxels": failed_voxels,
         "pass_rate": float(passed_voxels / total_voxels) if total_voxels else 0.0,
         "scale_mismatch_count": scale_mismatch_count,
-        "scale_agree_energy_exact_match_count": int(np.count_nonzero(scale_agree_mask & energy_equal)),
+        "scale_agree_energy_exact_match_count": int(
+            np.count_nonzero(scale_agree_mask & energy_equal)
+        ),
         "scale_agree_energy_ulp_over_max_count": over_ulp,
         "scale_agree_tol_over_max_count": tol_over_count,
         "scale_agree_denorm_escape_count": denorm_escape_count,
@@ -185,7 +185,10 @@ def build_energy_ulp_proof_report(
         ulp_full = _float64_ulp_array(matlab_e, python_e)
         within_ulp_count += int(
             np.count_nonzero(
-                scale_equal & ~energy_equal & (ulp_full <= max_ulps) & (np.abs(matlab_e - python_e) <= max_abs_delta)
+                scale_equal
+                & ~energy_equal
+                & (ulp_full <= max_ulps)
+                & (np.abs(matlab_e - python_e) <= max_abs_delta)
             )
         )
 

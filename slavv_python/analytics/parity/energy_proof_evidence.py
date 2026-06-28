@@ -110,19 +110,18 @@ def _resolve_energy_stage(snapshot: dict[str, Any], run_root: Path) -> dict[str,
         return energy_stage
 
     stage_metrics = snapshot.get("stage_metrics")
-    metrics = (
-        stage_metrics.get(_ENERGY_STAGE_NAME, {})
-        if isinstance(stage_metrics, dict)
-        else {}
-    )
+    metrics = stage_metrics.get(_ENERGY_STAGE_NAME, {}) if isinstance(stage_metrics, dict) else {}
     if not isinstance(metrics, dict) or metrics.get("status") != "completed":
         return energy_stage
 
     lease = load_json_dict(run_root / WRITER_LEASE_PATH)
     started_at = energy_stage.get("started_at")
-    if not isinstance(started_at, str) or not started_at:
-        if isinstance(lease, dict) and isinstance(lease.get("started_at"), str):
-            started_at = lease["started_at"]
+    if (
+        (not isinstance(started_at, str) or not started_at)
+        and isinstance(lease, dict)
+        and isinstance(lease.get("started_at"), str)
+    ):
+        started_at = lease["started_at"]
 
     updated_at = energy_stage.get("updated_at")
     if not isinstance(updated_at, str) or not updated_at:

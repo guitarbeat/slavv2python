@@ -140,7 +140,9 @@ def test_cli_can_reuse_existing_python_report(tmp_path, monkeypatch):
     def fail_if_recomputed(_requests_path):
         raise AssertionError("python probes should have been reused")
 
-    monkeypatch.setattr("tests.support.parity_probe_scale_winner.run_matlab_batch", fake_run_matlab_batch)
+    monkeypatch.setattr(
+        "tests.support.parity_probe_scale_winner.run_matlab_batch", fake_run_matlab_batch
+    )
     monkeypatch.setattr(
         "tests.support.parity_probe_scale_winner.build_python_batch_report", fail_if_recomputed
     )

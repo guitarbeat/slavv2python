@@ -316,11 +316,7 @@ def _compare_value(
     # difference); integer/topological fields stay strict. float_tol=None forces
     # strict bit-identical comparison everywhere (--strict-floats / regression).
     # The energy.energy field has its own scale-aware gate and never reaches here.
-    if (
-        float_tol is not None
-        and matlab_array.dtype.kind == "f"
-        and python_array.dtype.kind == "f"
-    ):
+    if float_tol is not None and matlab_array.dtype.kind == "f" and python_array.dtype.kind == "f":
         rtol, atol = float_tol
         if matlab_array.size == 0 or np.allclose(
             python_array, matlab_array, rtol=rtol, atol=atol, equal_nan=True

@@ -109,7 +109,6 @@ def vectorize_python(
     return results
 
 
-
 def get_energy_v202_python(
     image: np.ndarray,
     lumen_radius_range: np.ndarray,

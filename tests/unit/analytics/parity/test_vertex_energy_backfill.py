@@ -15,7 +15,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def _write_vertices(path: Path, positions: np.ndarray, scales: np.ndarray, energies: np.ndarray) -> None:
+def _write_vertices(
+    path: Path, positions: np.ndarray, scales: np.ndarray, energies: np.ndarray
+) -> None:
     savemat(
         str(path),
         {

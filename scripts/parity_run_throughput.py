@@ -43,7 +43,9 @@ def _parse_joblib_progress(log_path: Path) -> list[tuple[int, float]]:
         return []
     points: list[tuple[int, float]] = []
     for match in _DONE_RE.finditer(log_path.read_text(encoding="utf-8", errors="ignore")):
-        points.append((int(match.group(1)), _elapsed_seconds(float(match.group(2)), match.group(3))))
+        points.append(
+            (int(match.group(1)), _elapsed_seconds(float(match.group(2)), match.group(3)))
+        )
     return points
 
 

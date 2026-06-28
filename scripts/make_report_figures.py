@@ -53,19 +53,33 @@ def figure_speedup(points: list[tuple[int, float]], serial_s_per_chunk: float, o
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
 
     hrs = [s / 3600.0 for s in secs]
-    ax1.plot(hrs, chunks, color="#1f77b4", lw=2, label=f"parallel n_jobs=6 (~{par_s_per_chunk:.1f} s/chunk)")
+    ax1.plot(
+        hrs,
+        chunks,
+        color="#1f77b4",
+        lw=2,
+        label=f"parallel n_jobs=6 (~{par_s_per_chunk:.1f} s/chunk)",
+    )
     serial_hrs = [c * serial_s_per_chunk / 3600.0 for c in chunks]
-    ax1.plot(serial_hrs, chunks, color="#d62728", ls="--", lw=1.8,
-             label=f"serial reference (~{serial_s_per_chunk:.1f} s/chunk)")
+    ax1.plot(
+        serial_hrs,
+        chunks,
+        color="#d62728",
+        ls="--",
+        lw=1.8,
+        label=f"serial reference (~{serial_s_per_chunk:.1f} s/chunk)",
+    )
     ax1.set_xlabel("wall-clock time (hours)")
     ax1.set_ylabel("energy chunks completed (octave 1)")
     ax1.set_title("Octave-1 throughput: parallel vs serial")
     ax1.legend(loc="lower right", fontsize=8)
     ax1.grid(alpha=0.3)
 
-    ax2.bar(["serial\n(n_jobs=1)", "parallel\n(n_jobs=6)"],
-            [serial_s_per_chunk, par_s_per_chunk],
-            color=["#d62728", "#1f77b4"])
+    ax2.bar(
+        ["serial\n(n_jobs=1)", "parallel\n(n_jobs=6)"],
+        [serial_s_per_chunk, par_s_per_chunk],
+        color=["#d62728", "#1f77b4"],
+    )
     ax2.set_ylabel("seconds per chunk (lower = faster)")
     ax2.set_title(f"Per-chunk time  —  {speedup:.1f}x speedup (bit-exact)")
     for i, v in enumerate([serial_s_per_chunk, par_s_per_chunk]):
@@ -75,7 +89,9 @@ def figure_speedup(points: list[tuple[int, float]], serial_s_per_chunk: float, o
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)
-    print(f"  wrote {out}  (speedup {speedup:.1f}x; serial {serial_s_per_chunk:.1f} -> {par_s_per_chunk:.1f} s/chunk)")
+    print(
+        f"  wrote {out}  (speedup {speedup:.1f}x; serial {serial_s_per_chunk:.1f} -> {par_s_per_chunk:.1f} s/chunk)"
+    )
 
 
 def figure_ulp_histogram(ulp: dict, out: Path) -> None:
@@ -99,11 +115,21 @@ def figure_ulp_histogram(ulp: dict, out: Path) -> None:
     ax.axvline(min(float(p90), 9.0), color="#ff7f0e", ls="--", lw=1, label=f"p90 = {p90:.0f} ULP")
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3, axis="y")
-    note = (f"max |Δ| on scale-agreeing voxels = {max_dn:.2e}\n"
-            f"yet a pure-ULP gate at ≤{max_ulp_thresh} ULP flags {over:,} voxels\n"
-            f"→ motivates np.allclose policy (ADR 0011)")
-    ax.text(0.97, 0.78, note, transform=ax.transAxes, ha="right", va="top", fontsize=8,
-            bbox={"boxstyle": "round", "facecolor": "#fff3cd", "edgecolor": "#856404"})
+    note = (
+        f"max |Δ| on scale-agreeing voxels = {max_dn:.2e}\n"
+        f"yet a pure-ULP gate at ≤{max_ulp_thresh} ULP flags {over:,} voxels\n"
+        f"→ motivates np.allclose policy (ADR 0011)"
+    )
+    ax.text(
+        0.97,
+        0.78,
+        note,
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=8,
+        bbox={"boxstyle": "round", "facecolor": "#fff3cd", "edgecolor": "#856404"},
+    )
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)
@@ -129,11 +155,15 @@ def figure_parity_composition(ulp: dict, out: Path) -> None:
         segs.append(("other", other, "#999999"))
     left = 0.0
     for label, val, color in segs:
-        ax.barh(0, val, left=left, color=color, label=f"{label}: {val:,} ({100*val/total:.2f}%)")
+        ax.barh(
+            0, val, left=left, color=color, label=f"{label}: {val:,} ({100 * val / total:.2f}%)"
+        )
         left += val
     ax.set_xlim(0, total)
     ax.set_yticks([])
-    ax.set_title(f"Energy field parity composition  —  {total:,} voxels, scale mismatches = {scale_mm}")
+    ax.set_title(
+        f"Energy field parity composition  —  {total:,} voxels, scale mismatches = {scale_mm}"
+    )
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=8, frameon=False)
     fig.tight_layout()
     fig.savefig(out, dpi=150, bbox_inches="tight")
@@ -145,9 +175,15 @@ def main() -> None:
     """Generate all available data-backed report figures."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ulp-json", type=Path, required=True, help="exact_proof_energy_ulp.json")
-    parser.add_argument("--run-log", type=Path, default=None, help="Run log with joblib progress lines")
-    parser.add_argument("--serial-s-per-chunk", type=float, default=44.4,
-                        help="Measured serial baseline (default from the n_jobs=1 run)")
+    parser.add_argument(
+        "--run-log", type=Path, default=None, help="Run log with joblib progress lines"
+    )
+    parser.add_argument(
+        "--serial-s-per-chunk",
+        type=float,
+        default=44.4,
+        help="Measured serial baseline (default from the n_jobs=1 run)",
+    )
     parser.add_argument("--out-dir", type=Path, default=Path("docs/research/figures"))
     args = parser.parse_args()
 
@@ -159,8 +195,11 @@ def main() -> None:
     figure_parity_composition(ulp, args.out_dir / "energy_parity_composition.png")
 
     if args.run_log and args.run_log.is_file():
-        figure_speedup(_parse_run_log(args.run_log), args.serial_s_per_chunk,
-                       args.out_dir / "energy_speedup.png")
+        figure_speedup(
+            _parse_run_log(args.run_log),
+            args.serial_s_per_chunk,
+            args.out_dir / "energy_speedup.png",
+        )
     else:
         print("  (no --run-log; skipping speedup figure)")
 

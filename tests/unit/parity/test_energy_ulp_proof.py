@@ -116,7 +116,10 @@ def test_certification_gate_strict_scales() -> None:
     python_scales = np.array([1, 3], dtype=np.int16)
 
     gate = evaluate_energy_float_gate(
-        matlab_energy, python_energy, matlab_scales, python_scales,
+        matlab_energy,
+        python_energy,
+        matlab_scales,
+        python_scales,
         options=EnergyFloatGateOptions(),
     )
 

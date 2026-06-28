@@ -62,10 +62,10 @@ def derivatives_at(
     x_grid: np.ndarray
     z_grid: np.ndarray
     y_grid, x_grid, z_grid = np.meshgrid(
-        np.concatenate([np.arange(dims[0]//2), np.arange(-dims[0]//2, 0)]) / dims[0],
-        np.concatenate([np.arange(dims[1]//2), np.arange(-dims[1]//2, 0)]) / dims[1],
-        np.concatenate([np.arange(dims[2]//2), np.arange(-dims[2]//2, 0)]) / dims[2],
-        indexing='ij'
+        np.concatenate([np.arange(dims[0] // 2), np.arange(-dims[0] // 2, 0)]) / dims[0],
+        np.concatenate([np.arange(dims[1] // 2), np.arange(-dims[1] // 2, 0)]) / dims[1],
+        np.concatenate([np.arange(dims[2] // 2), np.arange(-dims[2] // 2, 0)]) / dims[2],
+        indexing="ij",
     )
 
     ymic = y_grid / spacing_yxz[0]
@@ -73,20 +73,24 @@ def derivatives_at(
     zmic = z_grid / spacing_yxz[2]
 
     gaussian_lengths = g2i * radius * np.ones(3)
-    pulse_sq = (1 - g2i**2) * radius**2 + (psf_yxz * spacing_yxz)**2
+    pulse_sq = (1 - g2i**2) * radius**2 + (psf_yxz * spacing_yxz) ** 2
 
-    radial = 2 * np.pi * np.sqrt(
-        ymic**2 * pulse_sq[0] + xmic**2 * pulse_sq[1] + zmic**2 * pulse_sq[2]
+    radial = (
+        2 * np.pi * np.sqrt(ymic**2 * pulse_sq[0] + xmic**2 * pulse_sq[1] + zmic**2 * pulse_sq[2])
     )
 
-    spherical = (np.pi / 2 / radial)**0.5 * (jv(2.5, radial) + jv(0.5, radial))
+    spherical = (np.pi / 2 / radial) ** 0.5 * (jv(2.5, radial) + jv(0.5, radial))
     spherical[radial == 0] = 1
 
-    gaussian = np.exp(-2 * np.pi**2 * (
-        (ymic * gaussian_lengths[0])**2 +
-        (xmic * gaussian_lengths[1])**2 +
-        (zmic * gaussian_lengths[2])**2
-    ))
+    gaussian = np.exp(
+        -2
+        * np.pi**2
+        * (
+            (ymic * gaussian_lengths[0]) ** 2
+            + (xmic * gaussian_lengths[1]) ** 2
+            + (zmic * gaussian_lengths[2]) ** 2
+        )
+    )
 
     annular = np.cos(radial)
     matching = gaussian * ((1 - s2a) * annular + s2a * spherical)
@@ -95,31 +99,93 @@ def derivatives_at(
 
     # Second derivatives for curvatures (6 components)
     curvatures = np.zeros(6)
-    curvatures[0] = sample_ifft((weights[0]**2) * (np.cos(2*np.pi*y_grid) - 1), matching, chunk_dft, local_ranges, y, x, z)
-    curvatures[1] = sample_ifft((weights[1]**2) * (np.cos(2*np.pi*x_grid) - 1), matching, chunk_dft, local_ranges, y, x, z)
-    curvatures[2] = sample_ifft((weights[2]**2) * (np.cos(2*np.pi*z_grid) - 1), matching, chunk_dft, local_ranges, y, x, z)
-    curvatures[3] = sample_ifft(weights[0]*weights[1]*(np.cos(2*np.pi*np.sqrt(np.abs(y_grid*x_grid))) - 1) * np.sign(y_grid*x_grid)/4 , matching, chunk_dft, local_ranges, y, x, z)
-    curvatures[4] = sample_ifft(weights[1]*weights[2]*(np.cos(2*np.pi*np.sqrt(np.abs(x_grid*z_grid))) - 1) * np.sign(x_grid*z_grid)/4 , matching, chunk_dft, local_ranges, y, x, z)
-    curvatures[5] = sample_ifft(weights[2]*weights[0]*(np.cos(2*np.pi*np.sqrt(np.abs(z_grid*y_grid))) - 1) * np.sign(z_grid*y_grid)/4 , matching, chunk_dft, local_ranges, y, x, z)
+    curvatures[0] = sample_ifft(
+        (weights[0] ** 2) * (np.cos(2 * np.pi * y_grid) - 1),
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
+    curvatures[1] = sample_ifft(
+        (weights[1] ** 2) * (np.cos(2 * np.pi * x_grid) - 1),
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
+    curvatures[2] = sample_ifft(
+        (weights[2] ** 2) * (np.cos(2 * np.pi * z_grid) - 1),
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
+    curvatures[3] = sample_ifft(
+        weights[0]
+        * weights[1]
+        * (np.cos(2 * np.pi * np.sqrt(np.abs(y_grid * x_grid))) - 1)
+        * np.sign(y_grid * x_grid)
+        / 4,
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
+    curvatures[4] = sample_ifft(
+        weights[1]
+        * weights[2]
+        * (np.cos(2 * np.pi * np.sqrt(np.abs(x_grid * z_grid))) - 1)
+        * np.sign(x_grid * z_grid)
+        / 4,
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
+    curvatures[5] = sample_ifft(
+        weights[2]
+        * weights[0]
+        * (np.cos(2 * np.pi * np.sqrt(np.abs(z_grid * y_grid))) - 1)
+        * np.sign(z_grid * y_grid)
+        / 4,
+        matching,
+        chunk_dft,
+        local_ranges,
+        y,
+        x,
+        z,
+    )
 
     # First derivatives for gradient (3 components)
     gradient = np.zeros(3)
-    gradient[0] = sample_ifft(1j * weights[0] * np.sin(2*np.pi*y_grid)/2, matching, chunk_dft, local_ranges, y, x, z)
-    gradient[1] = sample_ifft(1j * weights[1] * np.sin(2*np.pi*x_grid)/2, matching, chunk_dft, local_ranges, y, x, z)
-    gradient[2] = sample_ifft(1j * weights[2] * np.sin(2*np.pi*z_grid)/2, matching, chunk_dft, local_ranges, y, x, z)
+    gradient[0] = sample_ifft(
+        1j * weights[0] * np.sin(2 * np.pi * y_grid) / 2, matching, chunk_dft, local_ranges, y, x, z
+    )
+    gradient[1] = sample_ifft(
+        1j * weights[1] * np.sin(2 * np.pi * x_grid) / 2, matching, chunk_dft, local_ranges, y, x, z
+    )
+    gradient[2] = sample_ifft(
+        1j * weights[2] * np.sin(2 * np.pi * z_grid) / 2, matching, chunk_dft, local_ranges, y, x, z
+    )
 
     laplacian = float(np.sum(curvatures[:3]))
 
-    return {
-        'curvatures': curvatures,
-        'gradient': gradient,
-        'laplacian': laplacian
-    }
+    return {"curvatures": curvatures, "gradient": gradient, "laplacian": laplacian}
 
 
 def sample_ifft(kernel, matching, chunk_dft, local_ranges, y, x, z):
     """Python equivalent of sample_ifft."""
-    output = ifftn(kernel * matching * chunk_dft, norm='backward').real
+    output = ifftn(kernel * matching * chunk_dft, norm="backward").real
     # Apply local range (MATLAB style slicing on padded)
     # For simplicity, assume local_ranges are the full for the example; adjust as needed.
     # In full chunked, this is the extraction.
@@ -129,14 +195,16 @@ def sample_ifft(kernel, matching, chunk_dft, local_ranges, y, x, z):
 
 def principal_energy_from_derivatives(gradient, curvatures):
     """Python equivalent of principal_energy_from_derivatives in the MATLAB code."""
-    hessian = np.array([
-        [curvatures[0], curvatures[3], curvatures[5]],
-        [curvatures[3], curvatures[1], curvatures[4]],
-        [curvatures[5], curvatures[4], curvatures[2]]
-    ])
+    hessian = np.array(
+        [
+            [curvatures[0], curvatures[3], curvatures[5]],
+            [curvatures[3], curvatures[1], curvatures[4]],
+            [curvatures[5], curvatures[4], curvatures[2]],
+        ]
+    )
     principal_values, vectors = np.linalg.eigh(hessian)
     projections = gradient @ vectors
-    principal_energies = principal_values * np.exp( - (projections / principal_values)**2 / 2 )
+    principal_energies = principal_values * np.exp(-((projections / principal_values) ** 2) / 2)
     principal_energies[2] = min(principal_energies[2], 0)
     energy_value = float(np.sum(principal_energies))
     if not np.isfinite(energy_value) or energy_value >= 0:
@@ -151,7 +219,7 @@ def energy_samples(
     psf_yxz: np.ndarray,
     g2i: float,
     s2a: float,
-    include_hessian: bool = True
+    include_hessian: bool = True,
 ) -> tuple:
     """Python version of energy_samples in the MATLAB random_component_reference.m .
 
@@ -169,8 +237,8 @@ def energy_samples(
     coords = [
         [0, 0, 0],
         [1, 2, 3],
-        [min(7, image.shape[0]-1), min(15, image.shape[1]-1), min(7, image.shape[2]-1)],
-        [image.shape[0]-1, image.shape[1]-1, image.shape[2]-1]
+        [min(7, image.shape[0] - 1), min(15, image.shape[1] - 1), min(7, image.shape[2] - 1)],
+        [image.shape[0] - 1, image.shape[1] - 1, image.shape[2] - 1],
     ]
 
     samples = []
@@ -179,20 +247,22 @@ def energy_samples(
         deriv = derivatives_at(
             chunk_dft, radius, spacing_yxz, psf_yxz, local_ranges, g2i, s2a, y, x, z
         )
-        valid = deriv['laplacian'] < 0
+        valid = deriv["laplacian"] < 0
         if valid:
-            energy = principal_energy_from_derivatives(deriv['gradient'], deriv['curvatures'])
+            energy = principal_energy_from_derivatives(deriv["gradient"], deriv["curvatures"])
         else:
-            energy = float('inf')
+            energy = float("inf")
 
-        samples.append({
-            'coordinate_yxz': coord,
-            'curvatures': deriv['curvatures'].tolist(),
-            'gradient': deriv['gradient'].tolist(),
-            'laplacian': deriv['laplacian'],
-            'valid': valid,
-            'energy': energy
-        })
+        samples.append(
+            {
+                "coordinate_yxz": coord,
+                "curvatures": deriv["curvatures"].tolist(),
+                "gradient": deriv["gradient"].tolist(),
+                "laplacian": deriv["laplacian"],
+                "valid": valid,
+                "energy": energy,
+            }
+        )
 
     return padded_shape, samples
 
