@@ -5,13 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-import numpy as np
-
 from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.constants import STATUS_PENDING
 from slavv_python.engine.state import RunContext, load_json_dict
 from slavv_python.storage import load_tiff_volume
 
+from .bootstrap import _reorient_exact_input_volume
 from .constants import (
     DATASET_INPUT_DIR,
     DATASET_MANIFEST_PATH,
@@ -75,18 +74,6 @@ def resolve_exact_run_input_file(
         "could not resolve dataset input file for resume; pass --dataset-root or ensure "
         f"run_snapshot provenance or a single TIFF exists under {refs_dir}"
     )
-
-
-def _reorient_volume_from_provenance(
-    image: np.ndarray,
-    dest_run_root: Path,
-) -> np.ndarray:
-    prov = load_json_dict(dest_run_root / EXPERIMENT_PROVENANCE_PATH) or {}
-    raw_perm = prov.get("input_axis_permutation")
-    if not isinstance(raw_perm, list) or len(raw_perm) != 3:
-        return image
-    permutation = cast("tuple[int, int, int]", tuple(int(value) for value in raw_perm))
-    return cast("np.ndarray", np.transpose(image, permutation))
 
 
 def resolve_exact_run_oracle_root(
@@ -183,8 +170,13 @@ def resume_exact_run(
 
     clear_stale_running_snapshot(dest_run_root)
 
-    image = load_tiff_volume(str(input_file), transpose_to_yxz=False)
-    image = _reorient_volume_from_provenance(image, dest_run_root)
+    # Reorient identically to init-exact-run: load in [Y, X, Z] and search the
+    # permutation that matches the oracle's axis order. This is self-correcting,
+    # so resume can never desync from the orientation init computed (a stale
+    # provenance permutation applied to a differently-loaded volume previously
+    # double-permuted the full volume to [Y, Z, X]).
+    image = load_tiff_volume(str(input_file))
+    image, _oracle_size, _perm = _reorient_exact_input_volume(image, oracle_surface)
 
     SlavvPipeline().run(
         image,
