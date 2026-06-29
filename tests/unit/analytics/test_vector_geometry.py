@@ -7,7 +7,7 @@ from slavv_python.analytics import (
     resample_vectors,
     smooth_edge_traces,
 )
-from slavv_python.analytics.math import (
+from slavv_python.analytics.vector_geometry import (
     angle_degrees,
     safe_normalize_rows,
     scaled_positions,

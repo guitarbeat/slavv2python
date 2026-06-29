@@ -25,7 +25,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from slavv_python.analytics.math import calculate_path_length
+from slavv_python.analytics.vector_geometry import calculate_path_length
 from slavv_python.pipeline.edges.terminal_lookup import in_bounds
 from slavv_python.schema import normalize_pipeline_result
 from slavv_python.utils.safe_unpickle import safe_load
@@ -60,7 +60,7 @@ class DrewsCurator:
     def curate(self, edges: dict[str, Any], vertices: dict[str, Any]) -> dict[str, Any]:
         """Apply heuristic filters to edges."""
         # Minimal implementation to satisfy tests
-        from ..math import calculate_path_length
+        from ..vector_geometry import calculate_path_length
 
         traces = edges["traces"]
         connections = edges["connections"]

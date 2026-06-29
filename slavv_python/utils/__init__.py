@@ -10,7 +10,7 @@ This subpackage contains shared utilities:
 from __future__ import annotations
 
 # 2. Analytics Utilities (Re-exported from analytics domain)
-from ..analytics.math import calculate_path_length
+from ..analytics.vector_geometry import calculate_path_length
 from ..image.normalization import preprocess_image
 
 # 1. Image Processing Utilities

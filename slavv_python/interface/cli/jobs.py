@@ -7,9 +7,9 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from slavv_python.analytics.parity.job_registry import JobRegistry
-from slavv_python.analytics.parity.monitor_daemon import MonitorDaemon
-from slavv_python.analytics.parity.process_utils import (
+from slavv_python.analytics.parity.runs.job_registry import JobRegistry
+from slavv_python.analytics.parity.runs.monitor_daemon import MonitorDaemon
+from slavv_python.analytics.parity.runs.process_utils import (
     is_process_alive,
     kill_process_tree,
     read_daemon_pid,

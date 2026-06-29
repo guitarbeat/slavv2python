@@ -6,9 +6,9 @@ from typing import Any, cast
 import numpy as np
 
 try:
-    from ..math import calculate_path_length
+    from ..vector_geometry import calculate_path_length
 except ImportError:
-    from slavv_python.analytics.math import calculate_path_length
+    from slavv_python.analytics.vector_geometry import calculate_path_length
 
 logger = logging.getLogger(__name__)
 

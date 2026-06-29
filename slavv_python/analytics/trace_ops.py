@@ -25,7 +25,7 @@ def get_edge_metric(
         Metric name: "max_energy" (default), "mean_energy", "min_energy", or "length".
     """
     if method == "length":
-        from .math import calculate_path_length
+        from .vector_geometry import calculate_path_length
 
         return calculate_path_length(trace)
 

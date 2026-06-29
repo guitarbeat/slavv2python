@@ -7,13 +7,13 @@ import numpy as np
 from .cropping import crop_edges, crop_vertices, crop_vertices_by_mask
 from .curation.automated import AutomaticCurator
 from .curation.machine_learning import DrewsCurator, MLCurator, extract_uncurated_info
-from .math import calculate_path_length, resample_vectors, smooth_edge_traces
 from .metrics.topology import (
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,
 )
 from .trace_ops import get_edge_metric, get_edges_for_vertex
+from .vector_geometry import calculate_path_length, resample_vectors, smooth_edge_traces
 
 
 def _ensure_dict(obj, default_keys, primary_key):

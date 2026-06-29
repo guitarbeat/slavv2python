@@ -153,7 +153,7 @@ def _load_pid_statuses(run_dir: Path) -> tuple[PidStatus, ...]:
             )
 
     try:
-        from slavv_python.analytics.parity.job_registry import JobRegistry
+        from slavv_python.analytics.parity.runs.job_registry import JobRegistry
 
         record = JobRegistry().get_job_by_run_dir(run_dir)
     except (OSError, ValueError):
@@ -235,7 +235,7 @@ def _log_candidates(run_dir: Path) -> tuple[Path, ...]:
 
 def _parity_job_terminal_status(run_dir: Path) -> tuple[str, str] | None:
     try:
-        from slavv_python.analytics.parity.parity_job_lifecycle import (
+        from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
             TERMINAL_STATUSES,
             load_parity_job_manifest,
         )
@@ -315,7 +315,7 @@ def load_run_monitor_view(run_dir: str | Path) -> RunMonitorView:
     pid_statuses = _load_pid_statuses(root)
     status, reason = _effective_status(snapshot, pid_statuses, run_dir=root)
     if status == "stale-running-snapshot":
-        from slavv_python.analytics.parity.parity_job_lifecycle import (
+        from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
             reconcile_interrupted_run,
         )
 

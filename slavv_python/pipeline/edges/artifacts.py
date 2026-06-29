@@ -45,7 +45,7 @@ def resolve_edge_candidate_persistence(
     """Return parity checkpoint writer only for exact-route frontier resumable runs."""
     if not use_frontier or not bool(params.get("comparison_exact_network", False)):
         return NO_OP_EDGE_CANDIDATE_PERSISTENCE
-    from slavv_python.analytics.parity.edge_artifacts import (
+    from slavv_python.analytics.parity.probes.edge_artifacts import (
         ParityEdgeCandidatePersistence,
     )
 

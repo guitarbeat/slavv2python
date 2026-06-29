@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import networkx as nx
 import numpy as np
 
-from ..math import angle_degrees, scaled_positions
+from ..vector_geometry import angle_degrees, scaled_positions
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
