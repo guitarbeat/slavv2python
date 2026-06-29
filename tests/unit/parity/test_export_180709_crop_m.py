@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import tifffile
 
-from slavv_python.analytics.parity.crop_export import export_crop_m, write_roi_metadata
+from slavv_python.analytics.parity.probes.crop_export import export_crop_m, write_roi_metadata
 
 
 @pytest.mark.unit

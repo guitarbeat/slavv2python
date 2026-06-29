@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from slavv_python.analytics.parity.launch_prepare import (
+from slavv_python.analytics.parity.runs.launch_prepare import (
     LaunchPreparationError,
     prepare_detached_exact_run_launch,
     reconcile_run_before_launch,
@@ -45,11 +45,11 @@ def test_prepare_detached_exact_run_launch_runs_foreground_probe(tmp_path, monke
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.reconcile_run_before_launch",
+        "slavv_python.analytics.parity.runs.launch_prepare.reconcile_run_before_launch",
         lambda _root: "interrupted",
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.run_launch_preflight",
+        "slavv_python.analytics.parity.runs.launch_prepare.run_launch_preflight",
         lambda **_kwargs: {"passed": True},
     )
     probe_calls: list[list[str]] = []
@@ -60,7 +60,7 @@ def test_prepare_detached_exact_run_launch_runs_foreground_probe(tmp_path, monke
         return 0
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.run_foreground_launch_probe",
+        "slavv_python.analytics.parity.runs.launch_prepare.run_foreground_launch_probe",
         _fake_probe,
     )
 
@@ -88,15 +88,15 @@ def test_prepare_detached_exact_run_launch_surfaces_probe_failure(tmp_path, monk
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.reconcile_run_before_launch",
+        "slavv_python.analytics.parity.runs.launch_prepare.reconcile_run_before_launch",
         lambda _root: "interrupted",
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.run_launch_preflight",
+        "slavv_python.analytics.parity.runs.launch_prepare.run_launch_preflight",
         lambda **_kwargs: {"passed": True},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.launch_prepare.run_foreground_launch_probe",
+        "slavv_python.analytics.parity.runs.launch_prepare.run_foreground_launch_probe",
         lambda *_args, **_kwargs: 1,
     )
 

@@ -83,7 +83,7 @@ def test_monitor_view_reports_conflicting_live_lease_and_registry(tmp_path, monk
             return Record()
 
     monkeypatch.setattr(monitor_service, "_process_command_line", lambda _pid: "python parity")
-    monkeypatch.setattr("slavv_python.analytics.parity.job_registry.JobRegistry", Registry)
+    monkeypatch.setattr("slavv_python.analytics.parity.runs.job_registry.JobRegistry", Registry)
 
     view = load_run_monitor_view(run_dir)
 

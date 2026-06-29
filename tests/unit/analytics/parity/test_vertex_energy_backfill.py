@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from scipy.io import savemat
 
-from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_stage
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_stage
 
 if TYPE_CHECKING:
     from pathlib import Path

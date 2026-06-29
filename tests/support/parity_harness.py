@@ -11,9 +11,9 @@ from typing import Any
 import numpy as np
 import numpy.testing as npt
 
-from slavv_python.analytics.parity.adaptive_probes import ProbeResult, compare_probe_jsonl
-from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
-from slavv_python.analytics.parity.surfaces import load_oracle_surface
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
+from slavv_python.analytics.parity.oracle.surfaces import load_oracle_surface
+from slavv_python.analytics.parity.probes.adaptive_probes import ProbeResult, compare_probe_jsonl
 from slavv_python.pipeline.energy.config import _prepare_energy_config
 from slavv_python.pipeline.energy.parity_energy_voxel_probe import (
     probe_exact_energy_voxel_at_octave,

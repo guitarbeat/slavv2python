@@ -12,26 +12,30 @@ import numpy as np
 import pytest
 from scipy.io import savemat
 
-from slavv_python.analytics.parity import jobs
 from slavv_python.analytics.parity.commands import build_parity_parser
 from slavv_python.analytics.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_INDEX_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from slavv_python.analytics.parity.execution import (
-    derive_exact_params_from_oracle,
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import find_matlab_vector_paths
+from slavv_python.analytics.parity.oracle.models import (
+    ExactProofSourceSurface,
+    OracleSurface,
+    RunCounts,
 )
-from slavv_python.analytics.parity.index import deduplicate_index_records
-from slavv_python.analytics.parity.jobs import launch_exact_run_job
-from slavv_python.analytics.parity.matlab_vector_loader import find_matlab_vector_paths
-from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
-from slavv_python.analytics.parity.proofs import (
+from slavv_python.analytics.parity.proof.index import deduplicate_index_records
+from slavv_python.analytics.parity.proof.proofs import (
     _run_prove_luts,
 )
-from slavv_python.analytics.parity.reports import (
+from slavv_python.analytics.parity.proof.reports import (
     build_experiment_summary,
 )
+from slavv_python.analytics.parity.runs import jobs
+from slavv_python.analytics.parity.runs.execution import (
+    derive_exact_params_from_oracle,
+)
+from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
 from slavv_python.interface.cli.parity import main as parity_main
 from tests.support.run_state_builders import (
     materialize_checkpoint_surface,
@@ -335,22 +339,22 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
     )
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.surfaces.validate_exact_proof_source_surface",
+        "slavv_python.analytics.parity.oracle.surfaces.validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.params_audit.load_params_file",
+        "slavv_python.analytics.parity.oracle.params_audit.load_params_file",
         lambda _surface, _params_arg=None: {"microns_per_voxel": [1.0, 1.0, 1.0]},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.proofs._load_exact_energy_payload",
+        "slavv_python.analytics.parity.proof.proofs._load_exact_energy_payload",
         lambda _surface: {
             "energy": np.zeros((10, 10, 10)),
             "lumen_radius_microns": np.array([1.5, 2.0], dtype=np.float32),
         },
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.matlab_fail_fast.load_builtin_lut_fixture",
+        "slavv_python.analytics.parity.probes.matlab_fail_fast.load_builtin_lut_fixture",
         lambda: {"size_of_image": [20, 20, 20], "microns_per_voxel": [1.0, 1.0, 1.0]},
     )
 

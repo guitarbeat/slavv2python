@@ -7,7 +7,7 @@ import json
 import numpy as np
 import pytest
 
-from slavv_python.analytics.parity.adaptive_probes import compare_probe_jsonl
+from slavv_python.analytics.parity.probes.adaptive_probes import compare_probe_jsonl
 from tests.support.parity_harness import (
     assert_bit_parity_energy,
     assert_oracle_energy_parity,

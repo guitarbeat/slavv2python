@@ -191,15 +191,14 @@ slavv2python/
 │   │       └── manager.py              # Network lifecycle (run + run_resumable)
 │   ├── image/                          # Image normalization, tiling
 │   ├── analytics/                      # Analysis & metrics
-│   │   ├── parity/                     # MATLAB exact proof harness
-│   │   │   ├── coordinator.py          # ExactProofCoordinator (prove / capture)
-│   │   │   ├── preflight.py            # Memory gate + params audit before long runs
-│   │   │   ├── resume.py               # resume-exact-run (clears stale running snapshot)
-│   │   │   ├── bootstrap.py / surfaces.py / params_audit.py  # init-exact-run layout
-│   │   │   ├── counts.py               # Canonical RunCounts helpers
-│   │   │   ├── cli.py + cli_{runs,proofs,diagnostics,edges,support}.py  # slavv parity handlers (facade + themed split)
-│   │   │   ├── crop_export.py          # Export 180709_E tier-M crop (slavv parity export-crop)
-│   │   │   └── trace_comparator.py     # JSONL execution trace differ (slavv parity compare-traces)
+│   │   ├── parity/                     # MATLAB exact proof harness (themed subpackages)
+│   │   │   ├── cli.py + commands.py     # slavv parity handler facade + command registry (root)
+│   │   │   ├── constants.py / utils.py  # shared parity constants + IO/hash helpers (root)
+│   │   │   ├── proof/                   # coordinator, proofs, comparators, energy/ULP proofs, reports
+│   │   │   ├── runs/                    # resume, jobs, monitor_daemon, preflight, writer_lease, bootstrap, execution
+│   │   │   ├── oracle/                  # surfaces, oracle_artifacts, promotion, loaders, params_audit, models
+│   │   │   ├── probes/                  # adaptive_probes, trace_comparator, crop_export, edge_artifacts, matlab_fail_fast
+│   │   │   └── cli_handlers/            # cli_runs / cli_proofs / cli_diagnostics / cli_edges / cli_support
 │   │   ├── curation/                   # Automated & ML curators
 │   │   └── metrics/                    # Intensity, topology metrics
 │   ├── storage/                        # Data I/O

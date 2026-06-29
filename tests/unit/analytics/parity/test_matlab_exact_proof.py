@@ -7,19 +7,19 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.io import savemat
 
-from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
-from slavv_python.analytics.parity.energy_ulp_proof import EnergyFloatGateOptions
-from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
-from slavv_python.analytics.parity.matlab_vector_loader import (
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
     find_matlab_vector_paths,
     load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
 )
-from slavv_python.analytics.parity.proofs import _selected_exact_stages
-from slavv_python.analytics.parity.python_checkpoint_loader import (
+from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
 )
+from slavv_python.analytics.parity.proof.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.proof.energy_ulp_proof import EnergyFloatGateOptions
+from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.proof.proofs import _selected_exact_stages
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -189,7 +189,7 @@ def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
 def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
     import h5py
 
-    from slavv_python.analytics.parity.matlab_vector_loader import (
+    from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
         load_normalized_matlab_stage,
     )
 

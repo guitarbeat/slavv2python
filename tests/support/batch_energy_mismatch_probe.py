@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from slavv_python.analytics.parity.energy_proof_evidence import require_energy_proof_evidence
+from slavv_python.analytics.parity.proof.energy_proof_evidence import require_energy_proof_evidence
 from tests.support.parity_harness import (
     REPO_ROOT,
     export_regression_probe_jsonl,

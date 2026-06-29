@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.analytics.parity.matlab_fail_fast import (
+from slavv_python.analytics.parity.probes.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,

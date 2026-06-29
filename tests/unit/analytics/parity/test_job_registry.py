@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from slavv_python.analytics.parity.job_registry import JobRegistry, ParityJobRecord
+from slavv_python.analytics.parity.runs.job_registry import JobRegistry, ParityJobRecord
 
 
 def _concurrent_write_job_worker(

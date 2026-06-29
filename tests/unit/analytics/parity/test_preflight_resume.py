@@ -13,9 +13,9 @@ from slavv_python.analytics.parity.constants import (
     RUN_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
 )
-from slavv_python.analytics.parity.params_audit import persist_param_storage
-from slavv_python.analytics.parity.preflight import build_exact_preflight_report
-from slavv_python.analytics.parity.resume import (
+from slavv_python.analytics.parity.oracle.params_audit import persist_param_storage
+from slavv_python.analytics.parity.runs.preflight import build_exact_preflight_report
+from slavv_python.analytics.parity.runs.resume import (
     clear_stale_running_snapshot,
     resolve_exact_run_input_file,
     resolve_exact_run_oracle_root,
@@ -44,7 +44,7 @@ def test_build_exact_preflight_report_passes_with_memory_headroom(tmp_path):
     )
 
     with patch(
-        "slavv_python.analytics.parity.preflight._available_system_bytes",
+        "slavv_python.analytics.parity.runs.preflight._available_system_bytes",
         return_value=64 * 1024**3,
     ):
         report = build_exact_preflight_report(
@@ -66,7 +66,7 @@ def test_build_exact_preflight_report_fails_without_force_on_low_memory(tmp_path
     )
 
     with patch(
-        "slavv_python.analytics.parity.preflight._available_system_bytes",
+        "slavv_python.analytics.parity.runs.preflight._available_system_bytes",
         return_value=1 * 1024**3,
     ):
         report = build_exact_preflight_report(
@@ -89,7 +89,7 @@ def test_build_exact_preflight_report_force_overrides_memory_gate(tmp_path):
     )
 
     with patch(
-        "slavv_python.analytics.parity.preflight._available_system_bytes",
+        "slavv_python.analytics.parity.runs.preflight._available_system_bytes",
         return_value=1 * 1024**3,
     ):
         report = build_exact_preflight_report(
@@ -176,7 +176,7 @@ def test_resume_reorients_input_to_oracle_axis_order(tmp_path, monkeypatch):
     def _no_dataset_surface(*_args, **_kwargs):
         raise ValueError("no dataset surface")
 
-    base = "slavv_python.analytics.parity.resume."
+    base = "slavv_python.analytics.parity.runs.resume."
     monkeypatch.setattr(base + "resolve_exact_run_input_file", lambda *a, **k: tmp_path / "v.tif")
     monkeypatch.setattr(base + "resolve_exact_run_dataset_surface", _no_dataset_surface)
     monkeypatch.setattr(base + "resolve_exact_run_oracle_root", lambda *a, **k: tmp_path / "oracle")
@@ -185,7 +185,7 @@ def test_resume_reorients_input_to_oracle_axis_order(tmp_path, monkeypatch):
     monkeypatch.setattr(base + "clear_stale_running_snapshot", lambda *a, **k: False)
     monkeypatch.setattr(base + "SlavvPipeline", lambda: pipeline)
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.bootstrap.oracle_energy_size_of_image",
+        "slavv_python.analytics.parity.runs.bootstrap.oracle_energy_size_of_image",
         lambda *_a, **_k: oracle_zyx,
     )
 

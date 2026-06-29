@@ -4,15 +4,15 @@ import json
 
 import pytest
 
-from slavv_python.analytics.parity.job_registry import JobRegistry
-from slavv_python.analytics.parity.parity_job_lifecycle import (
+from slavv_python.analytics.parity.runs.job_registry import JobRegistry
+from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
     finalize_parity_job,
     load_parity_job_manifest,
     mark_parity_job_running,
     parity_job_manifest_path,
     reconcile_interrupted_run,
 )
-from slavv_python.analytics.parity.writer_lease import load_writer_lease, write_writer_lease
+from slavv_python.analytics.parity.runs.writer_lease import load_writer_lease, write_writer_lease
 from slavv_python.interface.cli.monitor_service import load_run_monitor_view
 from tests.support.run_state_builders import (
     build_snapshot_dict,
@@ -24,7 +24,7 @@ from tests.support.run_state_builders import (
 @pytest.mark.unit
 def test_finalize_parity_job_persists_terminal_metadata(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.parity_job_lifecycle.now_iso",
+        "slavv_python.analytics.parity.runs.parity_job_lifecycle.now_iso",
         lambda: "2026-06-22T12:00:00Z",
     )
     run_dir = tmp_path / "run"
@@ -48,15 +48,15 @@ def test_finalize_parity_job_persists_terminal_metadata(tmp_path, monkeypatch):
 def test_reconcile_interrupted_run_finalizes_writer_lease_and_registry(tmp_path, monkeypatch):
     frozen_now = "2026-06-22T12:00:00Z"
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.parity_job_lifecycle.now_iso",
+        "slavv_python.analytics.parity.runs.parity_job_lifecycle.now_iso",
         lambda: frozen_now,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.writer_lease.now_iso",
+        "slavv_python.analytics.parity.runs.writer_lease.now_iso",
         lambda: frozen_now,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.writer_lease.resolve_python_commit",
+        "slavv_python.analytics.parity.runs.writer_lease.resolve_python_commit",
         lambda _root: "abc123",
     )
     run_dir = tmp_path / "run"
@@ -70,7 +70,7 @@ def test_reconcile_interrupted_run_finalizes_writer_lease_and_registry(tmp_path,
     )
     registry = JobRegistry(tmp_path / "registry.jsonl")
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.job_registry.JobRegistry",
+        "slavv_python.analytics.parity.runs.job_registry.JobRegistry",
         lambda registry_path=None: registry,
     )
     job_id = registry.register_job(
@@ -139,7 +139,7 @@ def test_monitor_view_reconciles_dead_pid_to_interrupted(tmp_path, monkeypatch):
 @pytest.mark.unit
 def test_mark_parity_job_running_preserves_started_at(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.parity_job_lifecycle.now_iso",
+        "slavv_python.analytics.parity.runs.parity_job_lifecycle.now_iso",
         lambda: "2026-06-22T13:00:00Z",
     )
     run_dir = tmp_path / "run"

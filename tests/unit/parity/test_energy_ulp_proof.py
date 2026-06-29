@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.analytics.parity.energy_ulp_proof import (
+from slavv_python.analytics.parity.proof.energy_ulp_proof import (
     EnergyFloatGateOptions,
     build_energy_ulp_proof_report,
     evaluate_energy_float_gate,

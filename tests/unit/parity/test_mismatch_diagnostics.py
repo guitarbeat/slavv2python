@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.analytics.parity.mismatch_diagnostics import (
+from slavv_python.analytics.parity.proof.mismatch_diagnostics import (
     build_mismatch_diagnostics,
     persist_mismatch_diagnostics,
 )

@@ -10,12 +10,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from slavv_python.analytics.parity.monitor_daemon import MonitorDaemon
+from slavv_python.analytics.parity.runs.monitor_daemon import MonitorDaemon
 
-PROCESS_UTILS = "slavv_python.analytics.parity.process_utils"
-JOB_REGISTRY = "slavv_python.analytics.parity.job_registry"
+PROCESS_UTILS = "slavv_python.analytics.parity.runs.process_utils"
+JOB_REGISTRY = "slavv_python.analytics.parity.runs.job_registry"
 WIN10TOAST = "win10toast"
-MONITOR_DAEMON = "slavv_python.analytics.parity.monitor_daemon"
+MONITOR_DAEMON = "slavv_python.analytics.parity.runs.monitor_daemon"
 
 
 @pytest.fixture
@@ -289,7 +289,7 @@ class TestMonitorDaemon:
             patch.object(daemon, "_get_exit_code", return_value=None),
             patch.object(daemon, "_send_notification"),
             patch(
-                "slavv_python.analytics.parity.parity_job_lifecycle.reconcile_interrupted_run"
+                "slavv_python.analytics.parity.runs.parity_job_lifecycle.reconcile_interrupted_run"
             ) as reconcile,
         ):
             daemon._handle_completed_job(mock_job, mock_registry)

@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from slavv_python.analytics.parity.job_registry import JobRegistry, ParityJobRecord
+from slavv_python.analytics.parity.runs.job_registry import JobRegistry, ParityJobRecord
 
 __all__ = ["JobRegistry", "ParityJobRecord"]

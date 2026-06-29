@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.io import savemat
 
-from slavv_python.analytics.parity.oracle_artifacts import ensure_oracle_artifacts
+from slavv_python.analytics.parity.oracle.oracle_artifacts import ensure_oracle_artifacts
 from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:

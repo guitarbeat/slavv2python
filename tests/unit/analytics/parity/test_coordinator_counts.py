@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from tests.support.run_state_builders import materialize_checkpoint_surface
 
-from slavv_python.analytics.parity.counts import (
+from slavv_python.analytics.parity.proof.counts import (
     extract_matlab_counts,
     extract_source_python_counts,
     read_python_counts_from_run,

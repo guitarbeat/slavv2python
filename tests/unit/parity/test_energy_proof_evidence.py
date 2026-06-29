@@ -10,12 +10,12 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from slavv_python.analytics.parity.cli import handle_inspect_energy_evidence
-from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
-from slavv_python.analytics.parity.energy_proof_evidence import (
+from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface, OracleSurface
+from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.proof.energy_proof_evidence import (
     build_energy_proof_evidence,
     require_energy_proof_evidence,
 )
-from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface
 from tests.support.batch_energy_mismatch_probe import main as batch_energy_mismatch_probe_main
 
 
@@ -250,11 +250,11 @@ def test_prove_exact_rejects_stale_energy_evidence_before_loading_artifacts(
         raise AssertionError("artifact loading must not run for stale Energy evidence")
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.coordinator.load_normalized_matlab_vectors",
+        "slavv_python.analytics.parity.proof.coordinator.load_normalized_matlab_vectors",
         fail_if_called,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.coordinator.load_normalized_python_checkpoints",
+        "slavv_python.analytics.parity.proof.coordinator.load_normalized_python_checkpoints",
         fail_if_called,
     )
 
@@ -268,15 +268,15 @@ def test_prove_exact_non_energy_stage_is_not_blocked_by_energy_evidence(tmp_path
     coordinator = ExactProofCoordinator(_source_surface(tmp_path))
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.coordinator.load_normalized_python_checkpoints",
+        "slavv_python.analytics.parity.proof.coordinator.load_normalized_python_checkpoints",
         lambda _path, stages: {stage: {} for stage in stages},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.coordinator.compare_exact_artifacts",
+        "slavv_python.analytics.parity.proof.coordinator.compare_exact_artifacts",
         lambda _matlab, _python, stages, **_kwargs: {"passed": True, "stages": list(stages)},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.coordinator.render_exact_proof_report",
+        "slavv_python.analytics.parity.proof.coordinator.render_exact_proof_report",
         lambda _report: "report",
     )
     monkeypatch.setattr(

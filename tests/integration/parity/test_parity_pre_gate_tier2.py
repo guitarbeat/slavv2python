@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from slavv_python.analytics.parity.constants import ORACLE_MANIFEST_PATH
-from slavv_python.analytics.parity.surfaces import load_oracle_surface
+from slavv_python.analytics.parity.oracle.surfaces import load_oracle_surface
 
 if TYPE_CHECKING:
     from pathlib import Path

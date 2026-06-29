@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pytest
 
-from slavv_python.analytics.parity.adaptive_probes import (
+from slavv_python.analytics.parity.probes.adaptive_probes import (
     build_energy_probe_payload,
     compare_probe_jsonl,
     ensure_rerun_allowed,

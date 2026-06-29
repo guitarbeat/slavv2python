@@ -14,7 +14,7 @@ from slavv_python.analytics.parity.constants import (
     EXACT_PROOF_JSON_PATH,
     EXACT_STAGE_ORDER,
 )
-from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
 from slavv_python.analytics.parity.utils import (
     write_json_with_hash,
 )
@@ -22,7 +22,7 @@ from slavv_python.analytics.parity.utils import (
 if TYPE_CHECKING:
     import argparse
 
-from slavv_python.analytics.parity.cli_diagnostics import (
+from slavv_python.analytics.parity.cli_handlers.cli_diagnostics import (
     handle_compare_energy_probes,
     handle_diagnose_energy,
     handle_diagnose_gaps,
@@ -32,7 +32,7 @@ from slavv_python.analytics.parity.cli_diagnostics import (
     handle_summarize,
     handle_trace_vertex,
 )
-from slavv_python.analytics.parity.cli_edges import (
+from slavv_python.analytics.parity.cli_handlers.cli_edges import (
     handle_capture_candidates,
     handle_compare_traces,
     handle_dedupe,
@@ -40,12 +40,12 @@ from slavv_python.analytics.parity.cli_edges import (
     handle_fail_fast,
     handle_replay_edges,
 )
-from slavv_python.analytics.parity.cli_proofs import (
+from slavv_python.analytics.parity.cli_handlers.cli_proofs import (
     handle_prove_energy_ulp,
     handle_prove_exact,
     handle_prove_luts,
 )
-from slavv_python.analytics.parity.cli_runs import (
+from slavv_python.analytics.parity.cli_handlers.cli_runs import (
     handle_ensure_oracle_artifacts,
     handle_init_exact_run,
     handle_launch_exact_run,
@@ -57,14 +57,14 @@ from slavv_python.analytics.parity.cli_runs import (
     handle_resume_exact_run,
     handle_status_exact_run,
 )
-from slavv_python.analytics.parity.cli_support import _build_exact_proof_source_surface
+from slavv_python.analytics.parity.cli_handlers.cli_support import _build_exact_proof_source_surface
 
 
 def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
     """Run prove-exact for each stage in order; stop at the first failure."""
     from shutil import copy2
 
-    from slavv_python.analytics.parity.proof_report import render_exact_proof_report
+    from slavv_python.analytics.parity.proof.proof_report import render_exact_proof_report
 
     run_root = Path(args.source_run_root).expanduser().resolve()
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
