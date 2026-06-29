@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from slavv_python.analytics.parity.constants import CHECKPOINTS_DIR, RUN_SNAPSHOT_PATH
+from slavv_python.analytics.parity.models import RunCounts
 from slavv_python.engine.state import load_json_dict
 from slavv_python.schema.results import EdgeSet, NetworkResult, VertexSet
 from slavv_python.utils.safe_unpickle import safe_load
-
-from .constants import CHECKPOINTS_DIR, RUN_SNAPSHOT_PATH
-from .models import RunCounts
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -8,14 +8,8 @@ from typing import Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from slavv_python.analytics.parity.matlab_vector_loader import (
-    find_matlab_vector_paths,
-    find_single_matlab_batch_dir,
-)
-from slavv_python.engine.state import fingerprint_file, load_json_dict
-
-from . import params_audit
-from .constants import (
+from slavv_python.analytics.parity import params_audit
+from slavv_python.analytics.parity.constants import (
     ANALYSIS_DIR,
     ANALYSIS_TABLES_DIR,
     CHECKPOINTS_DIR,
@@ -33,20 +27,25 @@ from .constants import (
     RUN_SNAPSHOT_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from .index import resolve_experiment_root, upsert_index_record
-from .models import (
+from slavv_python.analytics.parity.index import resolve_experiment_root, upsert_index_record
+from slavv_python.analytics.parity.matlab_vector_loader import (
+    find_matlab_vector_paths,
+    find_single_matlab_batch_dir,
+)
+from slavv_python.analytics.parity.models import (
     DatasetSurface,
     ExactProofSourceSurface,
     OracleSurface,
     SourceRunSurface,
 )
-from .utils import (
+from slavv_python.analytics.parity.utils import (
     entity_id_from_path,
     now_iso,
     resolve_python_commit,
     string_or_none,
     write_json_with_hash,
 )
+from slavv_python.engine.state import fingerprint_file, load_json_dict
 
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:

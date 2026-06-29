@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .models import ExactProofSourceSurface
-from .surfaces import (
+from slavv_python.analytics.parity.models import ExactProofSourceSurface
+from slavv_python.analytics.parity.surfaces import (
     load_oracle_surface,
 )
 

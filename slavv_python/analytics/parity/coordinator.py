@@ -6,27 +6,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from slavv_python.analytics.parity.adaptive_probes import (
+    build_energy_probe_payload,
+    persist_energy_probe_payload,
+)
 from slavv_python.analytics.parity.array_normalization import _normalize_connection_array
 from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
-from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
-from slavv_python.analytics.parity.matlab_fail_fast import (
-    build_candidate_coverage_report,
-    render_candidate_coverage_report,
-)
-from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
-from slavv_python.analytics.parity.proof_report import render_exact_proof_report
-from slavv_python.analytics.parity.python_checkpoint_loader import (
-    load_normalized_python_checkpoints,
-)
-from slavv_python.engine.state import (
-    fingerprint_file,
-    load_json_dict,
-)
-from slavv_python.pipeline.edges.manager import EdgeManager
-from slavv_python.schema.results import EnergyResult, VertexSet
-
-from .adaptive_probes import build_energy_probe_payload, persist_energy_probe_payload
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     CANDIDATE_COVERAGE_TEXT_PATH,
     CANDIDATE_PROGRESS_JSONL_PATH,
@@ -37,16 +23,32 @@ from .constants import (
     EXACT_PROOF_TEXT_PATH,
     EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL,
 )
-from .counts import (
+from slavv_python.analytics.parity.counts import (
     extract_matlab_counts,
     extract_source_python_counts,
     read_python_counts_from_run,
 )
-from .edge_artifacts import ParityEdgeCandidatePersistence
-from .mismatch_diagnostics import persist_mismatch_diagnostics
-from .models import ExactProofSourceSurface  # noqa: TC001
-from .params_audit import persist_param_storage
-from .surfaces import ensure_dest_run_layout, write_run_manifest
+from slavv_python.analytics.parity.edge_artifacts import ParityEdgeCandidatePersistence
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.matlab_fail_fast import (
+    build_candidate_coverage_report,
+    render_candidate_coverage_report,
+)
+from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+from slavv_python.analytics.parity.mismatch_diagnostics import persist_mismatch_diagnostics
+from slavv_python.analytics.parity.models import ExactProofSourceSurface  # noqa: TC001
+from slavv_python.analytics.parity.params_audit import persist_param_storage
+from slavv_python.analytics.parity.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.python_checkpoint_loader import (
+    load_normalized_python_checkpoints,
+)
+from slavv_python.analytics.parity.surfaces import ensure_dest_run_layout, write_run_manifest
+from slavv_python.engine.state import (
+    fingerprint_file,
+    load_json_dict,
+)
+from slavv_python.pipeline.edges.manager import EdgeManager
+from slavv_python.schema.results import EnergyResult, VertexSet
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -110,7 +112,9 @@ class ExactProofCoordinator:
         checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
         selected_stages = _selected_exact_stages(stage_arg)
         if "energy" in selected_stages:
-            from .energy_proof_evidence import require_energy_proof_evidence
+            from slavv_python.analytics.parity.energy_proof_evidence import (
+                require_energy_proof_evidence,
+            )
 
             require_energy_proof_evidence(dest_run_root)
 
@@ -203,7 +207,11 @@ class ExactProofCoordinator:
         json_path = dest_run_root / EXACT_PROOF_JSON_PATH
         text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
 
-        from .utils import payload_hash, write_json_with_hash, write_text_with_hash
+        from slavv_python.analytics.parity.utils import (
+            payload_hash,
+            write_json_with_hash,
+            write_text_with_hash,
+        )
 
         write_json_with_hash(json_path, report_payload)
         write_text_with_hash(text_path, render_exact_proof_report(report_payload))
@@ -259,8 +267,12 @@ class ExactProofCoordinator:
         params: dict[str, Any],
     ) -> None:
         """Persist the immutable inputs and outputs used by this proof attempt."""
-        from .constants import RELEASE_EVIDENCE_PATH, RUN_MANIFEST_PATH
-        from .utils import payload_hash, resolve_python_commit, write_json_with_hash
+        from slavv_python.analytics.parity.constants import RELEASE_EVIDENCE_PATH, RUN_MANIFEST_PATH
+        from slavv_python.analytics.parity.utils import (
+            payload_hash,
+            resolve_python_commit,
+            write_json_with_hash,
+        )
 
         run_manifest = dest_run_root / RUN_MANIFEST_PATH
         oracle_manifest = self.source_surface.oracle_surface.manifest_path
@@ -300,8 +312,8 @@ class ExactProofCoordinator:
         heartbeat: Callable[[int, int], None] | None = None,
     ) -> tuple[dict[str, Any], Path | None, Path | None]:
         """Generate and persist edge candidates via ``EdgeManager`` discovery."""
-        from .reports import persist_recording_tables
-        from .utils import (
+        from slavv_python.analytics.parity.reports import persist_recording_tables
+        from slavv_python.analytics.parity.utils import (
             now_iso,
             persist_normalized_payloads,
             write_json_with_hash,
@@ -443,7 +455,7 @@ class ExactProofCoordinator:
         )
 
         if progress_records:
-            from .utils import atomic_write_jsonl
+            from slavv_python.analytics.parity.utils import atomic_write_jsonl
 
             atomic_write_jsonl(dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH, progress_records)
             try:

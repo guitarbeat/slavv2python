@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from .utils import write_json_with_hash, write_text_with_hash
+from slavv_python.analytics.parity.utils import write_json_with_hash, write_text_with_hash
 
 if TYPE_CHECKING:
     from pathlib import Path

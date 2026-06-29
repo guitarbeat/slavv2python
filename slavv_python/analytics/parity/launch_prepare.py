@@ -6,13 +6,12 @@ import subprocess
 from pathlib import Path
 from typing import Any, cast
 
+from slavv_python.analytics.parity.jobs import build_resume_exact_run_command
 from slavv_python.analytics.parity.process_utils import (
     is_process_alive,
     is_python_process,
 )
-
-from .jobs import build_resume_exact_run_command
-from .proofs import run_exact_preflight
+from slavv_python.analytics.parity.proofs import run_exact_preflight
 
 
 class LaunchPreparationError(RuntimeError):
@@ -199,7 +198,7 @@ def _repo_root_from_path(path: Path) -> Path:
 
 
 def _now_iso() -> str:
-    from .utils import now_iso
+    from slavv_python.analytics.parity.utils import now_iso
 
     return now_iso()
 

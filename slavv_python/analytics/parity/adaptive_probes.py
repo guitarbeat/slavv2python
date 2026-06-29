@@ -10,7 +10,12 @@ from typing import Any, cast
 
 import numpy as np
 
-from .utils import now_iso, payload_hash, write_json_with_hash, write_text_with_hash
+from slavv_python.analytics.parity.utils import (
+    now_iso,
+    payload_hash,
+    write_json_with_hash,
+    write_text_with_hash,
+)
 
 SCHEMA_VERSION = 1
 REQUEST_PATH = Path("03_Analysis") / "energy_probe_requests.json"

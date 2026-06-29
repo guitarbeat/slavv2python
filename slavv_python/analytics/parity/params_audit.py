@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.engine.state import fingerprint_jsonable, load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS,
     EXACT_REQUIRED_PARAMETER_VALUES,
     EXACT_SHARED_METHOD_PARAMETER_KEYS,
@@ -18,10 +16,11 @@ from .constants import (
     SHARED_PARAMS_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from .utils import write_json_with_hash
+from slavv_python.analytics.parity.utils import write_json_with_hash
+from slavv_python.engine.state import fingerprint_jsonable, load_json_dict
 
 if TYPE_CHECKING:
-    from .models import ExactProofSourceSurface, SourceRunSurface
+    from slavv_python.analytics.parity.models import ExactProofSourceSurface, SourceRunSurface
 
 
 def normalize_param_value(value: Any) -> Any:

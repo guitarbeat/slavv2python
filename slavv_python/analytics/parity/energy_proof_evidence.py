@@ -5,15 +5,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.engine.state import load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     ANALYSIS_DIR,
     CHECKPOINTS_DIR,
     PARITY_JOB_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
     WRITER_LEASE_PATH,
 )
+from slavv_python.engine.state import load_json_dict
 
 _ENERGY_STAGE_NAME = "energy"
 

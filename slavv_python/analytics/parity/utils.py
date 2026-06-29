@@ -9,6 +9,7 @@ from typing import Any
 
 import numpy as np
 
+from slavv_python.analytics.parity.constants import NORMALIZED_DIR
 from slavv_python.engine.state import (
     atomic_joblib_dump,
     atomic_write_json,
@@ -17,8 +18,6 @@ from slavv_python.engine.state import (
     fingerprint_file,
     fingerprint_jsonable,
 )
-
-from .constants import NORMALIZED_DIR
 
 
 def now_iso() -> str:

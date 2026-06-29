@@ -5,18 +5,16 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.engine.state import atomic_write_text, load_json_dict, stable_json_dumps
-
-from . import counts as _counts
-from .constants import (
+from slavv_python.analytics.parity import counts as _counts
+from slavv_python.analytics.parity.constants import (
     ANALYSIS_TABLES_DIR,
     RECORDING_TABLES_INDEX_PATH,
     RUN_SNAPSHOT_PATH,
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
 )
-from .models import RunCounts  # noqa: TC001
-from .utils import (
+from slavv_python.analytics.parity.models import RunCounts  # noqa: TC001
+from slavv_python.analytics.parity.utils import (
     entity_id_from_path,
     normalize_value,
     now_iso,
@@ -25,6 +23,7 @@ from .utils import (
     write_json_with_hash,
     write_text_with_hash,
 )
+from slavv_python.engine.state import atomic_write_text, load_json_dict, stable_json_dumps
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -156,7 +155,10 @@ def persist_recording_tables(run_root: Path) -> dict[str, Any]:
             if entry:
                 table_entries.append(entry)
 
-    from .constants import CANDIDATE_PROGRESS_JSONL_PATH, EDGE_CANDIDATE_AUDIT_PATH
+    from slavv_python.analytics.parity.constants import (
+        CANDIDATE_PROGRESS_JSONL_PATH,
+        EDGE_CANDIDATE_AUDIT_PATH,
+    )
 
     audit_payload = load_json_dict(run_root / EDGE_CANDIDATE_AUDIT_PATH)
     if audit_payload:
@@ -193,7 +195,7 @@ def persist_recording_tables(run_root: Path) -> dict[str, Any]:
         )
         if entry:
             table_entries.append(entry)
-    from .constants import CANDIDATE_COVERAGE_JSON_PATH
+    from slavv_python.analytics.parity.constants import CANDIDATE_COVERAGE_JSON_PATH
 
     coverage_report = load_json_dict(run_root / CANDIDATE_COVERAGE_JSON_PATH)
     if coverage_report:

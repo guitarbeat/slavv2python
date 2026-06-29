@@ -6,21 +6,20 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from slavv_python.analytics.parity.constants import (
+    CHECKPOINTS_DIR,
+    EDGE_CANDIDATE_CHECKPOINT_PATH,
+    EDGE_REPLAY_PROOF_JSON_PATH,
+    LUT_PROOF_JSON_PATH,
+)
 from slavv_python.analytics.parity.coordinator import (
     ExactProofCoordinator,
     load_exact_energy_result,
     load_exact_vertex_set,
 )
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
-
-from .constants import (
-    CHECKPOINTS_DIR,
-    EDGE_CANDIDATE_CHECKPOINT_PATH,
-    EDGE_REPLAY_PROOF_JSON_PATH,
-    LUT_PROOF_JSON_PATH,
-)
-from .models import ExactProofSourceSurface, OracleSurface
-from .surfaces import load_oracle_surface, write_run_manifest
+from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface
+from slavv_python.analytics.parity.surfaces import load_oracle_surface, write_run_manifest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -56,8 +55,12 @@ def run_exact_preflight(
     force: bool = False,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the exact-route preflight check."""
-    from .preflight import run_exact_preflight_for_surfaces
-    from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
+    from slavv_python.analytics.parity.preflight import run_exact_preflight_for_surfaces
+    from slavv_python.analytics.parity.surfaces import (
+        ensure_dest_run_layout,
+        load_dataset_surface,
+        load_oracle_surface,
+    )
 
     dest = dest_run_root.expanduser().resolve()
     source = source_run_root.expanduser().resolve()
@@ -132,7 +135,7 @@ def run_edge_replay(
     import joblib
     import numpy as np
 
-    from .utils import write_json_with_hash
+    from slavv_python.analytics.parity.utils import write_json_with_hash
 
     checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -159,10 +162,9 @@ def run_lut_proof(
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the LUT parity proof."""
     from slavv_python.analytics.parity.matlab_fail_fast import load_builtin_lut_fixture
-
-    from .params_audit import load_params_file
-    from .surfaces import validate_exact_proof_source_surface
-    from .utils import write_json_with_hash
+    from slavv_python.analytics.parity.params_audit import load_params_file
+    from slavv_python.analytics.parity.surfaces import validate_exact_proof_source_surface
+    from slavv_python.analytics.parity.utils import write_json_with_hash
 
     source_surface = validate_exact_proof_source_surface(source_run_root)
     params = load_params_file(source_surface, None)

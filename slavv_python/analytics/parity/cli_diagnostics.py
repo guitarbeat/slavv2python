@@ -9,28 +9,27 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from slavv_python.engine.state import load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
 )
-from .gaps import (
+from slavv_python.analytics.parity.gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
 )
-from .reports import (
+from slavv_python.analytics.parity.reports import (
     persist_recording_tables,
     render_experiment_summary,
 )
-from .utils import (
+from slavv_python.analytics.parity.utils import (
     write_json_with_hash,
 )
+from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     import argparse
 
-from .cli_support import _build_exact_proof_source_surface
+from slavv_python.analytics.parity.cli_support import _build_exact_proof_source_surface
 
 
 def handle_trace_vertex(args: argparse.Namespace) -> None:
@@ -163,11 +162,16 @@ def handle_diagnose_gaps(args: argparse.Namespace) -> None:
 
 def handle_diagnose_energy(args: argparse.Namespace) -> None:
     """Create deterministic adaptive Energy probe requests from current checkpoints."""
-    from .adaptive_probes import build_energy_probe_payload, persist_energy_probe_payload
-    from .energy_proof_evidence import require_energy_proof_evidence
-    from .matlab_vector_loader import load_normalized_matlab_vectors
-    from .python_checkpoint_loader import load_normalized_python_checkpoints
-    from .utils import payload_hash
+    from slavv_python.analytics.parity.adaptive_probes import (
+        build_energy_probe_payload,
+        persist_energy_probe_payload,
+    )
+    from slavv_python.analytics.parity.energy_proof_evidence import require_energy_proof_evidence
+    from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+    from slavv_python.analytics.parity.python_checkpoint_loader import (
+        load_normalized_python_checkpoints,
+    )
+    from slavv_python.analytics.parity.utils import payload_hash
 
     run_root = Path(args.run_root).expanduser().resolve()
     require_energy_proof_evidence(run_root)
@@ -195,8 +199,8 @@ def handle_diagnose_energy(args: argparse.Namespace) -> None:
 
 def handle_inspect_energy_evidence(args: argparse.Namespace) -> None:
     """Persist a read-only freshness report for Energy proof evidence."""
-    from .constants import ENERGY_PROOF_EVIDENCE_JSON_PATH
-    from .energy_proof_evidence import build_energy_proof_evidence
+    from slavv_python.analytics.parity.constants import ENERGY_PROOF_EVIDENCE_JSON_PATH
+    from slavv_python.analytics.parity.energy_proof_evidence import build_energy_proof_evidence
 
     run_root = Path(args.run_root).expanduser().resolve()
     report = build_energy_proof_evidence(run_root)
@@ -214,8 +218,8 @@ def handle_inspect_energy_evidence(args: argparse.Namespace) -> None:
 
 def handle_compare_energy_probes(args: argparse.Namespace) -> None:
     """Compare normalized MATLAB and Python adaptive probe JSONL records."""
-    from .adaptive_probes import compare_probe_jsonl
-    from .utils import write_json_with_hash, write_text_with_hash
+    from slavv_python.analytics.parity.adaptive_probes import compare_probe_jsonl
+    from slavv_python.analytics.parity.utils import write_json_with_hash, write_text_with_hash
 
     report = compare_probe_jsonl(Path(args.matlab_jsonl), Path(args.python_jsonl))
     output = Path(args.output).expanduser().resolve()
@@ -228,7 +232,7 @@ def handle_compare_energy_probes(args: argparse.Namespace) -> None:
 
 def handle_record_parity_hypothesis(args: argparse.Namespace) -> None:
     """Record one isolated parity hypothesis and enforce the circuit breaker."""
-    from .adaptive_probes import record_hypothesis
+    from slavv_python.analytics.parity.adaptive_probes import record_hypothesis
 
     record = record_hypothesis(
         Path(args.run_root).expanduser().resolve(),

@@ -5,13 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.engine import SlavvPipeline
-from slavv_python.engine.constants import STATUS_PENDING
-from slavv_python.engine.state import RunContext, load_json_dict
-from slavv_python.storage import load_tiff_volume
-
-from .bootstrap import _reorient_exact_input_volume
-from .constants import (
+from slavv_python.analytics.parity.bootstrap import _reorient_exact_input_volume
+from slavv_python.analytics.parity.constants import (
     DATASET_INPUT_DIR,
     DATASET_MANIFEST_PATH,
     EXPERIMENT_PROVENANCE_PATH,
@@ -20,12 +15,20 @@ from .constants import (
     RUN_SNAPSHOT_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from .preflight import run_exact_preflight_for_surfaces
-from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
-from .utils import string_or_none
+from slavv_python.analytics.parity.preflight import run_exact_preflight_for_surfaces
+from slavv_python.analytics.parity.surfaces import (
+    ensure_dest_run_layout,
+    load_dataset_surface,
+    load_oracle_surface,
+)
+from slavv_python.analytics.parity.utils import string_or_none
+from slavv_python.engine import SlavvPipeline
+from slavv_python.engine.constants import STATUS_PENDING
+from slavv_python.engine.state import RunContext, load_json_dict
+from slavv_python.storage import load_tiff_volume
 
 if TYPE_CHECKING:
-    from .models import DatasetSurface
+    from slavv_python.analytics.parity.models import DatasetSurface
 
 
 def resolve_exact_run_dataset_surface(

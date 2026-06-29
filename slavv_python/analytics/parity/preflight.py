@@ -6,25 +6,24 @@ from typing import TYPE_CHECKING, Any, cast
 
 import psutil
 
-from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
-from slavv_python.analytics.parity.params_audit import build_exact_params_audit
-from slavv_python.analytics.parity.surfaces import oracle_energy_size_of_image
-from slavv_python.engine.state import load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     EXPERIMENT_PROVENANCE_PATH,
     PREFLIGHT_EXACT_JSON_PATH,
     PREFLIGHT_EXACT_TEXT_PATH,
     RUN_SNAPSHOT_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from .reports import render_exact_preflight_report
-from .utils import now_iso, write_json_with_hash, write_text_with_hash
+from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.params_audit import build_exact_params_audit
+from slavv_python.analytics.parity.reports import render_exact_preflight_report
+from slavv_python.analytics.parity.surfaces import oracle_energy_size_of_image
+from slavv_python.analytics.parity.utils import now_iso, write_json_with_hash, write_text_with_hash
+from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from .models import DatasetSurface, OracleSurface
+    from slavv_python.analytics.parity.models import DatasetSurface, OracleSurface
 
 
 def _available_system_bytes() -> int:

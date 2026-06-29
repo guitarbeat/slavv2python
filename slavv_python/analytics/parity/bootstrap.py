@@ -8,13 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from slavv_python.analytics.parity.matlab_vector_loader import find_single_matlab_batch_dir
-from slavv_python.analytics.parity.python_checkpoint_loader import (
-    sync_exact_vertex_checkpoint_from_matlab,
-)
-from slavv_python.engine.state import atomic_write_json, load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_PROVENANCE_PATH,
     EXPERIMENT_REFS_DIR,
@@ -22,15 +16,20 @@ from .constants import (
     ORACLE_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
 )
-from .params_audit import normalize_param_value
-from .surfaces import (
+from slavv_python.analytics.parity.matlab_vector_loader import find_single_matlab_batch_dir
+from slavv_python.analytics.parity.params_audit import normalize_param_value
+from slavv_python.analytics.parity.python_checkpoint_loader import (
+    sync_exact_vertex_checkpoint_from_matlab,
+)
+from slavv_python.analytics.parity.surfaces import (
     load_oracle_surface,
     oracle_energy_size_of_image,
     write_run_manifest,
 )
+from slavv_python.engine.state import atomic_write_json, load_json_dict
 
 if TYPE_CHECKING:
-    from .models import DatasetSurface, OracleSurface
+    from slavv_python.analytics.parity.models import DatasetSurface, OracleSurface
 
 __all__ = [
     "_copy_exact_bootstrap_refs",
@@ -284,7 +283,7 @@ def _finalize_init_exact_run(
             else None,
         },
     )
-    from .reports import persist_recording_tables
+    from slavv_python.analytics.parity.reports import persist_recording_tables
 
     persist_recording_tables(dest_run_root)
 

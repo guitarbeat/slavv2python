@@ -8,7 +8,7 @@ Implementation is split across:
 
 from __future__ import annotations
 
-from .bootstrap import (
+from slavv_python.analytics.parity.bootstrap import (
     _copy_exact_bootstrap_refs,
     _finalize_init_exact_run,
     _reorient_exact_input_volume,
@@ -16,14 +16,14 @@ from .bootstrap import (
     derive_exact_params_from_oracle,
     maybe_sync_exact_vertex_checkpoint,
 )
-from .params_audit import (
+from slavv_python.analytics.parity.params_audit import (
     _normalize_param_value,
     build_exact_params_audit,
     load_params_file,
     normalize_param_value,
     persist_param_storage,
 )
-from .surfaces import (
+from slavv_python.analytics.parity.surfaces import (
     _oracle_energy_size_of_image,
     copy_source_surface,
     ensure_dest_run_layout,

@@ -7,9 +7,12 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from .constants import ANALYSIS_DIR
-from .mismatch_diagnostics import _ordered_float64_bits, _ulp_mismatch_stats
-from .utils import now_iso, write_json_with_hash, write_text_with_hash
+from slavv_python.analytics.parity.constants import ANALYSIS_DIR
+from slavv_python.analytics.parity.mismatch_diagnostics import (
+    _ordered_float64_bits,
+    _ulp_mismatch_stats,
+)
+from slavv_python.analytics.parity.utils import now_iso, write_json_with_hash, write_text_with_hash
 
 if TYPE_CHECKING:
     from pathlib import Path

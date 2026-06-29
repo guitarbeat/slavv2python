@@ -6,19 +6,18 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
-from slavv_python.engine.state import atomic_write_json, atomic_write_text, load_json_dict
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     EDGE_CANDIDATE_AUDIT_PATH,
     GAP_DIAGNOSIS_JSON_PATH,
     GAP_DIAGNOSIS_TEXT_PATH,
 )
-from .surfaces import ensure_dest_run_layout
-from .utils import (
+from slavv_python.analytics.parity.surfaces import ensure_dest_run_layout
+from slavv_python.analytics.parity.utils import (
     now_iso,
     write_hash_sidecar,
 )
+from slavv_python.engine.state import atomic_write_json, atomic_write_text, load_json_dict
 
 if TYPE_CHECKING:
     from pathlib import Path

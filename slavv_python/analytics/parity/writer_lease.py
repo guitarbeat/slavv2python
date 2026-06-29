@@ -6,10 +6,9 @@ import os
 from pathlib import Path
 from typing import Any
 
+from slavv_python.analytics.parity.constants import WRITER_LEASE_PATH
+from slavv_python.analytics.parity.utils import now_iso, resolve_python_commit, write_json_with_hash
 from slavv_python.engine.state import load_json_dict
-
-from .constants import WRITER_LEASE_PATH
-from .utils import now_iso, resolve_python_commit, write_json_with_hash
 
 
 def writer_lease_path(run_dir: Path) -> Path:

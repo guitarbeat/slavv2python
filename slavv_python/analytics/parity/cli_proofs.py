@@ -7,26 +7,30 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from slavv_python.engine.state import load_json_dict
-
-from .coordinator import ExactProofCoordinator
-from .proofs import (
+from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.proofs import (
     run_lut_proof,
 )
+from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     import argparse
 
-from .cli_support import _build_exact_proof_source_surface
+from slavv_python.analytics.parity.cli_support import _build_exact_proof_source_surface
 
 
 def handle_prove_energy_ulp(args: argparse.Namespace) -> None:
     """Run advisory Energy ULP proof (strict scales, bounded float ULP)."""
-    from .energy_proof_evidence import require_energy_proof_evidence
-    from .energy_ulp_proof import build_energy_ulp_proof_report, persist_energy_ulp_proof_report
-    from .matlab_vector_loader import load_normalized_matlab_vectors
-    from .python_checkpoint_loader import load_normalized_python_checkpoints
-    from .utils import payload_hash
+    from slavv_python.analytics.parity.energy_proof_evidence import require_energy_proof_evidence
+    from slavv_python.analytics.parity.energy_ulp_proof import (
+        build_energy_ulp_proof_report,
+        persist_energy_ulp_proof_report,
+    )
+    from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+    from slavv_python.analytics.parity.python_checkpoint_loader import (
+        load_normalized_python_checkpoints,
+    )
+    from slavv_python.analytics.parity.utils import payload_hash
 
     run_root = Path(args.source_run_root).expanduser().resolve()
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()

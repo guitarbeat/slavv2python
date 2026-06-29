@@ -5,11 +5,10 @@ from __future__ import annotations
 from pathlib import Path  # noqa: TC003
 from typing import Any
 
+from slavv_python.analytics.parity.constants import PARITY_JOB_MANIFEST_PATH
+from slavv_python.analytics.parity.utils import now_iso, write_json_with_hash
+from slavv_python.analytics.parity.writer_lease import finalize_writer_lease, load_writer_lease
 from slavv_python.engine.state import load_json_dict
-
-from .constants import PARITY_JOB_MANIFEST_PATH
-from .utils import now_iso, write_json_with_hash
-from .writer_lease import finalize_writer_lease, load_writer_lease
 
 TERMINAL_STATUSES = frozenset({"succeeded", "failed", "interrupted"})
 ACTIVE_STATUSES = frozenset({"launched", "running"})

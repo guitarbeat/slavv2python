@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from slavv_python.analytics.parity.constants import EXPERIMENT_INDEX_PATH, EXPERIMENT_ROOT_SUBDIRS
 from slavv_python.engine.state import atomic_write_text, stable_json_dumps
-
-from .constants import EXPERIMENT_INDEX_PATH, EXPERIMENT_ROOT_SUBDIRS
 
 
 def resolve_experiment_root(path: Path) -> Path | None:

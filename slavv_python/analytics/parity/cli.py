@@ -9,20 +9,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     ANALYSIS_DIR,
     EXACT_PROOF_JSON_PATH,
     EXACT_STAGE_ORDER,
 )
-from .coordinator import ExactProofCoordinator
-from .utils import (
+from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.utils import (
     write_json_with_hash,
 )
 
 if TYPE_CHECKING:
     import argparse
 
-from .cli_diagnostics import (
+from slavv_python.analytics.parity.cli_diagnostics import (
     handle_compare_energy_probes,
     handle_diagnose_energy,
     handle_diagnose_gaps,
@@ -32,7 +32,7 @@ from .cli_diagnostics import (
     handle_summarize,
     handle_trace_vertex,
 )
-from .cli_edges import (
+from slavv_python.analytics.parity.cli_edges import (
     handle_capture_candidates,
     handle_compare_traces,
     handle_dedupe,
@@ -40,12 +40,12 @@ from .cli_edges import (
     handle_fail_fast,
     handle_replay_edges,
 )
-from .cli_proofs import (
+from slavv_python.analytics.parity.cli_proofs import (
     handle_prove_energy_ulp,
     handle_prove_exact,
     handle_prove_luts,
 )
-from .cli_runs import (
+from slavv_python.analytics.parity.cli_runs import (
     handle_ensure_oracle_artifacts,
     handle_init_exact_run,
     handle_launch_exact_run,
@@ -57,7 +57,7 @@ from .cli_runs import (
     handle_resume_exact_run,
     handle_status_exact_run,
 )
-from .cli_support import _build_exact_proof_source_surface
+from slavv_python.analytics.parity.cli_support import _build_exact_proof_source_surface
 
 
 def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
@@ -100,7 +100,7 @@ def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
         "source_run_root": str(run_root),
         "dest_run_root": str(dest_run_root),
     }
-    from .utils import write_text_with_hash
+    from slavv_python.analytics.parity.utils import write_text_with_hash
 
     summary_json = dest_run_root / EXACT_PROOF_JSON_PATH
     summary_text = dest_run_root / ANALYSIS_DIR / "exact_proof_sequence.txt"

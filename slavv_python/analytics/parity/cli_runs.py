@@ -9,9 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from slavv_python.engine.state import load_json_dict
-
-from .bootstrap import (
+from slavv_python.analytics.parity.bootstrap import (
     _copy_exact_bootstrap_refs,
     _finalize_init_exact_run,
     _reorient_exact_input_volume,
@@ -19,17 +17,17 @@ from .bootstrap import (
     derive_exact_params_from_oracle,
     maybe_sync_exact_vertex_checkpoint,
 )
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     EXPERIMENT_PROVENANCE_PATH,
     METADATA_DIR,
     RUN_MANIFEST_PATH,
 )
-from .params_audit import load_params_file, persist_param_storage
-from .preflight import run_exact_preflight_for_surfaces
-from .proofs import (
+from slavv_python.analytics.parity.params_audit import load_params_file, persist_param_storage
+from slavv_python.analytics.parity.preflight import run_exact_preflight_for_surfaces
+from slavv_python.analytics.parity.proofs import (
     run_exact_preflight,
 )
-from .reports import (
+from slavv_python.analytics.parity.reports import (
     build_experiment_summary,
     extract_matlab_counts,
     extract_source_python_counts,
@@ -39,8 +37,8 @@ from .reports import (
     render_exact_preflight_report,
     render_experiment_summary,
 )
-from .resume import resume_exact_run
-from .surfaces import (
+from slavv_python.analytics.parity.resume import resume_exact_run
+from slavv_python.analytics.parity.surfaces import (
     copy_source_surface,
     ensure_dest_run_layout,
     load_dataset_surface,
@@ -49,11 +47,12 @@ from .surfaces import (
     validate_source_run_surface,
     write_run_manifest,
 )
-from .utils import (
+from slavv_python.analytics.parity.utils import (
     fingerprint_file,
     now_iso,
     write_json_with_hash,
 )
+from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     import argparse
@@ -305,14 +304,13 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
     from slavv_python.analytics.parity.job_registry import JobRegistry
+    from slavv_python.analytics.parity.jobs import launch_exact_run_job
     from slavv_python.analytics.parity.launch_prepare import (
         LaunchPreparationError,
         assert_no_conflicting_registry_writer,
         prepare_detached_exact_run_launch,
     )
     from slavv_python.analytics.parity.process_utils import ensure_monitor_daemon_running
-
-    from .jobs import launch_exact_run_job
 
     dest_run_root = Path(args.dest_run_root)
     monitor = bool(getattr(args, "monitor", False))
@@ -392,7 +390,7 @@ def handle_status_exact_run(args: argparse.Namespace) -> None:
 def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
     """Verify and optionally repair normalized Oracle Artifacts."""
 
-    from .oracle_artifacts import ensure_oracle_artifacts
+    from slavv_python.analytics.parity.oracle_artifacts import ensure_oracle_artifacts
 
     statuses = ensure_oracle_artifacts(
         Path(args.oracle_root),
@@ -414,21 +412,21 @@ def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
 
 def handle_promote_oracle(args: argparse.Namespace) -> None:
     """Promote a MATLAB batch to a structured oracle root."""
-    from .promotion import handle_promote_oracle as handler
+    from slavv_python.analytics.parity.promotion import handle_promote_oracle as handler
 
     handler(args)
 
 
 def handle_promote_dataset(args: argparse.Namespace) -> None:
     """Promote a raw file to a cataloged dataset."""
-    from .promotion import handle_promote_dataset as handler
+    from slavv_python.analytics.parity.promotion import handle_promote_dataset as handler
 
     handler(args)
 
 
 def handle_promote_report(args: argparse.Namespace) -> None:
     """Promote a disposable run to a stable report."""
-    from .promotion import handle_promote_report as handler
+    from slavv_python.analytics.parity.promotion import handle_promote_report as handler
 
     handler(args)
 

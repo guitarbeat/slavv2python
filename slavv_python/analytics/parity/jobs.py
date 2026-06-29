@@ -8,16 +8,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from slavv_python.engine.state import atomic_write_text
-
-from .constants import (
+from slavv_python.analytics.parity.constants import (
     PARITY_JOB_MANIFEST_PATH,
     PARITY_JOB_PID_PATH,
     PARITY_JOB_STDERR_PATH,
     PARITY_JOB_STDOUT_PATH,
 )
-from .utils import now_iso, resolve_python_commit, write_json_with_hash
-from .writer_lease import write_writer_lease
+from slavv_python.analytics.parity.utils import now_iso, resolve_python_commit, write_json_with_hash
+from slavv_python.analytics.parity.writer_lease import write_writer_lease
+from slavv_python.engine.state import atomic_write_text
 
 
 def _repo_root_from_path(path: Path) -> Path:
