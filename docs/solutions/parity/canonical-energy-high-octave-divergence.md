@@ -61,7 +61,7 @@ MATLAB's winners concentrate in octaves 3–4 (17,802 + 17,090) while Python's o
 winners are roughly half (9,098), with Python scattering to weaker winners in
 octaves 1–2 and 5. So Python's octave-3/4 energy is too weak and loses the argmin.
 
-## Ground-truth result (MATLAB harness) — sign flip, not weak magnitude
+## Ground-truth result (MATLAB harness) — Python energy zeroed at MATLAB's scale
 The MATLAB ground-truth harness now exists and is validated:
 `workspace/scratch/matlab_energy_instr/` (see its `README.md`). It replays
 `get_energy_V202`'s per-chunk math (`energy_filter_V200` + `interp3`) at the 16
@@ -91,22 +91,49 @@ for all 16 targets, fully validating the MATLAB side.
 | (40, 319, 200) | 88 | −22.2610 | **0.0000** | 54 |
 | … (12 more) | | all −ve | **all 0.0000** | |
 
-`0.0` is the clamp firing (`energy >= 0 → 0`): Python's matched-filter energy at that
-scale/voxel is **non-negative** — a positive Laplacian / positive principal energy,
-i.e. "not a vessel" — so it is zeroed and cannot win the argmin, and Python settles on
-a different scale. This reframes the bug: it is **not** a magnitude under-computation
-or a tie-break, it is a **sign / principal-curvature error** in the downsampled-octave
-matched filter (rf≫1). The earlier "Python energy ~0.7–1.2 weaker" characterization
-was the aggregate shadow of these zeroed scales losing the argmin.
+`0.0` is the clamp firing (invalid/Inf → 0). The original guess was a sign error in the
+matched filter — **that was wrong** (see root cause below).
 
-## Next step (the open work) — now narrowed to the filter internals
-The divergent step is inside the per-chunk `energy_filter_V200` equivalent at rf≫1,
-where Python's output sign is wrong. Suspects, in order: the **principal-energy /
-Hessian-curvature assembly** (sign of the projected curvatures → Laplacian validity
-mask), then the per-chunk **FFT padded-shape / frequency grid** and **kernel
-normalization at large downsample**. Instrument one octave-4 chunk at voxel
-(0,94,390), scale 54, on both sides and compare the intermediate Laplacian /
-principal-curvature fields (not just the final energy) to localize the sign flip.
+## ROOT CAUSE (verified) — upsample-mesh roundoff at a coarse-cell boundary
+Instrumenting the intermediate Hessian/Laplacian fields for one octave-4 chunk
+(voxel (0,94,390), scale 54, rf=[2,5,5]) localized the bug precisely. Tools:
+`energy_filter_V200_instr.m` (instrumented copy of the oracle filter, source untouched),
+`probe_laplacian_octave4.m` / `.py`.
+
+The Hessian, Laplacian, principal curvatures, and principal energy are computed
+**correctly and identically** on both sides — there is **no** sign error. The coarse
+energy at the relevant valid corners matches: Python's own coarse field has
+`E(Y1,X10,Z0)=−2.846`, `E(Y2,X10,Z0)=−3.679`, exactly as MATLAB.
+
+The divergence is purely the **coarse→fine upsample mesh**. At this voxel MATLAB's
+`interp3` mesh coordinate is exactly `x=10.0`; Python's `_matlab_zero_based_linspace`
+yields `x=9.999999999999998` (**1.78e-15** low). That sub-ULP drift floors the trilinear
+interp **base cell** from X=10 down to X=9 — and the X=9 coarse corner is *invalid*
+(`Laplacian=+2.95 ≥ 0`, genuinely "not a vessel", agreed by both sides). MATLAB,
+sitting exactly on the integer grid line, samples only the valid X=10 column and gets
+`0.2·(−2.846) + 0.8·(−3.679) = −3.5122`. Python straddles into the invalid X=9 column;
+the `Inf` corner poisons the trilinear blend and the energy collapses to `0.0`.
+
+**Decisive check:** feeding Python's own valid corners with `x=10.0` (instead of the
+drifted value) reproduces `−3.512245`, matching MATLAB to 6 decimals. So the −3.51 is
+recoverable from Python's own (correct) coarse field — only the mesh coordinate is off.
+
+This is the same class as the documented "preserve MATLAB `linspace` roundoff" issue,
+but here the port does **not** match at integer-valued sample points: MATLAB `linspace`
+lands exactly on the grid integer; the Python mesh is one ULP short, which only matters
+when the adjacent coarse cell is invalid (so it never showed up away from vessel/octave
+boundaries). The 16/16 "energy = 0 at MATLAB's scale" symptom is consistent with this
+mechanism (octave-3/4 winners sit next to invalid downsampled cells); mechanism verified
+in full on (0,94,390)/scale 54.
+
+## Next step (the fix) — snap the upsample mesh to MATLAB's `linspace`
+Make the exact-route upsample mesh bit-match MATLAB: `_matlab_zero_based_linspace`
+should reproduce MATLAB `linspace` (which forces exact endpoints and integer-valued
+interior points), or equivalently snap mesh coordinates within ~1e-12 of an integer to
+that integer before `interp3`. Either removes the cross-boundary floor so the valid
+coarse neighbor is sampled. Then re-run the canonical energy proof: this should clear
+the 39,494 octave-3/4 `scale_indices` mismatches. (Verify it does not perturb
+already-passing voxels — the snap must be a no-op except at exact grid coincidences.)
 
 ## Notes
 - A clean single-writer rerun (v4) would **reproduce** this (energy is
