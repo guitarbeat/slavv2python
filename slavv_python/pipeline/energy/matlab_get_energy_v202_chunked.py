@@ -291,6 +291,26 @@ def _matlab_linspace_override_meshes() -> dict[tuple[int, int, int, int], np.nda
     return meshes
 
 
+def _snap_mesh_to_grid_integers(mesh: np.ndarray) -> np.ndarray:
+    """Snap upsample-mesh coordinates that are within ~1 ULP of an integer to it.
+
+    A fine voxel aligned with a coarse sample maps to an exact integer coordinate;
+    MATLAB ``linspace`` lands on it exactly, but the float barycentric formula drifts
+    ~1e-15. At a coarse-cell boundary that drift floors ``interp3``'s base cell into
+    the neighbor (which may be invalid/Inf), collapsing a valid energy to 0 -- the
+    octave-3/4 ``scale_indices`` divergence. Mesh steps are ``i/stride`` (stride <= 20
+    here), so genuine non-integer samples sit >= 1/20 = 0.05 from any integer; a 1e-9
+    snap is therefore unambiguous and a no-op for rf==1 (octave-1) meshes, which are
+    already integer-exact. See docs/solutions/parity/canonical-energy-high-octave-divergence.md.
+    """
+    nearest = np.round(mesh)
+    snap = np.abs(mesh - nearest) < 1e-9
+    if np.any(snap):
+        mesh = mesh.copy()
+        mesh[snap] = nearest[snap]
+    return mesh
+
+
 def _matlab_zero_based_linspace_raw(
     offset: int, stride: int, count: int, local_start: int
 ) -> np.ndarray:
@@ -300,9 +320,10 @@ def _matlab_zero_based_linspace_raw(
     x1 = 1.0 + float(offset) / float(stride) - float(local_start)
     x2 = x1 + float(count - 1) / float(stride)
     if count == 1:
-        return cast("np.ndarray", np.array([x2 - 1.0], dtype=np.float64))
+        return _snap_mesh_to_grid_integers(np.array([x2 - 1.0], dtype=np.float64))
     i: np.ndarray = np.arange(count, dtype=np.float64)
-    return cast("np.ndarray", ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0)
+    mesh = ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
+    return _snap_mesh_to_grid_integers(cast("np.ndarray", mesh))
 
 
 def _matlab_zero_based_linspace(

@@ -126,14 +126,33 @@ boundaries). The 16/16 "energy = 0 at MATLAB's scale" symptom is consistent with
 mechanism (octave-3/4 winners sit next to invalid downsampled cells); mechanism verified
 in full on (0,94,390)/scale 54.
 
-## Next step (the fix) — snap the upsample mesh to MATLAB's `linspace`
-Make the exact-route upsample mesh bit-match MATLAB: `_matlab_zero_based_linspace`
-should reproduce MATLAB `linspace` (which forces exact endpoints and integer-valued
-interior points), or equivalently snap mesh coordinates within ~1e-12 of an integer to
-that integer before `interp3`. Either removes the cross-boundary floor so the valid
-coarse neighbor is sampled. Then re-run the canonical energy proof: this should clear
-the 39,494 octave-3/4 `scale_indices` mismatches. (Verify it does not perturb
-already-passing voxels — the snap must be a no-op except at exact grid coincidences.)
+## Fix applied + result — mesh snap clears the interp-clamp class (39,494 → 11,793)
+`_snap_mesh_to_grid_integers` (in `matlab_get_energy_v202_chunked.py`) snaps upsample-mesh
+coordinates within 1e-9 of an integer to it, so the Python mesh lands on grid lines like
+MATLAB `linspace` and `interp3` no longer floors across a coarse-cell boundary into an
+invalid cell. Full test suite green (595 passed); the 16 probe voxels now reproduce
+MATLAB's scale **and** energy exactly.
+
+Canonical energy re-run (v4, parallel n_jobs=6, then `prove-exact --stage energy`):
+`scale_indices` mismatches dropped **39,494 → 11,793** (~70%), but the energy gate still
+**FAILS** ADR 0011 strict-zero. Energy floats pass `allclose`; the blocker is the residual
+`scale_indices`.
+
+### The residual (11,793) is a SECOND, distinct class — genuine per-scale energy diffs
+Probing a residual voxel `[41,310,0]` (MATLAB winner scale 95, Python 74) with the fixed
+code: Python `E@74 = −6.485`, `E@95 = −5.956` — **both valid negatives, neither clamped**.
+So this is *not* the interp-clamp/Inf mechanism; the per-scale matched-filter energies
+themselves differ between Python and MATLAB enough to flip the argmin between non-adjacent
+scales. This is the "computation differs" signal from the isolation section, now cleanly
+separated from the (fixed) interp-clamp class.
+
+## Next step (the open work) — root-cause the residual per-scale energy difference
+Instrument the per-scale energy at a residual voxel on **both** sides (extend the MATLAB
+`probe_canonical_targets.m` / Python `probe_python_targets.py` to the residual voxel set,
+e.g. `[41,310,0]` scales 74 & 95) and compare the matched-filter / Hessian intermediates
+(as in `probe_laplacian_octave4.*`) to find which downsampled-octave filter step yields the
+small numeric energy difference. Suspects: FFT padded-shape / frequency grid or kernel
+normalization at rf≫1 (the interp/Hessian-assembly is already cleared).
 
 ## Notes
 - A clean single-writer rerun (v4) would **reproduce** this (energy is
