@@ -126,33 +126,42 @@ boundaries). The 16/16 "energy = 0 at MATLAB's scale" symptom is consistent with
 mechanism (octave-3/4 winners sit next to invalid downsampled cells); mechanism verified
 in full on (0,94,390)/scale 54.
 
-## Fix applied + result — mesh snap clears the interp-clamp class (39,494 → 11,793)
-`_snap_mesh_to_grid_integers` (in `matlab_get_energy_v202_chunked.py`) snaps upsample-mesh
-coordinates within 1e-9 of an integer to it, so the Python mesh lands on grid lines like
-MATLAB `linspace` and `interp3` no longer floors across a coarse-cell boundary into an
-invalid cell. Full test suite green (595 passed); the 16 probe voxels now reproduce
-MATLAB's scale **and** energy exactly.
+## Interim fix (FLAWED heuristic) — mesh snap: 39,494 → 11,793
+`_snap_mesh_to_grid_integers` (in `matlab_get_energy_v202_chunked.py`, branch
+`parity/energy-upsample-mesh-snap`, **NOT merged**) snaps upsample-mesh coordinates within
+1e-9 of an integer to it. Full suite green (595 passed); canonical re-run (v4) dropped
+`scale_indices` mismatches **39,494 → 11,793** (~70%) — but the energy gate still **FAILS**
+strict-zero, and the snap is **the wrong approach** (see below). It is a net-positive
+heuristic that also *introduced* errors; do not merge as the final fix.
 
-Canonical energy re-run (v4, parallel n_jobs=6, then `prove-exact --stage energy`):
-`scale_indices` mismatches dropped **39,494 → 11,793** (~70%), but the energy gate still
-**FAILS** ADR 0011 strict-zero. Energy floats pass `allclose`; the blocker is the residual
-`scale_indices`.
+### Root cause (verified) — Python mesh does not bit-match MATLAB `linspace`
+Probing residual voxel `(7,300,233)`/scale 73 (MATLAB winner 74, Python 73): at the scales
+where both are valid (74, 75, …) the energies are **identical to ~1e-14**; the flip comes
+from `interp3` sampling a different coarse cell. Full precision:
+- MATLAB mesh_y (0-based) = **`12.999999999999998`** — MATLAB's *own* `linspace` landed just
+  below the integer 13, so MATLAB floors into the cell at 12 (whose far corner is `Inf`) and
+  gets `0`.
+- Python (post-snap) mesh_y = **`13.0`** — the snap forced it onto the integer, so Python
+  samples the valid cell at 13 and gets `−24.2`. **The snap pushed Python OFF MATLAB's actual
+  value here.** (At `(0,94,390)`/54 MATLAB *was* at exactly `10.0`, which is why the snap
+  helped there — but MATLAB is not always integer-valued.)
 
-### The residual (11,793) is a SECOND, distinct class — genuine per-scale energy diffs
-Probing a residual voxel `[41,310,0]` (MATLAB winner scale 95, Python 74) with the fixed
-code: Python `E@74 = −6.485`, `E@95 = −5.956` — **both valid negatives, neither clamped**.
-So this is *not* the interp-clamp/Inf mechanism; the per-scale matched-filter energies
-themselves differ between Python and MATLAB enough to flip the argmin between non-adjacent
-scales. This is the "computation differs" signal from the isolation section, now cleanly
-separated from the (fixed) interp-clamp class.
+The origin is the mesh **`d1`**: Python computes `1 + offset/stride − local_start`
+(= `1.1000000000000014`), MATLAB computes `1 + mod(offset,stride)/stride` (= `1.1`, integer
+`mod` → cleaner roundoff), then a different `linspace` order-of-operations. So the two meshes
+diverge by ~1 ULP and floor differently at coarse-cell boundaries — in *either* direction.
+The earlier "interp-clamp" and "spurious energy" symptoms are the same bug seen from both
+sides.
 
-## Next step (the open work) — root-cause the residual per-scale energy difference
-Instrument the per-scale energy at a residual voxel on **both** sides (extend the MATLAB
-`probe_canonical_targets.m` / Python `probe_python_targets.py` to the residual voxel set,
-e.g. `[41,310,0]` scales 74 & 95) and compare the matched-filter / Hessian intermediates
-(as in `probe_laplacian_octave4.*`) to find which downsampled-octave filter step yields the
-small numeric energy difference. Suspects: FFT padded-shape / frequency grid or kernel
-normalization at rf≫1 (the interp/Hessian-assembly is already cleared).
+## Next step (the real fix) — bit-exact MATLAB `linspace`
+Replace `_matlab_zero_based_linspace_raw` (and drop the snap) with a bit-exact port of
+MATLAB `linspace`: compute `d1 = 1 + mod(offset,stride)/stride` (integer mod) and
+`y = d1 + (0:n−1)*(d2−d1)/(n−1)` with the endpoint forced to `d2`, mapping into the
+`local_start`-sliced 0-based field. **Verify at the unit level against the MATLAB probe at
+BOTH `(0,94,390)`/54 (MATLAB=10.0) and `(7,300,233)`/73 (MATLAB=12.999999999999998) before
+re-running the proof** — the corrected mesh must reproduce each. (The first quick mapping
+attempt mis-handled the `local_start`↔`mod` offset; the MATLAB probe is the ground truth to
+calibrate against.) Then re-run `prove-exact --stage energy`.
 
 ## Notes
 - A clean single-writer rerun (v4) would **reproduce** this (energy is

@@ -291,39 +291,47 @@ def _matlab_linspace_override_meshes() -> dict[tuple[int, int, int, int], np.nda
     return meshes
 
 
-def _snap_mesh_to_grid_integers(mesh: np.ndarray) -> np.ndarray:
-    """Snap upsample-mesh coordinates that are within ~1 ULP of an integer to it.
-
-    A fine voxel aligned with a coarse sample maps to an exact integer coordinate;
-    MATLAB ``linspace`` lands on it exactly, but the float barycentric formula drifts
-    ~1e-15. At a coarse-cell boundary that drift floors ``interp3``'s base cell into
-    the neighbor (which may be invalid/Inf), collapsing a valid energy to 0 -- the
-    octave-3/4 ``scale_indices`` divergence. Mesh steps are ``i/stride`` (stride <= 20
-    here), so genuine non-integer samples sit >= 1/20 = 0.05 from any integer; a 1e-9
-    snap is therefore unambiguous and a no-op for rf==1 (octave-1) meshes, which are
-    already integer-exact. See docs/solutions/parity/canonical-energy-high-octave-divergence.md.
-    """
-    nearest = np.round(mesh)
-    snap = np.abs(mesh - nearest) < 1e-9
-    if np.any(snap):
-        mesh = mesh.copy()
-        mesh[snap] = nearest[snap]
-    return mesh
-
-
 def _matlab_zero_based_linspace_raw(
     offset: int, stride: int, count: int, local_start: int
 ) -> np.ndarray:
-    """Base linspace formula without MATLAB R2019a ULP corrections."""
+    """Bit-exact port of MATLAB R2019a ``linspace`` for the upsample mesh.
+
+    Reproduces ``get_energy_V202``'s ``linspace(1 + mod(offset,rf)/rf, ... , count)``
+    exactly so the coarse->fine interp3 mesh floors into the same coarse cell MATLAB does.
+    Two float details matter at coarse-cell boundaries (where a 1-ULP drift flips which
+    cell -- valid vs Inf -- gets sampled, the octave-3/4 ``scale_indices`` divergence):
+
+    1. ``d1`` uses the integer ``mod`` (``mod(offset,stride)/stride``), not
+       ``offset/stride - local_start`` -- the latter accumulates a different rounding.
+       (``local_start == floor(offset/stride)`` for offset >= 0, so the slice still aligns;
+       ``local_start`` is retained only for the call/override signature.)
+    2. MATLAB's ``linspace`` is ``d1 + (0:n-1).*(d2-d1)/(n-1)`` (multiply i*(d2-d1) *then*
+       divide) with endpoints forced -- not the barycentric form.
+
+    Verified to reproduce MATLAB to <1e-17 on both the integer-landing voxel
+    ((0,94,390)/scale 54 -> x=10.0) and the sub-integer voxel ((7,300,233)/scale 73 ->
+    y=12.999999999999998). See docs/solutions/parity/canonical-energy-high-octave-divergence.md.
+    """
     if count <= 0:
         return np.empty(0, dtype=np.float64)
-    x1 = 1.0 + float(offset) / float(stride) - float(local_start)
-    x2 = x1 + float(count - 1) / float(stride)
+    # MATLAB's 1-based linspace arg uses the integer-mod fractional phase; the integer
+    # floor-quotient minus the (possibly clamped) local_start re-bases the mesh onto the
+    # local_start-sliced coarse field. For offset >= 0 with an unclamped slice the phase
+    # term is 0; it is non-zero only for the phase-aligned boundary chunk (negative offset
+    # with local_start clamped to 0), which the previous offset/stride-local_start form
+    # also handled -- this keeps that behavior while using the exact mod fraction.
+    frac = float(offset % stride) / float(stride)
+    phase = float(offset // stride - local_start)
+    d1 = 1.0 + frac  # MATLAB 1-based linspace arg
+    d2 = d1 + float(count - 1) / float(stride)
     if count == 1:
-        return _snap_mesh_to_grid_integers(np.array([x2 - 1.0], dtype=np.float64))
+        return cast("np.ndarray", np.array([d2 - 1.0 + phase], dtype=np.float64))
+    n1 = count - 1
     i: np.ndarray = np.arange(count, dtype=np.float64)
-    mesh = ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
-    return _snap_mesh_to_grid_integers(cast("np.ndarray", mesh))
+    mesh = d1 + (i * (d2 - d1)) / n1  # MATLAB: (0:n1).*(d2-d1)/n1
+    mesh[0] = d1
+    mesh[-1] = d2
+    return cast("np.ndarray", mesh - 1.0 + phase)  # 0-based on the local_start-sliced field
 
 
 def _matlab_zero_based_linspace(
