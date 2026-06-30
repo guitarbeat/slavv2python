@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-
 ROOT = Path(".")
 SKILLS_ROOT = ROOT / ".agents" / "skills"
 TODO_PATH = ROOT / "docs" / "TODO.md"
@@ -60,7 +59,9 @@ def load_skills() -> list[Skill]:
 
 
 def has_skill(skills: list[Skill], *terms: str) -> bool:
-    haystack = "\n".join(f"{skill.name} {skill.description} {skill.body}" for skill in skills).lower()
+    haystack = "\n".join(
+        f"{skill.name} {skill.description} {skill.body}" for skill in skills
+    ).lower()
     return all(term.lower() in haystack for term in terms)
 
 
@@ -161,10 +162,9 @@ def build_candidates(skills: list[Skill]) -> list[Candidate]:
             )
         )
 
-    if (
-        any("monitor" in task.lower() or "rerun" in task.lower() for task in tasks)
-        and not skill_body_contains(skills, "control-cli", "SLAVV Run Ops")
-    ):
+    if any(
+        "monitor" in task.lower() or "rerun" in task.lower() for task in tasks
+    ) and not skill_body_contains(skills, "control-cli", "SLAVV Run Ops"):
         candidates.append(
             Candidate(
                 name="run-ops-watch",
@@ -219,7 +219,9 @@ def render_markdown(candidates: list[Candidate]) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Suggest generative skill candidates from repo signals.")
+    parser = argparse.ArgumentParser(
+        description="Suggest generative skill candidates from repo signals."
+    )
     parser.add_argument("--format", choices=["markdown"], default="markdown")
     args = parser.parse_args()
 
