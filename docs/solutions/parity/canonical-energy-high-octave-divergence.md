@@ -1,14 +1,18 @@
 ---
 title: Canonical Energy Divergence at Multi-Chunk Downsampled Octaves
 module: pipeline/energy
-tags: [energy, parity, canonical, octaves, chunking, open]
+tags: [energy, parity, canonical, octaves, chunking, resolved]
 problem_type: parity
-resolution_type: investigation_open
+resolution_type: fixed
 ---
 
 # Canonical Energy Divergence at Multi-Chunk Downsampled Octaves
 
-**Status: OPEN investigation** (root cause not yet located).
+**Status: RESOLVED.** Root cause = the coarse→fine upsample mesh not bit-matching MATLAB
+`linspace` at coarse-cell boundaries. Fixed by a bit-exact `linspace` port (commit
+`ca709a8d`). Canonical `prove-exact --stage energy` now passes with **0 scale mismatches
+across all 16,777,216 voxels** (39,494 → 0). The narrative below is retained as the full
+diagnostic record.
 
 ## Problem
 After the resume-orientation fix, the canonical full-`180709_E` energy proof runs

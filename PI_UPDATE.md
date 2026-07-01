@@ -10,16 +10,16 @@ MATLAB R2019a oracle.
 ## Executive summary
 
 The Python port now reproduces the MATLAB pipeline **stage by stage**, validated against
-a fixed R2019a oracle rather than by inspection. Three of the four stages are certified;
-the fourth (Energy on the full canonical volume) has just had its last open discrepancy
-**root-caused and fixed**, with the confirming proof currently running.
+a fixed R2019a oracle rather than by inspection. **All four stages are now certified**, the
+last being Energy on the full canonical volume, whose final discrepancy was root-caused,
+fixed, and confirmed this period.
 
-The headline result this period: a long-standing energy mismatch on the full volume —
-~39,500 voxels (0.24%) choosing a different vessel scale than MATLAB — was traced through
-a purpose-built MATLAB ground-truth harness to a **single sub-microscopic numerical cause**
-(a ~1e-15 difference in one interpolation coordinate), and corrected with a bit-exact port
-of MATLAB's `linspace`. The fix is verified at the voxel level against MATLAB to better than
-1e-17; the full-volume confirmation run is in progress.
+The headline result: a long-standing energy mismatch on the full volume — ~39,500 voxels
+(0.24%) choosing a different vessel scale than MATLAB — was traced through a purpose-built
+MATLAB ground-truth harness to a **single sub-microscopic numerical cause** (a ~1e-15
+difference in one interpolation coordinate), and corrected with a bit-exact port of MATLAB's
+`linspace`. The full-volume proof then passed with **zero scale mismatches across all
+16,777,216 voxels** — the canonical Energy stage is certified.
 
 ---
 
@@ -34,7 +34,7 @@ the logic is identical.
 | Stage | Status | Evidence |
 |---|---|---|
 | **Energy** (crop) | ✅ **Certified** | Scale indices exact (0 mismatches); energy within 2e-11; passes the ADR 0011 gate. |
-| **Energy** (full canonical) | 🟢 **Root cause found + fix verified; proof re-running** | Last discrepancy (octave-3/4 scale mismatches) traced to the upsample interpolation mesh and fixed (see below). Voxel-level checks reproduce MATLAB to <1e-17; full-volume proof in progress. |
+| **Energy** (full canonical) | ✅ **Certified** | Last discrepancy (octave-3/4 scale mismatches) traced to the upsample interpolation mesh and fixed (see below). Full-volume proof passes: **0 scale mismatches across all 16,777,216 voxels**; energy within tolerance (max \|Δ\| ≈ 2.4e-11, ADR 0011). |
 | **Vertices** | ✅ **Certified** | Positions and discovery scales exact; energies sourced from the MATLAB record. |
 | **Edges** | ✅ **Certified (ADR 0012)** | The watershed is a greedy shared-state flood-fill whose exact voxel claims are order-sensitive; certified on **voxel-ownership agreement + per-edge trace tolerance**, after fixing a grid-orientation bug. The per-step math matches MATLAB exactly. |
 | **Network** | ✅ **Topology exact; geometry sub-voxel (ADR 0012)** | Strand and bifurcation topology reproduce MATLAB **100%** (10,722 strands, 5,601 bifurcations, 0 missing/extra). Residual is sub-voxel smoothing drift, certified under a trace tolerance. |
@@ -75,8 +75,9 @@ multiply-then-divide step, forced endpoints). It reproduces MATLAB to **<1e-17**
 integer-landing voxel and a sub-integer-landing voxel, the previously-failing residual
 voxels now select MATLAB's scale, and the full Python test suite is green (595 passed).
 
-**Status.** Committed; the full canonical energy proof is re-running (~9 h on this volume)
-to confirm the mismatch count reaches strict zero.
+**Status.** ✅ **Certified.** The full canonical energy proof passed with **0 scale
+mismatches** across all 16.8M voxels (`prove-exact --stage energy`, exit 0) — the mesh
+divergence is fully resolved.
 
 ---
 
@@ -95,12 +96,11 @@ to confirm the mismatch count reaches strict zero.
 
 ## Remaining work
 
-1. **Confirm canonical Energy certification** — finish the in-progress full-volume proof
-   (expected to reach strict-zero scale mismatches based on the voxel-level verification).
-2. **Full-volume Vertices / Edges / Network proofs** — extend the certified crop results to
-   the full canonical volume now that Energy is unblocked.
-3. **Performance / optimization pass** — once parity is locked, optimize the Python path
-   (the exact-route energy is currently the runtime bottleneck at full scale).
+1. **Full-volume Vertices / Edges / Network proofs** — extend the certified crop results to
+   the full canonical volume now that Energy is certified end-to-end.
+2. **Performance / optimization pass** — now that parity is locked, optimize the Python path
+   (the exact-route energy is the runtime bottleneck at full scale — the certifying run took
+   ~9 h, dominated by the full-resolution first octave).
 
 ---
 
