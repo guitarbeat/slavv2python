@@ -10,7 +10,6 @@ Uses: ``matlab_energy_filter_v200.py`` for per-scale filter math
 
 # The per-octave Joblib worker is intentionally defined inside the octave loop so
 # each worker captures the current MATLAB mesh context.
-# ruff: noqa: B023
 
 from __future__ import annotations
 
@@ -364,8 +363,6 @@ def compute_exact_parity_energy_chunked(
     octave_range = np.unique(octave_at_scales)
 
     microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
-    pixels_per_sigma_PSF = np.asarray(config["pixels_per_sigma_PSF"], dtype=float)
-    lumen_radius_microns = np.asarray(config["lumen_radius_microns"], dtype=float)
 
     total_chunk_units = 0
     for planned_octave in octave_range:
@@ -385,301 +382,335 @@ def compute_exact_parity_energy_chunked(
     completed_chunk_units = 0
 
     for current_octave in octave_range:
-        scale_indices_at_octave = np.where(octave_at_scales == current_octave)[0]
-        if len(scale_indices_at_octave) == 0:
-            continue
-
-        rf = np.asarray(config["scale_resolution_factors"][scale_indices_at_octave[0]], dtype=float)
-        # get_starts_and_counts_V200 uses MATLAB axis order (Y, X, Z); working image is (Z, Y, X).
-        matlab_image_shape = np.array(
-            [image_shape[1], image_shape[2], image_shape[0]],
-            dtype=float,
+        completed_chunk_units = compute_exact_parity_energy_single_octave(
+            image=image,
+            config=config,
+            current_octave=current_octave,
+            energy_3d=energy_3d,
+            scale_indices=scale_indices,
+            completed_chunk_units=completed_chunk_units,
+            total_chunk_units=total_chunk_units,
+            progress_callback=progress_callback,
+            n_jobs=n_jobs,
         )
-        rf_matlab = np.array([rf[1], rf[2], rf[0]], dtype=float)
-
-        largest_scale_idx = scale_indices_at_octave[-1]
-        largest_radius_microns = lumen_radius_microns[largest_scale_idx]
-        largest_pixels_per_radius = largest_radius_microns / microns_per_voxel
-
-        approx_size = np.round(matlab_image_shape / rf_matlab)
-        microns_per_pixel = microns_per_voxel * rf
-        microns_per_pixel_matlab = np.array(
-            [microns_per_pixel[1], microns_per_pixel[2], microns_per_pixel[0]],
-            dtype=float,
-        )
-        voxel_aspect_ratio = 1.0 / microns_per_pixel_matlab
-
-        chunk_lattice_dimensions, number_of_chunks = get_chunking_lattice_v190(
-            voxel_aspect_ratio,
-            float(config["max_voxels"]),
-            approx_size,
-        )
-
-        chunk_overlap_vector = np.ceil(
-            6.0 * np.sqrt(pixels_per_sigma_PSF**2 + largest_pixels_per_radius**2)
-        ).astype(np.int32)
-        chunk_overlap_matlab = chunk_overlap_vector[[1, 2, 0]]
-
-        res_starts_counts = get_starts_and_counts_v200(
-            chunk_lattice_dimensions,
-            chunk_overlap_matlab,
-            matlab_image_shape,
-            rf_matlab,
-        )
-
-        y_read_starts = res_starts_counts[0]
-        x_read_starts = res_starts_counts[1]
-        z_read_starts = res_starts_counts[2]
-
-        y_read_counts = res_starts_counts[3]
-        x_read_counts = res_starts_counts[4]
-        z_read_counts = res_starts_counts[5]
-
-        y_write_starts = res_starts_counts[6]
-        x_write_starts = res_starts_counts[7]
-        z_write_starts = res_starts_counts[8]
-
-        y_write_counts = res_starts_counts[9]
-        x_write_counts = res_starts_counts[10]
-        z_write_counts = res_starts_counts[11]
-
-        y_offset = res_starts_counts[12]
-        x_offset = res_starts_counts[13]
-        z_offset = res_starts_counts[14]
-
-        def _process_chunk(
-            chunk_idx: int,
-        ) -> tuple[int, tuple[slice, slice, slice, np.ndarray, np.ndarray]]:
-            # Fortran unraveling matching MATLAB ind2sub on (Y, X, Z) lattice.
-            y_idx, x_idx, z_idx = np.unravel_index(chunk_idx, chunk_lattice_dimensions, order="F")
-
-            py_z_start = int(z_read_starts[z_idx]) - 1
-            py_y_start = int(y_read_starts[y_idx]) - 1
-            py_x_start = int(x_read_starts[x_idx]) - 1
-
-            py_z_count = int(z_read_counts[z_idx])
-            py_y_count = int(y_read_counts[y_idx])
-            py_x_count = int(x_read_counts[x_idx])
-
-            # ``rf`` is in the raw [Z, Y, X] input frame. The chunk is
-            # transposed to MATLAB [Y, X, Z] only after this strided slice.
-            stride_z = int(rf[0])
-            stride_y = int(rf[1])
-            stride_x = int(rf[2])
-
-            original_chunk_zyx = image[
-                py_z_start : py_z_start + py_z_count : stride_z,
-                py_y_start : py_y_start + py_y_count : stride_y,
-                py_x_start : py_x_start + py_x_count : stride_x,
-            ]
-            # Transpose the chunk from [Z, Y, X] to [Y, X, Z] to match MATLAB's internal memory layout.
-            original_chunk = np.transpose(original_chunk_zyx, (1, 2, 0)).copy(order="F")
-            original_chunk = original_chunk.astype(np.float64, copy=False)
-
-            padded_chunk = native_hessian._fourier_transform_input(original_chunk)
-            padded_shape = padded_chunk.shape
-            chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
-
-            # Pre-compute pixel frequency meshes for the padded chunk once
-            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
-
-            w_count_z = int(z_write_counts[z_idx])
-            w_count_y = int(y_write_counts[y_idx])
-            w_count_x = int(x_write_counts[x_idx])
-
-            off_z = int(z_offset[z_idx])
-            off_y = int(y_offset[y_idx])
-            off_x = int(x_offset[x_idx])
-
-            y_local, x_local, z_local = _matlab_coarse_local_slices(
-                offsets=(off_y, off_x, off_z),
-                write_counts=(w_count_y, w_count_x, w_count_z),
-                strides=(stride_y, stride_x, stride_z),
-                padded_shape=padded_shape,
-            )
-            l_start_y = y_local.start or 0
-            l_start_x = x_local.start or 0
-            l_start_z = z_local.start or 0
-
-            mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
-            mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
-            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
-
-            # [Y, X, Z] mesh for interpolation (sparse to save memory)
-            mesh_coords: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
-                mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True
-            )
-            coords_grid = mesh_coords
-
-            # Accumulators in [Y, X, Z] order with Fortran contiguity
-            chunk_best_energy: np.ndarray = np.full(
-                (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
-            )
-            chunk_best_scale_sub_idx: np.ndarray = np.full(
-                (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
-            )
-
-            for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
-                radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
-                pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
-
-                matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
-                    pixel_freq_meshes,
-                    radius_of_lumen_in_microns=radius_of_lumen_in_microns,
-                    microns_per_pixel=microns_per_pixel_matlab,
-                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
-                    gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
-                    spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
-                )
-
-                filtered_chunk_dft = matching_kernel_dft * chunk_dft
-                del matching_kernel_dft
-
-                coarse_shape = (
-                    y_local.stop - y_local.start,
-                    x_local.stop - x_local.start,
-                    z_local.stop - z_local.start,
-                )
-
-                # All intermediates are [Y, X, Z] with Fortran order
-                # Compute derivative kernels one-by-one to minimize peak memory
-                curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
-                for k_idx in range(6):
-                    k_dft = native_hessian._derivative_kernel_dft_single(
-                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
-                    )
-                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
-                    curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
-                    del k_dft, full_ifft
-
-                gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
-                for k_idx in range(3):
-                    k_dft = native_hessian._derivative_kernel_dft_single(
-                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
-                    )
-                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
-                    gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
-                    del k_dft, full_ifft
-
-                # Explicitly delete DFT products
-                del filtered_chunk_dft
-
-                laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
-                valid_voxels = laplacian_chunk < 0
-                coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
-
-                if np.any(valid_voxels):
-                    grad_valid = np.stack(
-                        [
-                            gradient_local[0][valid_voxels],
-                            gradient_local[1][valid_voxels],
-                            gradient_local[2][valid_voxels],
-                        ],
-                        axis=1,
-                    )
-                    curvatures_valid = np.stack(
-                        [
-                            curvatures_local[0][valid_voxels],
-                            curvatures_local[1][valid_voxels],
-                            curvatures_local[2][valid_voxels],
-                            curvatures_local[3][valid_voxels],
-                            curvatures_local[4][valid_voxels],
-                            curvatures_local[5][valid_voxels],
-                        ],
-                        axis=1,
-                    )
-                    energy_valid = compute_principal_energy(
-                        grad_valid,
-                        curvatures_valid,
-                        energy_sign=float(config.get("energy_sign", -1.0)),
-                    )
-                    coarse_energy[valid_voxels] = energy_valid
-
-                    del grad_valid, curvatures_valid, energy_valid
-                # Free local cropped arrays
-                del curvatures_local, gradient_local
-
-                coarse_energy[~np.isfinite(coarse_energy)] = np.inf
-                coarse_energy[coarse_energy >= 0] = np.inf
-
-                upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
-                del coarse_energy
-                upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
-
-                if s_sub_idx == 0:
-                    chunk_best_energy = upsampled
-                    chunk_best_scale_sub_idx = np.zeros_like(chunk_best_scale_sub_idx)
-                else:
-                    is_better = upsampled < chunk_best_energy
-                    chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
-                    chunk_best_scale_sub_idx[is_better] = s_sub_idx
-
-                del upsampled
-
-            # Energy and scale are accumulated in [Y, X, Z] order internally.
-            # We transpose them back to [Z, Y, X] to match the master volume's axis order.
-            chunk_energy_min = chunk_best_energy.transpose(2, 0, 1)
-            chunk_scale_min = chunk_best_scale_sub_idx.transpose(2, 0, 1)
-            chunk_scale_min[chunk_energy_min >= 0.0] = -1
-
-            prev_scales_count = int(np.sum(octave_at_scales < current_octave))
-            valid_scale = chunk_scale_min >= 0
-            chunk_scale_min = chunk_scale_min.astype(np.int16)
-            chunk_scale_min[valid_scale] += prev_scales_count
-
-            py_z_w_start = int(z_write_starts[z_idx]) - 1
-            py_y_w_start = int(y_write_starts[y_idx]) - 1
-            py_x_w_start = int(x_write_starts[x_idx]) - 1
-
-            slice_z = slice(py_z_w_start, py_z_w_start + w_count_z)
-            slice_y = slice(py_y_w_start, py_y_w_start + w_count_y)
-            slice_x = slice(py_x_w_start, py_x_w_start + w_count_x)
-
-            # One collection per chunk (not per scale) bounds cyclic garbage
-            # without serializing every scale iteration under the GIL.
-            gc.collect()
-            return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
-
-        if n_jobs == 1:
-            for c_idx in range(number_of_chunks):
-                _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) = _process_chunk(c_idx)
-                master_energy = energy_3d[slice_z, slice_y, slice_x]
-                is_better = chunk_energy < master_energy
-                energy_3d[slice_z, slice_y, slice_x] = np.where(
-                    is_better, chunk_energy, master_energy
-                )
-                scale_indices[slice_z, slice_y, slice_x] = np.where(
-                    is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
-                )
-                completed_chunk_units += 1
-                if progress_callback is not None:
-                    progress_callback(
-                        completed_chunk_units, total_chunk_units, int(current_octave), c_idx
-                    )
-        else:
-            chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
-                delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
-            )
-
-            for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
-                master_energy = energy_3d[slice_z, slice_y, slice_x]
-                is_better = chunk_energy < master_energy
-                energy_3d[slice_z, slice_y, slice_x] = np.where(
-                    is_better, chunk_energy, master_energy
-                )
-                scale_indices[slice_z, slice_y, slice_x] = np.where(
-                    is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
-                )
-                completed_chunk_units += 1
-                if progress_callback is not None:
-                    progress_callback(
-                        completed_chunk_units, total_chunk_units, int(current_octave), -1
-                    )
 
     energy_3d[energy_3d >= 0.0] = 0.0
     energy_3d[~np.isfinite(energy_3d)] = 0.0
     scale_indices[energy_3d >= 0.0] = -1
     return energy_3d.astype(np.float64, copy=False), scale_indices.astype(np.int16), None
+
+
+def compute_exact_parity_energy_single_octave(
+    image: np.ndarray,
+    config: dict[str, Any],
+    current_octave: int,
+    energy_3d: np.ndarray,
+    scale_indices: np.ndarray,
+    completed_chunk_units: int,
+    total_chunk_units: int,
+    progress_callback: Callable[[int, int, int, int], None] | None = None,
+    n_jobs: int = 1,
+) -> int:
+    """Run exact-route energy computation for a single octave and merge in-place."""
+
+    image_shape = np.asarray(image.shape, dtype=float)
+    octave_at_scales = config["octave_at_scales"]
+    microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
+    pixels_per_sigma_PSF = np.asarray(config["pixels_per_sigma_PSF"], dtype=float)
+    lumen_radius_microns = np.asarray(config["lumen_radius_microns"], dtype=float)
+
+    scale_indices_at_octave = np.where(octave_at_scales == current_octave)[0]
+    if len(scale_indices_at_octave) == 0:
+        return completed_chunk_units
+
+    rf = np.asarray(config["scale_resolution_factors"][scale_indices_at_octave[0]], dtype=float)
+    # get_starts_and_counts_V200 uses MATLAB axis order (Y, X, Z); working image is (Z, Y, X).
+    matlab_image_shape = np.array(
+        [image_shape[1], image_shape[2], image_shape[0]],
+        dtype=float,
+    )
+    rf_matlab = np.array([rf[1], rf[2], rf[0]], dtype=float)
+
+    largest_scale_idx = scale_indices_at_octave[-1]
+    largest_radius_microns = lumen_radius_microns[largest_scale_idx]
+    largest_pixels_per_radius = largest_radius_microns / microns_per_voxel
+
+    approx_size = np.round(matlab_image_shape / rf_matlab)
+    microns_per_pixel = microns_per_voxel * rf
+    microns_per_pixel_matlab = np.array(
+        [microns_per_pixel[1], microns_per_pixel[2], microns_per_pixel[0]],
+        dtype=float,
+    )
+    voxel_aspect_ratio = 1.0 / microns_per_pixel_matlab
+
+    chunk_lattice_dimensions, number_of_chunks = get_chunking_lattice_v190(
+        voxel_aspect_ratio,
+        float(config["max_voxels"]),
+        approx_size,
+    )
+
+    chunk_overlap_vector = np.ceil(
+        6.0 * np.sqrt(pixels_per_sigma_PSF**2 + largest_pixels_per_radius**2)
+    ).astype(np.int32)
+    chunk_overlap_matlab = chunk_overlap_vector[[1, 2, 0]]
+
+    res_starts_counts = get_starts_and_counts_v200(
+        chunk_lattice_dimensions,
+        chunk_overlap_matlab,
+        matlab_image_shape,
+        rf_matlab,
+    )
+
+    y_read_starts = res_starts_counts[0]
+    x_read_starts = res_starts_counts[1]
+    z_read_starts = res_starts_counts[2]
+
+    y_read_counts = res_starts_counts[3]
+    x_read_counts = res_starts_counts[4]
+    z_read_counts = res_starts_counts[5]
+
+    y_write_starts = res_starts_counts[6]
+    x_write_starts = res_starts_counts[7]
+    z_write_starts = res_starts_counts[8]
+
+    y_write_counts = res_starts_counts[9]
+    x_write_counts = res_starts_counts[10]
+    z_write_counts = res_starts_counts[11]
+
+    y_offset = res_starts_counts[12]
+    x_offset = res_starts_counts[13]
+    z_offset = res_starts_counts[14]
+
+    def _process_chunk(
+        chunk_idx: int,
+    ) -> tuple[int, tuple[slice, slice, slice, np.ndarray, np.ndarray]]:
+        # Fortran unraveling matching MATLAB ind2sub on (Y, X, Z) lattice.
+        y_idx, x_idx, z_idx = np.unravel_index(chunk_idx, chunk_lattice_dimensions, order="F")
+
+        py_z_start = int(z_read_starts[z_idx]) - 1
+        py_y_start = int(y_read_starts[y_idx]) - 1
+        py_x_start = int(x_read_starts[x_idx]) - 1
+
+        py_z_count = int(z_read_counts[z_idx])
+        py_y_count = int(y_read_counts[y_idx])
+        py_x_count = int(x_read_counts[x_idx])
+
+        # ``rf`` is in the raw [Z, Y, X] input frame. The chunk is
+        # transposed to MATLAB [Y, X, Z] only after this strided slice.
+        stride_z = int(rf[0])
+        stride_y = int(rf[1])
+        stride_x = int(rf[2])
+
+        original_chunk_zyx = image[
+            py_z_start : py_z_start + py_z_count : stride_z,
+            py_y_start : py_y_start + py_y_count : stride_y,
+            py_x_start : py_x_start + py_x_count : stride_x,
+        ]
+        # Transpose the chunk from [Z, Y, X] to [Y, X, Z] to match MATLAB's internal memory layout.
+        original_chunk = np.transpose(original_chunk_zyx, (1, 2, 0)).copy(order="F")
+        original_chunk = original_chunk.astype(np.float64, copy=False)
+
+        padded_chunk = native_hessian._fourier_transform_input(original_chunk)
+        padded_shape = padded_chunk.shape
+        chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
+
+        # Pre-compute pixel frequency meshes for the padded chunk once
+        pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
+
+        w_count_z = int(z_write_counts[z_idx])
+        w_count_y = int(y_write_counts[y_idx])
+        w_count_x = int(x_write_counts[x_idx])
+
+        off_z = int(z_offset[z_idx])
+        off_y = int(y_offset[y_idx])
+        off_x = int(x_offset[x_idx])
+
+        y_local, x_local, z_local = _matlab_coarse_local_slices(
+            offsets=(off_y, off_x, off_z),
+            write_counts=(w_count_y, w_count_x, w_count_z),
+            strides=(stride_y, stride_x, stride_z),
+            padded_shape=padded_shape,
+        )
+        l_start_y = y_local.start or 0
+        l_start_x = x_local.start or 0
+        l_start_z = z_local.start or 0
+
+        mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
+        mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
+        mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
+
+        # [Y, X, Z] mesh for interpolation (sparse to save memory)
+        mesh_coords: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
+            mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True
+        )
+        coords_grid = mesh_coords
+
+        # Accumulators in [Y, X, Z] order with Fortran contiguity
+        chunk_best_energy: np.ndarray = np.full(
+            (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
+        )
+        chunk_best_scale_sub_idx: np.ndarray = np.full(
+            (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
+        )
+
+        for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
+            radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
+            pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
+
+            matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
+                pixel_freq_meshes,
+                radius_of_lumen_in_microns=radius_of_lumen_in_microns,
+                microns_per_pixel=microns_per_pixel_matlab,
+                pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
+                gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
+                spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+            )
+
+            filtered_chunk_dft = matching_kernel_dft * chunk_dft
+            del matching_kernel_dft
+
+            coarse_shape = (
+                y_local.stop - y_local.start,
+                x_local.stop - x_local.start,
+                z_local.stop - z_local.start,
+            )
+
+            # All intermediates are [Y, X, Z] with Fortran order
+            # Compute derivative kernels one-by-one to minimize peak memory
+            curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
+            for k_idx in range(6):
+                k_dft = native_hessian._derivative_kernel_dft_single(
+                    pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
+                )
+                full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                del k_dft, full_ifft
+
+            gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
+            for k_idx in range(3):
+                k_dft = native_hessian._derivative_kernel_dft_single(
+                    pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
+                )
+                full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                del k_dft, full_ifft
+
+            # Explicitly delete DFT products
+            del filtered_chunk_dft
+
+            laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
+            valid_voxels = laplacian_chunk < 0
+            coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
+
+            if np.any(valid_voxels):
+                grad_valid = np.stack(
+                    [
+                        gradient_local[0][valid_voxels],
+                        gradient_local[1][valid_voxels],
+                        gradient_local[2][valid_voxels],
+                    ],
+                    axis=1,
+                )
+                curvatures_valid = np.stack(
+                    [
+                        curvatures_local[0][valid_voxels],
+                        curvatures_local[1][valid_voxels],
+                        curvatures_local[2][valid_voxels],
+                        curvatures_local[3][valid_voxels],
+                        curvatures_local[4][valid_voxels],
+                        curvatures_local[5][valid_voxels],
+                    ],
+                    axis=1,
+                )
+                energy_valid = compute_principal_energy(
+                    grad_valid,
+                    curvatures_valid,
+                    energy_sign=float(config.get("energy_sign", -1.0)),
+                )
+                coarse_energy[valid_voxels] = energy_valid
+
+                del grad_valid, curvatures_valid, energy_valid
+            # Free local cropped arrays
+            del curvatures_local, gradient_local
+
+            coarse_energy[~np.isfinite(coarse_energy)] = np.inf
+            coarse_energy[coarse_energy >= 0] = np.inf
+
+            upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
+            del coarse_energy
+            upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
+
+            if s_sub_idx == 0:
+                chunk_best_energy = upsampled
+                chunk_best_scale_sub_idx = np.zeros_like(chunk_best_scale_sub_idx)
+            else:
+                is_better = upsampled < chunk_best_energy
+                chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
+                chunk_best_scale_sub_idx[is_better] = s_sub_idx
+
+            del upsampled
+
+        # Energy and scale are accumulated in [Y, X, Z] order internally.
+        # We transpose them back to [Z, Y, X] to match the master volume's axis order.
+        chunk_energy_min = chunk_best_energy.transpose(2, 0, 1)
+        chunk_scale_min = chunk_best_scale_sub_idx.transpose(2, 0, 1)
+        chunk_scale_min[chunk_energy_min >= 0.0] = -1
+
+        prev_scales_count = int(np.sum(octave_at_scales < current_octave))
+        valid_scale = chunk_scale_min >= 0
+        chunk_scale_min = chunk_scale_min.astype(np.int16)
+        chunk_scale_min[valid_scale] += prev_scales_count
+
+        py_z_w_start = int(z_write_starts[z_idx]) - 1
+        py_y_w_start = int(y_write_starts[y_idx]) - 1
+        py_x_w_start = int(x_write_starts[x_idx]) - 1
+
+        slice_z = slice(py_z_w_start, py_z_w_start + w_count_z)
+        slice_y = slice(py_y_w_start, py_y_w_start + w_count_y)
+        slice_x = slice(py_x_w_start, py_x_w_start + w_count_x)
+
+        # One collection per chunk (not per scale) bounds cyclic garbage
+        # without serializing every scale iteration under the GIL.
+        gc.collect()
+        return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
+
+    if n_jobs == 1:
+        for c_idx in range(number_of_chunks):
+            _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) = _process_chunk(c_idx)
+            master_energy = energy_3d[slice_z, slice_y, slice_x]
+            is_better = chunk_energy < master_energy
+            energy_3d[slice_z, slice_y, slice_x] = np.where(
+                is_better, chunk_energy, master_energy
+            )
+            scale_indices[slice_z, slice_y, slice_x] = np.where(
+                is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
+            )
+            completed_chunk_units += 1
+            if progress_callback is not None:
+                progress_callback(
+                    completed_chunk_units, total_chunk_units, int(current_octave), c_idx
+                )
+    else:
+        chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
+            delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
+        )
+
+        for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
+            master_energy = energy_3d[slice_z, slice_y, slice_x]
+            is_better = chunk_energy < master_energy
+            energy_3d[slice_z, slice_y, slice_x] = np.where(
+                is_better, chunk_energy, master_energy
+            )
+            scale_indices[slice_z, slice_y, slice_x] = np.where(
+                is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
+            )
+            completed_chunk_units += 1
+            if progress_callback is not None:
+                progress_callback(
+                    completed_chunk_units, total_chunk_units, int(current_octave), -1
+                )
+
+    return completed_chunk_units
 
 
 __all__ = [
@@ -688,6 +719,7 @@ __all__ = [
     "_matlab_zero_based_linspace",
     "_matlab_zero_based_linspace_raw",
     "compute_exact_parity_energy_chunked",
+    "compute_exact_parity_energy_single_octave",
     "get_chunking_lattice_v190",
     "get_starts_and_counts_v200",
 ]

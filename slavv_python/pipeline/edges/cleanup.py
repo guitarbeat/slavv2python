@@ -42,36 +42,28 @@ def remove_excess_vertex_degrees(
     if num_vertices <= 0:
         return keep_mask
 
-    # 2. Build Adjacency Structures
-    # Use Sparse matrices for efficient degree lookup and edge mapping
-    rows, cols = edge_connections[:, 0], edge_connections[:, 1]
-    edge_indices: np.ndarray = np.arange(1, len(edge_connections) + 1, dtype=np.int32)
+    # 2. Build Adjacency Structures manually to avoid sparse matrix summation/collapsing
+    num_edges = len(edge_connections)
+    vertex_indices: np.ndarray = edge_connections.ravel()
+    edge_ids: np.ndarray = np.repeat(np.arange(num_edges), 2)
 
-    # Map (u, v) -> edge_id (1-based for sparse matrix representation)
-    edge_map = sparse.csr_matrix(
-        (edge_indices, (rows, cols)), shape=(num_vertices, num_vertices), dtype=np.int32
-    )
+    sort_idx: np.ndarray = np.argsort(vertex_indices)
+    sorted_vertices: np.ndarray = vertex_indices[sort_idx]
+    sorted_edge_ids: np.ndarray = edge_ids[sort_idx]
+    starts = cast(np.ndarray, np.searchsorted(sorted_vertices, np.arange(num_vertices), side="left"))
+    ends = cast(np.ndarray, np.searchsorted(sorted_vertices, np.arange(num_vertices), side="right"))
 
-    # Calculate degree per vertex (sum of in-degree and out-degree)
-    binary_adjacency = sparse.csr_matrix(
-        (np.ones(len(edge_connections), dtype=bool), (rows, cols)),
-        shape=(num_vertices, num_vertices),
-        dtype=bool,
-    )
-    degrees: np.ndarray = (
-        np.asarray(binary_adjacency.sum(axis=0)).ravel()
-        + np.asarray(binary_adjacency.sum(axis=1)).ravel()
-    )
+    degrees = ends - starts
 
     # 3. Identify & Prune Over-connected Vertices
     excess_vertices = np.flatnonzero(degrees > int(max_degree))
     if excess_vertices.size == 0:
         return keep_mask
 
-    pruned_edge_ids: list[int] = []
+    pruned_edge_indices: list[int] = []
     for v_idx in excess_vertices.tolist():
         # Collect all edges touching this vertex
-        incident_edges = _get_incident_edge_ids(v_idx, edge_map)
+        incident_edges = sorted_edge_ids[starts[v_idx]:ends[v_idx]]
         if incident_edges.size == 0:
             continue
 
@@ -79,12 +71,11 @@ def remove_excess_vertex_degrees(
         # and discard the surplus from the worst end.
         worst_first = np.sort(incident_edges)[::-1]
         surplus_count = int(degrees[v_idx] - max_degree)
-        pruned_edge_ids.extend(worst_first[:surplus_count].astype(int).tolist())
+        pruned_edge_indices.extend(worst_first[:surplus_count].tolist())
 
     # 4. Finalize Mask
-    if pruned_edge_ids:
-        # Convert 1-based edge IDs back to 0-based mask indices
-        keep_mask[np.asarray(pruned_edge_ids, dtype=np.int32) - 1] = False
+    if pruned_edge_indices:
+        keep_mask[np.asarray(pruned_edge_indices, dtype=np.int32)] = False
 
     return keep_mask
 
@@ -223,20 +214,7 @@ def break_graph_cycles(connections: np.ndarray) -> np.ndarray:
 # --- INTERNAL HELPERS ---
 
 
-def _get_incident_edge_ids(v_idx: int, edge_map: sparse.csr_matrix) -> np.ndarray:
-    """Retrieves all edge IDs (in/out) connected to a specific vertex."""
-    incoming = edge_map[:, v_idx].nonzero()[0]
-    outgoing = edge_map[v_idx, :].nonzero()[1]
-
-    return cast(
-        "np.ndarray",
-        np.concatenate(
-            [
-                edge_map[incoming, v_idx].toarray().ravel(),
-                edge_map[v_idx, outgoing].toarray().ravel(),
-            ]
-        ),
-    )
+# Removed unused _get_incident_edge_ids helper
 
 
 def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) -> set[int]:

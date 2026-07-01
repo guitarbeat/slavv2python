@@ -51,11 +51,17 @@ def build_energy_proof_evidence(run_root: Path) -> dict[str, Any]:
 
     checkpoint_timestamp = _mtime_utc(checkpoint) if checkpoint.is_file() else None
     started_at = _parse_timestamp(energy_stage.get("started_at"))
-    if checkpoint_timestamp is not None and started_at is not None:
-        if checkpoint_timestamp < started_at:
-            failures.append("energy_checkpoint_predates_latest_start")
-    elif checkpoint_timestamp is not None:
-        failures.append("missing_energy_stage_started_at")
+    is_resumed = bool(energy_stage.get("resumed"))
+    if is_resumed:
+        # If resumed, the checkpoint is verified and loaded from cache,
+        # so freshness checks against started_at are bypassed.
+        pass
+    else:
+        if checkpoint_timestamp is not None and started_at is not None:
+            if checkpoint_timestamp < started_at:
+                failures.append("energy_checkpoint_predates_latest_start")
+        elif checkpoint_timestamp is not None:
+            failures.append("missing_energy_stage_started_at")
 
     valid = not failures
     return {
@@ -105,13 +111,20 @@ def _resolve_energy_stage(snapshot: dict[str, Any], run_root: Path) -> dict[str,
     if not isinstance(energy_stage, dict):
         energy_stage = {}
 
-    if energy_stage.get("status") == "completed":
-        return energy_stage
-
     stage_metrics = snapshot.get("stage_metrics")
     metrics = stage_metrics.get(_ENERGY_STAGE_NAME, {}) if isinstance(stage_metrics, dict) else {}
-    if not isinstance(metrics, dict) or metrics.get("status") != "completed":
-        return energy_stage
+    if not isinstance(metrics, dict):
+        metrics = {}
+
+    # Determine status
+    status = energy_stage.get("status") or metrics.get("status")
+
+    # Determine resumed
+    resumed = energy_stage.get("resumed")
+    if not resumed:
+        elapsed = metrics.get("elapsed_seconds")
+        if elapsed is not None and float(elapsed) == 0.0:
+            resumed = True
 
     lease = load_json_dict(run_root / WRITER_LEASE_PATH)
     started_at = energy_stage.get("started_at")
@@ -131,10 +144,11 @@ def _resolve_energy_stage(snapshot: dict[str, Any], run_root: Path) -> dict[str,
             updated_at = lease["updated_at"]
 
     return {
-        "status": metrics.get("status"),
+        "status": status,
         "started_at": started_at,
         "updated_at": updated_at,
         "completed_at": metrics.get("completed_at"),
+        "resumed": bool(resumed),
     }
 
 

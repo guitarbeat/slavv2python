@@ -1,6 +1,6 @@
 # SLAVV MATLAB→Python Parity — Project Update
 
-**Date:** 2026-06-30
+**Date:** 2026-07-01
 **Scope:** Bit-exact reproduction of the MATLAB SLAVV vessel-extraction pipeline
 (Energy → Vertices → Edges → Network) in Python, certified against a frozen
 MATLAB R2019a oracle.

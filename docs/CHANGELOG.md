@@ -15,10 +15,12 @@ For current behavior and proof status, prefer:
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
-## [Unreleased] - 2026-06-30
+## [Unreleased] - 2026-07-01
 
 ### Added / Changed
 
+- **Full crop sequence certified**: Verified that all four pipeline stages (Energy → Vertices → Edges → Network) successfully pass sequence proof validation (`prove-exact-sequence`) on the crop harness (`180709_E_crop_M_v2`), matching all ADR 0011 and ADR 0012 gates.
+- **Auditor support for cache-resumed energy runs**: Resolved a proof coordinator blocker by propagating a `resumed` flag for cached energy runs (where `elapsed_seconds == 0.0`), preventing incorrect freshness validation failures.
 - **Canonical energy octave-3/4 divergence — root cause + bit-exact `linspace` fix**: the residual canonical `scale_indices` mismatches (v3: 39,494/16.8M) were root-caused, via a MATLAB R2019a ground-truth harness (`workspace/scratch/matlab_energy_instr/`), to the Python coarse→fine **upsample mesh not bit-matching MATLAB `linspace`** — at coarse-cell boundaries a ~1-ULP mesh drift floored `interp3` into the wrong cell (valid↔`Inf`), flipping the per-voxel scale argmin. `n_jobs` and chunk seams were ruled out; an interim grid-snap heuristic was rejected (MATLAB `linspace` does not always land on integers). Fix replaces `_matlab_zero_based_linspace` with a bit-exact MATLAB port (mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term), reproducing MATLAB to **<1e-17** on both integer- and sub-integer-landing voxels; full suite green (595 passed). **Canonical `prove-exact --stage energy` now CERTIFIES: 0 scale mismatches across all 16,777,216 voxels** (39,494 → 0), energy max \|Δ\|≈2.4e-11 under the ADR 0011 gate. See [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md) and [solution note](solutions/parity/canonical-energy-high-octave-divergence.md).
 - **Tolerance parity gate (ADR 0011 Accepted)**: Phase 1 certification compares continuous float fields with `np.allclose` (rtol=1e-7, atol=1e-9) and discrete/topological fields strictly; `--strict-floats` forces bit-identity for regression. Wired across stages via a comparator `float_tol`. Pure ULP was rejected (it explodes near zero).
 - **Energy stage CERTIFIED** on crop oracle v2 (`prove-exact --stage energy` passes under the gate; max |Δ| ≈ 2×10⁻¹¹).

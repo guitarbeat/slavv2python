@@ -33,9 +33,6 @@ from slavv_python.pipeline.energy.chunking import (
 from slavv_python.pipeline.energy.config import (
     _prepare_energy_config as prepare_energy_config,
 )
-from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
-    compute_exact_parity_energy_chunked,
-)
 from slavv_python.pipeline.energy.provenance import energy_origin_for_method
 from slavv_python.schema.results import EnergyResult
 
@@ -107,6 +104,12 @@ def calculate_energy_field_resumable(
     config = prepare_energy_config(image, params)
 
     if config.get("comparison_exact_network"):
+        from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
+            compute_exact_parity_energy_single_octave,
+            get_chunking_lattice_v190,
+        )
+
+        config_hash = _config_hash(config)
         total_voxels = int(np.prod(image.shape))
         storage_format = select_energy_storage_format(config, total_voxels)
         energy_path, scale_path, energy4d_path = _artifact_paths(
@@ -118,40 +121,130 @@ def calculate_energy_field_resumable(
             keep_paths=(energy_path, scale_path, energy4d_path),
             remove_storage_path=remove_storage_path,
         )
+
+        # Load state for resume detection
+        state = stage_controller.load_state() or {}
+        completed_octaves = state.get("completed_octaves", [])
+        if state.get("config_hash") != config_hash:
+            completed_octaves = []
+
+        octave_at_scales = config["octave_at_scales"]
+        octave_range = np.unique(octave_at_scales)
+
+        energy_3d = np.zeros(image.shape, dtype=np.float64)
+        scale_indices = np.full(image.shape, -1, dtype=np.int16)
+
+        # Load from the last completed octave checkpoint if resuming
+        if completed_octaves:
+            # Filter to only valid octaves in the range
+            completed_octaves = [int(o) for o in completed_octaves if o in octave_range]
+            if completed_octaves:
+                last_octave = max(completed_octaves)
+                last_energy_path = stage_controller.artifact_path(f"octave_energy_{last_octave}.npy")
+                last_scale_path = stage_controller.artifact_path(f"octave_scale_{last_octave}.npy")
+                if last_energy_path.exists() and last_scale_path.exists():
+                    try:
+                        energy_3d = np.load(last_energy_path)
+                        scale_indices = np.load(last_scale_path)
+                    except Exception:
+                        # Fallback if checkpoint files are corrupted
+                        completed_octaves = []
+                else:
+                    completed_octaves = []
+
+        microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
+        image_shape = np.asarray(image.shape, dtype=float)
+
+        # Pre-compute total chunks for all octaves to provide correct progress estimation
+        total_chunk_units = 0
+        for planned_octave in octave_range:
+            planned_scales = np.where(octave_at_scales == planned_octave)[0]
+            if len(planned_scales) == 0:
+                continue
+            planned_rf = np.asarray(config["scale_resolution_factors"][planned_scales[0]], dtype=float)
+            planned_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
+            planned_rf_matlab = np.array([planned_rf[1], planned_rf[2], planned_rf[0]], dtype=float)
+            planned_microns = microns_per_voxel * planned_rf
+            _, planned_chunks = get_chunking_lattice_v190(
+                1.0 / np.array([planned_microns[1], planned_microns[2], planned_microns[0]]),
+                float(config["max_voxels"]),
+                np.round(planned_shape / planned_rf_matlab),
+            )
+            total_chunk_units += int(planned_chunks)
+
+        # Compute starting progress unit
+        completed_chunk_units = 0
+        for planned_octave in completed_octaves:
+            planned_scales = np.where(octave_at_scales == planned_octave)[0]
+            if len(planned_scales) == 0:
+                continue
+            planned_rf = np.asarray(config["scale_resolution_factors"][planned_scales[0]], dtype=float)
+            planned_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
+            planned_rf_matlab = np.array([planned_rf[1], planned_rf[2], planned_rf[0]], dtype=float)
+            planned_microns = microns_per_voxel * planned_rf
+            _, planned_chunks = get_chunking_lattice_v190(
+                1.0 / np.array([planned_microns[1], planned_microns[2], planned_microns[0]]),
+                float(config["max_voxels"]),
+                np.round(planned_shape / planned_rf_matlab),
+            )
+            completed_chunk_units += int(planned_chunks)
+
+        n_jobs = max(1, int(config.get("n_jobs", 2)))
+        resumed = bool(completed_octaves)
         stage_controller.begin(
             detail="Computing exact-route octave-chunked energy",
-            units_total=0,
-            units_completed=0,
+            units_total=total_chunk_units,
+            units_completed=completed_chunk_units,
             substage="exact_parity_chunks",
-            resumed=False,
+            resumed=resumed,
         )
 
-        final_exact_total = 0
-
         def _exact_progress(completed: int, total: int, octave: int, chunk_idx: int) -> None:
-            nonlocal final_exact_total
-            final_exact_total = total
             detail = f"Exact Energy octave {octave}, chunk {chunk_idx + 1}"
-            stage_controller.save_state(
-                {
-                    "kind": "exact_parity_progress",
-                    "completed_units": completed,
-                    "units_total": total,
-                    "octave": octave,
-                    "chunk_idx": chunk_idx,
-                    "resumable": False,
-                }
-            )
             stage_controller.update(
-                units_total=total,
+                units_total=total_chunk_units,
                 units_completed=completed,
                 detail=detail,
                 substage="exact_parity_chunks",
+                resumed=resumed,
             )
 
-        energy_3d, scale_indices, energy_4d = compute_exact_parity_energy_chunked(
-            image, config, progress_callback=_exact_progress
-        )
+        for current_octave in octave_range:
+            if current_octave in completed_octaves:
+                continue
+
+            completed_chunk_units = compute_exact_parity_energy_single_octave(
+                image=image,
+                config=config,
+                current_octave=current_octave,
+                energy_3d=energy_3d,
+                scale_indices=scale_indices,
+                completed_chunk_units=completed_chunk_units,
+                total_chunk_units=total_chunk_units,
+                progress_callback=_exact_progress,
+                n_jobs=n_jobs,
+            )
+
+            # Flush octave checkpoints
+            oct_energy_path = stage_controller.artifact_path(f"octave_energy_{current_octave}.npy")
+            oct_scale_path = stage_controller.artifact_path(f"octave_scale_{current_octave}.npy")
+            np.save(oct_energy_path, energy_3d)
+            np.save(oct_scale_path, scale_indices)
+
+            completed_octaves.append(int(current_octave))
+            stage_controller.save_state(
+                {
+                    "completed_octaves": completed_octaves,
+                    "config_hash": config_hash,
+                    "resumable": True,
+                }
+            )
+
+        # Apply final post-processing clamp as in compute_exact_parity_energy_chunked
+        energy_3d[energy_3d >= 0.0] = 0.0
+        energy_3d[~np.isfinite(energy_3d)] = 0.0
+        scale_indices[energy_3d >= 0.0] = -1
+
         best_energy = open_energy_storage_array(
             energy_path,
             mode="w",
@@ -170,14 +263,24 @@ def calculate_energy_field_resumable(
         )
         best_energy[...] = energy_3d
         best_scale[...] = scale_indices
+
+        # Clean up temporary octave files
+        for o in octave_range:
+            oct_energy_path = stage_controller.artifact_path(f"octave_energy_{o}.npy")
+            oct_scale_path = stage_controller.artifact_path(f"octave_scale_{o}.npy")
+            if oct_energy_path.exists():
+                oct_energy_path.unlink()
+            if oct_scale_path.exists():
+                oct_scale_path.unlink()
+
         stage_controller.remove_state()
         stage_controller.update(
-            units_total=final_exact_total or 1,
-            units_completed=final_exact_total or 1,
+            units_total=total_chunk_units,
+            units_completed=total_chunk_units,
             detail="Exact-route energy field complete",
             substage="exact_parity_chunks",
         )
-        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, None)
 
     config_hash = _config_hash(config)
 
