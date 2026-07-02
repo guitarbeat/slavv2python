@@ -11,8 +11,8 @@ Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms a
 | Tier | Volume | Oracle | `prove-exact` | Claim |
 |------|--------|--------|---------------|--------|
 | 1 — Synthetic | Python-generated TIFF | None | No | CI / harness smoke only |
-| 2 — Crop harness | `180709_E_crop_M` (64×256×256 Z×Y×X) | `workspace/oracles/180709_E_crop_M` | Yes, strict zero, sequential | Harness confidence only |
-| 3 — Canonical | Full `180709_E` | `180709_E_batch_190910-103039` | Yes, strict zero, sequential | Phase 1 exact-route **Certification** |
+| 2 — Crop harness | `180709_E_crop_M_v2` (64×256×256 Z×Y×X) | `workspace/oracles/180709_E_crop_M_v2` | Yes, strict zero, sequential | Harness confidence only |
+| 3 — Canonical | Full `180709_E` | `180709_E_full_v2` | Yes, strict zero, sequential | Phase 1 exact-route **Certification** |
 
 Tiers 2 and 3 use the **same** success bar: for **energy/vertices**, strict zero (discrete/topological — zero missing / zero extra per stage) + `np.allclose` (continuous floats, [ADR 0011](../../adr/0011-energy-float-certification-policy.md)); for **edges/network**, the spatial bars in [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) (edges: voxel ownership-map + trace tolerance; network: endpoint-pair/bifurcation multisets + sub-voxel trace tolerance), since the watershed's exact pair-set is chaotically order-sensitive. Only tier 3 supports the Phase 1 certification milestone.
 
@@ -87,9 +87,9 @@ When `vectors/` is populated under the new `batch_<timestamp>/`, promote:
 ```powershell
 slavv parity promote-oracle `
   --matlab-batch-dir workspace/scratch/matlab_crop_batches/batch_<timestamp> `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --dataset-file workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06/01_Input/180709_E_crop_M.tif `
-  --oracle-id 180709_E_crop_M
+  --oracle-id 180709_E_crop_M_v2
 ```
 
 Do **not** reuse database vectorization zips or spatially crop the full `180709_E` oracle in Python — the oracle must come from MATLAB on the identical crop volume.
@@ -107,9 +107,9 @@ slavv parity promote-dataset `
 
 slavv parity promote-oracle `
   --matlab-batch-dir <path-to-crop-batch> `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --dataset-file <path-to-180709_E_crop_M.tif> `
-  --oracle-id 180709_E_crop_M
+  --oracle-id 180709_E_crop_M_v2
 ```
 
 Do **not** reuse `180709_E_batch_190910-103039` mats spatially cropped in Python — the oracle must come from MATLAB on the identical crop volume.
@@ -119,7 +119,7 @@ Do **not** reuse `180709_E_batch_190910-103039` mats spatially cropped in Python
 ```powershell
 slavv parity init-exact-run `
   --dataset-root workspace/datasets/<crop_dataset_id> `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --stop-after network `
   --energy-storage-format npy
@@ -131,7 +131,7 @@ Sequential certification on that run root:
 slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M
+  --oracle-root workspace/oracles/180709_E_crop_M_v2
 ```
 
 Reports: per-stage `03_Analysis/exact_proof_<stage>.json` and summary `03_Analysis/exact_proof.json`.
@@ -151,13 +151,13 @@ slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact --once
 slavv parity prove-exact `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --stage energy
 
 # If energy passes after an energy-only rerun, refresh downstream checkpoints
 slavv parity resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --force-rerun-from vertices `
   --stop-after network `
   --skip-preflight
@@ -166,7 +166,7 @@ slavv parity resume-exact-run `
 slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M
+  --oracle-root workspace/oracles/180709_E_crop_M_v2
 ```
 
 If the energy proof still fails, inspect the first failing field before changing code. Current diagnostics are indexed in `workspace/scratch/parity_energy_diagnostics.md`.
@@ -177,28 +177,28 @@ If the energy proof still fails, inspect the first failing field before changing
 
 Unchanged from [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md):
 
-- Full `180709_E`, oracle `180709_E_batch_190910-103039`
+- Full `180709_E`, oracle `180709_E_full_v2` (supersedes legacy `180709_E_batch_190910-103039`)
 - Native exact route, no vertex injection
 - Phase 1 claim only after all four stages pass on **that** run
 
-**Parallelism:** Crop harness work may run while a canonical run (e.g. `phase1_cert_network`) is in progress or resumed. Passing crop does not replace canonical certification.
+**Parallelism:** Crop harness work may run while a canonical run (e.g. `canonical_full_v4`) is in progress or resumed. Passing crop does not replace canonical certification.
 
 **Preflight** before a long exact-route run (memory gate + params audit):
 
 ```powershell
 slavv parity preflight-exact `
-  --source-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
-  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
   --dataset-root workspace/datasets/<canonical_dataset_hash> `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039
+  --oracle-root workspace/oracles/180709_E_full_v2
 ```
 
 **Resume canonical run** when `init-exact-run` reports the seed run is still active but no Python process is running:
 
 ```powershell
 slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
   --stop-after network
 ```
 

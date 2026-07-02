@@ -94,7 +94,7 @@ Add the `--monitor` flag to any `resume-exact-run` or `launch-exact-run` command
 # Start monitored parity job
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --force-rerun-from energy \
   --stop-after network \
   --skip-preflight \
@@ -201,13 +201,13 @@ The monitoring system prevents concurrent writes to the same run directory:
 # First job starts successfully
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --monitor
 
 # Second attempt fails with clear error
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --monitor
 
 # Error output:
@@ -228,7 +228,7 @@ If you need to replace an active job:
 ```powershell
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --force-kill \
   --monitor
 ```
@@ -290,7 +290,7 @@ Each job record contains:
     "job_id": "a3f2-41bd-9c8e-7d1f",         # UUID
     "pid": 25248,                             # Process ID
     "run_dir": "workspace/runs/.../crop_M_exact",
-    "oracle_root": "workspace/oracles/180709_E_crop_M",
+    "oracle_root": "workspace/oracles/180709_E_crop_M_v2",
     "stage": "energy",                        # 'energy', 'vertices', 'edges', 'network', 'sequence'
     "command": "resume-exact-run ...",        # Full CLI command
     "started_at": "2026-06-09T08:30:15",     # ISO 8601
@@ -355,7 +355,7 @@ Get-Content workspace/scratch/monitor_daemon.log -Tail 50
 ```powershell
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --force-kill \
   --monitor
 ```
@@ -484,7 +484,7 @@ Updated protocol from [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md)
    slavv parity prove-exact \
      --source-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-     --oracle-root workspace/oracles/180709_E_crop_M \
+     --oracle-root workspace/oracles/180709_E_crop_M_v2 \
      --stage energy
    ```
 
@@ -492,7 +492,7 @@ Updated protocol from [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md)
    ```powershell
    slavv parity resume-exact-run \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-     --oracle-root workspace/oracles/180709_E_crop_M \
+     --oracle-root workspace/oracles/180709_E_crop_M_v2 \
      --force-rerun-from vertices \
      --stop-after network \
      --skip-preflight \
@@ -507,7 +507,7 @@ The system supports multiple concurrent monitored jobs:
 # Start crop harness (energy only)
 slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-  --oracle-root workspace/oracles/180709_E_crop_M \
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 \
   --force-rerun-from energy \
   --stop-after energy \
   --skip-preflight \
@@ -515,8 +515,8 @@ slavv parity resume-exact-run \
 
 # Start canonical run (full pipeline) in parallel
 slavv parity resume-exact-run \
-  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network \
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 \
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 \
+  --oracle-root workspace/oracles/180709_E_full_v2 \
   --force-rerun-from energy \
   --stop-after network \
   --skip-preflight \

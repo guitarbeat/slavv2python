@@ -24,6 +24,8 @@ related_components:
 
 # MATLAB V200 energy HDF5 bundles for promote-oracle
 
+> **Current crop oracle:** The crop oracle of record is now `180709_E_crop_M_v2` (MATLAB batch `batch_260624-105705`); see [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md) and [PARITY_PRE_GATE.md](../../reference/workflow/PARITY_PRE_GATE.md). The commands below document the original **v1** promotion (batch `batch_260527-220010`) and are retained as the historical record of the HDF5-loader fix; the split-HDF5 layout finding applies to any V200 crop batch, including v2.
+
 ## Problem
 
 MATLAB `vectorize_V200` crop batches store energy in a **split layout**: a metadata-only `.mat` beside an extensionless HDF5 file. The parity harness assumed all energy fields lived in the `.mat`, so `promote-oracle` failed before normalized oracle artifacts could be written.

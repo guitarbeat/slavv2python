@@ -41,7 +41,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 ## Key flows
 
 - **F1. Sequential exact-route certification (phase 1)**
-  - **Trigger:** Maintainer initiates or resumes `init-exact-run` on full `180709_E` with oracle `180709_E_batch_190910-103039`.
+  - **Trigger:** Maintainer initiates or resumes `init-exact-run` on full `180709_E` with oracle `180709_E_full_v2` (fresh lattice-6000 MATLAB batch `batch_260626-125646`; supersedes legacy `180709_E_batch_190910-103039`).
   - **Actors:** A1, A3
   - **Steps:** Bootstrap dataset and oracle → run native pipeline through network → run sequential `prove-exact` gates (energy, then vertices, edges, network) → energy/vertices must show zero missing/extra; edges/network must pass their ADR 0012 spatial bars.
   - **Outcome:** Phase 1 exact-route certification is complete on `180709_E` for all four stages.
@@ -73,7 +73,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 
 **Operational expectations**
 
-- R9. Preserved MATLAB truth for the canonical exact-route milestone must live in **`workspace/oracles/180709_E_batch_190910-103039`** with one loadable artifact per gated stage. Current artifact readiness belongs in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md), not this spec.
+- R9. Preserved MATLAB truth for the canonical exact-route milestone must live in **`workspace/oracles/180709_E_full_v2`** with one loadable artifact per gated stage. Current artifact readiness belongs in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md), not this spec. This supersedes the legacy `180709_E_batch_190910-103039` oracle, which carried a pre-lattice-6000 `scale_indices` scale-plane drift (the same defect that retired crop oracle v1); see EXACT_PROOF_FINDINGS.md.
 - R10. Disposable trial runs live under **`workspace/runs/`**; promoted summaries under **`workspace/reports/`** when warranted.
 - R11. Incremental fixes (e.g. `strel_tiebreak_v30`) are **edges-stage experiments** under the sequential gate—they do not alone satisfy ship confidence.
 
@@ -137,7 +137,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 
 ## Harness & pre-gate (parallel work)
 
-- **Parity Pre-Gate tiers:** [PARITY_PRE_GATE.md](../reference/workflow/PARITY_PRE_GATE.md), [ADR 0009](../adr/0009-parity-pre-gate-tiers.md). Crop harness (`180709_E_crop_M`) may run in parallel with canonical `phase1_cert_network`; passing crop does not satisfy Phase 1 certification.
+- **Parity Pre-Gate tiers:** [PARITY_PRE_GATE.md](../reference/workflow/PARITY_PRE_GATE.md), [ADR 0009](../adr/0009-parity-pre-gate-tiers.md). Crop harness (`180709_E_crop_M`) may run in parallel with canonical `canonical_full_v4`; passing crop does not satisfy Phase 1 certification.
 - **Random component suite (diagnostic):** [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md), [ADR 0010](../adr/0010-random-component-parity-suite.md). Fast MATLAB/Python differential on seeded noise; does not replace crop or canonical `prove-exact`.
 - **Crop oracle:** MATLAB batch → `promote-oracle`; HDF5 energy layout — [matlab-v200-energy-hdf5-oracle-loader.md](../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md).
 

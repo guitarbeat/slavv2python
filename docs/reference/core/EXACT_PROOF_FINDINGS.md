@@ -28,7 +28,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. v1 (`180709_E_crop_M`) stale on scale plane. |
-| **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
+| **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_full_v2` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
 | **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **All stages completed & certified.** `inspect-energy-evidence` **valid** (resumed cache robustness fix implemented). Full sequence proof `prove-exact-sequence` passes vs v2 oracle (Energy, Vertices, Edges, Network all PASS, exit 0). |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop tier-2 sequence passes (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 | **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646` (full `180709_E`, lattice-6000). Promoted; energy size `(64,512,512)`. |
@@ -156,7 +156,7 @@ If resuming exact parity work from a fresh thread:
 5. If no writer is alive and Energy artifacts are missing, rerun crop Energy before attempting proof.
 6. If Energy artifacts exist, run the crop energy proof first.
 7. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
-8. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
+8. If crop energy passes, rerun canonical `canonical_full_v4` from energy against oracle `180709_E_full_v2` using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` (the script now targets `canonical_full_v4`) with `--monitor`.
 9. If any proof fails, capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) and inspect the first failing field before changing code.
 10. If `status-exact-run` reports `interrupted` (dead PID), reconcile is automatic; rerun foreground diagnostic before detaching another writer.
 
@@ -196,13 +196,13 @@ slavv parity prove-exact-sequence `
 
 # After crop sequence passes, rerun canonical from Energy.
 slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
   --force-rerun-from energy `
   --stop-after network `
   --skip-preflight
 
-slavv monitor --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
+slavv monitor --run-dir workspace/runs/oracle_180709_E/canonical_full_v4
 ```
 
 ---

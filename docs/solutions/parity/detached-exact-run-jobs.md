@@ -23,7 +23,7 @@ Launch long exact-route reruns with `launch-exact-run` so the process is detache
 ```powershell
 slavv parity launch-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --force-rerun-from energy `
   --stop-after energy `
   --skip-preflight `

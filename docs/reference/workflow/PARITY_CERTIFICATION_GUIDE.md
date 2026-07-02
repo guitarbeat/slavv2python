@@ -4,7 +4,7 @@
 
 This document provides step-by-step instructions for running a full mathematical parity certification between the SLAVV Python engine and a canonical MATLAB oracle.
 
-For faster iteration before (or in parallel with) full-volume certification, see **[Parity Pre-Gate](PARITY_PRE_GATE.md)** (synthetic smoke → `180709_E_crop_M` → canonical `180709_E`).
+For faster iteration before (or in parallel with) full-volume certification, see **[Parity Pre-Gate](PARITY_PRE_GATE.md)** (synthetic smoke → `180709_E_crop_M_v2` → canonical `180709_E`).
 
 ---
 
@@ -66,22 +66,16 @@ For long-running jobs, add the `--monitor` flag when you start the run with `sla
 Before proving full `180709_E`, confirm the canonical oracle has a normalized energy artifact:
 
 ```powershell
-Test-Path workspace/oracles/180709_E_batch_190910-103039/03_Analysis/normalized/oracle/energy.pkl
+Test-Path workspace/oracles/180709_E_full_v2/03_Analysis/normalized/oracle/energy.pkl
 ```
 
-As of 2026-06-03, this artifact is present and readable:
-
-- `energy`: `(64, 512, 512)` `float64`
-- `scale_indices`: `(64, 512, 512)` `int64`
-- `energy_4d`: empty placeholder
-- `lumen_radius_microns`: `(99,)` `float64`
-- payload sidecar SHA-256: `4696f05449541b6919d514b59705607eeb10258c67d5e466c52be83f73a43a9c`
+The `full_v2` energy artifact is present per EXACT_PROOF_FINDINGS.md (energy `(64, 512, 512)` `float64`; canonical energy certified with 0 scale mismatches). Run `ensure-oracle-artifacts --stage energy` (below) to verify readability and capture the current payload hash in your run's `03_Analysis/` before proving. (The legacy `180709_E_batch_190910-103039` energy.pkl SHA-256 `4696f05449541b6919d514b59705607eeb10258c67d5e466c52be83f73a43a9c` is retained here only for historical reference.)
 
 If it is missing in a fresh workspace, materialize it from the canonical MATLAB batch. The current batch has an extensionless HDF5 energy volume, so this does not require rerunning MATLAB. For an existing Oracle root, use the Oracle Artifact Maintenance command to write only missing normalized artifacts and verify they are readable:
 
 ```powershell
 slavv parity ensure-oracle-artifacts `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
   --stage energy
 ```
 
@@ -89,10 +83,10 @@ For a brand-new oracle root, use the full promotion command:
 
 ```powershell
 slavv parity promote-oracle `
-  --matlab-batch-dir workspace/oracles/180709_E_batch_190910-103039/01_Input/matlab_results/batch_190910-103039_canonical `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --matlab-batch-dir workspace/oracles/180709_E_full_v2/01_Input/matlab_results/batch_260626-125646 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
   --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
-  --oracle-id 180709_E_batch_190910-103039
+  --oracle-id 180709_E_full_v2
 ```
 
 The prepared canonical rerun command file is:

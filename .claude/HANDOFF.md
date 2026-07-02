@@ -30,7 +30,7 @@ All four crop-harness stages are resolved against oracle `180709_E_crop_M_v2` (`
 
 1. Before any writer action, check `slavv jobs list` and run status on the target run root.
 2. To re-verify a crop stage, use the **/prove-parity** skill (or `slavv parity prove-exact --stage <stage> --source-run-root <run> --dest-run-root <run> --oracle-root workspace/oracles/180709_E_crop_M_v2`). Interpret results with the per-stage bar above.
-3. **Next milestone:** run the full canonical `180709_E` native pipeline through network, then `prove-exact-sequence` against the canonical oracle (`180709_E_batch_190910-103039`); each stage judged by its bar (R1/R1a).
+3. **Next milestone:** run the full canonical `180709_E` native pipeline through network, then `prove-exact-sequence` against the canonical oracle (`180709_E_full_v2`); each stage judged by its bar (R1/R1a).
 4. MATLAB R2019a ground-truth harness for edge/network triage lives at `workspace/scratch/matlab_edge_instr/`.
 
 ## Retired coordination material
