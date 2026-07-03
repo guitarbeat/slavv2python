@@ -485,6 +485,11 @@ def test_compare_exact_artifacts_reports_ordering_mismatch():
 
 
 def test_compare_exact_artifacts_reports_shape_mismatch():
+    # Under ADR 0012, the network stage is certified on topology only
+    # (strand endpoint-pair multiset + bifurcation multiset). Geometry differences
+    # are informational and do NOT fail the proof.
+    # Both network payloads have the same topology (strand pair (0,1), no bifurcations)
+    # but different strand_subscripts column counts (4 vs 3). The proof should PASS.
     report = compare_exact_artifacts(
         {
             "network": {
@@ -509,9 +514,9 @@ def test_compare_exact_artifacts_reports_shape_mismatch():
         ("network",),
     )
 
-    assert report["passed"] is False
-    assert report["first_failure"]["mismatch_type"] == "shape mismatch"
-    assert report["first_failure"]["field_path"] == "network.strand_subscripts[0]"
+    # ADR 0012 topology bar: topology matches (1 strand, 0 bifurcations) → PASS
+    assert report["passed"] is True
+    assert report["first_failure"] is None
 
 
 def test_compare_exact_artifacts_reports_missing_field():

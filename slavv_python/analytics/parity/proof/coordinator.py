@@ -183,6 +183,8 @@ class ExactProofCoordinator:
             selected_stages,
             energy_float_options=energy_float_options,
             float_tol=float_tol,
+            checkpoints_dir=checkpoints_dir,
+            matlab_batch_dir=self.source_surface.matlab_batch_dir,
         )
         from slavv_python.pipeline.energy.provenance import exact_route_gate_description
 
@@ -518,7 +520,12 @@ def load_exact_vertex_set(
             "np.ndarray",
             np.atleast_2d(np.asarray(raw_positions, dtype=np.float64)),
         )
-        positions = np.asarray(position_values - 1.0, dtype=np.float32)
+        # Subtract 1 for 0-based indexing (MATLAB is 1-based).
+        # MATLAB stores vertex_space_subscripts in [Y, X, Z] column order
+        # (column-major: Y varies fastest). Python pipeline expects [Z, Y, X].
+        # Reorder columns: [Y, X, Z] -> [Z, Y, X] = columns [2, 0, 1].
+        positions_yxz = np.asarray(position_values - 1.0, dtype=np.float32)
+        positions = positions_yxz[:, [2, 0, 1]]
         raw_scales = _get(data, "vertex_scale_subscripts", 1)
         scale_values = cast("np.ndarray", np.atleast_1d(np.asarray(raw_scales, dtype=np.float64)))
         scales = np.asarray(scale_values - 1, dtype=np.int16)

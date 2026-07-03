@@ -70,17 +70,30 @@ def handle_prove_energy_ulp(args: argparse.Namespace) -> None:
 
 def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
+    from shutil import copy2
+
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
     source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    report, _, _ = ExactProofCoordinator(source_surface).prove(
+    stage_arg = getattr(args, "stage", "all")
+    report, json_path, _text_path = ExactProofCoordinator(source_surface).prove(
         dest_run_root,
-        stage_arg=getattr(args, "stage", "all"),
+        stage_arg=stage_arg,
         report_path_arg=getattr(args, "report_path", None),
         strict_floats=bool(getattr(args, "strict_floats", False)),
         max_ulps=getattr(args, "max_ulps", None),
     )
+    # When proving a single named stage, also write a per-stage JSON file
+    # (e.g., exact_proof_edges.json) so callers can track per-stage evidence.
+    if stage_arg not in (None, "all") and json_path is not None and json_path.is_file():
+        from slavv_python.analytics.parity.constants import ANALYSIS_DIR
+
+        stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage_arg}.json"
+        stage_json.parent.mkdir(parents=True, exist_ok=True)
+        if json_path.resolve() != stage_json.resolve():
+            copy2(json_path, stage_json)
+
     if not report.get("passed"):
         import sys
 

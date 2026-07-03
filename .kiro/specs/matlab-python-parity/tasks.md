@@ -218,7 +218,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - All 17 property test files must pass. Fix any failures before proceeding.
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 9. Run Tier 2 crop harness and confirm all four stages certify
+- [ ] 9. Run Tier 2 crop harness and confirm all four stages certify
   - Run `prove-exact-sequence` against `workspace/oracles/180709_E_crop_M_v2`:
     ```
     slavv parity prove-exact-sequence `
@@ -234,7 +234,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - _Requirements: 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 7.1, 7.2_
 
 - [ ] 10. Launch canonical full-volume run (`180709_E`)
-  - [-] 10.1 Preflight check for canonical run
+  - [ ] 10.1 Preflight check for canonical run
     - Run `slavv parity preflight-exact` against `workspace/oracles/180709_E_full_v2`
       and `workspace/runs/oracle_180709_E/canonical_full_v4` to confirm oracle artifacts
       are present for all four stages and run-dir is accessible
@@ -242,7 +242,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
       the whitelist
     - _Requirements: 1.2, 9.1, 10.1, 10.2_
 
-  - [~] 10.2 Launch or resume the canonical full-volume exact-route run
+  - [ ] 10.2 Launch or resume the canonical full-volume exact-route run
     - Use `slavv parity resume-exact-run` (or `launch-exact-run`) with
       `--run-dir workspace/runs/oracle_180709_E/canonical_full_v4` and
       `--n-jobs <N>` for threaded energy parallelism (provably bit-exact; see
@@ -254,7 +254,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - _Requirements: 1.1, 1.3, 9.1_
 
 - [ ] 11. Run `prove-exact-sequence` on canonical volume and certify Phase 1
-  - [~] 11.1 Run canonical `prove-exact-sequence`
+  - [ ] 11.1 Run canonical `prove-exact-sequence`
     - Once the canonical run completes, execute:
       ```
       slavv parity prove-exact-sequence `
@@ -266,7 +266,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - _Requirements: 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 6.1, 6.2, 7.1, 7.2, 8.1, 8.2,
       9.2, 9.3_
 
-  - [~] 11.2 Verify `CertificationReport` structure and promote to `workspace/reports/`
+  - [ ] 11.2 Verify `CertificationReport` structure and promote to `workspace/reports/`
     - Confirm `exact_proof.json` contains the aggregate `CERTIFIED` verdict and that
       per-stage `exact_proof_<stage>.json` files each contain `missing_count`,
       `extra_count`, `float_agreement`, `discrete_agreement`, `diagnostics.ulp_figures`,
@@ -277,7 +277,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
       verdict, run root, oracle root, and date
     - _Requirements: 9.2, 12.1, 12.2, 12.3, 12.4_
 
-- [~] 12. Final checkpoint — Phase 1 complete
+- [ ] 12. Final checkpoint — Phase 1 complete
   - Re-run the Tier 1 regression gate to confirm no test regressions from the
     implementation gap fixes:
     ```
