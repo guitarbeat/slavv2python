@@ -1,0 +1,362 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Audit float64 enforcement across all four stage computation paths": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039055850
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039079839
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039690134
+      }
+    ],
+    "1.2 Verify Fortran-order grid and orientation transitions in watershed": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039056763
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039084501
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039692932
+      }
+    ],
+    "1.3 Verify round-half-away-from-zero rounding in vertex painting and candidate": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039057069
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039088339
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039695792
+      }
+    ],
+    "1.4 Verify oracle loader index-shift and axis-reversal conventions": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039057426
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039093926
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039698847
+      }
+    ],
+    "1.5 Verify parameter whitelist includes `comparison_exact_network`": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039057761
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039097145
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039701470
+      }
+    ],
+    "2. Checkpoint — confirm implementation gaps are closed": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039057995
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039714960
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040728915
+      }
+    ],
+    "3.1 Write `tests/unit/pipeline/test_float64_dtype_invariant.py` — Property 1": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039058214
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039718743
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040731872
+      }
+    ],
+    "3.2 Write `tests/unit/pipeline/test_fortran_order_grid.py` — Property 2": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039058397
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039721155
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040736207
+      }
+    ],
+    "3.3 Write `tests/unit/pipeline/test_fortran_tie_breaking.py` — Property 3": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039058615
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039724948
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040738777
+      }
+    ],
+    "3.4 Write `tests/unit/pipeline/test_orientation_round_trip.py` — Property 4": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039058874
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039728632
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040741744
+      }
+    ],
+    "3.5 Write `tests/unit/pipeline/test_round_half_away_from_zero.py` — Property 5": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039059066
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039731723
+      }
+    ],
+    "4.1 Write `tests/unit/pipeline/energy/test_matlab_linspace_property.py` — Property 6": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039060064
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039734739
+      }
+    ],
+    "4.2 Write `tests/unit/pipeline/test_structuring_element_membership.py` — Property 7": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039060312
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039737683
+      }
+    ],
+    "5.1 Write `tests/unit/parity/test_prove_exact_sequence_order.py` — Property 8": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039060647
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040746373
+      }
+    ],
+    "5.2 Write `tests/unit/parity/test_downstream_blocking.py` — Property 9": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039060896
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040749259
+      }
+    ],
+    "5.3 Write `tests/unit/parity/test_first_failing_field.py` — Property 10": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039061197
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040751977
+      }
+    ],
+    "5.4 Write `tests/unit/parity/test_all_pass_certification.py` — Property 11": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039061562
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040754660
+      }
+    ],
+    "6.1 Write `tests/unit/parity/test_oracle_loader_index_shift.py` — Property 12": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039061830
+      },
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783040757773
+      }
+    ],
+    "6.2 Write `tests/unit/parity/test_oracle_loader_axis_reversal.py` — Property 13": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039062159
+      }
+    ],
+    "6.3 Write `tests/unit/parity/test_oracle_loader_error_messages.py` — Property 14": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039062531
+      }
+    ],
+    "6.4 Write `tests/unit/parity/test_oracle_artifact_completeness.py` — Property 16": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039062876
+      }
+    ],
+    "7.1 Write `tests/unit/schema/test_network_serialization_roundtrip.py` — Property 15": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039063223
+      }
+    ],
+    "7.2 Write `tests/unit/parity/test_certification_report_fields.py` — Property 17": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039063559
+      }
+    ],
+    "8. Checkpoint — Tier 1 CI gate": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039064061
+      }
+    ],
+    "9. Run Tier 2 crop harness and confirm all four stages certify": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039064427
+      }
+    ],
+    "10.1 Preflight check for canonical run": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039064825
+      }
+    ],
+    "10.2 Launch or resume the canonical full-volume exact-route run": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039065193
+      }
+    ],
+    "11.1 Run canonical `prove-exact-sequence`": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039065543
+      }
+    ],
+    "11.2 Verify `CertificationReport` structure and promote to `workspace/reports/`": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039065873
+      }
+    ],
+    "12. Final checkpoint — Phase 1 complete": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039066276
+      }
+    ],
+    "1. Audit and close Exact Route implementation gaps": [
+      {
+        "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783039701651
+      }
+    ]
+  }
+}

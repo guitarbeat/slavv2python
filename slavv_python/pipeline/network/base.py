@@ -158,11 +158,11 @@ def _graph_state_ordered_edges(
     if not ordered_pairs:
         return np.empty((0, 2), dtype=np.int32), [], [], []
     connections = np.asarray(ordered_pairs, dtype=np.int32).reshape(-1, 2)
-    traces = [np.asarray(graph_edges[pair], dtype=np.float32) for pair in ordered_pairs]
+    traces = [np.asarray(graph_edges[pair], dtype=np.float64) for pair in ordered_pairs]
     scale_traces = [
-        np.asarray(graph_edge_scales[pair], dtype=np.float32).reshape(-1) for pair in ordered_pairs
+        np.asarray(graph_edge_scales[pair], dtype=np.float64).reshape(-1) for pair in ordered_pairs
     ]
     energy_traces = [
-        np.asarray(graph_edge_energies[pair], dtype=np.float32) for pair in ordered_pairs
+        np.asarray(graph_edge_energies[pair], dtype=np.float64) for pair in ordered_pairs
     ]
     return cast("np.ndarray", connections), traces, scale_traces, energy_traces

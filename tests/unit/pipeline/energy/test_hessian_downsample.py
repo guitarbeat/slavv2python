@@ -13,6 +13,7 @@ from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _matlab_coarse_local_slices,
     _matlab_zero_based_linspace,
     compute_exact_parity_energy_chunked,
+    compute_exact_parity_energy_single_octave,
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,
 )
@@ -135,14 +136,17 @@ def test_resolution_factors_use_matlab_rounding_at_large_scales() -> None:
 
 
 def test_exact_mesh_uses_shared_matlab_principal_energy_kernel() -> None:
-    source = inspect.getsource(compute_exact_parity_energy_chunked)
+    # compute_exact_parity_energy_chunked delegates per-octave work to the helper;
+    # the actual compute_principal_energy call lives inside that helper's closure.
+    source = inspect.getsource(compute_exact_parity_energy_single_octave)
 
     assert "compute_principal_energy(" in source
     assert "np.linalg.eigh" not in source
 
 
 def test_exact_mesh_maps_resolution_factors_to_zyx_input() -> None:
-    source = inspect.getsource(compute_exact_parity_energy_chunked)
+    # stride assignments live inside the _process_chunk closure in the single-octave helper.
+    source = inspect.getsource(compute_exact_parity_energy_single_octave)
 
     # ``rf`` is in the raw [Z, Y, X] input frame. Chunk slicing must retain
     # that mapping before each chunk is transposed into MATLAB [Y, X, Z].

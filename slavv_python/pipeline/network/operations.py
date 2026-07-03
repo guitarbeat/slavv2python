@@ -368,15 +368,15 @@ def _matlab_get_strand_objects(
         ordered_edge_indices = np.asarray(strand_edge_indices, dtype=np.int32).reshape(-1)
         backwards_flags = np.asarray(strand_edge_backwards, dtype=bool).reshape(-1)
         edge_traces_at_strand = [
-            np.asarray(edge_traces[int(edge_index)], dtype=np.float32).copy()
+            np.asarray(edge_traces[int(edge_index)], dtype=np.float64).copy()
             for edge_index in ordered_edge_indices.tolist()
         ]
         edge_scales_at_strand = [
-            np.asarray(edge_scale_traces[int(edge_index)], dtype=np.float32).reshape(-1).copy()
+            np.asarray(edge_scale_traces[int(edge_index)], dtype=np.float64).reshape(-1).copy()
             for edge_index in ordered_edge_indices.tolist()
         ]
         edge_energies_at_strand = [
-            np.asarray(edge_energy_traces[int(edge_index)], dtype=np.float32).copy()
+            np.asarray(edge_energy_traces[int(edge_index)], dtype=np.float64).copy()
             for edge_index in ordered_edge_indices.tolist()
         ]
 
@@ -500,28 +500,28 @@ def _matlab_smooth_edges_v2(
     if np.asarray(lumen_radius_in_microns_range).size == 0:
         return (
             [
-                np.asarray(space_trace, dtype=np.float32).copy()
+                np.asarray(space_trace, dtype=np.float64).copy()
                 for space_trace in edge_space_subscripts
             ],
             [
-                np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
+                np.asarray(scale_trace, dtype=np.float64).reshape(-1).copy() + 1.0
                 for scale_trace in edge_scale_subscripts
             ],
             [
-                np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy()
+                np.asarray(energy_trace, dtype=np.float64).reshape(-1).copy()
                 for energy_trace in edge_energies
             ],
         )
 
     smoothed_space_subscripts = [
-        np.asarray(space_trace, dtype=np.float32).copy() for space_trace in edge_space_subscripts
+        np.asarray(space_trace, dtype=np.float64).copy() for space_trace in edge_space_subscripts
     ]
     smoothed_scale_subscripts: list[np.ndarray] = [
-        np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
+        np.asarray(scale_trace, dtype=np.float64).reshape(-1).copy() + 1.0
         for scale_trace in edge_scale_subscripts
     ]
     smoothed_energies = [
-        np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy()
+        np.asarray(energy_trace, dtype=np.float64).reshape(-1).copy()
         for energy_trace in edge_energies
     ]
 
@@ -642,14 +642,14 @@ def _matlab_smooth_edges_v2(
         )
 
         smoothed_space_subscripts[edge_index] = sampled_subscripts[:, :3].astype(
-            np.float32,
+            np.float64,
             copy=False,
         )
         smoothed_scale_subscripts[edge_index] = sampled_subscripts[:, 3].astype(
-            np.float32,
+            np.float64,
             copy=False,
         )
-        smoothed_energies[edge_index] = sampled_energies.astype(np.float32, copy=False)
+        smoothed_energies[edge_index] = sampled_energies.astype(np.float64, copy=False)
 
     return (
         smoothed_space_subscripts,
@@ -664,17 +664,17 @@ def _matlab_get_vessel_directions_v3(
 ) -> list[np.ndarray]:
     """Mirror MATLAB ``get_vessel_directions_V3`` over strand objects."""
     vessel_directions: list[np.ndarray] = []
-    microns_per_voxel_arr = np.asarray(microns_per_voxel, dtype=np.float32)
+    microns_per_voxel_arr = np.asarray(microns_per_voxel, dtype=np.float64)
 
     for strand in strand_space_subscripts:
-        strand_coords: np.ndarray = np.asarray(strand, dtype=np.float32)
+        strand_coords: np.ndarray = np.asarray(strand, dtype=np.float64)
         if len(strand_coords) == 0:
-            vessel_directions.append(np.zeros((0, 3), dtype=np.float32))
+            vessel_directions.append(np.zeros((0, 3), dtype=np.float64))
             continue
 
         scaled_strand_coords: np.ndarray = np.asarray(
             strand_coords * microns_per_voxel_arr,
-            dtype=np.float32,
+            dtype=np.float64,
         )
         if len(scaled_strand_coords) > 2:
             cropped = scaled_strand_coords[2:, :] - scaled_strand_coords[:-2, :]
@@ -683,11 +683,11 @@ def _matlab_get_vessel_directions_v3(
             cropped = scaled_strand_coords[1:2, :] - scaled_strand_coords[0:1, :]
             directions = np.vstack((cropped, cropped))
         else:
-            directions = np.zeros((1, 3), dtype=np.float32)
+            directions = np.zeros((1, 3), dtype=np.float64)
 
         norms = np.sqrt(np.sum(directions**2, axis=1, keepdims=True))
         with np.errstate(divide="ignore", invalid="ignore"):
             unit_directions = directions / norms
-        vessel_directions.append(np.asarray(unit_directions, dtype=np.float32))
+        vessel_directions.append(np.asarray(unit_directions, dtype=np.float64))
 
     return vessel_directions

@@ -8,6 +8,8 @@ import numpy as np
 from skimage.draw import ellipsoid
 from typing_extensions import TypeAlias
 
+from slavv_python.utils.math_utils import slavv_round_array
+
 Int64Array: TypeAlias = "np.ndarray"
 
 logger = logging.getLogger(__name__)
@@ -45,9 +47,9 @@ def paint_vertex_image(
             cc = coords[1] - center[1]
             dd = coords[2] - center[2]
 
-            y_coords = rr + int(np.round(pos[0]))
-            x_coords = cc + int(np.round(pos[1]))
-            z_coords = dd + int(np.round(pos[2]))
+            y_coords = rr + int(slavv_round_array(np.asarray([pos[0]]))[0])
+            x_coords = cc + int(slavv_round_array(np.asarray([pos[1]]))[0])
+            z_coords = dd + int(slavv_round_array(np.asarray([pos[2]]))[0])
 
             valid_mask = (
                 (y_coords >= 0)
@@ -80,7 +82,7 @@ def paint_vertex_center_image(
     if len(vertex_positions) == 0:
         return center_image
 
-    coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)[:, :3]).astype(np.int32)
+    coords = slavv_round_array(np.asarray(vertex_positions, dtype=np.float64)[:, :3]).astype(np.int32)
     coords[:, 0] = np.clip(coords[:, 0], 0, image_shape[0] - 1)
     coords[:, 1] = np.clip(coords[:, 1], 0, image_shape[1] - 1)
     coords[:, 2] = np.clip(coords[:, 2], 0, image_shape[2] - 1)
