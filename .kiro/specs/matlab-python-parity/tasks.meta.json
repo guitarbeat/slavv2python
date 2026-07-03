@@ -181,6 +181,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039731723
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041754258
       }
     ],
     "4.1 Write `tests/unit/pipeline/energy/test_matlab_linspace_property.py` — Property 6": [
@@ -193,6 +198,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039734739
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041754984
       }
     ],
     "4.2 Write `tests/unit/pipeline/test_structuring_element_membership.py` — Property 7": [
@@ -205,6 +215,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039737683
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041755776
       }
     ],
     "5.1 Write `tests/unit/parity/test_prove_exact_sequence_order.py` — Property 8": [
@@ -217,6 +232,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783040746373
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041756677
       }
     ],
     "5.2 Write `tests/unit/parity/test_downstream_blocking.py` — Property 9": [
@@ -265,6 +285,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783040757773
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041757458
       }
     ],
     "6.2 Write `tests/unit/parity/test_oracle_loader_axis_reversal.py` — Property 13": [
@@ -272,6 +297,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039062159
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041143509
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041714876
       }
     ],
     "6.3 Write `tests/unit/parity/test_oracle_loader_error_messages.py` — Property 14": [
@@ -279,6 +314,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039062531
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041145952
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041715466
       }
     ],
     "6.4 Write `tests/unit/parity/test_oracle_artifact_completeness.py` — Property 16": [
@@ -286,6 +331,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039062876
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041146788
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041716361
       }
     ],
     "7.1 Write `tests/unit/schema/test_network_serialization_roundtrip.py` — Property 15": [
@@ -293,6 +348,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039063223
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041147601
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041717272
       }
     ],
     "7.2 Write `tests/unit/parity/test_certification_report_fields.py` — Property 17": [
@@ -300,6 +365,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039063559
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041148391
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041718037
       }
     ],
     "8. Checkpoint — Tier 1 CI gate": [
@@ -356,6 +431,34 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039701651
+      }
+    ],
+    "7. Write property-based tests: serialization and reporting (Properties 15, 17)": [
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041718354
+      }
+    ],
+    "3. Write property-based tests: pipeline computation invariants (Properties 1–5)": [
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041754499
+      }
+    ],
+    "4. Write property-based tests: energy engine and structuring element (Properties 6–7)": [
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041755932
+      }
+    ],
+    "6. Write property-based tests: oracle loader conventions (Properties 12–14, 16)": [
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783041757683
       }
     ]
   }

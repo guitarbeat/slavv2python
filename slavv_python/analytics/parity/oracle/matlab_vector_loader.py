@@ -169,7 +169,27 @@ def load_normalized_matlab_vectors(
 
 
 def load_normalized_matlab_stage(path: Path, stage: str) -> dict[str, Any]:
-    """Load and normalize a single raw MATLAB vector file."""
+    """Load and normalize a single raw MATLAB vector file.
+
+    Raises:
+        ValueError: If the artifact is malformed or missing a required field.  The
+            error message includes both the artifact file path and the name of the
+            missing or malformed field so callers can surface actionable diagnostics
+            (Property 14: Oracle Loader Error Identification).
+    """
+    try:
+        return _load_normalized_matlab_stage_inner(path, stage)
+    except ValueError as exc:
+        msg = str(exc)
+        path_str = str(path)
+        # Re-raise with the artifact path embedded when it is not already present.
+        if path_str not in msg:
+            raise ValueError(f"{msg} (artifact: {path_str})") from exc
+        raise
+
+
+def _load_normalized_matlab_stage_inner(path: Path, stage: str) -> dict[str, Any]:
+    """Internal implementation of load_normalized_matlab_stage (no path wrapping)."""
     if stage == "energy" and _is_matlab_energy_hdf5(path):
         return _load_normalized_matlab_energy_from_hdf5(path)
     matlab_payload = cast(

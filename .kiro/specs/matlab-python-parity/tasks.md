@@ -74,7 +74,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     all existing tests pass before starting PBT work.
   - Ask the user if questions arise.
 
-- [ ] 3. Write property-based tests: pipeline computation invariants (Properties 1–5)
+- [x] 3. Write property-based tests: pipeline computation invariants (Properties 1–5)
   - [x] 3.1 Write `tests/unit/pipeline/test_float64_dtype_invariant.py` — Property 1
     - Use `hypothesis` with `@given(st.integers(2,16), st.integers(2,16), st.integers(2,8))`
       to generate synthetic volume shapes
@@ -105,15 +105,15 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 4: Orientation Persistence Round-Trip`
     - _Requirements: 3.3_
 
-  - [-] 3.5 Write `tests/unit/pipeline/test_round_half_away_from_zero.py` — Property 5
+  - [x] 3.5 Write `tests/unit/pipeline/test_round_half_away_from_zero.py` — Property 5
     - Use `hypothesis` `st.floats` filtered to values where `x - math.floor(x) == 0.5`
       (positive, negative, large magnitude); call `slavv_round(x)` and assert the result
       equals `math.floor(x) + 1`
     - Include comment tag: `# Feature: matlab-python-parity, Property 5: Round-Half-Away-from-Zero`
     - _Requirements: 3.4_
 
-- [ ] 4. Write property-based tests: energy engine and structuring element (Properties 6–7)
-  - [-] 4.1 Write `tests/unit/pipeline/energy/test_matlab_linspace_property.py` — Property 6
+- [x] 4. Write property-based tests: energy engine and structuring element (Properties 6–7)
+  - [x] 4.1 Write `tests/unit/pipeline/energy/test_matlab_linspace_property.py` — Property 6
     - Extend or complement the existing `test_matlab_linspace_table.py` with a
       hypothesis-driven property test using `@given(st.integers(2,200), st.floats(...))`
       varying N and endpoint ranges; assert `abs(python_val - matlab_ref_val) < 1e-14` at
@@ -122,7 +122,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 6: MATLAB Linspace Mesh Correctness`
     - _Requirements: 4.4_
 
-  - [-] 4.2 Write `tests/unit/pipeline/test_structuring_element_membership.py` — Property 7
+  - [x] 4.2 Write `tests/unit/pipeline/test_structuring_element_membership.py` — Property 7
     - Use `hypothesis` `st.floats(min_value=0.5, max_value=20.0)` for radius `r`; call
       `ellipsoid_offsets(r, ...)` and assert every returned offset satisfies
       `sqrt(dy²+dx²+dz²) <= r` (float comparison) and no excluded offset satisfies it
@@ -130,7 +130,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - _Requirements: 5.4_
 
 - [ ] 5. Write property-based tests: parity harness sequencing (Properties 8–11)
-  - [-] 5.1 Write `tests/unit/parity/test_prove_exact_sequence_order.py` — Property 8
+  - [x] 5.1 Write `tests/unit/parity/test_prove_exact_sequence_order.py` — Property 8
     - Mock the four stage evaluators in `ExactProofCoordinator`; use `hypothesis`
       to vary which stages pass/fail; assert that the mock call order is always
       `[energy, vertices, edges, network]` with no stage called before its predecessor
@@ -160,37 +160,37 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 11: All-Pass Certification Verdict`
     - _Requirements: 9.2_
 
-- [ ] 6. Write property-based tests: oracle loader conventions (Properties 12–14, 16)
-  - [-] 6.1 Write `tests/unit/parity/test_oracle_loader_index_shift.py` — Property 12
+- [x] 6. Write property-based tests: oracle loader conventions (Properties 12–14, 16)
+  - [x] 6.1 Write `tests/unit/parity/test_oracle_loader_index_shift.py` — Property 12
     - Use `hypothesis` `st.arrays(dtype=np.int32, shape=st.integers(1,100))` with values
       in `[1, 255]` range (MATLAB 1-based); call the oracle loader's index-shift path;
       assert every returned value equals `raw - 1` exactly
     - Include comment tag: `# Feature: matlab-python-parity, Property 12: Oracle Exactly-One Index Shift`
     - _Requirements: 10.3_
 
-  - [~] 6.2 Write `tests/unit/parity/test_oracle_loader_axis_reversal.py` — Property 13
+  - [x] 6.2 Write `tests/unit/parity/test_oracle_loader_axis_reversal.py` — Property 13
     - Use `hypothesis` `st.integers(1,8)` for each of three axis dimensions; construct a
       synthetic array; apply the loader's axis-reversal; apply it again; assert the
       double-reversal recovers the original (invertibility check)
     - Include comment tag: `# Feature: matlab-python-parity, Property 13: Oracle HDF5 Axis Reversal Round-Trip`
     - _Requirements: 10.4_
 
-  - [~] 6.3 Write `tests/unit/parity/test_oracle_loader_error_messages.py` — Property 14
+  - [x] 6.3 Write `tests/unit/parity/test_oracle_loader_error_messages.py` — Property 14
     - Use `hypothesis` `st.text()` for artifact path and field name; call the oracle
       loader with a malformed/missing-field artifact fixture; assert the raised exception
       message contains both the artifact path and the field name as substrings
     - Include comment tag: `# Feature: matlab-python-parity, Property 14: Oracle Loader Error Identification`
     - _Requirements: 11.2_
 
-  - [~] 6.4 Write `tests/unit/parity/test_oracle_artifact_completeness.py` — Property 16
+  - [x] 6.4 Write `tests/unit/parity/test_oracle_artifact_completeness.py` — Property 16
     - Build a minimal fixture oracle directory with stub artifacts for all four stages
       using `tmp_path`; call the oracle loader for each stage; assert all four surfaces
       are non-None and no `OracleMissingArtifactError` is raised
     - Include comment tag: `# Feature: matlab-python-parity, Property 16: Oracle Artifact Completeness`
     - _Requirements: 10.2_
 
-- [ ] 7. Write property-based tests: serialization and reporting (Properties 15, 17)
-  - [~] 7.1 Write `tests/unit/schema/test_network_serialization_roundtrip.py` — Property 15
+- [x] 7. Write property-based tests: serialization and reporting (Properties 15, 17)
+  - [x] 7.1 Write `tests/unit/schema/test_network_serialization_roundtrip.py` — Property 15
     - Use `hypothesis` to generate random `NetworkResult` instances (varying strand
       counts 0–20, bifurcation counts 0–10, vertex-degree arrays); serialize to a temp
       `network.json` via `NetworkExporter`; deserialize back; assert strand-endpoint-pair
@@ -198,7 +198,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 15: Network Graph Serialization Round-Trip`
     - _Requirements: 11.4_
 
-  - [~] 7.2 Write `tests/unit/parity/test_certification_report_fields.py` — Property 17
+  - [x] 7.2 Write `tests/unit/parity/test_certification_report_fields.py` — Property 17
     - Use `hypothesis` to generate random pass/fail outcomes with varying `max_delta`,
       `pass_rate`, `missing_count`, `extra_count` values; construct `CertificationReport`
       objects; assert presence of `missing_count`, `extra_count`, `float_agreement`, and
