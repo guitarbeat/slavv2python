@@ -219,13 +219,14 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Run Tier 2 crop harness and confirm all four stages certify
-  - Run `prove-exact-sequence` against `workspace/oracles/180709_E_crop_M_v2`:
+  - Run per-stage `prove-exact --stage <s>` for each stage against `workspace/oracles/180709_E_crop_M_v2`:
     ```
-    slavv parity prove-exact-sequence `
-      --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-      --oracle-root workspace/oracles/180709_E_crop_M_v2
+    slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage energy
+    slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage vertices
+    slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage edges
+    slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage network
     ```
+  - **Note**: Do NOT use `prove-exact-sequence` — it uses a strict field comparator that fails on edges due to accepted watershed order-sensitivity (ADR 0012). Use individual `prove-exact --stage <s>` which applies the correct ADR 0012 spatial bars for edges/network.
   - Confirm all four stages pass their bars (energy: 0 scale_indices mismatches +
     allclose; vertices: 0 positions/scales mismatches + allclose energies; edges:
     ownership-map ≥ 60% + trace tolerance; network: endpoint-pair + bifurcation
