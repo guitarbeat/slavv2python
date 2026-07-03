@@ -11,10 +11,10 @@ Validates: Requirements 8.1
 
 from __future__ import annotations
 
+import contextlib
 import tempfile
 from argparse import Namespace
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
@@ -33,9 +33,7 @@ _STAGES: tuple[str, ...] = EXACT_STAGE_ORDER  # ("energy", "vertices", "edges", 
 # Strategy: a fixed-length list of booleans (one per stage) representing whether
 # each stage passes.  Hypothesis varies the full 2^4 = 16-entry pass/fail space
 # and many combinations across max_examples iterations.
-_stage_outcomes = st.lists(
-    st.booleans(), min_size=len(_STAGES), max_size=len(_STAGES)
-).map(tuple)
+_stage_outcomes = st.lists(st.booleans(), min_size=len(_STAGES), max_size=len(_STAGES)).map(tuple)
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +114,7 @@ def test_stage_evaluation_order_is_always_energy_vertices_edges_network(
         _patch_coordinator_and_surface(monkeypatch, coordinator)
 
         run_dir = tmp_path
-        try:
+        with contextlib.suppress(SystemExit):
             handle_prove_exact_sequence(
                 Namespace(
                     source_run_root=str(run_dir),
@@ -124,10 +122,6 @@ def test_stage_evaluation_order_is_always_energy_vertices_edges_network(
                     oracle_root=None,
                 )
             )
-        except SystemExit:
-            # A failing stage triggers sys.exit(1); catch it so the ordering
-            # assertion below can still execute.
-            pass
 
         # --- Property 8 assertion -------------------------------------------
         # The stages that were called must form a *prefix* of EXACT_STAGE_ORDER.
@@ -164,7 +158,7 @@ def test_each_stage_call_is_a_separate_prove_invocation(
         coordinator.prove.side_effect = _build_fake_prove(outcomes, call_log, proof_dir)
         _patch_coordinator_and_surface(monkeypatch, coordinator)
 
-        try:
+        with contextlib.suppress(SystemExit):
             handle_prove_exact_sequence(
                 Namespace(
                     source_run_root=str(tmp_path),
@@ -172,8 +166,6 @@ def test_each_stage_call_is_a_separate_prove_invocation(
                     oracle_root=None,
                 )
             )
-        except SystemExit:
-            pass
 
         # Each recorded call must correspond to exactly one coordinator.prove() call.
         assert coordinator.prove.call_count == len(call_log), (
@@ -204,9 +196,7 @@ def test_all_four_stages_called_when_all_pass(
     proof_dir.mkdir(parents=True, exist_ok=True)
 
     coordinator = MagicMock()
-    coordinator.prove.side_effect = _build_fake_prove(
-        (True, True, True, True), call_log, proof_dir
-    )
+    coordinator.prove.side_effect = _build_fake_prove((True, True, True, True), call_log, proof_dir)
     _patch_coordinator_and_surface(monkeypatch, coordinator)
 
     handle_prove_exact_sequence(

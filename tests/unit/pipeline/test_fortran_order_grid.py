@@ -23,7 +23,6 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-
 # ---------------------------------------------------------------------------
 # Property 2 — Fortran-Order Grid Invariant
 # ---------------------------------------------------------------------------
@@ -70,20 +69,13 @@ def test_fortran_order_grid_invariant(n_y: int, n_x: int, n_z: int) -> None:
     # 2. Shape must be [Y, X, Z]
     expected_shape = (n_y, n_x, n_z)
     assert reoriented.shape == expected_shape, (
-        f"Expected shape {expected_shape} after [Z,Y,X]→[Y,X,Z] transpose, "
-        f"got {reoriented.shape}"
+        f"Expected shape {expected_shape} after [Z,Y,X]→[Y,X,Z] transpose, got {reoriented.shape}"
     )
 
     # 3. Y dimension is first, X second, Z third
-    assert reoriented.shape[0] == n_y, (
-        f"First axis should be Y ({n_y}), got {reoriented.shape[0]}"
-    )
-    assert reoriented.shape[1] == n_x, (
-        f"Second axis should be X ({n_x}), got {reoriented.shape[1]}"
-    )
-    assert reoriented.shape[2] == n_z, (
-        f"Third axis should be Z ({n_z}), got {reoriented.shape[2]}"
-    )
+    assert reoriented.shape[0] == n_y, f"First axis should be Y ({n_y}), got {reoriented.shape[0]}"
+    assert reoriented.shape[1] == n_x, f"Second axis should be X ({n_x}), got {reoriented.shape[1]}"
+    assert reoriented.shape[2] == n_z, f"Third axis should be Z ({n_z}), got {reoriented.shape[2]}"
 
 
 @pytest.mark.unit

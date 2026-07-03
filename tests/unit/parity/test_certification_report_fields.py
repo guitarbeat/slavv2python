@@ -17,21 +17,17 @@ The design document (MATLAB-Python Parity, Property 17) specifies:
 The canonical JSON schema (design doc § CertificationReport) is::
 
     {
-      "stage": "energy",
-      "verdict": "PASS",
-      "missing_count": 0,
-      "extra_count": 0,
-      "float_agreement": {
-        "energy": {"max_delta": 1.99e-11, "pass_rate": 1.0},
-        "lumen_radius_microns": {"max_delta": 7.1e-15, "pass_rate": 1.0}
-      },
-      "discrete_agreement": {
-        "scale_indices": {"mismatch_count": 0}
-      },
-      "diagnostics": {
-        "ulp_figures": {"median_ulp": 4, "p90_ulp": 13, "max_ulp": 72343}
-      },
-      "first_failing_field": null
+        "stage": "energy",
+        "verdict": "PASS",
+        "missing_count": 0,
+        "extra_count": 0,
+        "float_agreement": {
+            "energy": {"max_delta": 1.99e-11, "pass_rate": 1.0},
+            "lumen_radius_microns": {"max_delta": 7.1e-15, "pass_rate": 1.0},
+        },
+        "discrete_agreement": {"scale_indices": {"mismatch_count": 0}},
+        "diagnostics": {"ulp_figures": {"median_ulp": 4, "p90_ulp": 13, "max_ulp": 72343}},
+        "first_failing_field": null,
     }
 
 ``verdict`` is determined solely by ``missing_count``, ``extra_count``, and
@@ -49,7 +45,6 @@ from typing import Any
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
-
 
 # ---------------------------------------------------------------------------
 # Helper: build a CertificationReport dict from components
@@ -153,26 +148,16 @@ def test_certification_report_required_fields_always_present(
     )
 
     # Required top-level fields
-    assert "missing_count" in report, (
-        "CertificationReport is missing 'missing_count'"
-    )
-    assert "extra_count" in report, (
-        "CertificationReport is missing 'extra_count'"
-    )
-    assert "float_agreement" in report, (
-        "CertificationReport is missing 'float_agreement'"
-    )
+    assert "missing_count" in report, "CertificationReport is missing 'missing_count'"
+    assert "extra_count" in report, "CertificationReport is missing 'extra_count'"
+    assert "float_agreement" in report, "CertificationReport is missing 'float_agreement'"
     assert isinstance(report["float_agreement"], dict), (
         f"float_agreement must be a dict, got {type(report['float_agreement'])}"
     )
-    assert len(report["float_agreement"]) > 0, (
-        "float_agreement must be non-empty"
-    )
+    assert len(report["float_agreement"]) > 0, "float_agreement must be non-empty"
 
     # diagnostics.ulp_figures must be present
-    assert "diagnostics" in report, (
-        "CertificationReport is missing 'diagnostics'"
-    )
+    assert "diagnostics" in report, "CertificationReport is missing 'diagnostics'"
     assert "ulp_figures" in report["diagnostics"], (
         "CertificationReport diagnostics is missing 'ulp_figures'"
     )
@@ -355,14 +340,11 @@ def test_ulp_figures_stored_in_diagnostics_only(
     # ULP fields must appear inside diagnostics.ulp_figures with correct values
     ulp_figures = report["diagnostics"]["ulp_figures"]
     assert ulp_figures["median_ulp"] == median_ulp, (
-        f"diagnostics.ulp_figures.median_ulp={ulp_figures['median_ulp']} "
-        f"!= expected {median_ulp}"
+        f"diagnostics.ulp_figures.median_ulp={ulp_figures['median_ulp']} != expected {median_ulp}"
     )
     assert ulp_figures["p90_ulp"] == p90_ulp, (
-        f"diagnostics.ulp_figures.p90_ulp={ulp_figures['p90_ulp']} "
-        f"!= expected {p90_ulp}"
+        f"diagnostics.ulp_figures.p90_ulp={ulp_figures['p90_ulp']} != expected {p90_ulp}"
     )
     assert ulp_figures["max_ulp"] == max_ulp, (
-        f"diagnostics.ulp_figures.max_ulp={ulp_figures['max_ulp']} "
-        f"!= expected {max_ulp}"
+        f"diagnostics.ulp_figures.max_ulp={ulp_figures['max_ulp']} != expected {max_ulp}"
     )

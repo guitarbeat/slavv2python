@@ -83,7 +83,8 @@ def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
         if json_path is not None and json_path.is_file():
             stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage}.json"
             stage_json.parent.mkdir(parents=True, exist_ok=True)
-            copy2(json_path, stage_json)
+            if json_path.resolve() != stage_json.resolve():
+                copy2(json_path, stage_json)
         passed = bool(report.get("passed"))
         stage_results.append({"stage": stage, "passed": passed})
         print(f"prove-exact --stage {stage}: {'PASS' if passed else 'FAIL'}")

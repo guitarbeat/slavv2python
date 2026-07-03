@@ -679,9 +679,7 @@ def compute_exact_parity_energy_single_octave(
             _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) = _process_chunk(c_idx)
             master_energy = energy_3d[slice_z, slice_y, slice_x]
             is_better = chunk_energy < master_energy
-            energy_3d[slice_z, slice_y, slice_x] = np.where(
-                is_better, chunk_energy, master_energy
-            )
+            energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
             scale_indices[slice_z, slice_y, slice_x] = np.where(
                 is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
             )
@@ -698,17 +696,13 @@ def compute_exact_parity_energy_single_octave(
         for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
             master_energy = energy_3d[slice_z, slice_y, slice_x]
             is_better = chunk_energy < master_energy
-            energy_3d[slice_z, slice_y, slice_x] = np.where(
-                is_better, chunk_energy, master_energy
-            )
+            energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
             scale_indices[slice_z, slice_y, slice_x] = np.where(
                 is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
             )
             completed_chunk_units += 1
             if progress_callback is not None:
-                progress_callback(
-                    completed_chunk_units, total_chunk_units, int(current_octave), -1
-                )
+                progress_callback(completed_chunk_units, total_chunk_units, int(current_octave), -1)
 
     return completed_chunk_units
 

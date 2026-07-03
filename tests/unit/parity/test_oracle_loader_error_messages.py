@@ -168,7 +168,7 @@ def test_vertices_missing_field_error_contains_path_and_field(
             mat_path = tmp_path / f"vertices_{artifact_path_suffix}_{missing_field}.mat"
             _write_mat_without_field(mat_path, "vertices", missing_field)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(ValueError, match=r".") as exc_info:
                 load_normalized_matlab_stage(mat_path, "vertices")
 
             error_msg = str(exc_info.value)
@@ -213,7 +213,7 @@ def test_edges_missing_field_error_contains_path_and_field(
             mat_path = tmp_path / f"edges_{artifact_path_suffix}_{missing_field}.mat"
             _write_mat_without_field(mat_path, "edges", missing_field)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(ValueError, match=r".") as exc_info:
                 load_normalized_matlab_stage(mat_path, "edges")
 
             error_msg = str(exc_info.value)
@@ -258,7 +258,7 @@ def test_network_missing_field_error_contains_path_and_field(
             mat_path = tmp_path / f"network_{artifact_path_suffix}_{missing_field}.mat"
             _write_mat_without_field(mat_path, "network", missing_field)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(ValueError, match=r".") as exc_info:
                 load_normalized_matlab_stage(mat_path, "network")
 
             error_msg = str(exc_info.value)
@@ -304,7 +304,7 @@ def test_missing_required_field_error_contains_path_and_field_baseline(
     mat_path = tmp_path / f"{stage}_test.mat"
     _write_mat_without_field(mat_path, stage, missing_field)
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError, match=r".") as exc_info:
         load_normalized_matlab_stage(mat_path, stage)
 
     error_msg = str(exc_info.value)

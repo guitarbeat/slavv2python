@@ -8,6 +8,7 @@ catchment winner.
 
 Validates: Requirements 3.2
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,7 +18,6 @@ from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -38,7 +38,7 @@ def _fortran_linear_index(coord: tuple[int, int, int], shape: tuple[int, int, in
 _shape_strategy = st.tuples(
     st.integers(min_value=2, max_value=12),  # Y
     st.integers(min_value=2, max_value=12),  # X
-    st.integers(min_value=1, max_value=6),   # Z
+    st.integers(min_value=1, max_value=6),  # Z
 )
 
 
@@ -57,7 +57,9 @@ def grid_with_two_tied_min_voxels(draw: st.DrawFn) -> tuple[np.ndarray, tuple[in
         arrays(
             dtype=np.float64,
             shape=(total,),
-            elements=st.floats(min_value=-10.0, max_value=0.0, allow_nan=False, allow_infinity=False),
+            elements=st.floats(
+                min_value=-10.0, max_value=0.0, allow_nan=False, allow_infinity=False
+            ),
         )
     )
 
@@ -102,7 +104,7 @@ def test_argmin_tiebreak_selects_lower_fortran_index(
     ny, nx, nz = shape
 
     # Build the flat strel-like view: all voxels are candidates.
-    total = ny * nx * nz
+    ny * nx * nz
     flat_energies = grid.ravel(order="C")
 
     # Build Fortran-order linear indices for every voxel.
@@ -112,7 +114,10 @@ def test_argmin_tiebreak_selects_lower_fortran_index(
         dtype=np.int64,
     )
     fortran_indices = np.array(
-        [np.ravel_multi_index((int(c[0]), int(c[1]), int(c[2])), shape, order="F") for c in all_coords],
+        [
+            np.ravel_multi_index((int(c[0]), int(c[1]), int(c[2])), shape, order="F")
+            for c in all_coords
+        ],
         dtype=np.int64,
     )
 
@@ -147,7 +152,7 @@ def test_argmin_tiebreak_winner_has_min_energy(
     """
     grid, shape = grid_and_shape
     ny, nx, nz = shape
-    total = ny * nx * nz
+    ny * nx * nz
     flat_energies = grid.ravel(order="C")
 
     all_coords = np.array(
@@ -155,7 +160,10 @@ def test_argmin_tiebreak_winner_has_min_energy(
         dtype=np.int64,
     )
     fortran_indices = np.array(
-        [np.ravel_multi_index((int(c[0]), int(c[1]), int(c[2])), shape, order="F") for c in all_coords],
+        [
+            np.ravel_multi_index((int(c[0]), int(c[1]), int(c[2])), shape, order="F")
+            for c in all_coords
+        ],
         dtype=np.int64,
     )
 
@@ -174,7 +182,9 @@ def test_argmin_tiebreak_winner_has_min_energy(
 )
 @settings(max_examples=100)
 def test_argmin_tiebreak_fortran_order_matches_ravel_multi_index(
-    ny: int, nx: int, nz: int,
+    ny: int,
+    nx: int,
+    nz: int,
 ) -> None:
     """**Validates: Requirements 3.2**
 

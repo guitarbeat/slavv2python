@@ -47,8 +47,8 @@ def slavv_round(x: float | np.floating) -> int:
     """
     val = float(x)
     if val >= 0.0:
-        return int(math.floor(val + 0.5))
-    return int(math.ceil(val - 0.5))
+        return math.floor(val + 0.5)
+    return math.ceil(val - 0.5)
 
 
 def slavv_round_array(x: np.ndarray) -> np.ndarray:

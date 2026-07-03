@@ -11,8 +11,6 @@ during computation, before any persistence coercion.
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import numpy as np
 import pytest
 from hypothesis import given, settings
@@ -36,7 +34,6 @@ from slavv_python.pipeline.network.operations import (
 )
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.detection import matlab_vertex_candidates_in_chunk
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -204,15 +201,12 @@ def test_edge_coordinate_trace_dtype_is_float64(ny: int, nx: int, nz: int) -> No
     # Build a short linear trace using valid Fortran-order indices.
     max_trace = min(8, n_voxels)
     rng = np.random.default_rng(seed=(ny * 7 + nx * 13 + nz))
-    linear_trace = sorted(
-        rng.choice(n_voxels, size=max_trace, replace=False).tolist()
-    )
+    linear_trace = sorted(rng.choice(n_voxels, size=max_trace, replace=False).tolist())
 
     coords = _coords_from_linear_trace(linear_trace, shape)
 
     assert coords.dtype == np.float64, (
-        f"_coords_from_linear_trace returned dtype {coords.dtype}, "
-        f"expected float64 (shape {shape})"
+        f"_coords_from_linear_trace returned dtype {coords.dtype}, expected float64 (shape {shape})"
     )
     assert coords.shape == (len(linear_trace), 3), (
         f"Expected ({len(linear_trace)}, 3), got {coords.shape}"
@@ -278,9 +272,7 @@ def test_edge_adjusted_neighbour_energies_dtype_is_float64(ny: int, nx: int, nz:
     nz=st.integers(2, 8),
 )
 @settings(max_examples=100)
-def test_edge_directional_suppression_factors_dtype_is_float64(
-    ny: int, nx: int, nz: int
-) -> None:
+def test_edge_directional_suppression_factors_dtype_is_float64(ny: int, nx: int, nz: int) -> None:
     """Property 1: directional suppression factors are float64 during edge computation.
 
     Suppression factors gate multi-seed branching in the watershed. They are
@@ -352,7 +344,7 @@ def test_network_strand_objects_dtype_is_float64(ny: int, nx: int, nz: int) -> N
     Strand coordinates are continuous spatial quantities computed at network stage.
     They must be float64 during assembly, before any persistence coercion.
     """
-    # Build 2–4 synthetic edges forming a chain: 0-1, 1-2
+    # Build 2-4 synthetic edges forming a chain: 0-1, 1-2
     n_edges = max(2, (ny + nz) % 4 + 1)
     trace_len = max(3, nx)
     space_traces, scale_traces, energy_traces = _make_synthetic_edge_traces(n_edges, trace_len)
@@ -361,7 +353,7 @@ def test_network_strand_objects_dtype_is_float64(ny: int, nx: int, nz: int) -> N
     edge_indices_in_strands = [np.arange(n_edges, dtype=np.int32)]
     edge_backwards_in_strands = [np.zeros(n_edges, dtype=bool)]
 
-    strand_space, strand_scale, strand_energy = _matlab_get_strand_objects(
+    strand_space, _strand_scale, strand_energy = _matlab_get_strand_objects(
         space_traces,
         scale_traces,
         energy_traces,
@@ -408,7 +400,7 @@ def test_network_smooth_edges_dtype_is_float64(ny: int, nx: int, nz: int) -> Non
     lumen_radius_range = np.array([1.0, 1.5, 2.0], dtype=np.float64)
     microns_per_voxel = np.array([0.4, 0.4, 1.0], dtype=np.float64)
 
-    smoothed_space, smoothed_scale, smoothed_energy = _matlab_smooth_edges_v2(
+    smoothed_space, _smoothed_scale, smoothed_energy = _matlab_smooth_edges_v2(
         space_traces,
         scale_traces,
         energy_traces,

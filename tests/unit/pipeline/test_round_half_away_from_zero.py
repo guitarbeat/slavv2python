@@ -27,21 +27,16 @@ from hypothesis import strategies as st
 
 from slavv_python.utils.math_utils import slavv_round
 
-
 # ---------------------------------------------------------------------------
 # Strategy: floats at positive .5 boundaries
 # ---------------------------------------------------------------------------
 
 # Generate n such that x = n + 0.5 where n >= 0 (positive .5-boundary values).
 # We restrict the integer part to a range where float representation is exact.
-_positive_half = st.integers(min_value=0, max_value=2**52 - 1).map(
-    lambda n: float(n) + 0.5
-)
+_positive_half = st.integers(min_value=0, max_value=2**52 - 1).map(lambda n: float(n) + 0.5)
 
 # Generate n such that x = -(n + 0.5) where n >= 0 (negative .5-boundary values).
-_negative_half = st.integers(min_value=0, max_value=2**52 - 1).map(
-    lambda n: -(float(n) + 0.5)
-)
+_negative_half = st.integers(min_value=0, max_value=2**52 - 1).map(lambda n: -(float(n) + 0.5))
 
 
 # ---------------------------------------------------------------------------
@@ -63,9 +58,7 @@ def test_round_half_away_from_zero_positive(x: float) -> None:
     assert x - math.floor(x) == 0.5, f"Generator invariant failed: {x}"
     expected = math.floor(x) + 1
     result = slavv_round(x)
-    assert result == expected, (
-        f"slavv_round({x}) == {result}, expected floor({x})+1 == {expected}"
-    )
+    assert result == expected, f"slavv_round({x}) == {result}, expected floor({x})+1 == {expected}"
 
 
 # ---------------------------------------------------------------------------
@@ -90,9 +83,7 @@ def test_round_half_away_from_zero_negative(x: float) -> None:
     assert x - math.floor(x) == 0.5, f"Generator invariant failed: {x}"
     expected = math.floor(x)
     result = slavv_round(x)
-    assert result == expected, (
-        f"slavv_round({x}) == {result}, expected floor({x}) == {expected}"
-    )
+    assert result == expected, f"slavv_round({x}) == {result}, expected floor({x}) == {expected}"
 
 
 # ---------------------------------------------------------------------------

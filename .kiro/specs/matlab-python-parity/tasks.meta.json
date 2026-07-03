@@ -249,6 +249,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783040749259
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783042477604
       }
     ],
     "5.3 Write `tests/unit/parity/test_first_failing_field.py` — Property 10": [
@@ -261,6 +266,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783040751977
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783042479154
       }
     ],
     "5.4 Write `tests/unit/parity/test_all_pass_certification.py` — Property 11": [
@@ -273,6 +283,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783040754660
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783042478260
       }
     ],
     "6.1 Write `tests/unit/parity/test_oracle_loader_index_shift.py` — Property 12": [
@@ -382,6 +397,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039064061
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783042495859
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783044010197
       }
     ],
     "9. Run Tier 2 crop harness and confirm all four stages certify": [
@@ -389,6 +414,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039064427
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783044020964
       }
     ],
     "10.1 Preflight check for canonical run": [
@@ -396,6 +426,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039064825
+      },
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783044021730
       }
     ],
     "10.2 Launch or resume the canonical full-volume exact-route run": [
@@ -459,6 +494,13 @@
         "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783041757683
+      }
+    ],
+    "5. Write property-based tests: parity harness sequencing (Properties 8–11)": [
+      {
+        "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
+        "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
+        "timestamp": 1783042479321
       }
     ]
   }

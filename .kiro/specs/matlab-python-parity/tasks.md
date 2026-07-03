@@ -129,7 +129,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 7: Structuring Element Float-Radius Membership`
     - _Requirements: 5.4_
 
-- [ ] 5. Write property-based tests: parity harness sequencing (Properties 8–11)
+- [x] 5. Write property-based tests: parity harness sequencing (Properties 8–11)
   - [x] 5.1 Write `tests/unit/parity/test_prove_exact_sequence_order.py` — Property 8
     - Mock the four stage evaluators in `ExactProofCoordinator`; use `hypothesis`
       to vary which stages pass/fail; assert that the mock call order is always
@@ -138,14 +138,14 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 8: Sequential Stage Evaluation Order`
     - _Requirements: 8.1_
 
-  - [-] 5.2 Write `tests/unit/parity/test_downstream_blocking.py` — Property 9
+  - [x] 5.2 Write `tests/unit/parity/test_downstream_blocking.py` — Property 9
     - Use `hypothesis` `st.sampled_from(["energy","vertices","edges"])` to pick a
       failing stage X; mock the coordinator so stage X returns FAIL; assert all stages
       after X receive `verdict = "BLOCKED"` without their comparators being called
     - Include comment tag: `# Feature: matlab-python-parity, Property 9: Downstream Blocking on Stage Failure`
     - _Requirements: 8.2_
 
-  - [-] 5.3 Write `tests/unit/parity/test_first_failing_field.py` — Property 10
+  - [x] 5.3 Write `tests/unit/parity/test_first_failing_field.py` — Property 10
     - Craft `CertificationReport` comparator results where one field fails; use
       `hypothesis` to vary which field in `[scale_indices, energy, lumen_radius_microns,
       positions, scales, energies, ownership_map, endpoint_pairs, bifurcations]` fails
@@ -153,7 +153,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 10: First-Failing-Field Identification`
     - _Requirements: 8.4_
 
-  - [-] 5.4 Write `tests/unit/parity/test_all_pass_certification.py` — Property 11
+  - [x] 5.4 Write `tests/unit/parity/test_all_pass_certification.py` — Property 11
     - Mock all four stage comparators to return PASS; use `hypothesis` to vary
       mock float-agreement and missing/extra count values (all zeros); assert the
       aggregate verdict is `CERTIFIED`
@@ -207,7 +207,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - Include comment tag: `# Feature: matlab-python-parity, Property 17: Certification Report Required Fields`
     - _Requirements: 12.1, 12.2_
 
-- [~] 8. Checkpoint — Tier 1 CI gate
+- [x] 8. Checkpoint — Tier 1 CI gate
   - Run the full Tier 1 regression gate locally:
     ```
     python -m pytest tests/unit/pipeline/ tests/unit/parity/ tests/unit/schema/ -m "unit" -x
@@ -218,7 +218,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - All 17 property test files must pass. Fix any failures before proceeding.
   - Ensure all tests pass, ask the user if questions arise.
 
-- [~] 9. Run Tier 2 crop harness and confirm all four stages certify
+- [-] 9. Run Tier 2 crop harness and confirm all four stages certify
   - Run `prove-exact-sequence` against `workspace/oracles/180709_E_crop_M_v2`:
     ```
     slavv parity prove-exact-sequence `
@@ -234,7 +234,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - _Requirements: 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 7.1, 7.2_
 
 - [ ] 10. Launch canonical full-volume run (`180709_E`)
-  - [~] 10.1 Preflight check for canonical run
+  - [-] 10.1 Preflight check for canonical run
     - Run `slavv parity preflight-exact` against `workspace/oracles/180709_E_full_v2`
       and `workspace/runs/oracle_180709_E/canonical_full_v4` to confirm oracle artifacts
       are present for all four stages and run-dir is accessible

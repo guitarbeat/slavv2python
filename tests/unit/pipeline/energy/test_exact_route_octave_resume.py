@@ -1,7 +1,8 @@
-import numpy as np
-import pytest
 from pathlib import Path
 from unittest.mock import patch
+
+import numpy as np
+import pytest
 
 from slavv_python.engine.state.run_ledger import RunContext
 from slavv_python.pipeline.energy.resumable import calculate_energy_field_resumable
@@ -23,12 +24,14 @@ def exact_energy_params():
     return {
         "comparison_exact_network": True,
         "octave_at_scales": np.array([0, 0, 1, 1], dtype=np.int32),
-        "scale_resolution_factors": np.array([
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-        ]),
+        "scale_resolution_factors": np.array(
+            [
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+            ]
+        ),
         "microns_per_voxel": np.array([1.0, 1.0, 1.0]),
         "pixels_per_sigma_PSF": np.array([0.5, 0.5, 0.5]),
         "lumen_radius_microns": np.array([1.5, 2.0, 2.5, 3.0]),
@@ -52,9 +55,7 @@ def test_exact_route_octave_level_resume(dummy_run_context, exact_energy_params)
     stage_controller = dummy_run_context.stage("energy")
 
     # Step 1: Run completely without interruption to get reference result
-    ref_result = calculate_energy_field_resumable(
-        image, exact_energy_params, stage_controller
-    )
+    ref_result = calculate_energy_field_resumable(image, exact_energy_params, stage_controller)
     assert isinstance(ref_result, EnergyResult)
     assert ref_result.energy.shape == image.shape
     assert ref_result.scale_indices.shape == image.shape
@@ -69,13 +70,16 @@ def test_exact_route_octave_level_resume(dummy_run_context, exact_energy_params)
 
     # Step 2: Run with an artificial crash after the first octave
     from slavv_python.pipeline.energy.config import _prepare_energy_config
+
     config = _prepare_energy_config(image, exact_energy_params)
     octave_range = np.unique(config["octave_at_scales"])
     assert len(octave_range) >= 2, f"Expected at least 2 octaves, got {octave_range}"
     first_octave = int(octave_range[0])
     second_octave = int(octave_range[1])
 
-    from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import compute_exact_parity_energy_single_octave
+    from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
+        compute_exact_parity_energy_single_octave,
+    )
 
     call_count = 0
     original_single_octave = compute_exact_parity_energy_single_octave
@@ -91,16 +95,20 @@ def test_exact_route_octave_level_resume(dummy_run_context, exact_energy_params)
         print(f"DEBUG mock_single_octave_crash completed for octave={current_octave}")
         return res
 
-    with patch(
-        "slavv_python.pipeline.energy.matlab_get_energy_v202_chunked.compute_exact_parity_energy_single_octave",
-        side_effect=mock_single_octave_crash,
+    with (
+        patch(
+            "slavv_python.pipeline.energy.matlab_get_energy_v202_chunked.compute_exact_parity_energy_single_octave",
+            side_effect=mock_single_octave_crash,
+        ),
+        pytest.raises(RuntimeError, match=f"Simulated crash at octave {second_octave}"),
     ):
-        with pytest.raises(RuntimeError, match=f"Simulated crash at octave {second_octave}"):
-            calculate_energy_field_resumable(image, exact_energy_params, stage_controller)
+        calculate_energy_field_resumable(image, exact_energy_params, stage_controller)
 
     # Verify that the first octave checkpoint was created and saved in state
     state = stage_controller.load_state()
-    print(f"DEBUG state_path={stage_controller.state_path}, exists={stage_controller.state_path.exists()}, state={state}")
+    print(
+        f"DEBUG state_path={stage_controller.state_path}, exists={stage_controller.state_path.exists()}, state={state}"
+    )
     assert state is not None
     assert state.get("completed_octaves") == [first_octave]
 

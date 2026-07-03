@@ -50,8 +50,12 @@ def remove_excess_vertex_degrees(
     sort_idx: np.ndarray = np.argsort(vertex_indices)
     sorted_vertices: np.ndarray = vertex_indices[sort_idx]
     sorted_edge_ids: np.ndarray = edge_ids[sort_idx]
-    starts = cast(np.ndarray, np.searchsorted(sorted_vertices, np.arange(num_vertices), side="left"))
-    ends = cast(np.ndarray, np.searchsorted(sorted_vertices, np.arange(num_vertices), side="right"))
+    starts = cast(
+        "np.ndarray", np.searchsorted(sorted_vertices, np.arange(num_vertices), side="left")
+    )
+    ends = cast(
+        "np.ndarray", np.searchsorted(sorted_vertices, np.arange(num_vertices), side="right")
+    )
 
     degrees = ends - starts
 
@@ -63,7 +67,7 @@ def remove_excess_vertex_degrees(
     pruned_edge_indices: list[int] = []
     for v_idx in excess_vertices.tolist():
         # Collect all edges touching this vertex
-        incident_edges = sorted_edge_ids[starts[v_idx]:ends[v_idx]]
+        incident_edges = sorted_edge_ids[starts[v_idx] : ends[v_idx]]
         if incident_edges.size == 0:
             continue
 

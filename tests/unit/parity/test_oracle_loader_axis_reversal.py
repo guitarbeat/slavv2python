@@ -53,9 +53,7 @@ def _apply_oracle_axis_reversal(arr: np.ndarray) -> np.ndarray:
     x=st.integers(min_value=1, max_value=8),
 )
 @settings(max_examples=100)
-def test_oracle_axis_reversal_double_application_recovers_original(
-    z: int, y: int, x: int
-) -> None:
+def test_oracle_axis_reversal_double_application_recovers_original(z: int, y: int, x: int) -> None:
     """Applying the HDF5 axis-reversal twice must recover the original array.
 
     For any 3-D spatial array with shape (Z, Y, X):
@@ -92,9 +90,7 @@ def test_oracle_axis_reversal_double_application_recovers_original(
     x=st.integers(min_value=1, max_value=8),
 )
 @settings(max_examples=100)
-def test_oracle_axis_reversal_changes_shape_when_non_cubic(
-    z: int, y: int, x: int
-) -> None:
+def test_oracle_axis_reversal_changes_shape_when_non_cubic(z: int, y: int, x: int) -> None:
     """A single axis-reversal changes the shape when the array is non-cubic.
 
     The transposition ``(0, 2, 1)`` swaps axes 1 and 2. When ``y != x``, the
@@ -119,6 +115,5 @@ def test_oracle_axis_reversal_changes_shape_when_non_cubic(
         "The reversal must swap the last two dimensions when y != x."
     )
     assert once_reversed.shape == (z, x, y), (
-        f"After reversal expected shape (Z={z}, X={x}, Y={y}), "
-        f"got {once_reversed.shape}"
+        f"After reversal expected shape (Z={z}, X={x}, Y={y}), got {once_reversed.shape}"
     )

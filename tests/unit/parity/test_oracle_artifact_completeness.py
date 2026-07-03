@@ -113,15 +113,13 @@ def test_loader_raises_no_exception_for_complete_oracle_root(tmp_path: Path) -> 
     for stage in _STAGES:
         try:
             status = inspect_oracle_artifact(oracle_root, stage)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             pytest.fail(
                 f"inspect_oracle_artifact raised an unexpected exception for stage "
                 f"'{stage}': {type(exc).__name__}: {exc}"
             )
         else:
-            assert status is not None, (
-                f"inspect_oracle_artifact returned None for stage '{stage}'"
-            )
+            assert status is not None, f"inspect_oracle_artifact returned None for stage '{stage}'"
 
 
 @pytest.mark.unit

@@ -24,7 +24,6 @@ from hypothesis.extra.numpy import arrays
 
 from slavv_python.analytics.parity.proof.array_normalization import _normalize_int_array
 
-
 # ---------------------------------------------------------------------------
 # Property 12: Oracle Exactly-One Index Shift
 # ---------------------------------------------------------------------------
@@ -55,9 +54,7 @@ def test_oracle_index_shift_exactly_one(raw: np.ndarray) -> None:
     assert loaded.shape == raw.shape, (
         f"Shape changed after index shift: {raw.shape} → {loaded.shape}"
     )
-    assert loaded.dtype == np.int64, (
-        f"Expected int64 output, got {loaded.dtype}"
-    )
+    assert loaded.dtype == np.int64, f"Expected int64 output, got {loaded.dtype}"
     assert np.array_equal(loaded, expected), (
         f"Index shift was not exactly 1 for all elements. "
         f"First mismatch at index {int(np.argwhere(loaded != expected)[0][0])}: "

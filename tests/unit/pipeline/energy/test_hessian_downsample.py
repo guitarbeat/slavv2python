@@ -12,7 +12,6 @@ from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _interp3_matlab_linear_inf,
     _matlab_coarse_local_slices,
     _matlab_zero_based_linspace,
-    compute_exact_parity_energy_chunked,
     compute_exact_parity_energy_single_octave,
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,

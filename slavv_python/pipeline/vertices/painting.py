@@ -82,7 +82,9 @@ def paint_vertex_center_image(
     if len(vertex_positions) == 0:
         return center_image
 
-    coords = slavv_round_array(np.asarray(vertex_positions, dtype=np.float64)[:, :3]).astype(np.int32)
+    coords = slavv_round_array(np.asarray(vertex_positions, dtype=np.float64)[:, :3]).astype(
+        np.int32
+    )
     coords[:, 0] = np.clip(coords[:, 0], 0, image_shape[0] - 1)
     coords[:, 1] = np.clip(coords[:, 1], 0, image_shape[1] - 1)
     coords[:, 2] = np.clip(coords[:, 2], 0, image_shape[2] - 1)

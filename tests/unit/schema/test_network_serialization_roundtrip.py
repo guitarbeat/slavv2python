@@ -30,7 +30,6 @@ from slavv_python.storage.exporters.json_v1 import (
     load_network_json_payload,
 )
 
-
 # ---------------------------------------------------------------------------
 # Comparison helpers
 # ---------------------------------------------------------------------------
@@ -78,9 +77,7 @@ def test_network_serialization_roundtrip(
     3. The vertex-degree array is element-wise equal.
     """
     # Build strands: lists of vertex indices, each with ≥2 entries
-    rng = np.random.default_rng(
-        seed=(strand_count * 1000 + bifurcation_count * 100 + vertex_count)
-    )
+    rng = np.random.default_rng(seed=(strand_count * 1000 + bifurcation_count * 100 + vertex_count))
     strands: list[list[int]] = []
     for _ in range(strand_count):
         length = rng.integers(2, min(7, vertex_count + 1))

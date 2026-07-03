@@ -140,7 +140,9 @@ def calculate_energy_field_resumable(
             completed_octaves = [int(o) for o in completed_octaves if o in octave_range]
             if completed_octaves:
                 last_octave = max(completed_octaves)
-                last_energy_path = stage_controller.artifact_path(f"octave_energy_{last_octave}.npy")
+                last_energy_path = stage_controller.artifact_path(
+                    f"octave_energy_{last_octave}.npy"
+                )
                 last_scale_path = stage_controller.artifact_path(f"octave_scale_{last_octave}.npy")
                 if last_energy_path.exists() and last_scale_path.exists():
                     try:
@@ -161,7 +163,9 @@ def calculate_energy_field_resumable(
             planned_scales = np.where(octave_at_scales == planned_octave)[0]
             if len(planned_scales) == 0:
                 continue
-            planned_rf = np.asarray(config["scale_resolution_factors"][planned_scales[0]], dtype=float)
+            planned_rf = np.asarray(
+                config["scale_resolution_factors"][planned_scales[0]], dtype=float
+            )
             planned_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
             planned_rf_matlab = np.array([planned_rf[1], planned_rf[2], planned_rf[0]], dtype=float)
             planned_microns = microns_per_voxel * planned_rf
@@ -178,7 +182,9 @@ def calculate_energy_field_resumable(
             planned_scales = np.where(octave_at_scales == planned_octave)[0]
             if len(planned_scales) == 0:
                 continue
-            planned_rf = np.asarray(config["scale_resolution_factors"][planned_scales[0]], dtype=float)
+            planned_rf = np.asarray(
+                config["scale_resolution_factors"][planned_scales[0]], dtype=float
+            )
             planned_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
             planned_rf_matlab = np.array([planned_rf[1], planned_rf[2], planned_rf[0]], dtype=float)
             planned_microns = microns_per_voxel * planned_rf

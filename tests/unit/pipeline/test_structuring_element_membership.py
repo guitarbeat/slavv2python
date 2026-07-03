@@ -25,7 +25,6 @@ from hypothesis import strategies as st
 
 from slavv_python.pipeline.vertices.detection import ellipsoid_offsets
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -124,16 +123,11 @@ def test_membership_criterion_is_exact_float_comparison(r: float) -> None:
 
     # Build the ground-truth set via direct float comparison.
     expected: set[tuple[int, int, int]] = {
-        candidate
-        for candidate in _all_candidate_offsets(r)
-        if _euclidean_distance(*candidate) <= r
+        candidate for candidate in _all_candidate_offsets(r) if _euclidean_distance(*candidate) <= r
     }
 
     missing = expected - returned
     extra = returned - expected
 
-    assert not missing and not extra, (
-        f"For r={r:.17g}: "
-        f"{len(missing)} missing offset(s): {sorted(missing)[:5]}; "
-        f"{len(extra)} extra offset(s): {sorted(extra)[:5]}"
-    )
+    assert not missing, f"For r={r:.17g}: {len(missing)} missing offset(s): {sorted(missing)[:5]}"
+    assert not extra, f"For r={r:.17g}: {len(extra)} extra offset(s): {sorted(extra)[:5]}"
