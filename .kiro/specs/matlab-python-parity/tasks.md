@@ -218,7 +218,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
   - All 17 property test files must pass. Fix any failures before proceeding.
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Run Tier 2 crop harness and confirm all four stages certify
+- [x] 9. Run Tier 2 crop harness and confirm all four stages certify
   - Run per-stage `prove-exact --stage <s>` for each stage against `workspace/oracles/180709_E_crop_M_v2`:
     ```
     slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage energy
@@ -232,10 +232,11 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     ownership-map ≥ 60% + trace tolerance; network: endpoint-pair + bifurcation
     multisets exact + trace tolerance)
   - Record the per-stage `exact_proof_<stage>.json` verdicts as Tier 2 evidence
+  - Evidence (2026-07-03, `workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis`): all four per-stage proofs `passed:true` — energy 0 scale mismatches + allclose (ADR 0011); vertices 0 missing/extra; edges ADR 0012 ownership-map 63.47% ≥ 60%; network endpoint-pair + bifurcation multisets 0/0. Aggregate `exact_proof.json` `passed:true`.
   - _Requirements: 4.1, 4.2, 5.1, 5.2, 6.1, 6.2, 7.1, 7.2_
 
-- [ ] 10. Launch canonical full-volume run (`180709_E`)
-  - [ ] 10.1 Preflight check for canonical run
+- [~] 10. Launch canonical full-volume run (`180709_E`)
+  - [x] 10.1 Preflight check for canonical run
     - Run `slavv parity preflight-exact` against `workspace/oracles/180709_E_full_v2`
       and `workspace/runs/oracle_180709_E/canonical_full_v4` to confirm oracle artifacts
       are present for all four stages and run-dir is accessible
@@ -243,7 +244,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
       the whitelist
     - _Requirements: 1.2, 9.1, 10.1, 10.2_
 
-  - [ ] 10.2 Launch or resume the canonical full-volume exact-route run
+  - [~] 10.2 Launch or resume the canonical full-volume exact-route run
     - Use `slavv parity resume-exact-run` (or `launch-exact-run`) with
       `--run-dir workspace/runs/oracle_180709_E/canonical_full_v4` and
       `--n-jobs <N>` for threaded energy parallelism (provably bit-exact; see
@@ -252,18 +253,26 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
       and track energy chunk throughput via the joblib `Done N tasks` log
     - Confirm `max_voxels_per_node_energy` matches the MATLAB oracle batch lattice size
       (typically 6000) — chunk-boundary numerics diverge if this differs
+    - **Status (2026-07-03):** Energy CERTIFIED on `canonical_full_v4` (`prove-exact --stage energy` exit 0, 0 scale mismatches / 16,777,216 voxels) and Vertices PASS. Edges stage INTERRUPTED — the recorded writer (`99_Metadata/parity_job.json` PID 11836) is dead, stopped mid-`choose_edges` (no `chosen_edges.pkl` / `stage_manifest.json` in `04_Edges/`). Needs a clean resume before proof.
     - _Requirements: 1.1, 1.3, 9.1_
 
-- [ ] 11. Run `prove-exact-sequence` on canonical volume and certify Phase 1
-  - [ ] 11.1 Run canonical `prove-exact-sequence`
-    - Once the canonical run completes, execute:
+- [ ] 11. Certify Phase 1 on the canonical volume (per-stage ADR 0012 proofs)
+  - [ ] 11.1 Run canonical per-stage `prove-exact --stage <s>` (ADR 0012 bars)
+    - Once the canonical run completes, prove each stage individually against
+      `workspace/oracles/180709_E_full_v2` (mirroring Task 9). Do NOT use
+      `prove-exact-sequence` — its strict-field comparator fails edges on the
+      accepted watershed order-sensitivity (see Task 9 note and ADR 0012):
       ```
-      slavv parity prove-exact-sequence `
-        --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
-        --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
-        --oracle-root workspace/oracles/180709_E_full_v2
+      slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --oracle-root workspace/oracles/180709_E_full_v2 --stage energy
+      slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --oracle-root workspace/oracles/180709_E_full_v2 --stage vertices
+      slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --oracle-root workspace/oracles/180709_E_full_v2 --stage edges
+      slavv parity prove-exact --source-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 --oracle-root workspace/oracles/180709_E_full_v2 --stage network
       ```
-    - All four stages must pass the same bars as Tier 2
+    - All four stages must pass the same ADR 0011/0012 bars as Tier 2 (energy:
+      0 scale_indices mismatches + allclose; vertices: 0 positions/scales
+      mismatches + allclose energies; edges: ownership-map ≥ 60% + trace
+      tolerance; network: endpoint-pair + bifurcation multisets exact + trace
+      tolerance)
     - _Requirements: 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 6.1, 6.2, 7.1, 7.2, 8.1, 8.2,
       9.2, 9.3_
 

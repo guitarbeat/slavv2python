@@ -419,6 +419,11 @@
         "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783044020964
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116349359
       }
     ],
     "10.1 Preflight check for canonical run": [
@@ -431,6 +436,21 @@
         "executionId": "1321604c-8dbf-4182-8bd0-350f3dc8e0b3",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783044021730
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116349634
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116362865
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116462219
       }
     ],
     "10.2 Launch or resume the canonical full-volume exact-route run": [
@@ -438,6 +458,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039065193
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116350052
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116464704
       }
     ],
     "11.1 Run canonical `prove-exact-sequence`": [
@@ -445,6 +475,16 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039065543
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116350376
+      },
+      {
+        "executionId": "69791829-8c63-4baf-ac33-53baa6fd732a",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116704895
       }
     ],
     "11.2 Verify `CertificationReport` structure and promote to `workspace/reports/`": [
@@ -452,6 +492,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039065873
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116350689
       }
     ],
     "12. Final checkpoint — Phase 1 complete": [
@@ -459,6 +504,11 @@
         "executionId": "85256af5-e22c-4ad8-8373-ec594b2f60a7",
         "chatSessionId": "sess_8164e2ef-1a10-4914-ab06-3ec546561638",
         "timestamp": 1783039066276
+      },
+      {
+        "executionId": "55be1307-f274-430c-ad29-013f3ed9babe",
+        "chatSessionId": "sess_746a9460-d227-4895-af67-fb07e012ef9f",
+        "timestamp": 1783116351000
       }
     ],
     "1. Audit and close Exact Route implementation gaps": [
