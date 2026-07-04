@@ -1,8 +1,10 @@
 # .agents Directory Index
 
 Quick reference catalog of all agents, instructions, rules, skills, and orchestrations.
+Includes the fast task-oriented lookups formerly kept in `QUICK_REFERENCE.md`
+(see [Quick Reference](#-quick-reference) at the end).
 
-**Last Updated**: 2026-06-23
+**Last Updated**: 2026-07-03
 
 ## 📌 Current Handoff
 
@@ -95,6 +97,7 @@ Reusable skills library organized by category.
 
 ### Parity & MATLAB
 - `matlab-performance-optimizer/` - Optimize MATLAB-to-Python translations
+- `prove-parity/` - Run an exact-parity proof for one pipeline stage against the MATLAB oracle
 
 ### Code Quality
 - `check-compiler-errors/` - Run type checking and compilation
@@ -163,13 +166,11 @@ pruned on 2026-06-27; it remains recoverable from git history if needed.
 
 ## 📑 Specs
 
-Project and task specifications.
+Completed project/task specifications are archived under `docs/investigations/`.
 
 | Spec | Location |
 |------|----------|
-| **Parity Job Monitoring** | `specs/parity-job-monitoring/` |
-
-**Location**: `specs/`
+| **Parity Job Monitoring** | [`docs/investigations/parity-job-monitoring-spec/`](../docs/investigations/parity-job-monitoring-spec/) |
 
 ---
 
@@ -179,7 +180,7 @@ Project and task specifications.
 - **Instructions**: 3
 - **Rules**: 4
 - **Prompts**: 3
-- **Skills**: 28
+- **Skills**: 29
 - **Active Orchestrations**: 0
 - **Archived Orchestrations**: 0 (historical scratch pruned 2026-06-27)
 
@@ -223,3 +224,66 @@ Update this file when:
 - Completing orchestrations
 - Reorganizing structure
 - Changing naming conventions
+
+---
+
+## ⚡ Quick Reference
+
+Fast task-oriented lookups (merged from the former `QUICK_REFERENCE.md`).
+
+### I want to…
+
+- **Use an agent** — invoke `@<agent-name>` (e.g. `@matlab-parity-specialist`); see the Agents section above.
+- **Find a skill** — browse the Skills section above by category, or use `find-agent-skills` to locate one.
+- **Apply an instruction** — edit a file matching an instruction's `ApplyTo` pattern (auto-applies); see [instructions/README.md](instructions/README.md).
+- **Follow a rule** — rules always apply globally; see [rules/README.md](rules/README.md).
+- **Run a prompt** — reference a template from [prompts/README.md](prompts/README.md).
+- **Start an orchestration** — create `orchestrations/active/<name>/` and follow [orchestrations/README.md](orchestrations/README.md).
+- **Archive completed work** — write a synthesis/handoff doc, move it to `orchestrations/completed/`, extract reusable patterns to `skills/`, and update this INDEX.
+
+### Where is it?
+
+| What | Location |
+|------|----------|
+| Agent definitions | `agents/*.agent.md` |
+| Skills library | `skills/*/SKILL.md` |
+| Active orchestrations | `orchestrations/active/` |
+| Completed work | `orchestrations/completed/` |
+| Instructions | `instructions/*.instructions.md` |
+| Rules | `rules/*.md` or `rules/*.mdc` |
+| Prompt templates | `prompts/*.prompt.md` |
+| Current handoff brief | `HANDOFF.md` |
+| Complete catalog | this file (`INDEX.md`) |
+| Ephemeral agent output | `workspace/scratch/agent-tools/` (not repo root) |
+
+### Key files
+
+| File | Purpose | When to read |
+|------|---------|--------------|
+| `README.md` | Directory overview | Understanding organization |
+| `INDEX.md` | Complete catalog + quick reference | Finding specific items |
+| `HANDOFF.md` | Current parity successor brief | Resuming parity work |
+| `agents/README.md` | Agent guide | Creating/using agents |
+| `orchestrations/README.md` | Orchestration guide | Multi-agent work |
+
+### Naming conventions
+
+```
+Agents:          <purpose>-<domain>.agent.md
+Instructions:    <scope>-<behavior>.instructions.md
+Orchestrations:  <project>_<milestone>/
+Rules:           <standard-name>.md or .mdc
+Prompts:         <workflow-name>.prompt.md
+Skills:          <skill-name>/SKILL.md
+```
+
+### Maintenance cadence
+
+- **Weekly:** update any active orchestration progress; archive completed work.
+- **Monthly:** review archives for patterns to extract; refresh statistics.
+- **Quarterly:** consolidate similar content; review subdirectory READMEs.
+
+### Best practices
+
+- **Do:** read relevant READMEs before creating; follow naming conventions; update this INDEX after changes; archive completed work promptly; extract reusable patterns to skills.
+- **Don't:** create duplicates (check this INDEX first); mix active and archived work; leave stale orchestrations; hard-code project specifics.

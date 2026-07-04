@@ -111,7 +111,7 @@ python -m tests.support.export_random_matching_reference `
 
 ## Internal structure (post-hardening refactor)
 
-The Random Component Parity Suite and full SLAVV pipeline were refactored (see [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md) and the architecture deepening plan) for maintainability, depth, and exact MATLAB parity while preserving behavior.
+The Random Component Parity Suite and full SLAVV pipeline were refactored (see [random-component-parity-hardening-spec.md](../../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) and the architecture deepening plan) for maintainability, depth, and exact MATLAB parity while preserving behavior.
 
 - **Python SLAVV facade over MATLAB source**: See `slavv_python/pipeline/slavv_vectorize.py` for `vectorize_python` (high-level orchestrator equivalent to MATLAB `vectorize_V200.m`, delegating to the exact-parity stage managers). The module also exposes thin `get_*_python` convenience wrappers (`get_energy_v202_python`, `get_vertices_v200_python`, `get_edges_by_watershed_python`, etc.); `get_energy_v202_python` delegates to the real manager, while the vertices/edges/choose/network wrappers are simplified demonstration shims. The exact-parity implementations live in `pipeline/{energy,vertices,edges,network}/` and the `matlab_get_*` modules.
   - Delegates to stage managers for production use (`EnergyManager`, `VertexManager`, etc.).
@@ -158,4 +158,4 @@ Bit-identical Hessian certification remains on crop/canonical `prove-exact` orac
 - [tests/README.md](../../../tests/README.md) — test pyramid placement
 - [PARITY_PRE_GATE.md](PARITY_PRE_GATE.md) — tier 1 component entry points
 - [ADR 0010](../../adr/0010-random-component-parity-suite.md) — decision record
-- [Implementation Hardening Spec](../../plans/random-component-parity-hardening-spec.md) — active plan for refactoring the suite for maintainability while preserving the structural gate (created 2026-06-24)
+- [Implementation Hardening Spec](../../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) — completed spec (archived) for refactoring the suite for maintainability while preserving the structural gate (created 2026-06-24)

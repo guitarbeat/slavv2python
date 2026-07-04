@@ -1,11 +1,11 @@
 # Skills Catalog
 
-Reusable agent skills for `slavv2python` (30 total). Each skill lives in
+Reusable agent skills for `slavv2python` (29 total). Each skill lives in
 `<skill-name>/SKILL.md`. Invoke a skill by name; see individual `SKILL.md` files
 for arguments and detailed steps.
 
-> Discovery helpers: use **find-agent-skills** / **find-skills** to locate or
-> evaluate skills for a task before creating a new one.
+> Discovery helper: use **find-agent-skills** to locate or evaluate skills for a
+> task (including the external `npx skills` registry) before creating a new one.
 
 | Skill | Purpose |
 |-------|---------|
@@ -13,8 +13,7 @@ for arguments and detailed steps.
 | [`control-cli`](control-cli/SKILL.md) | Build or adapt a local harness to drive, inspect, and profile an interactive CLI or TUI without external services. |
 | [`control-ui`](control-ui/SKILL.md) | Build or adapt a local browser/CDP harness to drive and inspect a web, IDE, or Electron UI. |
 | [`deslop`](deslop/SKILL.md) | Remove AI-generated code slop and clean up code style |
-| [`find-agent-skills`](find-agent-skills/SKILL.md) | Discover and evaluate reusable agent skills for a requested task. |
-| [`find-skills`](find-skills/SKILL.md) | Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express... |
+| [`find-agent-skills`](find-agent-skills/SKILL.md) | Discover and evaluate reusable agent skills for a requested task (local first, then the external `npx skills` registry). |
 | [`fix-ci`](fix-ci/SKILL.md) | Find failing PR checks, inspect logs or external check links, and apply focused fixes |
 | [`fix-merge-conflicts`](fix-merge-conflicts/SKILL.md) | Resolve merge conflicts non-interactively, validate build and tests, and finalize conflict resolution |
 | [`get-pr-comments`](get-pr-comments/SKILL.md) | Fetch and summarize review comments from the active pull request |

@@ -10,7 +10,7 @@ Scoped initiatives: **requirements and implementation in one spec file** when wo
 |------|--------|
 | [phase-1-exact-route-spec.md](phase-1-exact-route-spec.md) | **Active** — exact-route certification on full `180709_E` |
 | [phase-2-optimization-spec.md](phase-2-optimization-spec.md) | **Ideation / Draft** — Pythonic optimization & scalability |
-| [random-component-parity-hardening-spec.md](random-component-parity-hardening-spec.md) | **Complete** — random-component suite hardening/refactor |
+| [random-component-parity-hardening-spec.md](../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) | **Complete (archived)** — random-component suite hardening/refactor |
 | [random-component-references-deepening-plan.md](random-component-references-deepening-plan.md) | **Draft** — deepen the References module (follow-up) |
 
 ## Workflow

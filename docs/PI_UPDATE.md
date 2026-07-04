@@ -10,9 +10,10 @@ MATLAB R2019a oracle.
 ## Executive summary
 
 The Python port now reproduces the MATLAB pipeline **stage by stage**, validated against
-a fixed R2019a oracle rather than by inspection. **All four stages are now certified**, the
-last being Energy on the full canonical volume, whose final discrepancy was root-caused,
-fixed, and confirmed this period.
+a fixed R2019a oracle rather than by inspection. **All four stages meet their certification
+bars on the crop harness** (full-canonical proofs beyond Energy are still in progress — see
+the canonical status source below), the last certified here being Energy on the full
+canonical volume, whose final discrepancy was root-caused, fixed, and confirmed this period.
 
 The headline result: a long-standing energy mismatch on the full volume — ~39,500 voxels
 (0.24%) choosing a different vessel scale than MATLAB — was traced through a purpose-built
@@ -24,6 +25,10 @@ difference in one interpolation coordinate), and corrected with a bit-exact port
 ---
 
 ## Certification status by stage
+
+> **Canonical status source:** [docs/reference/core/EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
+> is the single source of truth for current per-stage parity status; the table below is a
+> point-in-time snapshot (2026-07-01).
 
 Certification is **evidence-based**: each stage's Python output is compared field-by-field
 to the MATLAB oracle. Discrete fields (scale indices, graph topology) must match exactly;

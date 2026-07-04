@@ -18,7 +18,9 @@ status.
 
 ## Current decision point
 
-All four crop-harness stages are resolved against oracle `180709_E_crop_M_v2` (`batch_260624-105705`). Phase 1's remaining work is the **full canonical `180709_E`** sequence.
+> **Single canonical status source:** [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md) holds authoritative, up-to-date per-stage parity status; the verdicts below are a synthesis snapshot (2026-06-25).
+
+All four crop-harness stages are resolved against oracle `180709_E_crop_M_v2` (`batch_260624-105705`) — see the canonical status source above for authoritative, current status. Phase 1's remaining work is the **full canonical `180709_E`** sequence.
 
 - **Energy:** ✅ CERTIFIED (crop v2) under the [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md) gate (Accepted) — discrete `scale_indices` strict-zero; `energy.energy` within `np.allclose`, max \|Δ\| ≈2×10⁻¹¹ (cross-library NumPy/MKL drift, [ADR 0010](../docs/adr/0010-random-component-parity-suite.md)).
 - **Vertices:** ✅ CERTIFIED (crop v2) — positions+scales exact (13,706=13,706), energies within tolerance.

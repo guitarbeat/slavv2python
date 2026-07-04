@@ -15,7 +15,7 @@ related:
 
 **Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite + a high-level Python SLAVV facade over the MATLAB source (`vectorize_V200.m` and core functions). All phases complete (strong separation, public API in `random_component/` package, `slavv_vectorize.py` as a high-level orchestration facade over the exact-parity stage managers, main file at ~866 lines, full verification passed).
 
-Tasks live in this spec during active work (now complete); status and live runs live in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) under the random component section. The user-facing workflow stays in [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).
+Tasks live in this spec during active work (now complete); status and live runs live in [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md) under the random component section. The user-facing workflow stays in [PARITY_RANDOM_COMPONENT_SUITE.md](../../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).
 
 ---
 
@@ -292,8 +292,8 @@ report = assemble_report(gate, hess, mode=mode)
 
 ## Related Documents & Code
 
-- [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) — operator workflow (update after refactor)
-- [ADR 0010](../adr/0010-random-component-parity-suite.md)
+- [PARITY_RANDOM_COMPONENT_SUITE.md](../../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) — operator workflow (update after refactor)
+- [ADR 0010](../../adr/0010-random-component-parity-suite.md)
 - Current implementation entry point: `tests/support/random_component_parity.py`
 - MATLAB driver: `tests/support/matlab/random_component_reference.m`
 - Export helpers: `export_random_linspace_overrides.py`, `export_random_matching_reference.py`

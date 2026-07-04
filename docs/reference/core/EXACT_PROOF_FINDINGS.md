@@ -147,7 +147,7 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 *Status*: Incorporated into the current worktree, but not yet certified. See [Latest crop Energy proof (2026-06-22)](#latest-crop-energy-proof-2026-06-22).
 
-**Implementation hardening:** Active plan at [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md) (Phase 0 complete: spec landed + baseline captured + unit tests green). Future changes to the suite (decomposition, models, separation of structural gate from advisory) should follow that spec. Baseline artifacts in `workspace/scratch/random_component_baseline/`.
+**Implementation hardening:** Spec at [random-component-parity-hardening-spec.md](../../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) (Phase 0 complete: spec landed + baseline captured + unit tests green). Future changes to the suite (decomposition, models, separation of structural gate from advisory) should follow that spec. Baseline artifacts in `workspace/scratch/random_component_baseline/`.
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 

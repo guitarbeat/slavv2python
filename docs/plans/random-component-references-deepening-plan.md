@@ -4,7 +4,7 @@ type: plan
 status: draft
 date: 2026-06-24
 related:
-  - docs/plans/random-component-parity-hardening-spec.md
+  - docs/investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md
   - docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md
   - docs/adr/0010-random-component-parity-suite.md
 ---

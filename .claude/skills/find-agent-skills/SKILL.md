@@ -1,6 +1,6 @@
 ---
 name: find-agent-skills
-description: Discover and evaluate reusable agent skills for a requested task. Use when the user asks to find, install, adapt, compare, or recommend skills; asks whether an agent can gain a capability; mentions npx skills, OpenClaw skills, Claude/Codex skills, or a skill marketplace; or when a task would benefit from checking this repository's existing .claude/skills before creating new workflow guidance.
+description: Discover and evaluate reusable agent skills for a requested task. Use when the user asks to find, install, adapt, compare, or recommend skills; asks how to do a common task that might already exist as a skill ("how do I X", "is there a skill for X", "can you do X"); asks whether an agent can gain a capability; mentions npx skills, OpenClaw skills, Claude/Codex skills, or a skill marketplace; or when a task would benefit from checking this repository's existing .claude/skills before creating new workflow guidance.
 ---
 
 # Find Agent Skills
@@ -47,6 +47,17 @@ Do not recommend a skill based only on a marketplace title, install count, or SE
 - For global Codex behavior, use the user's global skills directory only when they explicitly ask for a machine-wide install.
 - For app/plugin capabilities, use `tool_search` first, then app/plugin install tools only if the requested tool is unavailable and explicitly requested.
 - For external skill packages, prefer reading the source and adapting the instructions over blind installation.
+
+### External skills registry (`npx skills`)
+
+When the user explicitly wants new skills from the open ecosystem, the Skills CLI is the package manager:
+
+- `npx skills find [query] [--owner <owner>]` — search interactively or by keyword.
+- `npx skills add <owner/repo@skill> [-g] [-y]` — install (`-g` = user-global, `-y` = skip prompts).
+- `npx skills check` / `npx skills update` — check for and apply updates.
+- Browse and compare at https://skills.sh/ (the leaderboard ranks skills by total installs).
+
+Before recommending an external skill, verify quality: prefer 1K+ installs and reputable sources (`vercel-labs`, `anthropics`, `microsoft`); inspect the `SKILL.md` or source repo (be skeptical of repos with <100 stars). Never recommend from a marketplace title or install count alone. If nothing fits, offer to solve the task directly or scaffold a local skill with `npx skills init`.
 
 When adapting external skills for this repo:
 

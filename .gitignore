@@ -162,6 +162,8 @@ workspace/
 .claude/orchestrations/active/
 agent-tools/
 terminals/
+# transient semantic-review tool output
+semantic-review/
 
 # Comparison and run outputs (legacy paths kept for safety)
 comparison_output/
