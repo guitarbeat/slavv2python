@@ -253,7 +253,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
       and track energy chunk throughput via the joblib `Done N tasks` log
     - Confirm `max_voxels_per_node_energy` matches the MATLAB oracle batch lattice size
       (typically 6000) — chunk-boundary numerics diverge if this differs
-    - **Status (2026-07-03):** Energy CERTIFIED on `canonical_full_v4` (`prove-exact --stage energy` exit 0, 0 scale mismatches / 16,777,216 voxels) and Vertices PASS. Edges stage INTERRUPTED — the recorded writer (`99_Metadata/parity_job.json` PID 11836) is dead, stopped mid-`choose_edges` (no `chosen_edges.pkl` / `stage_manifest.json` in `04_Edges/`). Needs a clean resume before proof.
+    - **Status (2026-07-04):** Canonical run COMPLETED (writer exited; all four `exact_proof_<stage>.json` written to `03_Analysis`). Per-stage verdicts: Energy CERTIFIED (0 scale mismatches / 16,777,216 voxels + allclose, ADR 0011) and Vertices PASS. **Edges FAIL** — `edges.connections` shape mismatch (MATLAB 69,500×2 vs Python 60,213×2); Python under-produces edges at full-volume scale. **Network FAIL** — `network.strands` endpoint-pair multiset mismatch (MATLAB 48,049 vs Python 39,623 strands), downstream of the edges gap. Aggregate `exact_proof.json` `passed:false`. Diagnosis dumps: `03_Analysis/exact_mismatch_edges.json`, `exact_mismatch_network.json`. Energy+Vertices are certified on the full canonical volume; edges/network parity remains OPEN at full scale (crop Tier 2 passes all four per Task 9).
     - _Requirements: 1.1, 1.3, 9.1_
 
 - [ ] 11. Certify Phase 1 on the canonical volume (per-stage ADR 0012 proofs)
