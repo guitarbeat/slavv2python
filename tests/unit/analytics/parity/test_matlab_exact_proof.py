@@ -519,6 +519,47 @@ def test_compare_exact_artifacts_reports_shape_mismatch():
     assert report["first_failure"] is None
 
 
+def test_compare_exact_artifacts_edges_fallback_documents_missing_ownership_map():
+    # When the ADR 0012 ownership-map artifacts are unavailable (no checkpoints_dir /
+    # matlab_batch_dir), the edges comparison falls back to strict field comparison.
+    # That fallback must be SELF-DOCUMENTING: the emitted edges_adr0012_gate should
+    # record that the spatial bar was NOT evaluated and why, so a raw connection-count
+    # shape mismatch is not mistaken for a genuine regression.
+    matlab_edges = {
+        "connections": np.array([[0, 1], [1, 2], [2, 3]], dtype=np.int64),
+        "traces": [],
+        "scale_traces": [],
+        "energy_traces": [],
+        "energies": np.array([], dtype=np.float64),
+        "bridge_vertex_positions": np.empty((0, 3), dtype=np.float64),
+        "bridge_vertex_scales": np.empty((0,), dtype=np.int64),
+        "bridge_vertex_energies": np.empty((0,), dtype=np.float64),
+        "bridge_edges": {
+            "connections": np.empty((0, 2), dtype=np.int64),
+            "traces": [],
+            "scale_traces": [],
+            "energy_traces": [],
+            "energies": np.empty((0,), dtype=np.float64),
+        },
+    }
+    python_edges = dict(matlab_edges)
+    # Python under-produces (fewer connections) — the canonical full-volume symptom.
+    python_edges["connections"] = np.array([[0, 1]], dtype=np.int64)
+
+    report = compare_exact_artifacts(
+        {"edges": matlab_edges},
+        {"edges": python_edges},
+        ("edges",),
+    )
+
+    assert report["passed"] is False
+    gate = report["edges_adr0012_gate"]
+    assert gate["adr0012_evaluated"] is False
+    assert "unavailable" in gate["adr0012_unavailable_reason"]
+    assert gate["n_matlab_connections"] == 3
+    assert gate["n_python_connections"] == 1
+
+
 def test_compare_exact_artifacts_reports_missing_field():
     report = compare_exact_artifacts(
         {
