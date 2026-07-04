@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import os
+import re
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import psutil
 
+from slavv_python.engine.constants import TRACKED_RUN_STAGES
 from slavv_python.engine.state import RunSnapshot, load_run_snapshot
+from slavv_python.engine.state.progress import calculate_overall_progress, preprocess_complete
 from slavv_python.engine.state.status import target_stage_progress
 
+_MISSING: Any = object()
+
 UNRESPONSIVE_AFTER_SECONDS = 15 * 60
+ENERGY_STAGE = "energy"
+_ENERGY_DONE_RE = re.compile(r"Done\s+(\d+)\s+tasks.*?elapsed:\s+([0-9.]+)\s*(min|s)")
+_LOG_TAIL_BYTES = 64 * 1024
 
 
 @dataclass(frozen=True)
@@ -45,6 +54,49 @@ class ArtifactStatus:
     label: str
     path: Path
     exists: bool
+
+
+@dataclass(frozen=True)
+class EnergyProgress:
+    """Determinate energy-chunk progress fused from the snapshot and joblib log.
+
+    ``durable_units_completed`` is the authoritative octave-quantized cursor from
+    the run snapshot; ``live_units_completed`` folds in the joblib ``Done N tasks``
+    count so a parallel (``n_jobs>1``) octave advances instead of looking stalled.
+    """
+
+    units_total: int
+    durable_units_completed: int
+    live_units_completed: int
+    chunks_in_batch: int
+    per_chunk_seconds: float | None
+    eta_seconds: float | None
+    is_live: bool
+    log_path: Path | None
+
+    @property
+    def fraction(self) -> float:
+        """Return the live completion fraction clamped to ``[0, 1]``."""
+        if self.units_total <= 0:
+            return 0.0
+        return max(0.0, min(1.0, self.live_units_completed / self.units_total))
+
+
+@dataclass(frozen=True)
+class StageRow:
+    """Per-stage summary row for compact monitor rendering."""
+
+    name: str
+    status: str
+    progress: float
+    units_total: int
+    units_completed: int
+    detail: str
+
+    @property
+    def units_label(self) -> str:
+        """Return ``completed/total`` units, or an em dash when not tracked."""
+        return f"{self.units_completed}/{self.units_total}" if self.units_total else "—"
 
 
 @dataclass(frozen=True)
@@ -338,8 +390,246 @@ def load_run_monitor_view(run_dir: str | Path) -> RunMonitorView:
     )
 
 
-def render_monitor_lines(view: RunMonitorView) -> list[str]:
-    """Render a human-readable status summary for CLI and legacy scripts."""
+def _iso_to_epoch(value: str | None) -> float | None:
+    """Convert an ISO-8601 timestamp to a UTC epoch, or ``None`` if unparseable."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
+def _read_log_tail(path: Path, max_bytes: int = _LOG_TAIL_BYTES) -> str:
+    """Return the trailing ``max_bytes`` of a log file as text (empty on error)."""
+    try:
+        with path.open("rb") as handle:
+            if path.stat().st_size > max_bytes:
+                handle.seek(-max_bytes, os.SEEK_END)
+            data = handle.read()
+    except OSError:
+        return ""
+    return data.decode("utf-8", errors="ignore")
+
+
+def _joblib_done_points(text: str) -> list[tuple[int, float]]:
+    """Return ``(tasks_done, elapsed_seconds)`` points from joblib ``Done`` lines."""
+    points: list[tuple[int, float]] = []
+    for match in _ENERGY_DONE_RE.finditer(text):
+        value = float(match.group(2))
+        seconds = value * 60.0 if match.group(3) == "min" else value
+        points.append((int(match.group(1)), seconds))
+    return points
+
+
+def _latest_joblib_log(
+    log_paths: tuple[Path, ...],
+) -> tuple[Path, list[tuple[int, float]], float] | None:
+    """Return the newest log with joblib progress, its points, and its mtime."""
+    best: tuple[Path, list[tuple[int, float]], float] | None = None
+    for path in log_paths:
+        points = _joblib_done_points(_read_log_tail(path))
+        if not points:
+            continue
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            continue
+        if best is None or mtime > best[2]:
+            best = (path, points, mtime)
+    return best
+
+
+def _trailing_batch(points: list[tuple[int, float]]) -> list[tuple[int, float]]:
+    """Return the trailing run of monotonically increasing task counts.
+
+    joblib resets its ``Done N`` counter for every octave's ``Parallel`` call, so
+    only the final increasing run reflects the batch that is in flight right now.
+    """
+    if not points:
+        return []
+    start = len(points) - 1
+    while start > 0 and points[start - 1][0] < points[start][0]:
+        start -= 1
+    return points[start:]
+
+
+def compute_energy_progress(view: RunMonitorView) -> EnergyProgress | None:
+    """Return determinate energy-chunk progress for the active energy stage.
+
+    The durable snapshot cursor only advances at octave boundaries under
+    ``n_jobs>1``, so the joblib ``Done N tasks`` log is the live leading
+    indicator during parallel compute. The log is trusted only while it is
+    fresher than the durable stage checkpoint, which keeps the octave-boundary
+    window from double-counting the just-merged batch.
+    """
+    snapshot = view.snapshot
+    if snapshot is None or snapshot.current_stage != ENERGY_STAGE:
+        return None
+    stage = snapshot.stages.get(ENERGY_STAGE)
+    if stage is None or stage.units_total <= 0:
+        return None
+
+    units_total = int(stage.units_total)
+    durable = max(0, min(int(stage.units_completed), units_total))
+    live = durable
+    chunks_in_batch = 0
+    per_chunk_seconds: float | None = None
+    eta_seconds: float | None = None
+    log_path: Path | None = None
+
+    latest = _latest_joblib_log(view.log_paths)
+    if latest is not None:
+        log_path, points, log_epoch = latest
+        batch = _trailing_batch(points)
+        chunks_in_batch = batch[-1][0] if batch else 0
+        stage_epoch = _iso_to_epoch(stage.updated_at) or _iso_to_epoch(snapshot.updated_at)
+        log_is_fresh = stage_epoch is None or log_epoch >= stage_epoch
+        if log_is_fresh and chunks_in_batch > 0:
+            live = min(durable + chunks_in_batch, units_total)
+        if len(batch) >= 2:
+            (n0, t0), (n1, t1) = batch[0], batch[-1]
+            if n1 > n0 and t1 > t0:
+                per_chunk_seconds = (t1 - t0) / (n1 - n0)
+                eta_seconds = max(0, units_total - live) * per_chunk_seconds
+
+    live = max(live, durable)
+    return EnergyProgress(
+        units_total=units_total,
+        durable_units_completed=durable,
+        live_units_completed=live,
+        chunks_in_batch=chunks_in_batch,
+        per_chunk_seconds=per_chunk_seconds,
+        eta_seconds=eta_seconds,
+        is_live=live > durable,
+        log_path=log_path,
+    )
+
+
+def live_overall_progress(snapshot: RunSnapshot, energy: EnergyProgress) -> float:
+    """Return overall pipeline progress with the live energy fraction substituted.
+
+    Reuses the canonical stage-weighted formula so the primary bar advances during
+    parallel energy compute instead of tracking only the octave-quantized cursor.
+    """
+    stages = dict(snapshot.stages)
+    energy_stage = stages.get(ENERGY_STAGE)
+    if energy_stage is not None:
+        stages[ENERGY_STAGE] = replace(energy_stage, progress=energy.fraction)
+    done = preprocess_complete(stages, snapshot=snapshot)
+    return float(calculate_overall_progress(stages, preprocess_done=done))
+
+
+def format_duration(seconds: float) -> str:
+    """Format a rough duration/ETA using the largest sensible unit."""
+    if seconds >= 3600:
+        return f"~{seconds / 3600:.1f}h"
+    if seconds >= 60:
+        return f"~{seconds / 60:.1f}m"
+    return f"~{seconds:.0f}s"
+
+
+_STATUS_STYLE_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("fail", "error", "block", "conflict"), "red"),
+    (("interrupt", "unresponsive", "stale", "missing"), "yellow"),
+    (("running",), "green"),
+    (("complete",), "cyan"),
+    (("pending",), "grey62"),
+)
+
+
+def status_style(status: str) -> str:
+    """Map an effective/stage status to a Rich color for monitor rendering."""
+    text = status.lower()
+    for keywords, style in _STATUS_STYLE_RULES:
+        if any(keyword in text for keyword in keywords):
+            return style
+    return "white"
+
+
+def build_stage_rows(snapshot: RunSnapshot) -> list[StageRow]:
+    """Return one :class:`StageRow` per tracked pipeline stage, in run order."""
+    rows: list[StageRow] = []
+    for name in TRACKED_RUN_STAGES:
+        stage = snapshot.stages.get(name)
+        if stage is None:
+            rows.append(
+                StageRow(
+                    name=name,
+                    status="pending",
+                    progress=0.0,
+                    units_total=0,
+                    units_completed=0,
+                    detail="",
+                )
+            )
+            continue
+        rows.append(
+            StageRow(
+                name=name,
+                status=stage.status,
+                progress=float(stage.progress),
+                units_total=int(stage.units_total),
+                units_completed=int(stage.units_completed),
+                detail=stage.detail,
+            )
+        )
+    return rows
+
+
+def _newest_log(log_paths: tuple[Path, ...]) -> Path | None:
+    """Return the most recently modified log among ``log_paths``."""
+    best: tuple[Path, float] | None = None
+    for path in log_paths:
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            continue
+        if best is None or mtime > best[1]:
+            best = (path, mtime)
+    return best[0] if best else None
+
+
+def tail_log_lines(view: RunMonitorView, *, max_lines: int = 20) -> tuple[str | None, list[str]]:
+    """Return ``(log_name, last_lines)`` from the newest run log, if any."""
+    log = _newest_log(view.log_paths)
+    if log is None:
+        return None, []
+    lines = [line for line in _read_log_tail(log).splitlines() if line.strip()]
+    return log.name, lines[-max_lines:]
+
+
+def format_energy_progress_line(energy: EnergyProgress) -> str:
+    """Render a single-line summary of live energy-chunk progress."""
+    suffix = " (live from log)" if energy.is_live else ""
+    summary = (
+        f"Energy chunks{suffix}: {energy.live_units_completed}/{energy.units_total}"
+        f" ({energy.fraction * 100:.1f}%)"
+    )
+    extras: list[str] = []
+    if energy.per_chunk_seconds:
+        extras.append(f"~{energy.per_chunk_seconds:.1f}s/chunk")
+    if energy.eta_seconds is not None:
+        extras.append(f"ETA {format_duration(energy.eta_seconds)}")
+    if energy.is_live and energy.log_path is not None:
+        extras.append(f"src {energy.log_path.name}")
+    if extras:
+        summary += " | " + " | ".join(extras)
+    return summary
+
+
+def render_monitor_lines(
+    view: RunMonitorView, *, energy: EnergyProgress | None = _MISSING
+) -> list[str]:
+    """Render a human-readable status summary for CLI and legacy scripts.
+
+    ``energy`` may be a precomputed :class:`EnergyProgress` (or ``None``) to avoid
+    re-parsing the joblib log; when omitted it is computed from ``view``.
+    """
+    energy_progress = compute_energy_progress(view) if energy is _MISSING else energy
     lines = [
         f"Run directory: {view.run_dir}",
         f"Effective status: {view.effective_status} ({view.status_reason})",
@@ -360,12 +650,19 @@ def render_monitor_lines(view: RunMonitorView) -> list[str]:
         )
         lines.append("")
         lines.append("Stages:")
-        for name, stage in snapshot.stages.items():
-            units = (
-                f" units={stage.units_completed}/{stage.units_total}" if stage.units_total else ""
+        for row in build_stage_rows(snapshot):
+            marker = ">" if row.name == snapshot.current_stage else "-"
+            units = f" units={row.units_label}" if row.units_total else ""
+            detail = f" - {row.detail}" if row.detail else ""
+            lines.append(
+                f"  {marker} {row.name}: {row.status} {row.progress * 100:.1f}%{units}{detail}"
             )
-            detail = f" - {stage.detail}" if stage.detail else ""
-            lines.append(f"  - {name}: {stage.status} {stage.progress * 100:.1f}%{units}{detail}")
+
+        if energy_progress is not None:
+            lines.extend(("", format_energy_progress_line(energy_progress)))
+            live_overall = live_overall_progress(snapshot, energy_progress)
+            if live_overall > snapshot.overall_progress + 1e-9:
+                lines.append(f"Overall progress (live): {live_overall * 100:.1f}%")
 
     if view.pid_statuses:
         lines.extend(("", "PID files:"))
@@ -407,10 +704,19 @@ def render_monitor_lines(view: RunMonitorView) -> list[str]:
 
 __all__ = [
     "ArtifactStatus",
+    "EnergyProgress",
     "PidStatus",
     "ProofStatus",
     "RunMonitorView",
+    "StageRow",
+    "build_stage_rows",
+    "compute_energy_progress",
+    "format_duration",
+    "format_energy_progress_line",
+    "live_overall_progress",
     "load_run_monitor_view",
     "render_monitor_lines",
     "snapshot_path_for_run",
+    "status_style",
+    "tail_log_lines",
 ]

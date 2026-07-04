@@ -1,14 +1,257 @@
 from __future__ import annotations
 
 import json
+import os
 
+import pytest
+
+from slavv_python.engine.constants import TRACKED_RUN_STAGES
 from slavv_python.interface.cli import monitor_service
-from slavv_python.interface.cli.monitor_service import load_run_monitor_view, render_monitor_lines
+from slavv_python.interface.cli.monitor_service import (
+    EnergyProgress,
+    build_stage_rows,
+    compute_energy_progress,
+    format_duration,
+    live_overall_progress,
+    load_run_monitor_view,
+    render_monitor_lines,
+    status_style,
+    tail_log_lines,
+)
 from tests.support.run_state_builders import (
     build_snapshot_dict,
     build_stage_snapshot_dict,
     materialize_run_snapshot,
 )
+
+_OLD_TS = "2020-01-01T00:00:00Z"
+_JOBLIB_LOG = (
+    "[Parallel(n_jobs=6)]: Done  20 tasks      | elapsed:   20.0s\n"
+    "[Parallel(n_jobs=6)]: Done  40 tasks      | elapsed:   40.0s\n"
+)
+
+
+def _materialize_energy_run(
+    run_dir,
+    *,
+    units_total: int = 512,
+    units_completed: int = 100,
+    stage_updated_at: str = _OLD_TS,
+    current_stage: str = "energy",
+    log_body: str | None = _JOBLIB_LOG,
+    preprocess_done: bool = False,
+):
+    """Write an energy-stage snapshot (+ optional joblib log) under ``run_dir``."""
+    energy_stage = build_stage_snapshot_dict(
+        "energy",
+        status="running",
+        units_total=units_total,
+        units_completed=units_completed,
+    )
+    energy_stage["updated_at"] = stage_updated_at
+    artifacts = {"preprocess_done": "true"} if preprocess_done else None
+    materialize_run_snapshot(
+        run_dir,
+        build_snapshot_dict(
+            status="running",
+            current_stage=current_stage,
+            stages={"energy": energy_stage},
+            artifacts=artifacts,
+        ),
+    )
+    log_path = run_dir / "99_Metadata" / "parity_job.out.log"
+    if log_body is not None:
+        log_path.write_text(log_body, encoding="utf-8")
+    return log_path
+
+
+def test_compute_energy_progress_augments_with_fresh_joblib_log(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100)
+
+    energy = compute_energy_progress(load_run_monitor_view(run_dir))
+
+    assert energy is not None
+    assert energy.durable_units_completed == 100
+    assert energy.live_units_completed == 140  # 100 durable + 40 chunks in flight
+    assert energy.is_live is True
+    assert energy.per_chunk_seconds == 1.0  # (40-20)s / (40-20) chunks
+    assert energy.eta_seconds == 372.0  # (512 - 140) chunks * 1.0s
+
+
+def test_compute_energy_progress_ignores_stale_log(tmp_path):
+    run_dir = tmp_path / "run"
+    # Durable checkpoint is newer than the log -> log must not be trusted.
+    log_path = _materialize_energy_run(
+        run_dir, units_completed=100, stage_updated_at="2099-01-01T00:00:00Z"
+    )
+    os.utime(log_path, (0, 0))
+
+    energy = compute_energy_progress(load_run_monitor_view(run_dir))
+
+    assert energy is not None
+    assert energy.live_units_completed == 100
+    assert energy.is_live is False
+
+
+def test_compute_energy_progress_caps_live_units_at_total(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=500)
+
+    energy = compute_energy_progress(load_run_monitor_view(run_dir))
+
+    assert energy is not None
+    assert energy.live_units_completed == 512  # min(500 + 40, 512)
+    assert energy.fraction == 1.0
+
+
+def test_compute_energy_progress_none_when_not_energy_stage(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, current_stage="vertices")
+
+    assert compute_energy_progress(load_run_monitor_view(run_dir)) is None
+
+
+def test_compute_energy_progress_uses_durable_without_log(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_completed=140, log_body=None)
+
+    energy = compute_energy_progress(load_run_monitor_view(run_dir))
+
+    assert energy is not None
+    assert energy.live_units_completed == 140
+    assert energy.is_live is False
+
+
+def test_render_monitor_lines_includes_live_energy_line(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100)
+
+    lines = render_monitor_lines(load_run_monitor_view(run_dir))
+
+    assert any("Energy chunks (live from log): 140/512" in line for line in lines)
+
+
+def test_compute_energy_progress_rate_uses_trailing_batch_after_reset(tmp_path):
+    run_dir = tmp_path / "run"
+    # A stale prior-octave batch precedes the current one; joblib resets Done N.
+    log_body = (
+        "[Parallel(n_jobs=6)]: Done 100 tasks | elapsed:  200.0s\n"
+        "[Parallel(n_jobs=6)]: Done  10 tasks | elapsed:   10.0s\n"
+        "[Parallel(n_jobs=6)]: Done  30 tasks | elapsed:   40.0s\n"
+    )
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100, log_body=log_body)
+
+    energy = compute_energy_progress(load_run_monitor_view(run_dir))
+
+    assert energy is not None
+    assert energy.chunks_in_batch == 30  # trailing batch, not the stale 100
+    assert energy.live_units_completed == 130
+    assert energy.per_chunk_seconds == 1.5  # (40-10)s / (30-10) chunks
+
+
+def test_live_overall_progress_advances_with_live_energy_fraction(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100, preprocess_done=True)
+    view = load_run_monitor_view(run_dir)
+    energy = compute_energy_progress(view)
+
+    assert energy is not None
+    live_overall = live_overall_progress(view.snapshot, energy)
+    # preprocess weight (0.05) + energy weight (0.35) * live fraction (140/512).
+    assert live_overall == pytest.approx(0.05 + 0.35 * (140 / 512))
+    assert live_overall > view.snapshot.overall_progress
+
+
+def test_render_monitor_lines_honors_precomputed_energy(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100)
+    view = load_run_monitor_view(run_dir)
+
+    injected = EnergyProgress(
+        units_total=1000,
+        durable_units_completed=1,
+        live_units_completed=999,
+        chunks_in_batch=998,
+        per_chunk_seconds=None,
+        eta_seconds=None,
+        is_live=True,
+        log_path=None,
+    )
+    lines = render_monitor_lines(view, energy=injected)
+    assert any("Energy chunks (live from log): 999/1000" in line for line in lines)
+
+    # Passing None suppresses the energy line even though the log exists.
+    none_lines = render_monitor_lines(view, energy=None)
+    assert not any("Energy chunks" in line for line in none_lines)
+
+
+def test_render_monitor_lines_lists_full_pipeline_with_current_marker(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100)
+
+    lines = render_monitor_lines(load_run_monitor_view(run_dir))
+
+    # Every tracked stage appears, even ones absent from the snapshot.
+    for stage in TRACKED_RUN_STAGES:
+        assert any(f" {stage}: " in line for line in lines)
+    # The current stage is marked, and not-yet-started stages read as pending.
+    assert any(line.strip().startswith("> energy:") for line in lines)
+    assert any(line.strip().startswith("- network: pending") for line in lines)
+
+
+def test_build_stage_rows_covers_every_tracked_stage_in_order(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, units_total=512, units_completed=100)
+    snapshot = load_run_monitor_view(run_dir).snapshot
+
+    rows = build_stage_rows(snapshot)
+
+    assert [row.name for row in rows] == list(TRACKED_RUN_STAGES)
+    energy_row = next(row for row in rows if row.name == "energy")
+    assert energy_row.status == "running"
+    assert energy_row.units_label == "100/512"
+    # Stages absent from the snapshot are reported as pending with no units.
+    vertices_row = next(row for row in rows if row.name == "vertices")
+    assert vertices_row.status == "pending"
+    assert vertices_row.units_label == "—"
+
+
+def test_status_style_maps_status_keywords():
+    assert status_style("running") == "green"
+    assert status_style("failed") == "red"
+    assert status_style("resume_blocked") == "red"
+    assert status_style("interrupted") == "yellow"
+    assert status_style("stale-running-snapshot") == "yellow"
+    assert status_style("completed_target") == "cyan"
+    assert status_style("pending") == "grey62"
+    assert status_style("something-else") == "white"
+
+
+def test_tail_log_lines_returns_newest_log(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, log_body="line-a\nline-b\n\nline-c\n")
+
+    name, lines = tail_log_lines(load_run_monitor_view(run_dir), max_lines=2)
+
+    assert name == "parity_job.out.log"
+    assert lines == ["line-b", "line-c"]  # blank line dropped, capped to last 2
+
+
+def test_tail_log_lines_empty_without_logs(tmp_path):
+    run_dir = tmp_path / "run"
+    _materialize_energy_run(run_dir, log_body=None)
+
+    name, lines = tail_log_lines(load_run_monitor_view(run_dir))
+
+    assert name is None
+    assert lines == []
+
+
+def test_format_duration_uses_largest_unit():
+    assert format_duration(30) == "~30s"
+    assert format_duration(90) == "~1.5m"
+    assert format_duration(7200) == "~2.0h"
 
 
 def test_monitor_view_reports_stale_running_snapshot_when_pid_is_dead(tmp_path, monkeypatch):

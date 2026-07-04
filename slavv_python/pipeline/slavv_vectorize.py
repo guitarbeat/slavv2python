@@ -9,14 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 from slavv_python.pipeline.edges.manager import EdgeManager
 from slavv_python.pipeline.energy.manager import EnergyManager
 from slavv_python.pipeline.network.manager import NetworkManager
 from slavv_python.pipeline.vertices.manager import VertexManager
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from slavv_python.schema.results import EdgeSet, EnergyResult, NetworkResult, VertexSet
 
 
@@ -137,80 +137,6 @@ def get_energy_v202_python(
         },
     )
     return result.energy, result.scale_indices
-
-
-def get_vertices_v200_python(
-    lumen_radius_in_microns_range: np.ndarray,
-    microns_per_pixel: np.ndarray,
-    space_strel_apothem: int,
-    max_voxels_per_node: float,
-    energy_upper_bound: float,
-    energy: np.ndarray,
-    scale_indices: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Python port of get_vertices_V200.m ."""
-    from scipy.ndimage import minimum_filter
-
-    strel_size = 2 * space_strel_apothem + 1
-    footprint = np.ones((strel_size, strel_size, strel_size), dtype=bool)
-
-    energy_min = minimum_filter(
-        energy,
-        footprint=footprint,
-        mode="constant",
-        cval=np.inf if energy_upper_bound < 0 else -np.inf,
-    )
-
-    if energy_upper_bound < 0:
-        candidates = (energy == energy_min) & (energy < energy_upper_bound) & np.isfinite(energy)
-    else:
-        candidates = (energy == energy_min) & (energy > energy_upper_bound) & np.isfinite(energy)
-
-    positions = np.argwhere(candidates)
-    scales = scale_indices[candidates]
-    energies = energy[candidates]
-
-    order = np.lexsort((positions[:, 2], positions[:, 1], positions[:, 0], energies))
-    positions = positions[order]
-    scales = scales[order]
-    energies = energies[order]
-
-    return positions, scales, energies, positions
-
-
-def get_edges_by_watershed_python(
-    energy: np.ndarray,
-    vertices: np.ndarray,
-    scale_indices: np.ndarray,
-    params: dict,
-) -> tuple:
-    """Python port of get_edges_by_watershed.m ."""
-    from skimage.segmentation import watershed
-
-    markers = np.zeros(energy.shape, dtype=int)
-    for i, v in enumerate(vertices):
-        y, x, z = v.astype(int)
-        if 0 <= y < energy.shape[0] and 0 <= x < energy.shape[1] and 0 <= z < energy.shape[2]:
-            markers[y, x, z] = i + 1
-
-    if params.get("energy_sign", -1) < 0:
-        ws = watershed(-energy, markers)
-    else:
-        ws = watershed(energy, markers)
-
-    return ws, {}
-
-
-def choose_edges_v200_python(edges, vertices, params):
-    """Python port of choose_edges_V200.m ."""
-    # See edges/selection.py for implementation.
-    return edges
-
-
-def get_network_v190_python(edges, vertices, params):
-    """Python port of get_network_V190.m ."""
-    # See network/manager.py for implementation.
-    return {"strands": []}
 
 
 if __name__ == "__main__":

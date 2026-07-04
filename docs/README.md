@@ -30,7 +30,7 @@ Treat `investigations/` as historical context, not as an executable spec.
 3. [Glossary](reference/core/GLOSSARY.md) — Extended domain terminology
 
 ### 🔬 Parity Work & Python SLAVV Facade
-- **Python SLAVV facade** (high-level entry over the exact-parity stage managers): `slavv_python/pipeline/slavv_vectorize.py` — `vectorize_python(image, params)` is the Python orchestrator equivalent to `vectorize_V200.m`. It also exposes thin `get_*_python` convenience wrappers; the exact-parity implementations live in `pipeline/{energy,vertices,edges,network}/` and the `matlab_get_*` modules, not in those wrappers.
+- **Python SLAVV facade** (high-level entry over the exact-parity stage managers): `slavv_python/pipeline/slavv_vectorize.py` — `vectorize_python(image, params)` is the Python orchestrator equivalent to `vectorize_V200.m`. It also exposes a thin `get_energy_v202_python` convenience wrapper that delegates to `EnergyManager`; the exact-parity implementations live in `pipeline/{energy,vertices,edges,network}/` and the `matlab_get_*` modules, not in that wrapper.
   - Use stage managers (`EnergyManager.run`, `VertexManager.run`, etc.) or the high-level wrapper.
   - Exact parity route available via policy + random component suite.
 - **See [Parity Closure Fast Path](#-parity-closure-fast-path) below for complete workflow.**
