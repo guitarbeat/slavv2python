@@ -31,7 +31,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from slavv_python.analytics.parity.cli import handle_prove_exact_sequence
+from slavv_python.analytics.parity.cli_handlers.cli_proofs import handle_prove_exact_sequence
 from slavv_python.analytics.parity.constants import EXACT_PROOF_JSON_PATH
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
 
@@ -111,11 +111,11 @@ def _patch_coordinator_and_surface(
 ) -> None:
     """Wire the stub coordinator and surface into the CLI module under test."""
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli.ExactProofCoordinator",
+        "slavv_python.analytics.parity.cli_handlers.cli_proofs.ExactProofCoordinator",
         lambda _surface: coordinator,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli._build_exact_proof_source_surface",
+        "slavv_python.analytics.parity.cli_handlers.cli_support._build_exact_proof_source_surface",
         lambda *_args, **_kwargs: MagicMock(),
     )
 

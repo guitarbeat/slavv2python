@@ -2,40 +2,49 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from slavv_python.analytics.parity.cli_handlers.cli_support import (
+    _build_exact_proof_source_surface,
+    _copy_stage_proof_json,
+)
+from slavv_python.analytics.parity.constants import (
+    ANALYSIS_DIR,
+    EXACT_PROOF_JSON_PATH,
+    EXACT_STAGE_ORDER,
+)
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
+    load_normalized_matlab_vectors,
+)
+from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
+    load_normalized_python_checkpoints,
+)
 from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
-from slavv_python.analytics.parity.proof.proofs import (
-    run_lut_proof,
+from slavv_python.analytics.parity.proof.energy_proof_evidence import (
+    require_energy_proof_evidence,
+)
+from slavv_python.analytics.parity.proof.energy_ulp_proof import (
+    build_energy_ulp_proof_report,
+    persist_energy_ulp_proof_report,
+)
+from slavv_python.analytics.parity.proof.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.utils import (
+    payload_hash,
+    write_json_with_hash,
+    write_text_with_hash,
 )
 from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     import argparse
 
-from slavv_python.analytics.parity.cli_handlers.cli_support import _build_exact_proof_source_surface
-
 
 def handle_prove_energy_ulp(args: argparse.Namespace) -> None:
     """Run advisory Energy ULP proof (strict scales, bounded float ULP)."""
-    from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
-        load_normalized_matlab_vectors,
-    )
-    from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
-        load_normalized_python_checkpoints,
-    )
-    from slavv_python.analytics.parity.proof.energy_proof_evidence import (
-        require_energy_proof_evidence,
-    )
-    from slavv_python.analytics.parity.proof.energy_ulp_proof import (
-        build_energy_ulp_proof_report,
-        persist_energy_ulp_proof_report,
-    )
-    from slavv_python.analytics.parity.utils import payload_hash
-
     run_root = Path(args.source_run_root).expanduser().resolve()
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
     require_energy_proof_evidence(dest_run_root)
@@ -63,15 +72,11 @@ def handle_prove_energy_ulp(args: argparse.Namespace) -> None:
     path = persist_energy_ulp_proof_report(dest_run_root, report)
     print(path)
     if not report["passed"]:
-        import sys
-
         sys.exit(1)
 
 
 def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
-    from shutil import copy2
-
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
     source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
@@ -84,30 +89,64 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
         strict_floats=bool(getattr(args, "strict_floats", False)),
         max_ulps=getattr(args, "max_ulps", None),
     )
-    # When proving a single named stage, also write a per-stage JSON file
-    # (e.g., exact_proof_edges.json) so callers can track per-stage evidence.
-    if stage_arg not in (None, "all") and json_path is not None and json_path.is_file():
-        from slavv_python.analytics.parity.constants import ANALYSIS_DIR
-
-        stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage_arg}.json"
-        stage_json.parent.mkdir(parents=True, exist_ok=True)
-        if json_path.resolve() != stage_json.resolve():
-            copy2(json_path, stage_json)
+    _copy_stage_proof_json(dest_run_root, json_path, stage_arg)
 
     if not report.get("passed"):
-        import sys
-
         sys.exit(1)
+
+
+def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
+    """Run prove-exact for each stage in order; stop at the first failure."""
+    run_root = Path(args.source_run_root).expanduser().resolve()
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
+    coordinator = ExactProofCoordinator(source_surface)
+
+    stage_results: list[dict[str, Any]] = []
+    for stage in EXACT_STAGE_ORDER:
+        report, json_path, _text_path = coordinator.prove(
+            dest_run_root,
+            stage_arg=stage,
+            strict_floats=bool(getattr(args, "strict_floats", False)),
+            max_ulps=getattr(args, "max_ulps", None),
+        )
+        _copy_stage_proof_json(dest_run_root, json_path, stage)
+        passed = bool(report.get("passed"))
+        stage_results.append({"stage": stage, "passed": passed})
+        print(f"prove-exact --stage {stage}: {'PASS' if passed else 'FAIL'}")
+        if report.get("stage_summaries"):
+            print(render_exact_proof_report(report))
+        if not passed:
+            sys.exit(1)
+
+    summary = {
+        "passed": True,
+        "stages": stage_results,
+        "source_run_root": str(run_root),
+        "dest_run_root": str(dest_run_root),
+    }
+    summary_json = dest_run_root / EXACT_PROOF_JSON_PATH
+    summary_text = dest_run_root / ANALYSIS_DIR / "exact_proof_sequence.txt"
+    write_json_with_hash(summary_json, summary)
+    write_text_with_hash(
+        summary_text,
+        "\n".join(
+            [
+                "Exact proof sequence (all stages passed)",
+                *(f"  {row['stage']}: PASS" for row in stage_results),
+            ]
+        ),
+    )
+    print(str(summary_json))
 
 
 def handle_prove_luts(args: argparse.Namespace) -> None:
     """Verify exact parity for lookup tables."""
-    report, _, _ = run_lut_proof(
+    report, _, _ = ExactProofCoordinator.run_lut_proof(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
     )
     if not report.get("passed"):
-        import sys
-
         sys.exit(1)

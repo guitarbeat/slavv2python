@@ -397,7 +397,7 @@ def _choose_edges_matlab_style(
 
 
 def choose_edges_for_workflow(
-    candidates: dict[str, Any],
+    candidates: dict[str, Any] | Any,
     vertex_positions: np.ndarray,
     vertex_scales: np.ndarray,
     lumen_radius_microns: np.ndarray,
@@ -406,8 +406,11 @@ def choose_edges_for_workflow(
     params: dict[str, Any],
 ) -> dict[str, Any]:
     """Route edge cleanup through the maintained workflow-specific chooser."""
+    from slavv_python.pipeline.edges.discovery import candidate_as_payload
+
+    payload = candidate_as_payload(candidates)
     result = _choose_edges_matlab_style(
-        candidates,
+        payload,
         vertex_positions.astype(np.float32, copy=False),
         vertex_scales,
         lumen_radius_microns,

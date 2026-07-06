@@ -269,13 +269,16 @@ def _build_pair_source_breakdown(
 
 
 def _build_edge_candidate_audit(
-    candidates: dict[str, Any],
+    candidates: dict[str, Any] | Any,
     vertex_count: int,
     use_frontier_tracer: bool,
     frontier_origin_counts: dict[int, int] | None = None,
     supplement_origin_counts: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     """Build a stable, JSON-serializable summary of edge-candidate provenance."""
+    from slavv_python.pipeline.edges.discovery import candidate_as_payload
+
+    candidates = candidate_as_payload(candidates)
     connections = np.asarray(
         candidates.get("connections", np.zeros((0, 2), dtype=np.int32)), dtype=np.int32
     )

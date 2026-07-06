@@ -130,6 +130,14 @@ Preserved MATLAB truth vectors and metadata for a specific dataset, stored under
 ### Parity Run
 A disposable developer execution under `workspace/runs/` that compares Python checkpoints against an [Oracle](#oracle) via the parity experiment harness.
 
+### Parity Preflight
+The memory, params-audit, and provenance checks run before a long [Parity Run](#parity-run) writer starts or resumes. Answers whether it is safe to launch, not whether Python matches MATLAB.
+_Avoid_: Calling preflight a proof, or conflating it with `prove-exact`.
+
+### Exact Proof Coordinator
+The single orchestration surface that compares Python checkpoints against an [Oracle](#oracle) after they exist: `prove-exact`, candidate capture, LUT proof, and edge replay.
+_Avoid_: Using "coordinator" for [Parity Preflight](#parity-preflight) or run-lifecycle concerns; those belong under `runs/preflight` and `resume-exact-run`.
+
 ### Certification
 The state in which sequential exact-parity gates report zero missing and zero extra on discrete/topological fields, and `np.allclose` agreement on continuous float fields (per [ADR 0011](docs/adr/0011-energy-float-certification-policy.md)), for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
 
@@ -192,9 +200,9 @@ slavv2python/
 │   ├── image/                          # Image normalization, tiling
 │   ├── analytics/                      # Analysis & metrics
 │   │   ├── parity/                     # MATLAB exact proof harness (themed subpackages)
-│   │   │   ├── cli.py + commands.py     # slavv parity handler facade + command registry (root)
+│   │   │   ├── commands.py              # slavv parity command registry (root)
 │   │   │   ├── constants.py / utils.py  # shared parity constants + IO/hash helpers (root)
-│   │   │   ├── proof/                   # coordinator, proofs, comparators, energy/ULP proofs, reports
+│   │   │   ├── proof/                   # coordinator, comparators, energy/ULP proofs, reports
 │   │   │   ├── runs/                    # resume, jobs, monitor_daemon, preflight, writer_lease, bootstrap, execution
 │   │   │   ├── oracle/                  # surfaces, oracle_artifacts, promotion, loaders, params_audit, models
 │   │   │   ├── probes/                  # adaptive_probes, trace_comparator, crop_export, edge_artifacts, matlab_fail_fast

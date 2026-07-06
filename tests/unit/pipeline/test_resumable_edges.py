@@ -115,7 +115,13 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
     assert audit["use_frontier_tracer"] is False
     assert audit["frontier_origin_counts"] == {0: 1}
     assert audit["supplement_origin_counts"] == {0: 2}
-    assert audit["candidate_payload"]["connections"].tolist() == candidates["connections"].tolist()
+    candidate_payload = audit["candidate_payload"]
+    payload_connections = (
+        candidate_payload.connections
+        if hasattr(candidate_payload, "connections")
+        else candidate_payload["connections"]
+    )
+    assert np.asarray(payload_connections).tolist() == candidates["connections"].tolist()
     assert calls["generate_kwargs"]["vertex_image"] is not None
     assert stage_controller.artifact_path("candidates.pkl").is_file()
     assert stage_controller.artifact_path("chosen_edges.pkl").is_file()

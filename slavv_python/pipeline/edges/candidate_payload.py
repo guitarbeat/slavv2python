@@ -41,14 +41,12 @@ def normalize_candidate_connection_sources(
 
 def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
     """Return the orientation-independent terminal endpoint pairs in a candidate payload."""
-    pairs: set[tuple[int, int]] = set()
-    normalized = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    for start_vertex, end_vertex in normalized:
-        if int(start_vertex) < 0 or int(end_vertex) < 0:
-            continue
-        u, v = int(start_vertex), int(end_vertex)
-        pairs.add((u, v) if u < v else (v, u))
-    return pairs
+    from slavv_python.pipeline.edges.discovery import CandidateManifest
+
+    manifest = CandidateManifest(
+        connections=np.asarray(connections, dtype=np.int32).reshape(-1, 2),
+    )
+    return manifest.endpoint_pair_set()
 
 
 def _reorder_candidate_payload(
@@ -56,34 +54,9 @@ def _reorder_candidate_payload(
     sort_order: Int32Array,
 ) -> dict[str, Any]:
     """Return a new candidate payload reordered by the provided sort indices."""
-    if sort_order.size == 0:
-        return candidates
+    from slavv_python.pipeline.edges.discovery import CandidateManifest
 
-    sort_idx = np.asarray(sort_order, dtype=np.int32).reshape(-1)
-
-    reordered = dict(candidates)
-    if "traces" in candidates:
-        reordered["traces"] = [candidates["traces"][i] for i in sort_idx.tolist()]
-    if "connections" in candidates:
-        reordered["connections"] = np.asarray(
-            candidates["connections"][sort_idx], dtype=np.int32
-        ).reshape(-1, 2)
-    if "metrics" in candidates:
-        reordered["metrics"] = np.asarray(candidates["metrics"][sort_idx], dtype=np.float32)
-    if "energy_traces" in candidates:
-        reordered["energy_traces"] = [candidates["energy_traces"][i] for i in sort_idx.tolist()]
-    if "scale_traces" in candidates:
-        reordered["scale_traces"] = [candidates["scale_traces"][i] for i in sort_idx.tolist()]
-    if "origin_indices" in candidates:
-        reordered["origin_indices"] = np.asarray(
-            candidates["origin_indices"][sort_idx], dtype=np.int32
-        )
-    if "connection_sources" in candidates:
-        reordered["connection_sources"] = [
-            candidates["connection_sources"][i] for i in sort_idx.tolist()
-        ]
-
-    return reordered
+    return CandidateManifest.from_payload(candidates).reordered(sort_order).to_payload()
 
 
 def _candidate_incident_pair_counts(connections: np.ndarray) -> dict[int, int]:

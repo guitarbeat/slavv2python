@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -14,9 +12,19 @@ from slavv_python.analytics.parity.constants import (
     METADATA_DIR,
     RUN_MANIFEST_PATH,
 )
+from slavv_python.analytics.parity.oracle.oracle_artifacts import ensure_oracle_artifacts
 from slavv_python.analytics.parity.oracle.params_audit import (
     load_params_file,
     persist_param_storage,
+)
+from slavv_python.analytics.parity.oracle.promotion import (
+    handle_promote_dataset as promote_dataset_handler,
+)
+from slavv_python.analytics.parity.oracle.promotion import (
+    handle_promote_oracle as promote_oracle_handler,
+)
+from slavv_python.analytics.parity.oracle.promotion import (
+    handle_promote_report as promote_report_handler,
 )
 from slavv_python.analytics.parity.oracle.surfaces import (
     copy_source_surface,
@@ -27,9 +35,7 @@ from slavv_python.analytics.parity.oracle.surfaces import (
     validate_source_run_surface,
     write_run_manifest,
 )
-from slavv_python.analytics.parity.proof.proofs import (
-    run_exact_preflight,
-)
+from slavv_python.analytics.parity.probes.adaptive_probes import ensure_rerun_allowed
 from slavv_python.analytics.parity.proof.reports import (
     build_experiment_summary,
     extract_matlab_counts,
@@ -48,14 +54,33 @@ from slavv_python.analytics.parity.runs.bootstrap import (
     derive_exact_params_from_oracle,
     maybe_sync_exact_vertex_checkpoint,
 )
-from slavv_python.analytics.parity.runs.preflight import run_exact_preflight_for_surfaces
+from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
+from slavv_python.analytics.parity.runs.launch_prepare import (
+    LaunchPreparationError,
+    assert_no_conflicting_registry_writer,
+    prepare_detached_exact_run_launch,
+)
+from slavv_python.analytics.parity.runs.preflight import (
+    run_exact_preflight,
+    run_exact_preflight_for_surfaces,
+)
 from slavv_python.analytics.parity.runs.resume import resume_exact_run
+from slavv_python.analytics.parity.runs.writer_session import (
+    register_monitor_job,
+    resume_writer_session,
+)
 from slavv_python.analytics.parity.utils import (
     fingerprint_file,
     now_iso,
     write_json_with_hash,
 )
+from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.state import load_json_dict
+from slavv_python.interface.cli.monitor_service import (
+    load_run_monitor_view,
+    render_monitor_lines,
+)
+from slavv_python.storage import load_tiff_volume
 
 if TYPE_CHECKING:
     import argparse
@@ -63,9 +88,6 @@ if TYPE_CHECKING:
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
     """Orchestrate a Python-only rerun from a slavv_python comparison root."""
-    from slavv_python.engine import SlavvPipeline
-    from slavv_python.storage import load_tiff_volume
-
     source_surface = validate_source_run_surface(Path(args.source_run_root))
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
 
@@ -155,27 +177,11 @@ def handle_preflight_exact(args: argparse.Namespace) -> None:
     if text_path is not None:
         print(str(text_path))
     if not report.get("passed"):
-        import sys
-
         sys.exit(1)
 
 
 def handle_resume_exact_run(args: argparse.Namespace) -> None:
     """Resume a stale or interrupted init-exact-run directory."""
-    from slavv_python.analytics.parity.probes.adaptive_probes import ensure_rerun_allowed
-    from slavv_python.analytics.parity.runs.job_registry import JobRegistry
-    from slavv_python.analytics.parity.runs.process_utils import (
-        ensure_monitor_daemon_running,
-        is_process_alive,
-        is_python_process,
-        kill_process_tree,
-    )
-    from slavv_python.analytics.parity.runs.writer_lease import (
-        claim_writer_lease,
-        finalize_writer_lease,
-        load_writer_lease,
-    )
-
     dest_run_root = Path(args.dest_run_root)
     monitor = bool(getattr(args, "monitor", False))
     force_kill = bool(getattr(args, "force_kill", False))
@@ -183,138 +189,37 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
     if rerun_stage:
         ensure_rerun_allowed(dest_run_root, stage=rerun_stage)
 
-    from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
-        finalize_parity_job,
-        mark_parity_job_running,
-    )
-
-    existing_lease = load_writer_lease(dest_run_root)
-    if existing_lease and existing_lease.get("status") == "running":
-        lease_pid = int(existing_lease.get("pid", -1))
-        if lease_pid != os.getpid() and not is_process_alive(lease_pid):
-            finalize_writer_lease(dest_run_root, status="interrupted")
-            finalize_parity_job(
-                dest_run_root,
-                status="interrupted",
-                exit_code=None,
-                reason=f"Writer lease PID {lease_pid} is no longer alive.",
-            )
-        elif (
-            lease_pid != os.getpid()
-            and is_process_alive(lease_pid)
-            and is_python_process(lease_pid)
-        ):
-            if not force_kill:
-                raise RuntimeError(
-                    f"Run directory has active writer lease (PID {lease_pid}). "
-                    "Use --force-kill to replace it."
-                )
-            print(f"Terminating writer-lease PID {lease_pid}...")
-            kill_process_tree(lease_pid)
-
-    # Check for active writer if monitoring enabled
-    if monitor:
-        registry = JobRegistry()
-        active_job = registry.get_job_by_run_dir(dest_run_root)
-        if active_job and is_process_alive(active_job.pid) and is_python_process(active_job.pid):
-            if not force_kill:
-                raise RuntimeError(
-                    f"Run directory has active writer (PID {active_job.pid}).\n"
-                    f"Job started: {active_job.started_at}\n"
-                    f"Use --force-kill to terminate, or wait for completion.\n"
-                    f"Check status: slavv jobs list"
-                )
-            print(f"Terminating active writer PID {active_job.pid}...")
-            kill_process_tree(active_job.pid)
-            registry.update_job(active_job.job_id, status="killed")
-
-    # Register job if monitoring enabled
-    job_id = None
-    if monitor:
-        registry = JobRegistry()
-        oracle_root_str = str(Path(args.oracle_root)) if args.oracle_root else "unknown"
-        stage = getattr(args, "force_rerun_from", None) or "all"
-
-        job_id = registry.register_job(
-            pid=os.getpid(),
-            run_dir=dest_run_root,
-            oracle_root=Path(oracle_root_str),
-            stage=stage,
-            command=" ".join(sys.argv),
-            metadata={
-                "stop_after": args.stop_after,
-                "force_rerun_from": getattr(args, "force_rerun_from", None),
-            },
-        )
-        ensure_monitor_daemon_running()
-        print(f"Job registered for monitoring (ID: {job_id})")
-
-    rerun_stage = getattr(args, "force_rerun_from", None) or "all"
-    claim_writer_lease(
+    stage = rerun_stage or "all"
+    with resume_writer_session(
         dest_run_root,
         command=" ".join(sys.argv),
-        stage=rerun_stage,
-    )
-    mark_parity_job_running(
-        dest_run_root,
-        pid=os.getpid(),
-        command=sys.argv,
-        stage=rerun_stage,
-    )
-
-    try:
+        stage=stage,
+        monitor=monitor,
+        force_kill=force_kill,
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+        stop_after=args.stop_after,
+        registry_metadata={
+            "stop_after": args.stop_after,
+            "force_rerun_from": rerun_stage,
+        },
+    ):
         dest_run_root = resume_exact_run(
             dest_run_root,
             dataset_root=Path(args.dataset_root) if args.dataset_root else None,
             oracle_root=Path(args.oracle_root) if args.oracle_root else None,
             stop_after=args.stop_after,
-            force_rerun_from=getattr(args, "force_rerun_from", None),
+            force_rerun_from=rerun_stage,
             memory_safety_fraction=float(args.memory_safety_fraction),
             force=bool(args.force),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
         )
-        if monitor and job_id:
-            registry.update_job(
-                job_id,
-                status="succeeded",
-                completed_at=datetime.now().isoformat(),
-                exit_code=0,
-            )
-        finalize_writer_lease(dest_run_root, status="completed", stage=args.stop_after or "all")
-        finalize_parity_job(dest_run_root, status="succeeded", exit_code=0)
-    except Exception as e:
-        if monitor and job_id:
-            registry.update_job(
-                job_id,
-                status="failed",
-                completed_at=datetime.now().isoformat(),
-                exit_code=1,
-                metadata={"error": str(e)},
-            )
-        finalize_writer_lease(dest_run_root, status="failed")
-        finalize_parity_job(
-            dest_run_root,
-            status="failed",
-            exit_code=1,
-            reason=str(e),
-        )
-        raise
 
     print(str(dest_run_root))
 
 
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
-    from slavv_python.analytics.parity.runs.job_registry import JobRegistry
-    from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
-    from slavv_python.analytics.parity.runs.launch_prepare import (
-        LaunchPreparationError,
-        assert_no_conflicting_registry_writer,
-        prepare_detached_exact_run_launch,
-    )
-    from slavv_python.analytics.parity.runs.process_utils import ensure_monitor_daemon_running
-
     dest_run_root = Path(args.dest_run_root)
     monitor = bool(getattr(args, "monitor", False))
     force_kill = bool(getattr(args, "force_kill", False))
@@ -356,23 +261,19 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
 
     # Register job if monitoring enabled
     if monitor:
-        registry = JobRegistry()
-        oracle_root_str = str(manifest.get("oracle_root", "unknown"))
+        oracle_root_path = Path(manifest["oracle_root"]) if manifest.get("oracle_root") else None
         stage = getattr(args, "force_rerun_from", None) or "all"
-
-        job_id = registry.register_job(
-            pid=manifest["pid"],
+        register_monitor_job(
             run_dir=dest_run_root,
-            oracle_root=Path(oracle_root_str),
+            oracle_root=oracle_root_path,
             stage=stage,
             command=" ".join(manifest["command"]),
+            pid=int(manifest["pid"]),
             metadata={
                 "stop_after": args.stop_after,
                 "manifest_path": manifest.get("pid_file"),
             },
         )
-        ensure_monitor_daemon_running()
-        print(f"Job registered for monitoring (ID: {job_id})")
 
     print(manifest["pid"])
     print(manifest["stdout"])
@@ -381,20 +282,12 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
 
 def handle_status_exact_run(args: argparse.Namespace) -> None:
     """Print a consolidated exact-route run status."""
-    from slavv_python.interface.cli.monitor_service import (
-        load_run_monitor_view,
-        render_monitor_lines,
-    )
-
     view = load_run_monitor_view(Path(args.run_dir))
     print("\n".join(render_monitor_lines(view)))
 
 
 def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
     """Verify and optionally repair normalized Oracle Artifacts."""
-
-    from slavv_python.analytics.parity.oracle.oracle_artifacts import ensure_oracle_artifacts
-
     statuses = ensure_oracle_artifacts(
         Path(args.oracle_root),
         stages=tuple(args.stage or ("all",)),
@@ -408,37 +301,26 @@ def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
     }
     print(json.dumps(payload, indent=2, sort_keys=True))
     if not payload["passed"]:
-        import sys
-
         sys.exit(1)
 
 
 def handle_promote_oracle(args: argparse.Namespace) -> None:
     """Promote a MATLAB batch to a structured oracle root."""
-    from slavv_python.analytics.parity.oracle.promotion import handle_promote_oracle as handler
-
-    handler(args)
+    promote_oracle_handler(args)
 
 
 def handle_promote_dataset(args: argparse.Namespace) -> None:
     """Promote a raw file to a cataloged dataset."""
-    from slavv_python.analytics.parity.oracle.promotion import handle_promote_dataset as handler
-
-    handler(args)
+    promote_dataset_handler(args)
 
 
 def handle_promote_report(args: argparse.Namespace) -> None:
     """Promote a disposable run to a stable report."""
-    from slavv_python.analytics.parity.oracle.promotion import handle_promote_report as handler
-
-    handler(args)
+    promote_report_handler(args)
 
 
 def handle_init_exact_run(args: argparse.Namespace) -> None:
     """Initialize a fresh run root for an exact parity experiment."""
-    from slavv_python.engine import SlavvPipeline
-    from slavv_python.storage import load_tiff_volume
-
     dataset_surface = load_dataset_surface(Path(args.dataset_root))
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
     oracle_surface = load_oracle_surface(oracle_root)
@@ -512,8 +394,6 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
                 persist=True,
             )
             if not preflight_report.get("passed"):
-                import sys
-
                 sys.exit(
                     "preflight failed: " + ", ".join(preflight_report.get("errors", [])),
                 )

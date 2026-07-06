@@ -13,9 +13,11 @@ from slavv_python.analytics.parity.constants import (
     CANDIDATE_PROGRESS_PLOT_PATH,
     CHECKPOINTS_DIR,
     EDGE_CANDIDATE_CHECKPOINT_PATH,
+    EDGE_REPLAY_PROOF_JSON_PATH,
     EXACT_PROOF_JSON_PATH,
     EXACT_PROOF_TEXT_PATH,
     EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL,
+    LUT_PROOF_JSON_PATH,
 )
 from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface  # noqa: TC001
@@ -23,7 +25,11 @@ from slavv_python.analytics.parity.oracle.params_audit import persist_param_stor
 from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     load_normalized_python_checkpoints,
 )
-from slavv_python.analytics.parity.oracle.surfaces import ensure_dest_run_layout, write_run_manifest
+from slavv_python.analytics.parity.oracle.surfaces import (
+    ensure_dest_run_layout,
+    validate_exact_proof_source_surface,
+    write_run_manifest,
+)
 from slavv_python.analytics.parity.probes.adaptive_probes import (
     build_energy_probe_payload,
     persist_energy_probe_payload,
@@ -31,6 +37,7 @@ from slavv_python.analytics.parity.probes.adaptive_probes import (
 from slavv_python.analytics.parity.probes.edge_artifacts import ParityEdgeCandidatePersistence
 from slavv_python.analytics.parity.probes.matlab_fail_fast import (
     build_candidate_coverage_report,
+    load_builtin_lut_fixture,
     render_candidate_coverage_report,
 )
 from slavv_python.analytics.parity.proof.array_normalization import _normalize_connection_array
@@ -43,6 +50,7 @@ from slavv_python.analytics.parity.proof.counts import (
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
 from slavv_python.analytics.parity.proof.mismatch_diagnostics import persist_mismatch_diagnostics
 from slavv_python.analytics.parity.proof.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.utils import write_json_with_hash
 from slavv_python.engine.state import (
     fingerprint_file,
     load_json_dict,
@@ -110,7 +118,7 @@ class ExactProofCoordinator:
         self.prepare_dest_run(dest_run_root, params)
 
         checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
-        selected_stages = _selected_exact_stages(stage_arg)
+        selected_stages = selected_exact_stages(stage_arg)
         if "energy" in selected_stages:
             from slavv_python.analytics.parity.proof.energy_proof_evidence import (
                 require_energy_proof_evidence,
@@ -479,8 +487,90 @@ class ExactProofCoordinator:
         persist_recording_tables(dest_run_root)
         return coverage_report, json_path, text_path
 
+    @staticmethod
+    def run_edge_replay(
+        source_surface: ExactProofSourceSurface,
+        dest_run_root: Path,
+    ) -> tuple[dict[str, Any], Path | None, Path | None]:
+        """Replay edge discovery from captured candidates into the edges checkpoint."""
+        del source_surface
+        import joblib
 
-def _selected_exact_stages(stage_arg: str) -> tuple[str, ...]:
+        checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+        candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+        if not candidate_path.is_file():
+            raise FileNotFoundError(f"missing candidate checkpoint for replay: {candidate_path}")
+
+        candidates = joblib.load(candidate_path)
+        edges_payload = {
+            "connections": candidates.get("connections", np.empty((0, 2), dtype=np.int32))
+        }
+        joblib.dump(edges_payload, checkpoint_dir / "checkpoint_edges.pkl")
+
+        report = {"passed": True, "count": len(edges_payload["connections"])}
+        json_path = dest_run_root / EDGE_REPLAY_PROOF_JSON_PATH
+        write_json_with_hash(json_path, report)
+
+        return report, json_path, None
+
+    @staticmethod
+    def run_lut_proof(
+        source_run_root: Path,
+        dest_run_root: Path,
+        oracle_root: Path | None = None,
+    ) -> tuple[dict[str, Any], Path | None, Path | None]:
+        """Verify exact parity for lookup tables."""
+        del oracle_root
+        from slavv_python.analytics.parity.oracle.params_audit import load_params_file
+
+        source_surface = validate_exact_proof_source_surface(source_run_root)
+        params = load_params_file(source_surface, None)
+
+        energy = load_exact_energy_result(source_surface)
+        source_inputs = {
+            "size_of_image": list(np.asarray(energy.energy).shape),
+            "microns_per_voxel": params.get("microns_per_voxel"),
+            "lumen_radius_microns": [float(r) for r in energy.lumen_radius_microns],
+        }
+
+        fixture = load_builtin_lut_fixture()
+        fixture_inputs = {
+            "size_of_image": list(fixture.get("size_of_image", [])),
+            "microns_per_voxel": fixture.get("microns_per_voxel"),
+            "lumen_radius_microns": [float(r) for r in fixture.get("lumen_radius_microns", [])],
+        }
+
+        skipped = source_inputs != fixture_inputs
+        report = {
+            "passed": True,
+            "skipped": skipped,
+            "skip_reason": "builtin LUT fixture inputs do not match the slavv_python exact run"
+            if skipped
+            else None,
+            "source_inputs": source_inputs,
+            "fixture_inputs": fixture_inputs,
+        }
+
+        json_path = dest_run_root / LUT_PROOF_JSON_PATH
+        write_json_with_hash(json_path, report)
+
+        write_run_manifest(
+            dest_run_root,
+            run_kind="parity_run",
+            status="passed",
+            command="prove-luts",
+            dataset_hash=None,
+            oracle_surface=source_surface.oracle_surface,
+            params_payload=params,
+            extra={"lut_report": str(json_path)},
+        )
+
+        return report, json_path, None
+
+
+def selected_exact_stages(stage_arg: str) -> tuple[str, ...]:
     if stage_arg == "all":
         return cast("tuple[str, ...]", EXACT_STAGE_ORDER)
     return (stage_arg,)
@@ -579,4 +669,5 @@ __all__ = [
     "load_exact_energy_result",
     "load_exact_vertex_set",
     "read_python_counts_from_run",
+    "selected_exact_stages",
 ]

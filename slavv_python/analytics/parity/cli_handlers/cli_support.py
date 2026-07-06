@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+from shutil import copy2
 from typing import TYPE_CHECKING
 
+from slavv_python.analytics.parity.constants import ANALYSIS_DIR
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface
-from slavv_python.analytics.parity.oracle.surfaces import (
-    load_oracle_surface,
-)
+from slavv_python.analytics.parity.oracle.surfaces import load_oracle_surface
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def _copy_stage_proof_json(
+    dest_run_root: Path,
+    json_path: Path | None,
+    stage_arg: str | None,
+) -> None:
+    """Write a per-stage proof JSON when proving a single named stage."""
+    if stage_arg in (None, "all") or json_path is None or not json_path.is_file():
+        return
+    stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage_arg}.json"
+    stage_json.parent.mkdir(parents=True, exist_ok=True)
+    if json_path.resolve() != stage_json.resolve():
+        copy2(json_path, stage_json)
 
 
 def _build_exact_proof_source_surface(

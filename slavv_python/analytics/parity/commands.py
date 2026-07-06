@@ -7,35 +7,41 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from slavv_python.analytics.parity.cli import (
-    handle_capture_candidates,
+from slavv_python.analytics.parity.cli_handlers.cli_diagnostics import (
     handle_compare_energy_probes,
-    handle_compare_traces,
-    handle_dedupe,
     handle_diagnose_energy,
     handle_diagnose_gaps,
-    handle_ensure_oracle_artifacts,
+    handle_inspect_energy_evidence,
+    handle_normalize_recordings,
+    handle_record_parity_hypothesis,
+    handle_summarize,
+    handle_trace_vertex,
+)
+from slavv_python.analytics.parity.cli_handlers.cli_edges import (
+    handle_capture_candidates,
+    handle_compare_traces,
+    handle_dedupe,
     handle_export_crop,
     handle_fail_fast,
-    handle_init_exact_run,
-    handle_inspect_energy_evidence,
-    handle_launch_exact_run,
-    handle_normalize_recordings,
-    handle_preflight_exact,
-    handle_promote_dataset,
-    handle_promote_oracle,
-    handle_promote_report,
+    handle_replay_edges,
+)
+from slavv_python.analytics.parity.cli_handlers.cli_proofs import (
     handle_prove_energy_ulp,
     handle_prove_exact,
     handle_prove_exact_sequence,
     handle_prove_luts,
-    handle_record_parity_hypothesis,
-    handle_replay_edges,
+)
+from slavv_python.analytics.parity.cli_handlers.cli_runs import (
+    handle_ensure_oracle_artifacts,
+    handle_init_exact_run,
+    handle_launch_exact_run,
+    handle_preflight_exact,
+    handle_promote_dataset,
+    handle_promote_oracle,
+    handle_promote_report,
     handle_rerun_python,
     handle_resume_exact_run,
     handle_status_exact_run,
-    handle_summarize,
-    handle_trace_vertex,
 )
 from slavv_python.analytics.parity.constants import (
     DEFAULT_MEMORY_SAFETY_FRACTION,

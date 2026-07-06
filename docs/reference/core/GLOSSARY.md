@@ -50,6 +50,8 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | --- | --- |
 | **Oracle** | Preserved MATLAB truth vectors and metadata for a specific dataset, stored under `workspace/oracles/`, used as the reference surface for exact parity comparison. |
 | **Parity Run** | A disposable developer execution under `workspace/runs/` that compares Python checkpoints against an Oracle via the parity experiment harness. |
+| **Parity Preflight** 🤖 | The memory, params-audit, and provenance checks run before a long Parity Run writer starts or resumes. Answers whether it is safe to launch, not whether Python matches MATLAB. |
+| **Exact Proof Coordinator** 🤖 | The single orchestration surface that compares Python checkpoints against an Oracle after they exist: `prove-exact`, candidate capture, LUT proof, and edge replay. |
 | **Exact Proof** | The process of verifying that Python produces bit-accurate or mathematically equivalent results to the MATLAB oracle. |
 | **Parity Experiment** | A structured run that compares a Python pipeline execution against a specific MATLAB oracle, producing matched/missing/extra pair metrics. |
 | **Certification** | The state in which sequential exact-parity gates report zero missing and zero extra for every required Pipeline stage on a defined volume and workflow. |

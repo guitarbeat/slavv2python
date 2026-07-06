@@ -723,6 +723,14 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_1,
                             half_2,
                         )
+                    else:
+                        active_tracer.on_join_skipped(
+                            int(current_vertex_index),
+                            int(next_vertex_index),
+                            reason="adjacency_already_recorded",
+                            iteration=iteration,
+                            current_linear=current_linear,
+                        )
 
             adjusted[strel_idx] = np.inf
 

@@ -18,6 +18,7 @@ from slavv_python.pipeline.edges.discovery import (
     CandidateManifest,
     EdgeDiscoveryContext,
     _use_matlab_frontier_tracer,
+    candidate_as_payload,
     frontier_origin_counts,
     frontier_origin_counts_from_diagnostics,
     resolve_lumen_radius_pixels_axes,
@@ -217,8 +218,6 @@ class EdgeManager:
                 heartbeat=heartbeat,
             )
         )
-        candidates = manifest.to_payload()
-
         if resumable:
             from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
@@ -231,7 +230,7 @@ class EdgeManager:
                 manifest.diagnostics.get("watershed_per_origin_candidate_counts")
             )
             candidate_audit = _build_edge_candidate_audit(
-                candidates,
+                manifest,
                 len(vertex_positions),
                 use_frontier_tracer=use_frontier,
                 frontier_origin_counts=frontier_counts,
@@ -249,7 +248,8 @@ class EdgeManager:
                 detail="Writing edge candidate artifacts",
                 resumed=False,
             )
-            atomic_joblib_dump(candidates, handle.artifact_path("candidates.pkl"))
+            candidates_payload = candidate_as_payload(manifest)
+            atomic_joblib_dump(candidates_payload, handle.artifact_path("candidates.pkl"))
             if use_frontier and stage_controller is not None:
                 run_context = stage_controller.run_context
                 if run_context is not None:
@@ -258,7 +258,7 @@ class EdgeManager:
                         use_frontier=True,
                     ).write_candidate_checkpoint(
                         run_context.checkpoints_dir,
-                        candidates,
+                        candidates_payload,
                     )
             handle.update(
                 units_total=3,
@@ -278,7 +278,7 @@ class EdgeManager:
             )
 
         chosen = choose_edges_for_workflow(
-            candidates,
+            manifest,
             vertex_positions,
             vertex_scales,
             lumen_radius_microns,
@@ -339,7 +339,7 @@ class EdgeManager:
 
             if use_frontier and manifest.frontier_lifecycle_events:
                 candidate_lifecycle = _build_frontier_candidate_lifecycle(
-                    candidates,
+                    candidate_as_payload(manifest),
                     chosen_dict.get("chosen_candidate_indices"),
                 )
                 atomic_write_json(

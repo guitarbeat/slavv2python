@@ -30,6 +30,18 @@ class ExecutionTracer(Protocol):
         """Called when two watersheds meet and form a candidate edge."""
         ...
 
+    def on_join_skipped(
+        self,
+        start_vertex: int,
+        end_vertex: int,
+        *,
+        reason: str,
+        iteration: int,
+        current_linear: int,
+    ) -> None:
+        """Called when a basin meeting does not record a new candidate edge."""
+        ...
+
 
 class JsonExecutionTracer:
     """Records execution events to a JSONL file for offline comparison."""
@@ -92,6 +104,26 @@ class JsonExecutionTracer:
             },
         )
 
+    def on_join_skipped(
+        self,
+        start_vertex: int,
+        end_vertex: int,
+        *,
+        reason: str,
+        iteration: int,
+        current_linear: int,
+    ) -> None:
+        self._append(
+            "join_skipped",
+            {
+                "start_vertex": start_vertex,
+                "end_vertex": end_vertex,
+                "reason": reason,
+                "iteration": iteration,
+                "current_linear": current_linear,
+            },
+        )
+
 
 class NullExecutionTracer:
     """No-op tracer for production use."""
@@ -106,5 +138,16 @@ class NullExecutionTracer:
 
     def on_join(
         self, start_vertex: int, end_vertex: int, half_1: list[int], half_2: list[int]
+    ) -> None:
+        pass
+
+    def on_join_skipped(
+        self,
+        start_vertex: int,
+        end_vertex: int,
+        *,
+        reason: str,
+        iteration: int,
+        current_linear: int,
     ) -> None:
         pass

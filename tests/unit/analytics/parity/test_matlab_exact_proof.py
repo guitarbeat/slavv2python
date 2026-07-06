@@ -17,9 +17,9 @@ from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     sync_exact_vertex_checkpoint_from_matlab,
 )
 from slavv_python.analytics.parity.proof.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.proof.coordinator import selected_exact_stages
 from slavv_python.analytics.parity.proof.energy_ulp_proof import EnergyFloatGateOptions
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
-from slavv_python.analytics.parity.proof.proofs import _selected_exact_stages
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -89,8 +89,8 @@ def test_energy_stage_normalization_supports_dense_native_proof_surface(tmp_path
 
 def test_exact_stage_order_starts_with_energy():
     assert EXACT_STAGE_ORDER == ("energy", "vertices", "edges", "network")
-    assert _selected_exact_stages("all") == EXACT_STAGE_ORDER
-    assert _selected_exact_stages("energy") == ("energy",)
+    assert selected_exact_stages("all") == EXACT_STAGE_ORDER
+    assert selected_exact_stages("energy") == ("energy",)
 
 
 def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
