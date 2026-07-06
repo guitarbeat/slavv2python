@@ -17,9 +17,9 @@ from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     sync_exact_vertex_checkpoint_from_matlab,
 )
 from slavv_python.analytics.parity.proof.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.proof.coordinator import selected_exact_stages
 from slavv_python.analytics.parity.proof.energy_ulp_proof import EnergyFloatGateOptions
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
-from slavv_python.analytics.parity.proof.coordinator import selected_exact_stages
 
 if TYPE_CHECKING:
     from pathlib import Path

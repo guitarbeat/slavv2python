@@ -24,9 +24,8 @@ from slavv_python.analytics.parity.oracle.models import (
     OracleSurface,
     RunCounts,
 )
-from slavv_python.analytics.parity.proof.index import deduplicate_index_records
 from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
-from slavv_python.schema.results import EnergyResult
+from slavv_python.analytics.parity.proof.index import deduplicate_index_records
 from slavv_python.analytics.parity.proof.reports import (
     build_experiment_summary,
 )
@@ -36,6 +35,7 @@ from slavv_python.analytics.parity.runs.execution import (
 )
 from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
 from slavv_python.interface.cli.parity import main as parity_main
+from slavv_python.schema.results import EnergyResult
 from tests.support.run_state_builders import (
     materialize_checkpoint_surface,
 )

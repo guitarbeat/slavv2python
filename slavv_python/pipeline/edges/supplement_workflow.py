@@ -76,9 +76,7 @@ def _merge_or_append_supplement(
 ) -> None:
     """Append a supplement manifest or merge only its diagnostics when empty."""
     target_manifest = (
-        target
-        if isinstance(target, CandidateManifest)
-        else CandidateManifest.from_payload(target)
+        target if isinstance(target, CandidateManifest) else CandidateManifest.from_payload(target)
     )
     payload_manifest = (
         payload

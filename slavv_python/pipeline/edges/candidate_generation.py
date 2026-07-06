@@ -180,9 +180,7 @@ def _trace_vertex_unit(
     max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
 
     # 1. Determine Tracing Vectors
-    directions = _get_seed_directions(
-        vertex_idx, start_pos, start_radius, energy, mpv, params
-    )
+    directions = _get_seed_directions(vertex_idx, start_pos, start_radius, energy, mpv, params)
 
     # 2. Trace Paths
     traces: list[np.ndarray] = []
@@ -313,7 +311,9 @@ def sort_candidates_by_quality(
 
     del energy, scale_indices, vertex_positions, sign, params, microns_per_voxel, kwargs
     metrics = np.asarray(
-        candidates.metrics if isinstance(candidates, CandidateManifest) else candidates.get("metrics", []),
+        candidates.metrics
+        if isinstance(candidates, CandidateManifest)
+        else candidates.get("metrics", []),
         dtype=np.float64,
     )
     if metrics.size == 0:

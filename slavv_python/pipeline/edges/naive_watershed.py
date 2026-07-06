@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -42,7 +42,7 @@ def paint_vertex_watershed_markers(
     energy_shape: tuple[int, ...],
 ) -> np.ndarray:
     """Paint 1-based watershed markers at floored vertex voxel coordinates."""
-    markers = np.zeros(energy_shape, dtype=np.int32)
+    markers: np.ndarray = np.zeros(energy_shape, dtype=np.int32)
     idxs = np.floor(vertex_positions).astype(int)
     idxs = np.clip(idxs, 0, np.array(energy_shape) - 1)
     markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
@@ -56,7 +56,7 @@ def run_skimage_watershed_labels(
     energy_sign: float,
 ) -> np.ndarray:
     """Run skimage watershed and return integer region labels."""
-    return np.asarray(watershed(-energy_sign * energy, markers), dtype=np.int32)
+    return cast("np.ndarray", np.asarray(watershed(-energy_sign * energy, markers), dtype=np.int32))
 
 
 def collect_naive_watershed_label_unit(

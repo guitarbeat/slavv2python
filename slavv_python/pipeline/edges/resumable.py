@@ -54,8 +54,8 @@ def extract_edges_watershed_resumable(
         existing_payload["connections"].tolist() if existing_payload["connections"].size else []
     )
     edge_energies = existing_payload["metrics"].tolist()
-    seen_pairs = {
-        tuple(sorted((int(start), int(end))))
+    seen_pairs: set[tuple[int, int]] = {
+        (int(start), int(end))
         for start, end in np.asarray(existing_payload["connections"], dtype=np.int32).reshape(-1, 2)
         if int(start) >= 0 and int(end) >= 0
     }
