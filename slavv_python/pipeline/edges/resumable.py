@@ -7,9 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import scipy.ndimage as ndi
-from skimage.segmentation import watershed
 
 from slavv_python.pipeline.edges.candidate_manifest import _append_candidate_unit
+from slavv_python.pipeline.edges.naive_watershed import (
+    collect_naive_watershed_label_unit,
+    paint_vertex_watershed_markers,
+    run_skimage_watershed_labels,
+)
 from slavv_python.pipeline.edges.payloads import _empty_edge_diagnostics
 from slavv_python.pipeline.edges.units import _load_edge_units
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
@@ -33,13 +37,10 @@ def extract_edges_watershed_resumable(
     energy = energy_data.energy
     energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
     vertex_positions = vertices.positions
-    markers = np.zeros_like(energy, dtype=np.int32)
-    idxs = np.floor(vertex_positions).astype(int)
-    idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
-    markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
+    markers = paint_vertex_watershed_markers(vertex_positions, energy.shape)
 
     logger.info("Running watershed on volume (this may take several minutes)...")
-    labels = watershed(-energy_sign * energy, markers)
+    labels = run_skimage_watershed_labels(energy, markers, energy_sign=energy_sign)
     logger.info("Watershed complete, extracting edges between regions...")
     structure = ndi.generate_binary_structure(3, 1)
 
@@ -70,49 +71,19 @@ def extract_edges_watershed_resumable(
         origin_index = label - 1
         if origin_index in completed:
             continue
-        region = labels == label
-        dilated = ndi.binary_dilation(region, structure)
-        neighbors = np.unique(labels[dilated & (labels != label)])
-        unit_traces: list[np.ndarray] = []
-        unit_connections: list[list[int]] = []
-        unit_energies: list[float] = []
-        for neighbor in neighbors:
-            if neighbor <= label or neighbor == 0:
-                continue
-            pair = (label - 1, neighbor - 1)
-            if pair in seen_pairs:
-                continue
-            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
-                ndi.binary_dilation(region, structure) & (labels == neighbor)
-            )
-            coords = np.argwhere(boundary)
-            if coords.size == 0:
-                continue
-            coords = coords.astype(np.float64)
-            idx = np.floor(coords).astype(int)
-            energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
-            unit_traces.append(coords)
-            unit_connections.append([label - 1, neighbor - 1])
-            unit_energies.append(float(np.mean(energies)))
-            seen_pairs.add(pair)
-
-        payload = {
-            "origin_index": origin_index,
-            "candidate_source": "fallback",
-            "traces": unit_traces,
-            "connections": unit_connections,
-            "metrics": unit_energies,
-            "energy_traces": [
-                np.asarray([energy_value], dtype=np.float64) for energy_value in unit_energies
-            ],
-            "scale_traces": [np.zeros((len(trace),), dtype=np.int16) for trace in unit_traces],
-            "origin_indices": [origin_index] * len(unit_traces),
-            "connection_sources": ["fallback"] * len(unit_traces),
-        }
+        unit = collect_naive_watershed_label_unit(
+            label,
+            labels,
+            energy,
+            structure,
+            seen_pairs,
+            coord_dtype=np.float64,
+        )
+        payload = unit.to_unit_payload()
         atomic_joblib_dump(payload, units_dir / f"label_{origin_index:06d}.pkl")
-        edges.extend(unit_traces)
-        connections.extend(unit_connections)
-        edge_energies.extend(unit_energies)
+        edges.extend(unit.traces)
+        connections.extend(unit.connections)
+        edge_energies.extend(unit.metrics)
         completed.add(origin_index)
         stage_controller.save_state({"last_completed_label": origin_index})
         stage_controller.update(

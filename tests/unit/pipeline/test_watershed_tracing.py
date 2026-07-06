@@ -22,6 +22,17 @@ class MockTracer(ExecutionTracer):
     def on_join(self, start_vertex, end_vertex, half_1, half_2):
         self.joins.append((start_vertex, end_vertex, half_1, half_2))
 
+    def on_join_skipped(
+        self,
+        start_vertex,
+        end_vertex,
+        *,
+        reason,
+        iteration,
+        current_linear,
+    ):
+        return None
+
 
 @pytest.mark.unit
 def test_global_watershed_execution_tracing():

@@ -7,8 +7,12 @@ from typing import Any
 
 import numpy as np
 import scipy.ndimage as ndi
-from skimage.segmentation import watershed
 
+from slavv_python.pipeline.edges.naive_watershed import (
+    collect_naive_watershed_label_unit,
+    paint_vertex_watershed_markers,
+    run_skimage_watershed_labels,
+)
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
@@ -18,26 +22,23 @@ def extract_edges_watershed(
     energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
 ) -> EdgeSet:
     """Extract edges using watershed segmentation seeded at vertices."""
+    del params
     logger.info("Extracting edges via watershed")
 
     energy = energy_data.energy
     energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
     vertex_positions = vertices.positions
 
-    markers = np.zeros_like(energy, dtype=np.int32)
-    idxs = np.floor(vertex_positions).astype(int)
-    idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
-    markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
-
+    markers = paint_vertex_watershed_markers(vertex_positions, energy.shape)
     logger.info("Running watershed on volume (this may take several minutes)...")
-    labels = watershed(-energy_sign * energy, markers)
+    labels = run_skimage_watershed_labels(energy, markers, energy_sign=energy_sign)
     logger.info("Watershed complete, extracting edges between regions...")
     structure = ndi.generate_binary_structure(3, 1)
 
     edges: list[np.ndarray] = []
     connections: list[list[int]] = []
     edge_energies: list[float] = []
-    seen = set()
+    seen_pairs: set[tuple[int, int]] = set()
     n_vertices = len(vertex_positions)
     log_interval = max(1, n_vertices // 20)
 
@@ -49,28 +50,17 @@ def extract_edges_watershed(
                 n_vertices,
                 len(edges),
             )
-        region = labels == label
-        dilated = ndi.binary_dilation(region, structure)
-        neighbors = np.unique(labels[dilated & (labels != label)])
-        for neighbor in neighbors:
-            if neighbor <= label or neighbor == 0:
-                continue
-            pair = (label - 1, neighbor - 1)
-            if pair in seen:
-                continue
-            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
-                ndi.binary_dilation(region, structure) & (labels == neighbor)
-            )
-            coords = np.argwhere(boundary)
-            if coords.size == 0:
-                continue
-            coords = coords.astype(np.float32)
-            edges.append(coords)
-            idx = np.floor(coords).astype(int)
-            energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
-            edge_energies.append(float(np.mean(energies)))
-            connections.append([label - 1, neighbor - 1])
-            seen.add(pair)
+        unit = collect_naive_watershed_label_unit(
+            label,
+            labels,
+            energy,
+            structure,
+            seen_pairs,
+            coord_dtype=np.float32,
+        )
+        edges.extend(unit.traces)
+        connections.extend(unit.connections)
+        edge_energies.extend(unit.metrics)
 
     logger.info("Extracted %d watershed edges", len(edges))
 
