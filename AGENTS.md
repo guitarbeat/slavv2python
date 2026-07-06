@@ -42,7 +42,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers
 3. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
 4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
-5. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
+5. Follow the operating sequence in [HANDOFF.md](.claude/HANDOFF.md) (findings cold-start defers there)
 6. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
 7. See [Parity Experiments](#parity-experiments) workflow below
 
@@ -139,7 +139,21 @@ The single orchestration surface that compares Python checkpoints against an [Or
 _Avoid_: Using "coordinator" for [Parity Preflight](#parity-preflight) or run-lifecycle concerns; those belong under `runs/preflight` and `resume-exact-run`.
 
 ### Certification
-The state in which sequential exact-parity gates report zero missing and zero extra on discrete/topological fields, and `np.allclose` agreement on continuous float fields (per [ADR 0011](docs/adr/0011-energy-float-certification-policy.md)), for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
+The state in which every required [Pipeline](#pipeline) stage passes its defined parity bar on a defined volume and workflow: Energy and Vertices use strict discrete equality plus `np.allclose` on continuous floats ([ADR 0011](docs/adr/0011-energy-float-certification-policy.md)); Edges and Network use the spatial bars in [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) (ownership-map, trace tolerance, strand/bifurcation multisets)—not exact watershed edge-pair or strand-order equality.
+_Avoid_: Treating strict-field `connections` / strand-count equality as the Phase 1 ship gate for Edges/Network; that is a separate [Strict-Field Stretch Goal](#strict-field-stretch-goal).
+
+### Strict-Field Stretch Goal
+An engineering target where Edges and Network also match MATLAB on strict discrete fields (`connections` counts, strand multisets with order-sensitive comparators)—tracked in [Exact Proof Findings](#exact-proof-findings) and iterated on the [Crop Harness Volume](#crop-harness-volume), but **not** a [Certification](#certification) blocker once ADR 0012 passes on the [Canonical Volume](#canonical-volume).
+_Avoid_: Calling stretch progress "certified," blocking Phase 1 closure on strict-field gaps, or conflating it with the ADR 0012 ownership-map bar.
+
+**Stretch KPIs:** Primary loop metric = **candidate generation overlap** (MATLAB final pairs present in Python candidates, crop harness). Milestone check = **strict-field** `prove-exact` / sequence delta on crop when overlap moves materially.
+_Avoid_: Using ownership-map % as the stretch tracker (already at cert bar) or strict-field counts alone on every iteration.
+
+**Stretch run root:** Use a **new** crop harness directory (e.g. `crop_M_exact_v3`) seeded via preflight from the prior crop run; rerun Edges only on current `main`. Do not treat stale pre-fix crop checkpoints as the stretch baseline.
+_Avoid_: Logging stretch KPIs against `crop_M_exact` artifacts produced before watershed parity fixes landed on `main`.
+
+**Phase 1 operating sequence:** (1) Refresh crop stretch run (`crop_M_exact_v3`, edges only) → log candidate-overlap KPI; (2) Launch canonical closure run (`canonical_full_v5`, edges → network) → per-stage ADR 0012 proof; (3) Declare [Phase 1 Closure](#phase-1-closure) if canonical passes; continue [Strict-Field Stretch Goal](#strict-field-stretch-goal) on crop without blocking ship.
+_Avoid_: Starting the full-volume edges writer before the refreshed crop baseline, or running crop and canonical writers concurrently on memory-constrained hosts.
 
 ### Canonical Volume
 The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.
@@ -158,6 +172,19 @@ A real subvolume cut from the `180709` imaging lineage, paired with its own prom
 ### Phase 1 Specification
 The single authoritative document for exact-route [Certification](#certification) on full `180709_E`: requirements and implementation together under `docs/plans/phase-1-exact-route-spec.md`.
 _Avoid_: Maintaining separate brainstorm and plan files for the same initiative; use `docs/brainstorms/` only before the spec exists.
+
+### Phase 1 Closure
+The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` and `--stage network` pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. Does not require [Strict-Field Stretch Goal](#strict-field-stretch-goal) on the same run.
+_Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, or closing Phase 1 on [Crop Harness Volume](#crop-harness-volume) alone.
+
+**Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on the canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
+_Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while stretch iteration uses fresher crop outputs.
+
+**Closure run root:** Use a **new** canonical run directory (e.g. `canonical_full_v5`) seeded via preflight from the prior canonical run; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite the prior canonical snapshot in place.
+_Avoid_: `--force-rerun-from edges` on the historical claim run root when that run is the audit record for a prior milestone.
+
+**Closure failure policy:** If the closure proof fails [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the new canonical run, [Phase 1 Closure](#phase-1-closure) remains open. First triage measurement artifacts (checkpoint freshness, orientation/shape, oracle pairing, ownership-map probe)—do not assume a watershed code bug until those are ruled out. [Strict-Field Stretch Goal](#strict-field-stretch-goal) gaps do not reopen Phase 1 once ADR 0012 passes.
+_Avoid_: Blocking Phase 1 on strict-field counts when ADR 0012 already passes, or chasing watershed fixes before ruling out stale checkpoints / orientation.
 
 ### Exact Proof Findings
 The live status log for exact-parity work: active runs, `prove-exact` results, blockers, champion baselines, and a curated index of parity-related compound solutions under `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
@@ -269,7 +296,8 @@ Read these first when working on relevant surfaces:
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
-| Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results, and cold-start protocol |
+| Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results |
+| Phase 1 handoff | [.claude/HANDOFF.md](.claude/HANDOFF.md) | Operator synthesis and closure run commands (`v3`/`v5`) |
 | Parity Methodology | [docs/reference/core/PARITY_METHODOLOGY.md](docs/reference/core/PARITY_METHODOLOGY.md) | Literature-backed rationale for the tolerance-based parity bars (golden-master, allclose vs ULP, order-sensitivity, convention pitfalls); validates ADR 0011/0012 |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |

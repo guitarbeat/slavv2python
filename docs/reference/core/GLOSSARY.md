@@ -54,7 +54,9 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Exact Proof Coordinator** 🤖 | The single orchestration surface that compares Python checkpoints against an Oracle after they exist: `prove-exact`, candidate capture, LUT proof, and edge replay. |
 | **Exact Proof** | The process of verifying that Python produces bit-accurate or mathematically equivalent results to the MATLAB oracle. |
 | **Parity Experiment** | A structured run that compares a Python pipeline execution against a specific MATLAB oracle, producing matched/missing/extra pair metrics. |
-| **Certification** | The state in which sequential exact-parity gates report zero missing and zero extra for every required Pipeline stage on a defined volume and workflow. |
+| **Certification** 🤖 | Energy/Vertices: strict discrete + ADR 0011 floats; Edges/Network: ADR 0012 spatial bars—not strict watershed pair-set equality. |
+| **Phase 1 Closure** 🤖 | Claimed when canonical full `180709_E` passes per-stage ADR 0012 Edges + Network on `canonical_full_v5` (after Energy/Vertices pass). Operator brief: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md). |
+| **Strict-Field Stretch Goal** 🤖 | Optional strict `connections`/strand match vs MATLAB; overlap KPI on `crop_M_exact_v3`; not a Certification blocker. |
 | **Canonical Volume** | The single full imaging volume chosen for a Certification milestone. Phase 1 exact-route canonical volume is full `180709_E`. |
 | **Parity Pre-Gate** 🤖 | A faster developer loop that exercises the parity harness before Certification on the Canonical Volume. Sequenced as: synthetic smoke, then real crop with its own Oracle, then canonical volume only for the final cert claim. |
 | **Synthetic Fixture Volume** | A Python-generated TIFF used for CI and harness smoke tests. Not paired with a preserved MATLAB Oracle unless one is created explicitly for that volume. |

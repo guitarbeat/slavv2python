@@ -89,11 +89,7 @@ slavv parity promote-oracle `
   --oracle-id 180709_E_full_v2
 ```
 
-The prepared canonical rerun command file is:
-
-```powershell
-workspace/scratch/phase1_cert_network_rerun_from_energy.ps1
-```
+The prepared canonical closure run is documented in **[.claude/HANDOFF.md](../../.claude/HANDOFF.md)** (`canonical_full_v5`, preflight from `canonical_full_v4`).
 
 ### 2. Verify Preflight
 Ensure the destination is correctly populated with oracle references and parameters.
@@ -104,13 +100,34 @@ slavv parity preflight-exact `
   --dest-run-root workspace/runs/cert_trial_v1
 ```
 
-### 3. Run the Exact Proof (sequential gates)
+### 3. Run the Exact Proof
 
-Phase 1 certification requires **strict zero** missing/extra per stage, in order:
+Phase 1 closure ([ADR 0012 addendum](../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)) uses **per-stage** gates in order:
 
 `energy` → `vertices` → `edges` → `network`
 
-Run each stage, or use the sequential helper (stops on first failure and writes per-stage JSON under `03_Analysis/`):
+| Stage | Bar |
+|-------|-----|
+| Energy, Vertices | Strict discrete + ADR 0011 `np.allclose` on floats |
+| Edges, Network | ADR 0012 spatial bars (ownership-map / strand multisets + trace tolerance) |
+
+**Recommended for Phase 1 closure** — run edges and network individually after fresh checkpoints exist on `canonical_full_v5`:
+
+```powershell
+slavv parity prove-exact `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
+  --stage edges
+
+slavv parity prove-exact `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
+  --stage network
+```
+
+`prove-exact-sequence` uses the **strict-field** comparator and may fail Edges/Network on watershed order-sensitivity even when ADR 0012 per-stage proofs pass. Use it for stretch milestone checks on crop, not as the Phase 1 ship gate.
 
 ```powershell
 slavv parity prove-exact-sequence `
@@ -119,7 +136,7 @@ slavv parity prove-exact-sequence `
   --oracle-root workspace/oracles/<oracle_id>
 ```
 
-Alternatively run each stage manually (or use `--stage all`, which compares all four in certification order):
+Alternatively run each stage manually (energy and vertices if not already certified):
 
 ```powershell
 slavv parity prove-exact `

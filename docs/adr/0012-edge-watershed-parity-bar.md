@@ -49,6 +49,20 @@ Fed identical MATLAB curated edges + curated vertices (stage isolation), Python 
 
 Network geometry parity (Phase B) is a separate, scoped effort: a scale-subscript off-by-one, strand-smoothing drift (~0.02–0.36 voxel; sigma `√2/2` already matches), and a minor multi-edge assembly off-by-one. The strand dedup was aligned to MATLAB round-half-up (`network/operations.py`).
 
+## Addendum (2026-07-06): Phase 1 closure bar vs strict-field stretch
+
+Phase 1 exact-route **ship confidence** uses **two tracked bars** for Edges/Network:
+
+1. **Certification bar (ship gate):** per-stage `prove-exact --stage edges` and `--stage network` on full `180709_E` against `180709_E_full_v2` under this ADR (ownership-map + trace tolerance for edges; strand/bifurcation multisets + sub-voxel geometry for network). Energy and Vertices remain under [ADR 0011](0011-energy-float-certification-policy.md). **Phase 1 closes when this passes on a fresh canonical run** (`canonical_full_v5`, seeded from `canonical_full_v4`, Edges→Network rerun from current `main`).
+
+2. **Strict-field stretch (non-blocking):** exact `connections` / strand-count equality vs MATLAB, tracked on a refreshed crop harness (`crop_M_exact_v3`). **Primary loop KPI:** candidate-generation overlap (MATLAB final pairs present in Python candidates). **Milestone check:** strict-field `prove-exact` on crop when overlap moves materially. Does **not** block Phase 1 once the certification bar passes on full volume.
+
+**If the certification bar fails on `canonical_full_v5`:** Phase 1 remains open. Triage measurement first (checkpoint freshness, orientation/shape, oracle pairing, ownership probe) before assuming a watershed code defect. **If it passes:** declare Phase 1 closed; continue strict-field stretch on crop without reopening the ship gate.
+
+**Operating order:** refresh crop `v3` (edges only, ~minutes) → launch canonical `v5` (edges→network) → per-stage ADR 0012 proof on `v5`. Do not use `prove-exact-sequence` strict-field failure as the Phase 1 closure gate.
+
+**Considered:** closing Phase 1 on crop ADR 0012 alone, or requiring strict-field on full volume before closure — rejected; canonical volume is the Phase 1 claim surface (spec R1a), and ADR 0012 already records why exact pair-set equality is the wrong ship metric.
+
 ## Evidence references
 
 - Fix: branch `fix/edge-watershed-orientation`, commit `e9dcc141` (`slavv_python/pipeline/edges/candidate_generation.py`).

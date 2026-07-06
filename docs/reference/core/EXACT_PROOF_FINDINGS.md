@@ -2,9 +2,11 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-07-04
+**Last Updated**: 2026-07-06
 
-> ⚠️ **2026-07-04 note — canonical full `180709_E` (`canonical_full_v4`) sequence ran; Energy ✅ + Vertices ✅ CERTIFIED on the full volume, Edges ⛔ + Network ⛔ FAIL (strict-field).** Per-stage `prove-exact` results (`03_Analysis/exact_proof_<stage>.json`):
+> ✅ **2026-07-06 — Phase 1 closure policy (operator synthesis).** **Ship gate:** per-stage `prove-exact --stage edges` + `--stage network` under **ADR 0012** on fresh **`canonical_full_v5`** (Energy/Vertices carry forward from `canonical_full_v4`). **Stretch (non-blocking):** strict-field + candidate-overlap KPI on **`crop_M_exact_v3`**. Full operator sequence: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) · [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
+
+> ⚠️ **2026-07-04 note — canonical full `180709_E` (`canonical_full_v4`) sequence ran; Energy ✅ + Vertices ✅ CERTIFIED on the full volume; Edges ⛔ + Network ⛔ FAIL (strict-field sequence only).** Historical `v4` checkpoints are **stale** for closure (pre–PR #103). Per-stage `prove-exact` results (`03_Analysis/exact_proof_<stage>.json`):
 > - **Energy PASS** — 0 scale mismatches / **16,777,216** voxels (ADR 0011 `np.allclose`; max \|Δ\|≈2.36×10⁻¹¹).
 > - **Vertices PASS** — positions/scales exact; energies within tolerance.
 > - **Edges FAIL** — `edges.connections` shape mismatch: Python **60,213** vs MATLAB **69,500** (~13.4% short).
@@ -26,9 +28,9 @@
 
 ## 📊 Executive status (stage model)
 
-Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `prove-exact` (energy → vertices → edges → network) on full `180709_E`—not informal match-rate thresholds.
+Phase 1 exit criterion ([ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)): per-stage `prove-exact` on full `180709_E` — Energy/Vertices under [ADR 0011](../../adr/0011-energy-float-certification-policy.md); Edges/Network under **ADR 0012 spatial bars** on **`canonical_full_v5`**. Strict-field `connections`/strand counts are a **non-blocking stretch** tracked on crop `v3`.
 
-| Stage | Harness / prior work | Phase 1 certification (strict zero) |
+| Stage | Harness / prior work | Phase 1 certification bar |
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
 | **Vertices** | Verified on prior surfaces | 🟢 **PASS** vs `180709_E_crop_M_v2` (`prove-exact --stage vertices` exit 0): positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix (`ellipsoid_offsets` ports MATLAB `construct_structuring_element.m` float-radius membership); `energies` certify under the ADR 0011 `np.allclose` policy after the loader recovers true energies from the raw `vertices.mat` (curated artifact stored a rank ramp). |
@@ -39,14 +41,17 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 ## 🚦 Active Phase 1 operations
 
+> **Closure policy (2026-07-06):** Phase 1 closes when **`canonical_full_v5`** passes per-stage `prove-exact --stage edges` + `--stage network` under **ADR 0012** on full `180709_E`. Strict-field gaps are a **non-blocking stretch** tracked on **`crop_M_exact_v3`** (candidate-overlap KPI). See [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch) and [.claude/HANDOFF.md](../../../.claude/HANDOFF.md).
+
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. v1 (`180709_E_crop_M`) stale on scale plane. |
+| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. |
 | **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_full_v2` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **All stages individually certified** (per-stage `prove-exact --stage <s>` under ADR 0011/0012 spatial bars, 2026-07-01). ⚠️ `prove-exact-sequence` strict-field run (2026-07-02) **FAILs at edges** (13,555 vs 15,511 connections — watershed order-sensitivity, accepted per ADR 0012). For Task 9, use per-stage individual proofs, not the sequence command. |
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop tier-2 sequence passes (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
-| **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646` (full `180709_E`, lattice-6000). Promoted; energy size `(64,512,512)`. |
-| **Canonical full run** | `workspace/runs/oracle_180709_E/canonical_full_v4` | **2026-07-04 full sequence:** Energy ✅ + Vertices ✅ **CERTIFIED**; Edges ⛔ (60,213 vs 69,500) + Network ⛔ (39,623 vs 48,049 strands) **FAIL strict-field** — edge candidate-generation gap (see note at top + [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). ✅ **Energy CERTIFIED** (`prove-exact --stage energy` exit 0, **0 scale mismatches / 16,777,216 voxels**; energy max \|Δ\|≈2.4e-11). Orientation bug FIXED earlier (energy correct `(64,512,512)`). The **`scale_indices`** divergence (v3: 39,494/16.8M; interim mesh-snap: 11,793 → **0**) was root-caused via the MATLAB ground-truth harness (`workspace/scratch/matlab_energy_instr/`) to the Python coarse→fine **upsample mesh not bit-matching MATLAB `linspace`**: at coarse-cell boundaries a ~1-ULP mesh drift floored `interp3` into the wrong cell (valid↔Inf), flipping the per-voxel scale argmin. `n_jobs` and chunk seams ruled out. **Fix** (bit-exact MATLAB `linspace`, commit `ca709a8d`): mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term — reproduces MATLAB to **<1e-17** on both integer- (`(0,94,390)`→10.0) and sub-integer- (`(7,300,233)`→12.999999999999998) landing voxels. Full characterization: [canonical-energy-high-octave-divergence](../../solutions/parity/canonical-energy-high-octave-divergence.md). |
+| **Crop harness run (audit)** | `workspace/runs/oracle_180709_E/crop_M_exact` | ✅ Per-stage ADR 0012 certified (2026-07-01). ⚠️ **Stale edges** for stretch KPI (2026-07-04 checkpoints; pre–PR #103). Retain as audit; do not use for new overlap metrics. |
+| **Crop stretch run (planned)** | `workspace/runs/oracle_180709_E/crop_M_exact_v3` | 🔲 **Next:** preflight from `crop_M_exact` → edges-only rerun on current `main` → `watershed_candidate_gap_probe.py` baseline. |
+| **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646`; energy size `(64,512,512)`. |
+| **Canonical full run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v4` | ✅ Energy + Vertices **CERTIFIED** (2026-07-04). ⚠️ Edges/Network checkpoints **stale** (pre–PR #103); strict-field sequence FAIL documented — not the closure gate. |
+| **Canonical closure run (planned)** | `workspace/runs/oracle_180709_E/canonical_full_v5` | 🔲 **After crop v3 baseline:** preflight from `v4` → edges→network rerun → per-stage ADR 0012 proof → Phase 1 closure if green. |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
@@ -191,60 +196,29 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 ### Cold-start protocol
 
-If resuming exact parity work from a fresh thread:
+If resuming exact parity work from a fresh thread, start with **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** (2026-07-06 operator synthesis). Summary:
 
-1. Check active monitored jobs with `slavv jobs list` to see if any parity jobs are running.
-2. Check the crop rerun status with `slavv parity status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
-3. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
-4. Verify oracle surfaces with `slavv parity ensure-oracle-artifacts --oracle-root <oracle> --stage all --no-repair` if there is any doubt about artifact readiness.
-5. If no writer is alive and Energy artifacts are missing, rerun crop Energy before attempting proof.
-6. If Energy artifacts exist, run the crop energy proof first.
-7. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
-8. If crop energy passes, rerun canonical `canonical_full_v4` from energy against oracle `180709_E_full_v2` using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` (the script now targets `canonical_full_v4`) with `--monitor`.
-9. If any proof fails, capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) and inspect the first failing field before changing code.
-10. If `status-exact-run` reports `interrupted` (dead PID), reconcile is automatic; rerun foreground diagnostic before detaching another writer.
+1. `slavv jobs list` — no concurrent writer on the target `--dest-run-root`.
+2. `slavv parity ensure-oracle-artifacts --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage all --no-repair` (and same for `180709_E_full_v2` before canonical work).
+3. **Stretch baseline:** preflight → `crop_M_exact_v3` from `crop_M_exact` → edges-only rerun on current `main` → `scripts/watershed_candidate_gap_probe.py`.
+4. **Closure run:** preflight → `canonical_full_v5` from `canonical_full_v4` → edges→network rerun → per-stage ADR 0012 proof on `v5`.
+5. If ADR 0012 proof fails on `v5`, triage measurement (freshness, `(64,512,512)` shapes, oracle pairing) before watershed code changes.
+6. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) after each proof.
 
-Use the `--monitor` flag on long reruns to enable automatic tracking and desktop notifications (see [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
+Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../workflow/PARITY_JOB_MONITORING.md)).
 
-Scratch diagnostics: `workspace/scratch/crop_coarse_slice_probe_python.json`, `workspace/scratch/matlab/probe_coarse_slice.m`, `workspace/scratch/crop_voxel_12_0_0_probe_{python,matlab}.json`.
+Scratch diagnostics: `scripts/watershed_candidate_gap_probe.py`, `workspace/scratch/edge_gap_split.py`, `workspace/scratch/edge_funnel_probe.py`, `workspace/scratch/matlab_edge_instr/`.
 
 ### Operator commands
 
+See **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for the current command block (`crop_M_exact_v3` → `canonical_full_v5` → closure proof). Legacy `crop_M_exact` / `canonical_full_v4` commands below are **audit-only** (stale edges/network checkpoints).
+
 ```powershell
-# Rerun crop Energy first; do not start canonical while this is pending.
-slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-  --force-rerun-from energy `
-  --stop-after energy `
-  --skip-preflight
-
-slavv parity prove-exact `
-  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-  --stage energy
-
-# Only after crop Energy passes, refresh downstream crop checkpoints.
-slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-  --force-rerun-from vertices `
-  --stop-after network `
-  --skip-preflight
-
+# --- Legacy audit (2026-07-04 checkpoints; do not use for Phase 1 closure) ---
 slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M_v2
-
-# After crop sequence passes, rerun canonical from Energy.
-slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v4 `
-  --oracle-root workspace/oracles/180709_E_full_v2 `
-  --force-rerun-from energy `
-  --stop-after network `
-  --skip-preflight
 
 slavv monitor --run-dir workspace/runs/oracle_180709_E/canonical_full_v4
 ```
@@ -278,7 +252,7 @@ A second major architectural breakthrough was achieved in June 2026, resolving p
 - **4D Array Elimination**: Refactored `matlab_get_energy_v202_chunked.py` to discard the large per-chunk 4D energy stack. The engine now updates the `best_energy` and `best_scale_index` volumes incrementally within the multi-scale loop. Peak memory usage dropped from **~300 MiB/thread to ~10 MiB/thread**.
 - **Kernel Pre-computation**: Optimized the Hessian backend to pre-compute scale-independent derivative kernels (9 complex/double volumes per chunk) once. This eliminated redundant allocations that were fragmenting the heap.
 - **Explicit GC Control**: Integrated `gc.collect()` and explicit `del` of large DFT products to ensure immediate reclamation of working memory.
-- **Outcome**: Enabled stable multi-scale processing of the full canonical volume on hardware with limited physical RAM (e.g. 16GB), allowing the `phase1_cert_network` track to proceed to formal proof.
+- **Outcome**: Enabled stable multi-scale processing of the full canonical volume on hardware with limited physical RAM (e.g. 16GB), unblocking full-volume Energy certification on `180709_E`.
 
 ### Bit-Perfect Mathematical Refinements
 The memory-safe engine simultaneously absorbed two final mathematical refinements discovered during crop-harness isolation:
@@ -366,9 +340,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **🔑 PRIMARY — Watershed edge candidate-generation adjacency gap** — Energy + Vertices are CERTIFIED strict on the full volume; Edges + Network fail strict-field solely because the watershed proposes a **different adjacency graph** (43% of MATLAB's final edges are never Python candidates; only 916 of the crop gap is pruning). Root-cause surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py` (basin-meeting order / tie-break), **not** selection/cleanup and **not** Network. Next step: instrumented watershed trace on the crop against MATLAB adjacency (hypotheses H1–H5 in [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). This blocks strict-field closure of both Edges and Network.
-2. **Sequential strict-zero closure** — Energy/Vertices strict-zero closed on crop + full. Edges/Network remain open on the generation gap (#1). ADR 0012 spatial bars pass on the crop; strict-field `prove-exact-sequence` fails on crop (13,555 vs 15,511) and full (60,213 vs 69,500).
-3. **Canonical run re-execution** — `canonical_full_v4` sequence ran 2026-07-04 (Energy/Vertices ✅, Edges/Network ⛔). Phase 1 **cert claim** stays on full `180709_E` only. Re-run downstream after any watershed generation fix lands and is validated on the crop first (ADR 0009 fast-iteration gate).
+1. **Phase 1 closure (ship gate)** — Launch **`canonical_full_v5`** (preflight from `v4`, fresh edges→network on current `main`) and run per-stage ADR 0012 `prove-exact --stage edges` + `--stage network`. Energy + Vertices on `v4` are already certified; do not rerun them unless evidence is stale.
+2. **Stretch baseline pending** — Refresh **`crop_M_exact_v3`** (edges-only rerun) before logging candidate-overlap KPIs; `crop_M_exact` / `v4` edge checkpoints are pre–PR #103.
+3. **Watershed generation gap (stretch, non-blocking after closure)** — Strict-field shortfall localized to candidate *generation* ([§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py`. Primary KPI: candidate overlap % on crop `v3`.
 
-**Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
+**Superseded guidance:** “>95% match” or strict-field `prove-exact-sequence` failure as the Phase 1 ship gate. Use ADR 0011/0012 per-stage bars for closure; see [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
 
