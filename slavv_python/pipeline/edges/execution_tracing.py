@@ -16,19 +16,15 @@ class ExecutionTracer(Protocol):
 
     def on_iteration_start(
         self, iteration: int, current_linear: int, current_energy: float
-    ) -> None:
-        """Called at the beginning of each watershed iteration."""
-        ...
+    ) -> None: ...
 
-    def on_seed_selected(self, seed_idx: int, selected_linear: int, selected_energy: float) -> None:
-        """Called when a seed is selected within an iteration."""
-        ...
+    def on_seed_selected(
+        self, seed_idx: int, selected_linear: int, selected_energy: float
+    ) -> None: ...
 
     def on_join(
         self, start_vertex: int, end_vertex: int, half_1: list[int], half_2: list[int]
-    ) -> None:
-        """Called when two watersheds meet and form a candidate edge."""
-        ...
+    ) -> None: ...
 
     def on_join_skipped(
         self,
@@ -38,9 +34,7 @@ class ExecutionTracer(Protocol):
         reason: str,
         iteration: int,
         current_linear: int,
-    ) -> None:
-        """Called when a basin meeting does not record a new candidate edge."""
-        ...
+    ) -> None: ...
 
 
 class JsonExecutionTracer:
@@ -49,7 +43,6 @@ class JsonExecutionTracer:
     def __init__(self, output_path: Path | str):
         self.output_path = Path(output_path)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        # Clear file
         self.output_path.write_text("")
 
     def _append(self, event_type: str, data: dict[str, Any]) -> None:

@@ -19,10 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 def extract_edges_watershed(
-    energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
+    energy_data: EnergyResult, vertices: VertexSet, _params: dict[str, Any]
 ) -> EdgeSet:
     """Extract edges using watershed segmentation seeded at vertices."""
-    del params
     logger.info("Extracting edges via watershed")
 
     energy = energy_data.energy

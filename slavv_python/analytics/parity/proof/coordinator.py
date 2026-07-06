@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+import joblib
 import numpy as np
 
 from slavv_python.analytics.parity.constants import (
@@ -21,6 +22,7 @@ from slavv_python.analytics.parity.constants import (
 )
 from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface  # noqa: TC001
+from slavv_python.analytics.parity.oracle import params_audit
 from slavv_python.analytics.parity.oracle.params_audit import persist_param_storage
 from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     load_normalized_python_checkpoints,
@@ -162,8 +164,6 @@ class ExactProofCoordinator:
             if selected_stages == ("edges",):
                 candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
                 if candidate_path.is_file():
-                    import joblib
-
                     candidates = joblib.load(candidate_path)
                     python_artifacts["edges"] = {
                         "connections": _normalize_connection_array(candidates.get("connections")),
@@ -489,13 +489,10 @@ class ExactProofCoordinator:
 
     @staticmethod
     def run_edge_replay(
-        source_surface: ExactProofSourceSurface,
+        _source_surface: ExactProofSourceSurface,
         dest_run_root: Path,
     ) -> tuple[dict[str, Any], Path | None, Path | None]:
         """Replay edge discovery from captured candidates into the edges checkpoint."""
-        del source_surface
-        import joblib
-
         checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -519,14 +516,11 @@ class ExactProofCoordinator:
     def run_lut_proof(
         source_run_root: Path,
         dest_run_root: Path,
-        oracle_root: Path | None = None,
+        _oracle_root: Path | None = None,
     ) -> tuple[dict[str, Any], Path | None, Path | None]:
         """Verify exact parity for lookup tables."""
-        del oracle_root
-        from slavv_python.analytics.parity.oracle.params_audit import load_params_file
-
         source_surface = validate_exact_proof_source_surface(source_run_root)
-        params = load_params_file(source_surface, None)
+        params = params_audit.load_params_file(source_surface, None)
 
         energy = load_exact_energy_result(source_surface)
         source_inputs = {
@@ -578,8 +572,6 @@ def selected_exact_stages(stage_arg: str) -> tuple[str, ...]:
 
 def load_exact_energy_result(source_surface: ExactProofSourceSurface) -> EnergyResult:
     """Load the exact-route energy checkpoint as ``EnergyResult``."""
-    import joblib
-
     path = source_surface.checkpoints_dir / "checkpoint_energy.pkl"
     if not path.is_file():
         raise FileNotFoundError(f"missing exact energy checkpoint: {path}")

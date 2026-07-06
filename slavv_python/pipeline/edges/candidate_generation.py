@@ -298,18 +298,17 @@ def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
 
 def sort_candidates_by_quality(
     candidates: dict[str, Any] | Any,
-    energy: np.ndarray | None = None,
-    scale_indices: np.ndarray | None = None,
-    vertex_positions: np.ndarray | None = None,
-    sign: float = -1.0,
-    params: dict[str, Any] | None = None,
-    microns_per_voxel: np.ndarray | None = None,
-    **kwargs: Any,
+    _energy: np.ndarray | None = None,
+    _scale_indices: np.ndarray | None = None,
+    _vertex_positions: np.ndarray | None = None,
+    _sign: float = -1.0,
+    _params: dict[str, Any] | None = None,
+    _microns_per_voxel: np.ndarray | None = None,
+    **_kwargs: Any,
 ) -> dict[str, Any] | Any:
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
     from slavv_python.pipeline.edges.discovery import CandidateManifest
 
-    del energy, scale_indices, vertex_positions, sign, params, microns_per_voxel, kwargs
     metrics = np.asarray(
         candidates.metrics
         if isinstance(candidates, CandidateManifest)

@@ -10,7 +10,10 @@ import numpy as np
 from scipy.spatial import cKDTree
 from typing_extensions import Protocol
 
-from slavv_python.pipeline.edges.audit import _normalize_candidate_connection_sources
+from slavv_python.pipeline.edges.audit import (
+    _normalize_candidate_connection_sources,
+    _normalize_candidate_origin_counts,
+)
 from slavv_python.pipeline.edges.candidate_generation import (
     generate_directional_candidates,
     generate_watershed_candidates,
@@ -294,18 +297,17 @@ class FrontierTracingDiscovery:
             context.params,
             heartbeat=context.heartbeat,
         )
-        payload = sort_candidates_by_quality(
-            payload,
-            energy,
-            energy_data.scale_indices,
-            vertex_positions,
-            energy_sign,
-            context.params,
-            context.microns_per_voxel,
+        return CandidateManifest.from_payload(
+            sort_candidates_by_quality(
+                payload,
+                energy,
+                energy_data.scale_indices,
+                vertex_positions,
+                energy_sign,
+                context.params,
+                context.microns_per_voxel,
+            )
         )
-        if isinstance(payload, CandidateManifest):
-            return payload
-        return CandidateManifest.from_payload(payload)
 
 
 def select_edge_discovery(energy_data: EnergyResult, params: dict[str, Any]) -> EdgeDiscovery:
@@ -330,8 +332,6 @@ def frontier_origin_counts(manifest: CandidateManifest) -> dict[int, int]:
 
 def frontier_origin_counts_from_diagnostics(manifest: CandidateManifest) -> dict[int, int]:
     """Read normalized frontier per-origin counts from discovery diagnostics."""
-    from slavv_python.pipeline.edges.audit import _normalize_candidate_origin_counts
-
     raw = manifest.diagnostics.get("frontier_per_origin_candidate_counts")
     normalized = _normalize_candidate_origin_counts(raw)
     return {int(origin_index): int(count) for origin_index, count in normalized.items()}

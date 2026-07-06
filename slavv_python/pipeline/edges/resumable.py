@@ -27,13 +27,12 @@ logger = logging.getLogger(__name__)
 def extract_edges_watershed_resumable(
     energy_data: EnergyResult,
     vertices: VertexSet,
-    params: dict[str, Any],
+    _params: dict[str, Any],
     stage_controller: StageController,
 ) -> EdgeSet:
     """Extract watershed edges with per-label persisted units."""
     from slavv_python.engine.state.tracker import atomic_joblib_dump
 
-    del params
     energy = energy_data.energy
     energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
     vertex_positions = vertices.positions

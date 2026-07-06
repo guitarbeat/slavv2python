@@ -17,6 +17,10 @@ from slavv_python.analytics.parity.proof.coordinator import (
     load_exact_vertex_set,
 )
 from slavv_python.engine.state import load_json_dict
+from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
+from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+    _generate_edge_candidates_matlab_global_watershed,
+)
 from slavv_python.utils.safe_unpickle import safe_load
 
 
@@ -90,11 +94,6 @@ def _trace_missing_pairs(
     trace_path: Path,
     sample_size: int,
 ) -> dict[str, Any]:
-    from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
-    from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
-        _generate_edge_candidates_matlab_global_watershed,
-    )
-
     source_surface = validate_exact_proof_source_surface(run_dir)
     matlab_pairs = _endpoint_pair_set(_load_oracle_edge_connections(oracle_root))
     python_pairs = _endpoint_pair_set(_load_python_candidate_connections(run_dir))
