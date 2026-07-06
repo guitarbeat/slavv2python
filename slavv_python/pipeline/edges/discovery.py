@@ -303,6 +303,8 @@ class FrontierTracingDiscovery:
             context.params,
             context.microns_per_voxel,
         )
+        if isinstance(payload, CandidateManifest):
+            return payload
         return CandidateManifest.from_payload(payload)
 
 

@@ -23,7 +23,9 @@ from .payloads import (
     _record_trace_diagnostics,
 )
 from .radius_utils import _scalar_radius
+from .trace_directions import estimate_vessel_directions, generate_edge_directions
 from .trace_metrics import _trace_energy_series, _trace_scale_series
+from .tracing import trace_edge
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
@@ -112,8 +114,6 @@ def generate_directional_candidates(
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
 
-    from slavv_python.pipeline.edges import candidates as tracing_facade
-
     results = Parallel(n_jobs=n_jobs)(
         delayed(_trace_vertex_unit)(
             vertex_idx=v_idx,
@@ -129,7 +129,6 @@ def generate_directional_candidates(
             tree=tree,
             params=params,
             sign=energy_sign,
-            facade=tracing_facade,
             energy_prepared=energy_prepared,
             mpv_prepared=mpv_prepared,
             **kwargs,
@@ -157,7 +156,6 @@ def _trace_vertex_unit(
     tree: cKDTree,
     params: dict[str, Any],
     sign: float,
-    facade: Any,
     energy_prepared: np.ndarray,
     mpv_prepared: np.ndarray,
     **kwargs: Any,
@@ -183,7 +181,7 @@ def _trace_vertex_unit(
 
     # 1. Determine Tracing Vectors
     directions = _get_seed_directions(
-        vertex_idx, start_pos, start_radius, energy, mpv, facade, params
+        vertex_idx, start_pos, start_radius, energy, mpv, params
     )
 
     # 2. Trace Paths
@@ -197,7 +195,7 @@ def _trace_vertex_unit(
     unit_diagnostics = _empty_edge_diagnostics()
 
     for direction in directions:
-        trace_result = facade.trace_edge(
+        trace_result = trace_edge(
             energy_prepared,
             start_pos,
             direction,
@@ -255,7 +253,6 @@ def _get_seed_directions(
     r: float,
     energy: np.ndarray,
     mpv: np.ndarray,
-    facade: Any,
     params: dict[str, Any],
 ) -> np.ndarray:
     """Decides seed directions based on Hessian response or random distribution."""
@@ -263,15 +260,13 @@ def _get_seed_directions(
     limit = params.get("number_of_edges_per_vertex", 4)
 
     if method == "hessian":
-        dirs = facade.estimate_vessel_directions(
-            energy, pos, r, mpv, facade.generate_edge_directions
-        )
+        dirs = estimate_vessel_directions(energy, pos, r, mpv, generate_edge_directions)
         if len(dirs) < limit:
-            extra = facade.generate_edge_directions(limit - len(dirs), seed=v_idx)
+            extra = generate_edge_directions(limit - len(dirs), seed=v_idx)
             dirs = np.vstack([dirs, extra])
         return cast("np.ndarray", dirs[:limit])
 
-    return cast("np.ndarray", facade.generate_edge_directions(limit, seed=v_idx))
+    return cast("np.ndarray", generate_edge_directions(limit, seed=v_idx))
 
 
 def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
@@ -304,7 +299,7 @@ def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
 
 
 def sort_candidates_by_quality(
-    candidates: dict[str, Any],
+    candidates: dict[str, Any] | Any,
     energy: np.ndarray | None = None,
     scale_indices: np.ndarray | None = None,
     vertex_positions: np.ndarray | None = None,
@@ -312,12 +307,22 @@ def sort_candidates_by_quality(
     params: dict[str, Any] | None = None,
     microns_per_voxel: np.ndarray | None = None,
     **kwargs: Any,
-) -> dict[str, Any]:
+) -> dict[str, Any] | Any:
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
+    from slavv_python.pipeline.edges.discovery import CandidateManifest
+
+    del energy, scale_indices, vertex_positions, sign, params, microns_per_voxel, kwargs
+    metrics = np.asarray(
+        candidates.metrics if isinstance(candidates, CandidateManifest) else candidates.get("metrics", []),
+        dtype=np.float64,
+    )
+    if metrics.size == 0:
+        return candidates
+
+    sort_idx = np.argsort(metrics, kind="stable")
+    if isinstance(candidates, CandidateManifest):
+        return candidates.reordered(sort_idx)
+
     from slavv_python.pipeline.edges.candidate_payload import _reorder_candidate_payload
 
-    metrics = np.asarray(candidates.get("metrics", []), dtype=np.float64)
-    if metrics.size > 0:
-        candidates = _reorder_candidate_payload(candidates, np.argsort(metrics, kind="stable"))
-
-    return candidates
+    return _reorder_candidate_payload(candidates, sort_idx)

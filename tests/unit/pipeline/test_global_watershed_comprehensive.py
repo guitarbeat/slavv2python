@@ -17,7 +17,7 @@ import math
 import numpy as np
 import pytest
 
-from slavv_python.pipeline.edges.generate import sort_candidates_by_quality
+from slavv_python.pipeline.edges.candidate_generation import sort_candidates_by_quality
 from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,

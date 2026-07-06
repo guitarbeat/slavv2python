@@ -84,7 +84,7 @@ def test_process_image_requires_3d():
 
 @pytest.mark.unit
 @patch(
-    "slavv_python.pipeline.edges.candidates.estimate_vessel_directions",
+    "slavv_python.pipeline.edges.trace_directions.estimate_vessel_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
@@ -272,6 +272,26 @@ def test_append_candidate_unit_assigns_frontier_manifest_candidate_indices():
     _append_candidate_unit(target, payload)
     events = cast("list[dict[str, object]]", target["frontier_lifecycle_events"])
     assert events[0]["manifest_candidate_index"] == 0
+
+
+@pytest.mark.unit
+def test_candidate_manifest_reordered_and_endpoint_pairs():
+    from slavv_python.pipeline.edges.discovery import CandidateManifest
+
+    manifest = CandidateManifest(
+        traces=[np.zeros((2, 3)), np.ones((2, 3))],
+        connections=np.asarray([[0, 1], [2, 3]], dtype=np.int32),
+        metrics=np.asarray([2.0, 1.0], dtype=np.float64),
+        energy_traces=[np.zeros(2), np.ones(2)],
+        scale_traces=[np.zeros(2, dtype=np.int16), np.ones(2, dtype=np.int16)],
+        origin_indices=np.asarray([0, 1], dtype=np.int32),
+        connection_sources=["frontier", "watershed"],
+    )
+
+    reordered = manifest.reordered(np.asarray([1, 0], dtype=np.int32))
+    assert reordered.metrics.tolist() == [1.0, 2.0]
+    assert reordered.connection_sources == ["watershed", "frontier"]
+    assert manifest.endpoint_pair_set() == {(0, 1), (2, 3)}
 
 
 # ==============================================================================
