@@ -2,7 +2,15 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-07-03
+**Last Updated**: 2026-07-04
+
+> ⚠️ **2026-07-04 note — canonical full `180709_E` (`canonical_full_v4`) sequence ran; Energy ✅ + Vertices ✅ CERTIFIED on the full volume, Edges ⛔ + Network ⛔ FAIL (strict-field).** Per-stage `prove-exact` results (`03_Analysis/exact_proof_<stage>.json`):
+> - **Energy PASS** — 0 scale mismatches / **16,777,216** voxels (ADR 0011 `np.allclose`; max \|Δ\|≈2.36×10⁻¹¹).
+> - **Vertices PASS** — positions/scales exact; energies within tolerance.
+> - **Edges FAIL** — `edges.connections` shape mismatch: Python **60,213** vs MATLAB **69,500** (~13.4% short).
+> - **Network FAIL (downstream of edges)** — strand endpoint-pair multiset mismatch: Python **39,623** vs MATLAB **48,049** strands; bifurcations **20,063** vs **25,371**. Every network field is a length/shape mismatch tracking the edge deficit — no independent network bug.
+>
+> **Root cause localized (2026-07-04 debug session, crop harness):** the edge shortfall is a **watershed candidate-*generation* divergence, not a selection/pruning bug.** See [§ Edge shortfall root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap) below. The crop reproduces the same ~13% deficit (Python 13,555 vs MATLAB 15,511) in ~5 min and was used for the split.
 
 > ⚠️ **2026-07-02 note**: `prove-exact-sequence` (strict-field comparator) ran on crop and produced **FAIL at edges**: Python 13,555 connections vs MATLAB 15,511 (12.6% short). Energy ✅ PASS, Vertices ✅ PASS, Network ⛔ BLOCKED (downstream of edges FAIL). Evidence: `workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis/exact_proof.json`.
 >
@@ -24,8 +32,8 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
 | **Vertices** | Verified on prior surfaces | 🟢 **PASS** vs `180709_E_crop_M_v2` (`prove-exact --stage vertices` exit 0): positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix (`ellipsoid_offsets` ports MATLAB `construct_structuring_element.m` float-radius membership); `energies` certify under the ADR 0011 `np.allclose` policy after the loader recovers true energies from the raw `vertices.mat` (curated artifact stored a rank ramp). |
-| **Edges** | v29 ~88.7% pair match (baseline) | 🟢 **PASS** vs `180709_E_crop_M_v2` under ADR 0012 spatial gates. Ownership map agreement: 63.51% (threshold 60.00%); trace-level comparison PASS. Parity fixes implemented: (1) `edge_number_tolerance` set to 2; (2) conflict painting disabled on exact route. Residual is emergent watershed order-sensitivity, certified under spatial bars. ⚠️ `prove-exact-sequence` strict-field comparator fails on this residual (2026-07-02 run: 13,555 vs 15,511 connections). Use ADR 0012 spatial-bar proof (`prove-exact --stage edges`) for certification. |
-| **Network** | End-to-end pipeline runs | 🟢 **PASS** vs `180709_E_crop_M_v2` under ADR 0012. Strand and bifurcation topology reproduce MATLAB 100% (10,722 strands, 5,601 bifurcations, 0 missing/extra). Geometry passes sub-voxel trace-level comparison (100% within 1.50 voxel threshold, mean distance 0.02 voxel). |
+| **Edges** | v29 ~88.7% pair match (baseline) | 🟡 **PASS under ADR 0012 spatial gates** vs `180709_E_crop_M_v2` (ownership map 63.51% ≥ 60.00%; trace-level PASS). Parity fixes: (1) `edge_number_tolerance` set to 2; (2) conflict painting disabled on exact route. ⛔ **Strict-field FAIL** on both crop (13,555 vs 15,511) and full `180709_E_full_v2` (**60,213 vs 69,500**, 2026-07-04). **Root cause (2026-07-04): candidate-*generation* gap — 43% of MATLAB's final edges are never proposed as Python candidates** (see [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)); the ~63.5% ownership map and ~57% candidate overlap are the same watershed adjacency divergence. Use ADR 0012 spatial-bar proof (`prove-exact --stage edges`) for the current bar. |
+| **Network** | End-to-end pipeline runs | 🟡 **PASS under ADR 0012** vs `180709_E_crop_M_v2` (curated-edge topology 10,722 strands, 5,601 bifurcations 100%; geometry sub-voxel). ⛔ **Strict-field FAIL on full `180709_E_full_v2`** (2026-07-04): 39,623 vs 48,049 strands, 20,063 vs 25,371 bifurcations — **entirely downstream of the edge deficit** (no independent network bug). |
 
 ---
 
@@ -38,9 +46,39 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **All stages individually certified** (per-stage `prove-exact --stage <s>` under ADR 0011/0012 spatial bars, 2026-07-01). ⚠️ `prove-exact-sequence` strict-field run (2026-07-02) **FAILs at edges** (13,555 vs 15,511 connections — watershed order-sensitivity, accepted per ADR 0012). For Task 9, use per-stage individual proofs, not the sequence command. |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop tier-2 sequence passes (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 | **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646` (full `180709_E`, lattice-6000). Promoted; energy size `(64,512,512)`. |
-| **Canonical full run** | `workspace/runs/oracle_180709_E/canonical_full_v4` | ✅ **Energy CERTIFIED** (`prove-exact --stage energy` exit 0, **0 scale mismatches / 16,777,216 voxels**; energy max \|Δ\|≈2.4e-11). Orientation bug FIXED earlier (energy correct `(64,512,512)`). The **`scale_indices`** divergence (v3: 39,494/16.8M; interim mesh-snap: 11,793 → **0**) was root-caused via the MATLAB ground-truth harness (`workspace/scratch/matlab_energy_instr/`) to the Python coarse→fine **upsample mesh not bit-matching MATLAB `linspace`**: at coarse-cell boundaries a ~1-ULP mesh drift floored `interp3` into the wrong cell (valid↔Inf), flipping the per-voxel scale argmin. `n_jobs` and chunk seams ruled out. **Fix** (bit-exact MATLAB `linspace`, commit `ca709a8d`): mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term — reproduces MATLAB to **<1e-17** on both integer- (`(0,94,390)`→10.0) and sub-integer- (`(7,300,233)`→12.999999999999998) landing voxels. Full characterization: [canonical-energy-high-octave-divergence](../../solutions/parity/canonical-energy-high-octave-divergence.md). |
+| **Canonical full run** | `workspace/runs/oracle_180709_E/canonical_full_v4` | **2026-07-04 full sequence:** Energy ✅ + Vertices ✅ **CERTIFIED**; Edges ⛔ (60,213 vs 69,500) + Network ⛔ (39,623 vs 48,049 strands) **FAIL strict-field** — edge candidate-generation gap (see note at top + [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). ✅ **Energy CERTIFIED** (`prove-exact --stage energy` exit 0, **0 scale mismatches / 16,777,216 voxels**; energy max \|Δ\|≈2.4e-11). Orientation bug FIXED earlier (energy correct `(64,512,512)`). The **`scale_indices`** divergence (v3: 39,494/16.8M; interim mesh-snap: 11,793 → **0**) was root-caused via the MATLAB ground-truth harness (`workspace/scratch/matlab_energy_instr/`) to the Python coarse→fine **upsample mesh not bit-matching MATLAB `linspace`**: at coarse-cell boundaries a ~1-ULP mesh drift floored `interp3` into the wrong cell (valid↔Inf), flipping the per-voxel scale argmin. `n_jobs` and chunk seams ruled out. **Fix** (bit-exact MATLAB `linspace`, commit `ca709a8d`): mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term — reproduces MATLAB to **<1e-17** on both integer- (`(0,94,390)`→10.0) and sub-integer- (`(7,300,233)`→12.999999999999998) landing voxels. Full characterization: [canonical-energy-high-octave-divergence](../../solutions/parity/canonical-energy-high-octave-divergence.md). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
+
+### 🔎 2026-07-04: Edge shortfall root cause (generation gap, not prune gap)
+
+**Question:** why do Edges (and therefore Network) fail strict-field parity on both crop and full `180709_E`?
+
+**Method (debug session, crop harness — reproduces the full-volume ~13% deficit in ~5 min):** read the completed `crop_M_exact` edge checkpoint diagnostics, reconstructed the selection funnel, cross-checked every step against the **active** (non-commented) MATLAB source in `external/Vectorization-Public/source/vectorize_V200.m`, then compared MATLAB's final edge pairs against Python's *candidate* set.
+
+**Selection funnel is faithful — pruning is NOT the problem.**
+
+```
+17,227 candidates → −2,287 crop → −0 dedup → −879 degree(≤4) → −0 orphan → −506 cycles → 13,555 final
+```
+
+MATLAB's exact route runs the *same* active steps in the same order: `crop_edges_V200` (L3595) → `clean_edge_pairs` (L3620) → [`choose_edges_V200` commented out L3635] → `clean_edges_vertex_degree_excess(…,4)` (L3666) → `clean_edges_orphans` (L3674) → `clean_edges_cycles` (L3682). Python mirrors this (conflict painting off on the exact route). So the steps match.
+
+**Decisive split** — of MATLAB's **15,511** final crop edges (vertex indices 0-based and aligned to Python; verified by exact-pair intersection):
+
+| Category | Count | Share |
+|---|---:|---:|
+| present as a Python **candidate** | 8,785 | 56.6% |
+| **generation gap** (never a Python candidate) | **6,726** | **43.4%** |
+| prune gap (candidate but dropped in selection) | 916 | 5.9% |
+
+**Not an isolated-vertex problem, not over-pruning — a *wiring* difference.** Python actually connects *more* vertices (13,258 vs 13,026) at *higher* mean candidate degree (2.63 vs 2.39); only 328 vertices MATLAB connects are left with zero Python candidates, and only 604 of the 6,726 missing edges touch such a vertex. Python pairs each vertex with **different neighbors** than MATLAB. The watershed diagnostic `frontier_origins_without_candidates: 2464` is a secondary symptom, not the driver.
+
+**Conclusion:** the residual edge deficit is a **watershed candidate-generation adjacency divergence** (basin-meeting order / tie-break sensitivity on a near-bit-identical energy field), localized to `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py` — *not* selection (`selection.py`/`cleanup.py`) and *not* Network. The ~57% candidate overlap here is the same phenomenon as the ~63.5% ADR 0012 ownership-map agreement. Network parity cannot close until the watershed generates MATLAB's adjacency set.
+
+**Next-level hypotheses (for an instrumented watershed trace on the crop):** (H1) heap flooding tie-break order → basins meet different neighbors first; (H2) basin seeding/label assignment differs; (H3) at >2-basin meeting voxels a different neighbor pair is recorded; (H4) a per-vertex neighbor cap keeps a different subset; (H5) `[Y,X,Z]`/F-order remap mirrors adjacency for a subset.
+
+**Evidence artifacts:** offline read-only diagnostics `workspace/scratch/edge_funnel_probe.py` (funnel diagnostics) and `workspace/scratch/edge_gap_split.py` (generation-vs-prune split + vertex-level characterization); per-stage proofs under `workspace/runs/oracle_180709_E/canonical_full_v4/03_Analysis/exact_proof_<stage>.json`.
 
 ### Current crop Energy evidence guard (2026-06-24)
 
@@ -328,9 +366,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop Energy strict-zero proof** — Current `crop_M_exact` Energy evidence is valid after the 2026-06-24 Energy writer. Scale winners now agree (`scale_indices` 0 mismatches); the active blocker is strict float64 Energy drift (~3.81M ULP-level mismatches) plus the epsilon-radius tail. Use `exact_proof_energy_ulp.json` / `exact_mismatch_energy.json` as the current diagnostic surface, not stale `exact_proof_energy.json`.
-2. **Sequential strict-zero closure** — Blocked on crop Energy proof. After pass: refresh vertices → network on `crop_M_exact`, then `prove-exact-sequence`. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
-3. **Canonical run re-execution** — Phase 1 **cert claim** stays on full `180709_E` only. Crop is the fast iteration gate (ADR 0009). Rerun canonical from Energy after crop Energy passes, or in parallel when preflight shows safe memory headroom (one long Energy writer at a time on 16GB).
+1. **🔑 PRIMARY — Watershed edge candidate-generation adjacency gap** — Energy + Vertices are CERTIFIED strict on the full volume; Edges + Network fail strict-field solely because the watershed proposes a **different adjacency graph** (43% of MATLAB's final edges are never Python candidates; only 916 of the crop gap is pruning). Root-cause surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py` (basin-meeting order / tie-break), **not** selection/cleanup and **not** Network. Next step: instrumented watershed trace on the crop against MATLAB adjacency (hypotheses H1–H5 in [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). This blocks strict-field closure of both Edges and Network.
+2. **Sequential strict-zero closure** — Energy/Vertices strict-zero closed on crop + full. Edges/Network remain open on the generation gap (#1). ADR 0012 spatial bars pass on the crop; strict-field `prove-exact-sequence` fails on crop (13,555 vs 15,511) and full (60,213 vs 69,500).
+3. **Canonical run re-execution** — `canonical_full_v4` sequence ran 2026-07-04 (Energy/Vertices ✅, Edges/Network ⛔). Phase 1 **cert claim** stays on full `180709_E` only. Re-run downstream after any watershed generation fix lands and is validated on the crop first (ADR 0009 fast-iteration gate).
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

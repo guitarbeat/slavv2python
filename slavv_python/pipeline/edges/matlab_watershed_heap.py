@@ -36,12 +36,20 @@ class FrontierQueue:
         self._entry_finder: dict[int, list] = {}
         self._counter = itertools.count(1)
 
-        # Populate initial queue
-        # Elements at the end of `initial_locations` must pop first (mimicking list.pop()).
-        # We assign smaller (more negative) tie-breakers to elements at the end.
-        for loc in initial_locations:
+        # Populate initial queue.
+        # MATLAB seeds `available_locations = vertex_locations(end:-1:1)` and pops from
+        # the END, so seed vertices flood in `vertex_locations` order (energy rank), NOT
+        # lowest Fortran linear-index order. All seed energies are encoded as -Inf, so
+        # this ordering is decided entirely by the tie-break; using the linear index here
+        # scrambles the flood sequence and changes which basin claims contested voxels
+        # first, diverging the recorded edge set from MATLAB. `initial_locations` is
+        # already reversed (last element must pop first), so encode the pop rank so the
+        # tail pops first, reproducing MATLAB's seed order exactly.
+        n_initial = len(initial_locations)
+        for order, loc in enumerate(initial_locations):
             loc_idx = int(loc)
-            entry = [float(self._energy_lookup[loc_idx]), loc_idx, loc_idx, False]
+            seed_rank = n_initial - order
+            entry = [float(self._energy_lookup[loc_idx]), seed_rank, loc_idx, False]
             self._entry_finder[loc_idx] = entry
             self._heap.append(entry)
 

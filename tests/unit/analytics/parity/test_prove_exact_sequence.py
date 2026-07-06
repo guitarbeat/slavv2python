@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from slavv_python.analytics.parity.cli import handle_prove_exact_sequence
+from slavv_python.analytics.parity.cli_handlers.cli_proofs import handle_prove_exact_sequence
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,11 +31,11 @@ def test_prove_exact_sequence_stops_on_first_failure(tmp_path: Path, monkeypatch
     coordinator = MagicMock()
     coordinator.prove.side_effect = fake_prove
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli.ExactProofCoordinator",
+        "slavv_python.analytics.parity.cli_handlers.cli_proofs.ExactProofCoordinator",
         lambda _surface: coordinator,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli._build_exact_proof_source_surface",
+        "slavv_python.analytics.parity.cli_handlers.cli_support._build_exact_proof_source_surface",
         lambda *_args, **_kwargs: MagicMock(),
     )
 
@@ -64,11 +64,11 @@ def test_prove_exact_sequence_passes_all_stages(tmp_path: Path, monkeypatch):
     coordinator = MagicMock()
     coordinator.prove.side_effect = fake_prove
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli.ExactProofCoordinator",
+        "slavv_python.analytics.parity.cli_handlers.cli_proofs.ExactProofCoordinator",
         lambda _surface: coordinator,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.cli._build_exact_proof_source_surface",
+        "slavv_python.analytics.parity.cli_handlers.cli_support._build_exact_proof_source_surface",
         lambda *_args, **_kwargs: MagicMock(),
     )
 

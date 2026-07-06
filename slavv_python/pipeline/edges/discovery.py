@@ -10,11 +10,13 @@ import numpy as np
 from scipy.spatial import cKDTree
 from typing_extensions import Protocol
 
+from slavv_python.pipeline.edges.audit import _normalize_candidate_connection_sources
 from slavv_python.pipeline.edges.candidate_generation import (
     generate_directional_candidates,
     generate_watershed_candidates,
     sort_candidates_by_quality,
 )
+from slavv_python.pipeline.edges.payloads import _merge_edge_diagnostics
 from slavv_python.pipeline.energy.provenance import is_exact_compatible_energy_origin
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.painting import paint_vertex_image
@@ -56,6 +58,13 @@ def resolve_lumen_radius_pixels_axes(
         return np.zeros((0, 3), dtype=dtype)
     voxel_size = np.asarray(microns_per_voxel, dtype=dtype).reshape(1, 3)
     return cast("np.ndarray", (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(dtype))
+
+
+def candidate_as_payload(candidates: CandidateManifest | dict[str, Any]) -> dict[str, Any]:
+    """Return a legacy dict payload, flattening typed manifests at explicit boundaries."""
+    if isinstance(candidates, CandidateManifest):
+        return candidates.to_payload()
+    return candidates
 
 
 @dataclass
@@ -123,6 +132,83 @@ class CandidateManifest:
         if self.frontier_lifecycle_events:
             payload["frontier_lifecycle_events"] = self.frontier_lifecycle_events
         return payload
+
+    def append_unit(self, unit_payload: dict[str, Any]) -> None:
+        """Append a per-origin candidate payload into this manifest."""
+        unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]
+        unit_connections = np.asarray(unit_payload["connections"], dtype=np.int32).reshape(-1, 2)
+        unit_metrics = np.asarray(unit_payload["metrics"], dtype=np.float32).reshape(-1)
+        unit_origin_indices = np.asarray(
+            unit_payload.get("origin_indices", []), dtype=np.int32
+        ).reshape(-1)
+        unit_connection_sources = _normalize_candidate_connection_sources(
+            unit_payload.get("connection_sources"),
+            len(unit_connections),
+            default_source=str(unit_payload.get("candidate_source", "unknown")),
+        )
+        base_candidate_index = len(self.traces)
+        emitted_frontier_count = 0
+        for raw_event in unit_payload.get("frontier_lifecycle_events", []):
+            if not isinstance(raw_event, dict):
+                continue
+            event = dict(raw_event)
+            if event.get("survived_candidate_manifest"):
+                event["manifest_candidate_index"] = base_candidate_index + emitted_frontier_count
+                emitted_frontier_count += 1
+            else:
+                event["manifest_candidate_index"] = None
+            self.frontier_lifecycle_events.append(event)
+
+        self.traces.extend(unit_traces)
+        self.energy_traces.extend(
+            np.asarray(trace, dtype=np.float32) for trace in unit_payload["energy_traces"]
+        )
+        self.scale_traces.extend(
+            np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
+        )
+
+        if unit_connections.size:
+            self.connections = (
+                unit_connections
+                if self.connections.size == 0
+                else np.vstack([self.connections, unit_connections])
+            )
+            self.metrics = np.concatenate([self.metrics, unit_metrics])
+            self.origin_indices = np.concatenate([self.origin_indices, unit_origin_indices])
+            self.connection_sources.extend(unit_connection_sources)
+
+        _merge_edge_diagnostics(self.diagnostics, unit_payload.get("diagnostics", {}))
+
+    def reordered(self, sort_order: np.ndarray) -> CandidateManifest:
+        """Return a new manifest with candidates reordered by the provided indices."""
+        sort_idx = np.asarray(sort_order, dtype=np.int32).reshape(-1)
+        if sort_idx.size == 0:
+            return self
+
+        reordered = CandidateManifest(
+            traces=[self.traces[i] for i in sort_idx.tolist()],
+            connections=np.asarray(self.connections[sort_idx], dtype=np.int32).reshape(-1, 2),
+            metrics=np.asarray(self.metrics[sort_idx], dtype=np.float64),
+            energy_traces=[self.energy_traces[i] for i in sort_idx.tolist()],
+            scale_traces=[self.scale_traces[i] for i in sort_idx.tolist()],
+            origin_indices=np.asarray(self.origin_indices[sort_idx], dtype=np.int32),
+            connection_sources=[self.connection_sources[i] for i in sort_idx.tolist()],
+            frontier_lifecycle_events=list(self.frontier_lifecycle_events),
+            diagnostics=dict(self.diagnostics),
+            extra=dict(self.extra),
+        )
+        return reordered
+
+    def endpoint_pair_set(self) -> set[tuple[int, int]]:
+        """Return orientation-independent terminal endpoint pairs."""
+        pairs: set[tuple[int, int]] = set()
+        normalized = np.asarray(self.connections, dtype=np.int32).reshape(-1, 2)
+        for start_vertex, end_vertex in normalized:
+            if int(start_vertex) < 0 or int(end_vertex) < 0:
+                continue
+            u, v = int(start_vertex), int(end_vertex)
+            pairs.add((u, v) if u < v else (v, u))
+        return pairs
 
 
 @dataclass
@@ -256,6 +342,7 @@ __all__ = [
     "FrontierTracingDiscovery",
     "MaintainedTracingDiscovery",
     "_use_matlab_frontier_tracer",
+    "candidate_as_payload",
     "frontier_origin_counts",
     "frontier_origin_counts_from_diagnostics",
     "resolve_lumen_radius_pixels_axes",

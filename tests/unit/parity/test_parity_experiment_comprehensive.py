@@ -25,9 +25,8 @@ from slavv_python.analytics.parity.oracle.models import (
     RunCounts,
 )
 from slavv_python.analytics.parity.proof.index import deduplicate_index_records
-from slavv_python.analytics.parity.proof.proofs import (
-    _run_prove_luts,
-)
+from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
+from slavv_python.schema.results import EnergyResult
 from slavv_python.analytics.parity.proof.reports import (
     build_experiment_summary,
 )
@@ -339,7 +338,7 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
     )
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.oracle.surfaces.validate_exact_proof_source_surface",
+        "slavv_python.analytics.parity.proof.coordinator.validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
@@ -347,18 +346,20 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
         lambda _surface, _params_arg=None: {"microns_per_voxel": [1.0, 1.0, 1.0]},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.proof.proofs._load_exact_energy_payload",
-        lambda _surface: {
-            "energy": np.zeros((10, 10, 10)),
-            "lumen_radius_microns": np.array([1.5, 2.0], dtype=np.float32),
-        },
+        "slavv_python.analytics.parity.proof.coordinator.load_exact_energy_result",
+        lambda _surface: EnergyResult.create(
+            energy=np.zeros((10, 10, 10)),
+            scale_indices=np.zeros((10, 10, 10), dtype=np.int16),
+            lumen_radius_pixels=np.array([1.0, 2.0], dtype=np.float64),
+            lumen_radius_microns=np.array([1.5, 2.0], dtype=np.float32),
+        ),
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.probes.matlab_fail_fast.load_builtin_lut_fixture",
+        "slavv_python.analytics.parity.proof.coordinator.load_builtin_lut_fixture",
         lambda: {"size_of_image": [20, 20, 20], "microns_per_voxel": [1.0, 1.0, 1.0]},
     )
 
-    report, _, _ = _run_prove_luts(source_run_root, dest_run_root)
+    report, _, _ = ExactProofCoordinator.run_lut_proof(source_run_root, dest_run_root)
     assert report["skipped"] is True
 
 

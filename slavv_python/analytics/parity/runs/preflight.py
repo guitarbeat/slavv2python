@@ -14,7 +14,12 @@ from slavv_python.analytics.parity.constants import (
     VALIDATED_PARAMS_PATH,
 )
 from slavv_python.analytics.parity.oracle.params_audit import build_exact_params_audit
-from slavv_python.analytics.parity.oracle.surfaces import oracle_energy_size_of_image
+from slavv_python.analytics.parity.oracle.surfaces import (
+    ensure_dest_run_layout,
+    load_dataset_surface,
+    load_oracle_surface,
+    oracle_energy_size_of_image,
+)
 from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
 from slavv_python.analytics.parity.proof.reports import render_exact_preflight_report
 from slavv_python.analytics.parity.utils import now_iso, write_json_with_hash, write_text_with_hash
@@ -205,9 +210,50 @@ def run_exact_preflight_for_surfaces(
     return report, None, None
 
 
+def run_exact_preflight(
+    source_run_root: Path,
+    dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
+    dataset_root: Path | None = None,
+    memory_safety_fraction: float = 0.8,
+    force: bool = False,
+) -> tuple[dict[str, Any], Path | None, Path | None]:
+    """Resolve run surfaces and orchestrate the exact-route preflight check."""
+    dest = dest_run_root.expanduser().resolve()
+    source = source_run_root.expanduser().resolve()
+
+    dataset_surface = (
+        load_dataset_surface(dataset_root.expanduser().resolve()) if dataset_root else None
+    )
+    oracle_surface = (
+        load_oracle_surface(oracle_root.expanduser().resolve()) if oracle_root else None
+    )
+
+    params = None
+    for root in (dest, source):
+        candidate = root / VALIDATED_PARAMS_PATH
+        if candidate.is_file():
+            params = load_json_dict(candidate)
+            if params is not None:
+                break
+
+    ensure_dest_run_layout(dest)
+    return run_exact_preflight_for_surfaces(
+        dest,
+        dataset_surface=dataset_surface,
+        oracle_surface=oracle_surface,
+        params=params,
+        memory_safety_fraction=memory_safety_fraction,
+        force=force,
+        persist=True,
+    )
+
+
 __all__ = [
     "build_exact_preflight_report",
     "persist_exact_preflight_report",
     "resolve_exact_run_image_shape",
+    "run_exact_preflight",
     "run_exact_preflight_for_surfaces",
 ]

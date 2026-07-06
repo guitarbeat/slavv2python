@@ -2,20 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface
-from slavv_python.analytics.parity.oracle.surfaces import (
-    load_oracle_surface,
-)
-from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
-from slavv_python.analytics.parity.proof.proofs import (
-    run_edge_replay,
-)
-
-if TYPE_CHECKING:
-    import argparse
 
 from slavv_python.analytics.parity.cli_handlers.cli_proofs import (
     handle_prove_exact,
@@ -23,6 +12,22 @@ from slavv_python.analytics.parity.cli_handlers.cli_proofs import (
 )
 from slavv_python.analytics.parity.cli_handlers.cli_runs import handle_preflight_exact
 from slavv_python.analytics.parity.cli_handlers.cli_support import _build_exact_proof_source_surface
+from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface
+from slavv_python.analytics.parity.oracle.surfaces import load_oracle_surface
+from slavv_python.analytics.parity.probes.crop_export import (
+    DEFAULT_OUTPUT_NAME,
+    DEFAULT_SOURCE,
+)
+from slavv_python.analytics.parity.probes.crop_export import main as export_crop_main
+from slavv_python.analytics.parity.probes.trace_comparator import main as compare_traces_main
+from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
+from slavv_python.analytics.parity.proof.index import (
+    deduplicate_index_records,
+    resolve_experiment_root,
+)
+
+if TYPE_CHECKING:
+    import argparse
 
 
 def handle_capture_candidates(args: argparse.Namespace) -> None:
@@ -36,8 +41,6 @@ def handle_capture_candidates(args: argparse.Namespace) -> None:
         include_debug_maps=bool(getattr(args, "debug_maps", False)),
     )
     if not report.get("passed"):
-        import sys
-
         sys.exit(1)
 
 
@@ -57,38 +60,22 @@ def handle_replay_edges(args: argparse.Namespace) -> None:
     )
 
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    report, _, _ = run_edge_replay(source_surface, dest_run_root)
+    report, _, _ = ExactProofCoordinator.run_edge_replay(source_surface, dest_run_root)
     if not report.get("passed"):
-        import sys
-
         sys.exit(1)
 
 
 def handle_fail_fast(args: argparse.Namespace) -> None:
     """Run cheap gates first and stop at the first failing gate."""
-    # 1. Preflight
     handle_preflight_exact(args)
-
-    # 2. LUT Proof
     handle_prove_luts(args)
-
-    # 3. Candidate Capture
     handle_capture_candidates(args)
-
-    # 4. Edge Replay
     handle_replay_edges(args)
-
-    # 5. Final Exact Proof
     handle_prove_exact(args)
 
 
 def handle_dedupe(args: argparse.Namespace) -> None:
     """Clean up and deduplicate index.jsonl in the experiment workspace root."""
-    from slavv_python.analytics.parity.proof.index import (
-        deduplicate_index_records,
-        resolve_experiment_root,
-    )
-
     repo_root = Path.cwd()
     exp_root = resolve_experiment_root(repo_root / "workspace") or resolve_experiment_root(
         repo_root
@@ -118,31 +105,20 @@ def handle_dedupe(args: argparse.Namespace) -> None:
 
 def handle_compare_traces(args: argparse.Namespace) -> None:
     """Compare two SLAVV JSONL execution traces for divergences."""
-    from slavv_python.analytics.parity.probes.trace_comparator import main as compare_traces_main
-
     result = compare_traces_main(
         [str(args.trace1), str(args.trace2), "--energy-tol", str(args.energy_tol)]
     )
     if result:
-        import sys
-
         sys.exit(result)
 
 
 def handle_export_crop(args: argparse.Namespace) -> None:
     """Export the 180709_E tier-M center crop TIFF for parity pre-gate."""
-    from pathlib import Path as _Path
-
-    from slavv_python.analytics.parity.probes.crop_export import DEFAULT_OUTPUT_NAME, DEFAULT_SOURCE
-    from slavv_python.analytics.parity.probes.crop_export import main as export_crop_main
-
     source = args.source or DEFAULT_SOURCE
-    output = args.output or (_Path("workspace/scratch/180709_E_crop_M") / DEFAULT_OUTPUT_NAME)
+    output = args.output or (Path("workspace/scratch/180709_E_crop_M") / DEFAULT_OUTPUT_NAME)
     argv = ["--source", str(source), "--output", str(output)]
     if getattr(args, "write_metadata", False):
         argv.append("--write-metadata")
     result = export_crop_main(argv)
     if result:
-        import sys
-
         sys.exit(result)

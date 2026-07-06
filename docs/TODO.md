@@ -43,7 +43,8 @@
 - [x] **Canonical full oracle** — Fresh MATLAB batch `batch_260626-125646` promoted to `180709_E_full_v2` (energy size `(64,512,512)`).
 - [x] **Exact-route energy parallelism** — `--n-jobs` threaded chunk energy is bit-exact (~4×); see [solution note](solutions/parity/exact-energy-chunk-parallelism.md). Default cert runs use `--n-jobs 6`.
 - [x] **Resume reorientation bug** — Resume double-permuted the full volume (energy `(512,64,512)` vs oracle `(64,512,512)`); crop dodged it via Y=X symmetry. **Fixed** (resume reorients like init) + regression test. See [solution note](solutions/parity/resume-energy-orientation.md).
-- [/] **Canonical Sequence** — `prove-exact-sequence` on full `180709_E` (`canonical_full_v4`, `n_jobs=6`). Rerun downstream stages (Vertices, Edges, Network) on the full volume to extend crop certification results. Status: [findings](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations).
+- [/] **Canonical Sequence** — `canonical_full_v4` sequence ran 2026-07-04 (`n_jobs=6`): **Energy ✅ + Vertices ✅ CERTIFIED** on full `180709_E`; **Edges ⛔ (60,213 vs 69,500) + Network ⛔ (39,623 vs 48,049 strands) FAIL strict-field.** Blocked on the watershed generation gap below. Status: [findings](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations).
+- [ ] **🔑 Watershed edge candidate-generation adjacency gap (PRIMARY Phase-1 blocker)** — Debug session (2026-07-04) localized the Edges/Network strict-field failure to **candidate *generation*, not selection**: 43% of MATLAB's final crop edges are never proposed as Python candidates (only 916 of the gap is pruning); Python wires vertices to different neighbors (more connected vertices, higher degree, but ~57% pair overlap). Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py` (basin-meeting order / tie-break). **Next:** instrumented watershed trace on the crop against MATLAB adjacency (H1–H5 in [findings § root cause](reference/core/EXACT_PROOF_FINDINGS.md#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). Diagnostics: `workspace/scratch/edge_gap_split.py`, `edge_funnel_probe.py`.
 
 ### 🛠️ Hardening & Infrastructure
 - [x] **PipelinePolicy Architecture** — Implemented declarative Baseline vs Innovation control for Energy, Vertices, and Edges.
@@ -56,7 +57,7 @@
 - [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.
 - [x] **Reconcile `slavv_vectorize.py` convenience wrappers** — The standalone `get_vertices_v200_python` / `get_edges_by_watershed_python` / `choose_edges_v200_python` / `get_network_v190_python` `scipy`/`skimage` demonstration shims were removed from `slavv_python/pipeline/slavv_vectorize.py` (2026-07-03). The facade now exposes only `vectorize_python` + `get_energy_v202_python`, both delegating to the stage managers, so it can't be mistaken for the parity engine.
 - [x] **Crop tier-2 gate** — After crop Energy passes, `prove-exact-sequence` on `180709_E_crop_M` (all four stages pass sequence proof under ADR 0011/0012).
-- [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`.
+- [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`. **Status (2026-07-04):** Energy + Vertices pass strict; Edges + Network blocked on the watershed candidate-generation adjacency gap (see PRIMARY blocker above).
 
 ### Harness & ops
 

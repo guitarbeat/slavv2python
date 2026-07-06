@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from slavv_python.analytics.parity.cli_handlers.cli_support import _build_exact_proof_source_surface
 from slavv_python.analytics.parity.constants import (
+    ENERGY_PROOF_EVIDENCE_JSON_PATH,
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
 )
@@ -17,48 +19,55 @@ from slavv_python.analytics.parity.oracle.gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
 )
+from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
+    load_normalized_matlab_vectors,
+)
+from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
+    load_normalized_python_checkpoints,
+)
+from slavv_python.analytics.parity.probes.adaptive_probes import (
+    build_energy_probe_payload,
+    compare_probe_jsonl,
+    persist_energy_probe_payload,
+    record_hypothesis,
+)
+from slavv_python.analytics.parity.proof.energy_proof_evidence import (
+    build_energy_proof_evidence,
+    require_energy_proof_evidence,
+)
 from slavv_python.analytics.parity.proof.reports import (
     persist_recording_tables,
     render_experiment_summary,
 )
 from slavv_python.analytics.parity.utils import (
+    payload_hash,
     write_json_with_hash,
+    write_text_with_hash,
 )
 from slavv_python.engine.state import load_json_dict
+from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
+from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+    _generate_edge_candidates_matlab_global_watershed,
+)
 
 if TYPE_CHECKING:
     import argparse
 
-from slavv_python.analytics.parity.cli_handlers.cli_support import _build_exact_proof_source_surface
-
 
 def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
-    import numpy as np
-
-    from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
-        load_normalized_python_checkpoints,
-    )
-    from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
-    from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
-        _generate_edge_candidates_matlab_global_watershed,
-    )
-
     run_root = Path(args.source_run_root).expanduser().resolve()
     checkpoints_dir = run_root / "02_Output" / "python_results" / "checkpoints"
 
-    # Load energy and vertices
     checkpoints = load_normalized_python_checkpoints(checkpoints_dir, stages=("energy", "vertices"))
     energy_data = checkpoints["energy"]
     vertex_data = checkpoints["vertices"]
 
-    # Load params
     params_path = run_root / "99_Metadata" / "validated_params.json"
     if not params_path.is_file():
         params_path = run_root / "01_Params" / "validated_params.json"
     params = load_json_dict(params_path) or {}
 
-    # Select vertex
     vertex_idx = args.vertex_idx
     if vertex_idx < 0 or vertex_idx >= len(vertex_data["positions"]):
         raise ValueError(
@@ -68,14 +77,8 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     v_pos = np.asarray(vertex_data["positions"][vertex_idx : vertex_idx + 1], dtype=np.float32)
     v_scale = np.asarray(vertex_data["scales"][vertex_idx : vertex_idx + 1], dtype=np.int32)
 
-    # Setup tracer
     tracer = JsonExecutionTracer(args.output_trace)
 
-    # Run discovery with universe realignment
-    # We must use the same transpose/swap logic as _generate_edge_candidates_matlab_frontier
-    # in generate.py to ensure the engine sees the correct spatial orientation.
-
-    # 1. Align volumes to coherent system: [Y, X, Z] -> [Z, X, Y]
     aligned_energy = np.transpose(
         np.asarray(energy_data["energy"], dtype=np.float32), (2, 1, 0)
     ).copy(order="F")
@@ -87,13 +90,11 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
             np.asarray(scale_indices, dtype=np.int16), (2, 1, 0)
         ).copy(order="F")
 
-    # 2. Align vertex positions: swap Z and Y [Y, X, Z] -> [Z, X, Y]
     aligned_v_pos = v_pos.copy()
     tmp = aligned_v_pos[:, 0].copy()
     aligned_v_pos[:, 0] = aligned_v_pos[:, 2]
     aligned_v_pos[:, 2] = tmp
 
-    # 3. Align physics microns: [dy, dx, dz] -> [dz, dx, dy]
     microns_per_voxel = np.asarray(
         params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
     )
@@ -103,10 +104,8 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
         aligned_microns[0] = aligned_microns[2]
         aligned_microns[2] = tmp_m
 
-    # 4. Setup dummy vertex center image (not used by watershed engine but required by signature)
     aligned_vertex_center_image = np.zeros_like(aligned_energy)
 
-    # Run discovery
     _generate_edge_candidates_matlab_global_watershed(
         aligned_energy,
         aligned_scale_indices,
@@ -119,7 +118,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
         tracer=tracer,
     )
 
-    print(f"âœ… Execution trace for vertex {vertex_idx} captured to {args.output_trace}")
+    print(f"Execution trace for vertex {vertex_idx} captured to {args.output_trace}")
 
 
 def handle_summarize(args: argparse.Namespace) -> None:
@@ -162,21 +161,6 @@ def handle_diagnose_gaps(args: argparse.Namespace) -> None:
 
 def handle_diagnose_energy(args: argparse.Namespace) -> None:
     """Create deterministic adaptive Energy probe requests from current checkpoints."""
-    from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
-        load_normalized_matlab_vectors,
-    )
-    from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
-        load_normalized_python_checkpoints,
-    )
-    from slavv_python.analytics.parity.probes.adaptive_probes import (
-        build_energy_probe_payload,
-        persist_energy_probe_payload,
-    )
-    from slavv_python.analytics.parity.proof.energy_proof_evidence import (
-        require_energy_proof_evidence,
-    )
-    from slavv_python.analytics.parity.utils import payload_hash
-
     run_root = Path(args.run_root).expanduser().resolve()
     require_energy_proof_evidence(run_root)
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
@@ -203,11 +187,6 @@ def handle_diagnose_energy(args: argparse.Namespace) -> None:
 
 def handle_inspect_energy_evidence(args: argparse.Namespace) -> None:
     """Persist a read-only freshness report for Energy proof evidence."""
-    from slavv_python.analytics.parity.constants import ENERGY_PROOF_EVIDENCE_JSON_PATH
-    from slavv_python.analytics.parity.proof.energy_proof_evidence import (
-        build_energy_proof_evidence,
-    )
-
     run_root = Path(args.run_root).expanduser().resolve()
     report = build_energy_proof_evidence(run_root)
     output = (
@@ -224,9 +203,6 @@ def handle_inspect_energy_evidence(args: argparse.Namespace) -> None:
 
 def handle_compare_energy_probes(args: argparse.Namespace) -> None:
     """Compare normalized MATLAB and Python adaptive probe JSONL records."""
-    from slavv_python.analytics.parity.probes.adaptive_probes import compare_probe_jsonl
-    from slavv_python.analytics.parity.utils import write_json_with_hash, write_text_with_hash
-
     report = compare_probe_jsonl(Path(args.matlab_jsonl), Path(args.python_jsonl))
     output = Path(args.output).expanduser().resolve()
     write_json_with_hash(output, report)
@@ -238,8 +214,6 @@ def handle_compare_energy_probes(args: argparse.Namespace) -> None:
 
 def handle_record_parity_hypothesis(args: argparse.Namespace) -> None:
     """Record one isolated parity hypothesis and enforce the circuit breaker."""
-    from slavv_python.analytics.parity.probes.adaptive_probes import record_hypothesis
-
     record = record_hypothesis(
         Path(args.run_root).expanduser().resolve(),
         proof_report=Path(args.proof_report).expanduser().resolve(),

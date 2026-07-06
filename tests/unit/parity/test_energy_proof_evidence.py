@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from slavv_python.analytics.parity.cli import handle_inspect_energy_evidence
+from slavv_python.analytics.parity.cli_handlers.cli_diagnostics import handle_inspect_energy_evidence
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface, OracleSurface
 from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
 from slavv_python.analytics.parity.proof.energy_proof_evidence import (

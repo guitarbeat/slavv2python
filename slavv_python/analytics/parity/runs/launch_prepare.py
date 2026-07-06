@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, cast
 
-from slavv_python.analytics.parity.proof.proofs import run_exact_preflight
 from slavv_python.analytics.parity.runs.jobs import build_resume_exact_run_command
+from slavv_python.analytics.parity.runs.preflight import run_exact_preflight
 from slavv_python.analytics.parity.runs.process_utils import (
     is_process_alive,
     is_python_process,
