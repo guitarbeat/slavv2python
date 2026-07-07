@@ -152,8 +152,14 @@ _Avoid_: Using ownership-map % as the stretch tracker (already at cert bar) or s
 **Stretch run root:** Use a **new** crop harness directory (e.g. `crop_M_exact_v3`) seeded via preflight from the prior crop run; rerun Edges only on current `main`. Do not treat stale pre-fix crop checkpoints as the stretch baseline.
 _Avoid_: Logging stretch KPIs against `crop_M_exact` artifacts produced before watershed parity fixes landed on `main`.
 
-**Phase 1 operating sequence:** (1) Refresh crop stretch run (`crop_M_exact_v3`, edges only) → log candidate-overlap KPI; (2) Launch canonical closure run (`canonical_full_v5`, edges → network) → per-stage ADR 0012 proof; (3) Declare [Phase 1 Closure](#phase-1-closure) if canonical passes; continue [Strict-Field Stretch Goal](#strict-field-stretch-goal) on crop without blocking ship.
-_Avoid_: Starting the full-volume edges writer before the refreshed crop baseline, or running crop and canonical writers concurrently on memory-constrained hosts.
+### Evaluated ADR 0012 Proof
+A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
+_Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
+
+**Phase 1 operating sequence:** (1) Watershed fixes on crop `v3` until overlap **≥80%**; (2) ownership-map prep + `canonical_full_v6` writer; (3) **evaluated** ADR 0012 per-stage proof → [Phase 1 Closure](#phase-1-closure) if green.
+_Avoid_: Launching full-volume writers before the 80% crop milestone, or claiming closure from strict-field fallback proofs.
+
+**Closure run root:** Use a **new** canonical directory (e.g. `canonical_full_v6`) preflighted from the prior closure attempt; carry Energy/Vertices, rerun Edges → Network only.
 
 ### Canonical Volume
 The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.
@@ -180,7 +186,7 @@ _Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closur
 **Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on the canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
 _Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while stretch iteration uses fresher crop outputs.
 
-**Closure run root:** Use a **new** canonical run directory (e.g. `canonical_full_v5`) seeded via preflight from the prior canonical run; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite the prior canonical snapshot in place.
+**Closure run root:** Use a **new** canonical run directory (e.g. `canonical_full_v6`) seeded via preflight from the prior canonical run; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite the prior canonical snapshot in place.
 _Avoid_: `--force-rerun-from edges` on the historical claim run root when that run is the audit record for a prior milestone.
 
 **Closure failure policy:** If the closure proof fails [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the new canonical run, [Phase 1 Closure](#phase-1-closure) remains open. First triage measurement artifacts (checkpoint freshness, orientation/shape, oracle pairing, ownership-map probe)—do not assume a watershed code bug until those are ruled out. [Strict-Field Stretch Goal](#strict-field-stretch-goal) gaps do not reopen Phase 1 once ADR 0012 passes.

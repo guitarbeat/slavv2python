@@ -207,12 +207,12 @@ def _compare_edges_adr0012_bar(
     1. Voxel-ownership agreement ≥ 60% on MATLAB-claimed voxels (primary).
     2. Per-edge trace tolerance for edges in both Python and MATLAB (secondary).
 
-    Falls back to strict field comparison if the ownership-map artifacts are
-    not available in both the candidate checkpoint and the oracle data directory.
+    Falls back to a fail-loud ``adr0012_not_evaluated`` mismatch when ownership-map
+    artifacts are unavailable — strict field comparison is **not** used as the
+    primary failure for closure proofs.
 
     Returns ``(mismatch_or_None, gate_summary_or_None)``.
     """
-    # Attempt to load both ownership maps
     py_vim: np.ndarray | None = None
     mat_vim: np.ndarray | None = None
 
@@ -222,12 +222,8 @@ def _compare_edges_adr0012_bar(
         mat_vim = _load_matlab_ownership_map(matlab_batch_dir)
 
     if py_vim is None or mat_vim is None or py_vim.shape != mat_vim.shape:
-        # ADR 0012 ownership-map ground truth is unavailable, so the spatial bar
-        # CANNOT be evaluated. We fall back to strict field comparison, which fails
-        # on the accepted greedy-watershed order-sensitivity (ADR 0012). Such a
-        # failure is a "bar-not-evaluated" state, NOT a certification signal — the
-        # raw edge-connection count legitimately differs between runs. Emit a
-        # self-documenting gate so the proof JSON is not mistaken for a regression.
+        # ADR 0012 ownership-map ground truth is unavailable — fail loud. Do not
+        # fall back to strict edges.connections as the primary failure signal.
         if py_vim is None and mat_vim is None:
             reason = "both Python and MATLAB watershed ownership maps unavailable"
         elif py_vim is None:
@@ -244,23 +240,25 @@ def _compare_edges_adr0012_bar(
             reason = (
                 f"ownership-map shape mismatch (python {py_vim.shape} vs matlab {mat_vim.shape})"
             )
-        mismatch = _compare_dict(
-            matlab_payload,
-            python_payload,
-            path="edges",
-            float_tol=float_tol,
-        )
         fallback_gate = {
             "adr0012_evaluated": False,
             "adr0012_unavailable_reason": reason,
             "adr_bar": "ADR 0012 spatial bars (ownership-map ≥ 60% + trace tolerance)",
-            "fallback": (
-                "strict field comparison — NOT a certification bar; strict edges "
-                "fail on accepted watershed order-sensitivity per ADR 0012"
-            ),
             "n_python_connections": len(np.asarray(python_payload.get("connections", []))),
             "n_matlab_connections": len(np.asarray(matlab_payload.get("connections", []))),
         }
+        mismatch = _mismatch(
+            "edges",
+            "edges.adr0012_gate",
+            "adr0012_not_evaluated",
+            reason,
+            (
+                "ADR 0012 spatial bars were not evaluated because ownership-map "
+                "artifacts are missing or incompatible. This is not a spatial-bar "
+                "failure and strict-field connection counts are informational only. "
+                f"Reason: {reason}"
+            ),
+        )
         return mismatch, fallback_gate
 
     # Part 1: ownership-map agreement

@@ -8,7 +8,7 @@ This document provides technical implementation details for the global watershed
 
 ## 🏗️ Architecture Overview
 
-The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py` (MATLAB port of `get_edges_by_watershed.m`). Heap/claim helpers live in `matlab_watershed_heap.py`; strel LUT geometry in `matlab_calculate_linear_strel_range.py`.
+The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py` (MATLAB port of `get_edges_by_watershed.m`). Frontier state lives in `matlab_watershed_heap.py` (`SortedFrontier` production default, `FrontierQueue` heap fallback); strel LUT geometry in `matlab_calculate_linear_strel_range.py`.
 
 ### Modular Decomposition
 To maintain readability, the 800+ line discovery logic is decomposed into specialized helpers:
@@ -16,9 +16,11 @@ To maintain readability, the 800+ line discovery logic is decomposed into specia
 2.  `_matlab_global_watershed_prepare_size_map`: Orchestrates the scale-aware `size_map` from input labels and vertex scales.
 3.  `_matlab_global_watershed_current_strel`: Extracts a local neighborhood (strel) and its metadata (offsets, pointer indices, distances).
 4.  `_matlab_global_watershed_reveal_unclaimed_strel`: Claims voxels in the spatial maps for a vertex.
-5.  `_matlab_global_watershed_insert_available_location`: Manages the frontier priority queue (worst-to-best sorted list).
+5.  `SortedFrontier` + `_matlab_global_watershed_insert_available_location`: Faithful MATLAB `available_locations` sorted array (production default).
 6.  `_matlab_global_watershed_reset_join_locations`: Handles frontier cleanup during watershed joins.
 7.  `_matlab_global_watershed_assemble_results`: Finalizes traces and assembles the candidate payload.
+
+**Frontier backend:** `watershed_frontier_backend=sorted` (default) or `heap` (legacy). Golden trace diff: `scripts/watershed_frontier_diff.py` vs `workspace/scratch/matlab_edge_dump/frontier_trace.jsonl`.
 
 ---
 
@@ -31,7 +33,7 @@ To achieve bit-perfect MATLAB parity, the engine realigns the physical volume (S
 
 - **Rationale**: MATLAB's column-major memory layout prioritizes the first dimension (Y). By aligning the Python internal grid so that Y is the first index and using Fortran contiguity, we ensure that:
     1.  **Linear Indexing**: `ravel(order="F")` linear indices physically match MATLAB's `find()` results.
-    2.  **Tie-Breaking**: Bit-accurate `argmin` on linear indices correctly prioritizes the Y-axis, then X, then Z, mirroring MATLAB's exact deterministic discovery order.
+    2.  **Tie-Breaking**: Strel seed selection uses MATLAB `min` semantics (`np.argmin` first LUT slot on ties). Frontier order uses stable `available_locations` insert/pop (not a binary heap).
     3.  **Rounding Consistency**: FFT and interpolation traversal match MATLAB's loop nesting, minimizing floating-point drift.
 
 | Map | Type | Description |

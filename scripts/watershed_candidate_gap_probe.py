@@ -17,11 +17,43 @@ from slavv_python.analytics.parity.proof.coordinator import (
     load_exact_vertex_set,
 )
 from slavv_python.engine.state import load_json_dict
+from slavv_python.pipeline.edges.candidate_generation import generate_watershed_candidates
 from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
-    _generate_edge_candidates_matlab_global_watershed,
-)
+from slavv_python.pipeline.vertices.painting import paint_vertex_center_image
 from slavv_python.utils.safe_unpickle import safe_load
+
+
+def _regenerate_watershed_candidates(
+    *,
+    run_dir: Path,
+    params: dict[str, Any],
+    tracer: JsonExecutionTracer | None = None,
+) -> dict[str, Any]:
+    """Regenerate candidates using the same production path as ``EdgeManager``."""
+    source_surface = validate_exact_proof_source_surface(run_dir)
+    energy = load_exact_energy_result(source_surface)
+    vertices = load_exact_vertex_set(source_surface, energy)
+    run_params = dict(params)
+    run_params.setdefault("comparison_exact_network", True)
+    vertex_center_image = paint_vertex_center_image(vertices.positions, energy.energy.shape)
+    microns_per_voxel = np.asarray(
+        run_params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+        dtype=np.float64,
+    )
+    kwargs: dict[str, Any] = {}
+    if tracer is not None:
+        kwargs["tracer"] = tracer
+    return generate_watershed_candidates(
+        energy.energy,
+        energy.scale_indices,
+        vertices.positions,
+        vertices.scales,
+        energy.lumen_radius_microns,
+        microns_per_voxel,
+        vertex_center_image,
+        run_params,
+        **kwargs,
+    )
 
 
 def _endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
@@ -99,20 +131,12 @@ def _trace_missing_pairs(
     python_pairs = _endpoint_pair_set(_load_python_candidate_connections(run_dir))
     missing_pairs = sorted(matlab_pairs - python_pairs)[:sample_size]
 
-    energy = load_exact_energy_result(source_surface)
-    vertices = load_exact_vertex_set(source_surface, energy)
     params = load_json_dict(source_surface.validated_params_path) or {}
 
     tracer = JsonExecutionTracer(trace_path)
-    payload = _generate_edge_candidates_matlab_global_watershed(
-        energy.energy,
-        energy.scale_indices,
-        vertices.positions,
-        vertices.scales,
-        energy.lumen_radius_microns,
-        np.asarray(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float64),
-        np.zeros_like(energy.energy),
-        params,
+    payload = _regenerate_watershed_candidates(
+        run_dir=run_dir,
+        params=params,
         tracer=tracer,
     )
     traced_pairs = _endpoint_pair_set(np.asarray(payload["connections"], dtype=np.int64))

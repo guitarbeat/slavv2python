@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 from slavv_python.analytics.parity.constants import (
     ANALYSIS_TABLES_DIR,
     RECORDING_TABLES_INDEX_PATH,
+    RUN_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
@@ -147,9 +148,16 @@ def persist_recording_tables(run_root: Path) -> dict[str, Any]:
     table_entries: list[dict[str, Any]] = []
     source_artifacts: list[str] = []
 
-    snapshot_payload = load_json_dict(run_root / RUN_SNAPSHOT_PATH)
+    snapshot_payload = load_json_dict(run_root / RUN_MANIFEST_PATH)
+    if snapshot_payload is None:
+        snapshot_payload = load_json_dict(run_root / RUN_SNAPSHOT_PATH)
     if snapshot_payload is not None:
-        source_artifacts.append(str(run_root / RUN_SNAPSHOT_PATH))
+        source_path = (
+            run_root / RUN_MANIFEST_PATH
+            if (run_root / RUN_MANIFEST_PATH).is_file()
+            else run_root / RUN_SNAPSHOT_PATH
+        )
+        source_artifacts.append(str(source_path))
         for table_name, records in _build_run_snapshot_tables(run_root, snapshot_payload).items():
             entry = _persist_table_records(tables_root, table_name=table_name, records=records)
             if entry:

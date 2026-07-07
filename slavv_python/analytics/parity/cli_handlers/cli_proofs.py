@@ -91,6 +91,9 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
     )
     _copy_stage_proof_json(dest_run_root, json_path, stage_arg)
 
+    if report.get("stage_summaries"):
+        print(render_exact_proof_report(report))
+
     if not report.get("passed"):
         sys.exit(1)
 

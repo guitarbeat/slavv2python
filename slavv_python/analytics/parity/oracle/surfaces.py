@@ -299,7 +299,9 @@ def write_run_manifest(
         manifest.update(extra)
 
     write_json_with_hash(dest_run_root / RUN_MANIFEST_PATH, manifest)
-    write_json_with_hash(dest_run_root / RUN_SNAPSHOT_PATH, manifest)
+    # Parity manifests belong in run_manifest.json only. Never mirror them into
+    # run_snapshot.json — that file is owned by the pipeline RunContext and
+    # slavv monitor reads it for live stage progress.
     upsert_index_record(exp_root, manifest)
     return manifest
 

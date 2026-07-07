@@ -41,20 +41,25 @@ from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_directional_suppression_factors,
 )
 from slavv_python.pipeline.edges.matlab_indexing import (
-    _argmin_with_linear_index_tiebreak,
     _matlab_linear_index_to_coord,
 )
 from slavv_python.pipeline.edges.matlab_watershed_heap import (
-    FrontierQueue,
     VoxelClaimMap,
     _matlab_global_watershed_border_locations,
+    _matlab_global_watershed_insert_available_location,
+    _matlab_global_watershed_reset_join_locations,
+    build_watershed_frontier,
 )
 from slavv_python.pipeline.edges.payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
 )
 
-__all__ = ["_matlab_global_watershed_border_locations"]
+__all__ = [
+    "_matlab_global_watershed_border_locations",
+    "_matlab_global_watershed_insert_available_location",
+    "_matlab_global_watershed_reset_join_locations",
+]
 
 
 def _coords_from_linear_trace(
@@ -519,7 +524,11 @@ def _generate_edge_candidates_matlab_global_watershed(
     claim_map = VoxelClaimMap(shape, vertex_positions, energy_matlab)
     claim_map.initial_locations = [int(loc) for loc in vertex_locations[::-1]]
 
-    queue = FrontierQueue(claim_map.initial_locations, claim_map.energy_temp_flat)
+    queue = build_watershed_frontier(
+        str(params.get("watershed_frontier_backend", "sorted")),
+        claim_map.initial_locations,
+        claim_map.energy_temp_flat,
+    )
     number_of_vertices = claim_map.number_of_vertices
 
     vertex_coords_yxz = np.zeros_like(vertex_positions, dtype=np.float64)
@@ -556,7 +565,8 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     while queue:
         iteration += 1
-        current_linear = queue.pop_best()
+        queue.begin_seed_loop()
+        current_linear = queue.peek_best()
 
         current_energy = claim_map.restore_vertex_energy(current_linear)
         active_tracer.on_iteration_start(iteration, current_linear, current_energy)
@@ -647,7 +657,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                 current_vertex_energy=float(claim_map.vertex_energies[current_vertex_index - 1]),
                 energy_tolerance=energy_tolerance,
             )
-            strel_idx = _argmin_with_linear_index_tiebreak(adjusted, current_strel_linear)
+            strel_idx = int(np.argmin(np.asarray(adjusted, dtype=np.float64)))
             next_location = int(current_strel_linear[strel_idx])
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
             active_tracer.on_seed_selected(seed_idx, next_location, float(adjusted[strel_idx]))
@@ -661,10 +671,14 @@ def _generate_edge_candidates_matlab_global_watershed(
                             next_location,
                             float(claim_map.energy_temp_flat[next_location]),
                             seed_idx,
+                            current_linear=current_linear,
                         )
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
-                    queue.remove_first_occurrence(current_strel_linear[is_next_vertex_in_strel])
+                    queue.remove_first_occurrence(
+                        current_strel_linear[is_next_vertex_in_strel],
+                        current_linear=current_linear,
+                    )
 
                     if not bool(
                         claim_map.adjacency_matrix[next_vertex_index - 1, current_vertex_index - 1]
@@ -731,6 +745,8 @@ def _generate_edge_candidates_matlab_global_watershed(
                             iteration=iteration,
                             current_linear=current_linear,
                         )
+            else:
+                queue.discard_current_location_if_not_clear(current_linear)
 
             adjusted[strel_idx] = np.inf
 
@@ -824,55 +840,3 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
         "vertices_of_current_strel": vertices_of_current_strel,
         "is_without_vertex_in_strel": is_without_vertex,
     }
-
-
-def _matlab_global_watershed_insert_available_location(
-    available_locations: list[int],
-    next_location: int,
-    next_energy: float,
-    energy_lookup: dict | np.ndarray,
-    seed_idx: int,
-    is_current_location_clear: bool,
-) -> tuple[list[int], bool]:
-    """Compatibility shim for unit tests."""
-    is_clear = is_current_location_clear
-    updated = list(available_locations)
-    if not is_current_location_clear and seed_idx > 1:
-        if updated:
-            updated.pop()
-        is_clear = True
-
-    target_energy = float(next_energy)
-
-    insert_at = len(updated)
-    for idx, loc in enumerate(updated):
-        mid_energy = float(energy_lookup[loc])
-        if seed_idx == 1:
-            is_mid_worse = mid_energy > target_energy
-        else:
-            is_mid_worse = mid_energy >= target_energy
-        if not is_mid_worse:
-            insert_at = idx
-            break
-
-    updated.insert(insert_at, int(next_location))
-    return updated, is_clear
-
-
-def _matlab_global_watershed_reset_join_locations(
-    available_locations: list[int],
-    *,
-    next_vertex_locations: np.ndarray,
-    is_current_location_clear: bool,
-) -> tuple[list[int], bool]:
-    """Compatibility shim for unit tests."""
-    is_clear = is_current_location_clear
-    updated = list(available_locations)
-    if not is_clear:
-        if updated:
-            updated.pop()
-        is_clear = True
-
-    locations_to_reset = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
-    updated = [loc for loc in updated if loc not in locations_to_reset]
-    return updated, is_clear

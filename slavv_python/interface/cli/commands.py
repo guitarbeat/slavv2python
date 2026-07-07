@@ -150,19 +150,41 @@ def _handle_status_command(args) -> None:
 
 def _handle_monitor_command(args) -> None:
     """Open or print the consolidated run operations console."""
+    import sys
+
     from .monitor_service import load_run_monitor_view, render_monitor_lines
 
     view = load_run_monitor_view(args.run_dir)
-    if args.once:
+
+    def _print_snapshot() -> None:
         print(Terminal.header(f"Run Monitor: {args.run_dir}"))
         print("\n".join(f"  {line}" for line in render_monitor_lines(view)) + "\n")
+
+    if args.once:
+        _print_snapshot()
         if view.snapshot is None:
             sys.exit(1)
         return
 
-    from .tui import run_monitor_if_supported
+    interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    from .tui import is_tui_available, run_monitor_if_supported
+
+    if not interactive:
+        print("Non-interactive terminal — printing monitor snapshot (use --once to skip this note).")
+        _print_snapshot()
+        if view.snapshot is None:
+            sys.exit(1)
+        return
+
+    if not is_tui_available():
+        print("Error: TUI dependency 'textual' is not installed.")
+        print('Please run: pip install -e ".[tui]"')
+        print("Printing monitor snapshot instead.")
+        _print_snapshot()
+        sys.exit(1 if view.snapshot is None else 0)
 
     if run_monitor_if_supported(args.run_dir) is None:
+        _print_snapshot()
         sys.exit(1)
 
 

@@ -244,13 +244,24 @@ class SLAVVPipelineApp(App[None]):
     def _proof_text(self, view: RunMonitorView) -> Text:
         if not view.proof_statuses:
             return Text("")
-        proof = view.proof_statuses[0]
-        if proof.passed is True:
-            return Text("Proof: passed", style="bold green")
-        if proof.passed is False:
-            failure = f"{proof.first_failing_stage}.{proof.first_failing_field}".strip(".")
-            return Text(f"Proof: FAILED {failure}", style="bold red")
-        return Text("Proof: (unreadable)", style="yellow")
+        preferred_names = ("exact_proof_edges.json", "exact_proof_network.json")
+        closure = [proof for proof in view.proof_statuses if proof.path.name in preferred_names]
+        display = closure or list(view.proof_statuses[:2])
+
+        lines = Text()
+        for index, proof in enumerate(display):
+            label = proof.path.stem.removeprefix("exact_proof_") or "sequence"
+            if index:
+                lines.append("\n")
+            if proof.passed is True:
+                lines.append(f"{label}: PASS", style="bold green")
+            elif proof.passed is False:
+                failure = f"{proof.first_failing_stage}.{proof.first_failing_field}".strip(".")
+                suffix = f" ({failure})" if failure else ""
+                lines.append(f"{label}: FAIL{suffix}", style="bold red")
+            else:
+                lines.append(f"{label}: unreadable", style="yellow")
+        return lines
 
     def _stages_table(self, view: RunMonitorView) -> Table | Text:
         snapshot = view.snapshot

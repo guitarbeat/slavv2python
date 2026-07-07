@@ -63,6 +63,22 @@ Phase 1 exact-route **ship confidence** uses **two tracked bars** for Edges/Netw
 
 **Considered:** closing Phase 1 on crop ADR 0012 alone, or requiring strict-field on full volume before closure — rejected; canonical volume is the Phase 1 claim surface (spec R1a), and ADR 0012 already records why exact pair-set equality is the wrong ship metric.
 
+## Addendum (2026-07-06): Post-v5 watershed iteration and v6 closure
+
+After `canonical_full_v5` (writer succeeded, proof invalid):
+
+1. **v5 strict-field deficit is real but not a valid ADR 0012 verdict.** Full oracle `180709_E_full_v2` lacks `watershed_ownership_map.mat`; Python v5 checkpoint lacks `--include-debug-maps`. Proofs emitted `adr0012_evaluated: false` and must **not** be read as spatial-bar failure.
+
+2. **80% crop overlap gate before canonical v6.** Primary loop KPI = candidate-generation overlap on `crop_M_exact_v3` (baseline **57.89%**, 8,979 / 15,511 MATLAB pairs). Launch **`canonical_full_v6`** only after overlap **≥80%** (~12,409 / 15,511).
+
+3. **Fail-loud harness policy.** When ownership maps are missing or incompatible, `prove-exact --stage edges` fails with `mismatch_type: adr0012_not_evaluated` and exits non-zero. Strict `connections` counts are informational only — not the primary failure signal.
+
+4. **v6 run shape.** Preflight from `canonical_full_v5` → new run root `canonical_full_v6`; carry certified Energy/Vertices; rerun **Edges → Network only**. Before proof: (a) MATLAB `watershed_ownership_map.mat` via instrumented harness on full `180709_E`; (b) Python `vertex_index_map` via `--include-debug-maps` on edge capture.
+
+5. **Closure verdict.** Phase 1 closes only on **evaluated** ADR 0012 per-stage proofs (`adr0012_evaluated: true`) on `canonical_full_v6`. Stretch strict-field progress on crop continues without blocking ship once evaluated ADR 0012 passes on full volume.
+
+**Operating order:** watershed fixes on crop → 80% milestone → map prep → v6 writer → evaluated ADR 0012 proof. See [.claude/HANDOFF.md](../../.claude/HANDOFF.md).
+
 ## Evidence references
 
 - Fix: branch `fix/edge-watershed-orientation`, commit `e9dcc141` (`slavv_python/pipeline/edges/candidate_generation.py`).

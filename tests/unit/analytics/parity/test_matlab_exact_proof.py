@@ -451,7 +451,9 @@ def test_compare_exact_artifacts_passes_on_exact_match():
     assert report["first_failure"] is None
 
 
-def test_compare_exact_artifacts_reports_ordering_mismatch():
+def test_compare_exact_artifacts_edges_reordered_without_maps_fail_loud():
+    # Edges without ownership maps must fail loud (ADR 0012 not evaluated), even when
+    # the only payload difference is connection row order.
     matlab_edges = {
         "connections": np.array([[0, 1], [1, 2]], dtype=np.int64),
         "traces": [],
@@ -480,8 +482,8 @@ def test_compare_exact_artifacts_reports_ordering_mismatch():
 
     assert report["passed"] is False
     assert report["first_failing_stage"] == "edges"
-    assert report["first_failure"]["mismatch_type"] == "ordering mismatch"
-    assert report["first_failure"]["field_path"] == "edges.connections"
+    assert report["first_failure"]["mismatch_type"] == "adr0012_not_evaluated"
+    assert report["first_failure"]["field_path"] == "edges.adr0012_gate"
 
 
 def test_compare_exact_artifacts_reports_shape_mismatch():
@@ -519,12 +521,9 @@ def test_compare_exact_artifacts_reports_shape_mismatch():
     assert report["first_failure"] is None
 
 
-def test_compare_exact_artifacts_edges_fallback_documents_missing_ownership_map():
-    # When the ADR 0012 ownership-map artifacts are unavailable (no checkpoints_dir /
-    # matlab_batch_dir), the edges comparison falls back to strict field comparison.
-    # That fallback must be SELF-DOCUMENTING: the emitted edges_adr0012_gate should
-    # record that the spatial bar was NOT evaluated and why, so a raw connection-count
-    # shape mismatch is not mistaken for a genuine regression.
+def test_compare_exact_artifacts_edges_fail_loud_when_ownership_map_missing():
+    # When ADR 0012 ownership-map artifacts are unavailable, the edges proof must
+    # fail loud with adr0012_not_evaluated — NOT strict connections mismatch.
     matlab_edges = {
         "connections": np.array([[0, 1], [1, 2], [2, 3]], dtype=np.int64),
         "traces": [],
@@ -543,7 +542,6 @@ def test_compare_exact_artifacts_edges_fallback_documents_missing_ownership_map(
         },
     }
     python_edges = dict(matlab_edges)
-    # Python under-produces (fewer connections) — the canonical full-volume symptom.
     python_edges["connections"] = np.array([[0, 1]], dtype=np.int64)
 
     report = compare_exact_artifacts(
@@ -558,6 +556,10 @@ def test_compare_exact_artifacts_edges_fallback_documents_missing_ownership_map(
     assert "unavailable" in gate["adr0012_unavailable_reason"]
     assert gate["n_matlab_connections"] == 3
     assert gate["n_python_connections"] == 1
+    failure = report["first_failure"]
+    assert failure["mismatch_type"] == "adr0012_not_evaluated"
+    assert failure["field_path"] == "edges.adr0012_gate"
+    assert "fallback" not in gate
 
 
 def test_compare_exact_artifacts_reports_missing_field():

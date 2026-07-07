@@ -352,8 +352,51 @@ def test_monitor_view_summarizes_parity_proof_json(tmp_path):
     view = load_run_monitor_view(run_dir)
     lines = render_monitor_lines(view)
 
-    assert view.proof_statuses[0].passed is False
+    energy_proof = next(p for p in view.proof_statuses if p.path.name == "exact_proof_energy.json")
+    assert energy_proof.passed is False
     assert any("exact_proof_energy.json: failed" in line for line in lines)
+
+
+def test_monitor_recovers_pipeline_stages_from_parity_manifest(tmp_path):
+    run_dir = tmp_path / "canonical_full_v5"
+    metadata = run_dir / "99_Metadata"
+    metadata.mkdir(parents=True)
+    (metadata / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "kind": "parity_run",
+                "run_id": "808667c39ad8",
+                "status": "failed",
+                "stage_metrics": {
+                    "energy": {"status": "completed", "elapsed_seconds": 0.0},
+                    "vertices": {"status": "completed", "elapsed_seconds": 0.0},
+                    "edges": {"status": "completed", "elapsed_seconds": 7360.0},
+                    "network": {"status": "completed", "elapsed_seconds": 300.0},
+                },
+                "stages": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (metadata / "run_manifest.json").write_text(
+        (metadata / "run_snapshot.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (metadata / "parity_job.json").write_text(
+        json.dumps({"status": "succeeded", "stop_after": "network"}),
+        encoding="utf-8",
+    )
+
+    view = load_run_monitor_view(run_dir)
+
+    assert view.snapshot is not None
+    assert view.snapshot.status == "completed_target"
+    assert view.snapshot.stages["edges"].status == "completed"
+    assert view.snapshot.stages["network"].status == "completed"
+    assert view.effective_status == "succeeded"
+    lines = render_monitor_lines(view)
+    assert any("edges: completed" in line for line in lines)
+    assert any("network: completed" in line for line in lines)
 
 
 def test_monitor_view_missing_snapshot_is_actionable(tmp_path):

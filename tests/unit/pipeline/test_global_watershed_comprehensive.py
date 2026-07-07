@@ -24,8 +24,6 @@ from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
     _matlab_global_watershed_border_locations,
     _matlab_global_watershed_current_strel,
     _matlab_global_watershed_finalize_edge_trace,
-    _matlab_global_watershed_insert_available_location,
-    _matlab_global_watershed_reset_join_locations,
     _matlab_global_watershed_reveal_unclaimed_strel,
     _matlab_global_watershed_scale_pointer_map,
     _matlab_global_watershed_seed_index_range,
@@ -36,7 +34,11 @@ from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
-from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
+from slavv_python.pipeline.edges.matlab_watershed_heap import (
+    SortedFrontier,
+    _matlab_global_watershed_insert_available_location,
+    _matlab_global_watershed_reset_join_locations,
+)
 
 # ============================================================================
 # Energy Map Processing Tests
@@ -422,14 +424,32 @@ def test_directional_suppression_is_iterative():
 
 
 @pytest.mark.unit
-def test_strel_seed_argmin_breaks_on_lowest_linear_index() -> None:
-    """Tied strel energies must pick the lowest Fortran linear index, not first array slot."""
+def test_strel_seed_argmin_breaks_on_first_lut_occurrence() -> None:
+    """MATLAB ``min(current_strel_energies)`` returns the first strel slot on ties."""
     adjusted = np.array([-5.0, -5.0, -3.0], dtype=np.float64)
-    linear_indices = np.array([120, 42, 99], dtype=np.int64)
-    assert _argmin_with_linear_index_tiebreak(adjusted, linear_indices) == 1
+    assert int(np.argmin(adjusted)) == 0
 
     unique_min = np.array([-8.0, -2.0, -1.0], dtype=np.float64)
-    assert _argmin_with_linear_index_tiebreak(unique_min, linear_indices) == 0
+    assert int(np.argmin(unique_min)) == 0
+
+
+@pytest.mark.unit
+def test_available_locations_primary_seed_replaces_uncleared_tail() -> None:
+    """Primary seed insert must drop the uncleared tail (current location) before insert."""
+    energy_lookup = {10: -1.0, 20: -3.0, 30: -5.0}
+    available = [10, 20, 30]
+
+    updated, is_clear = _matlab_global_watershed_insert_available_location(
+        available,
+        next_location=40,
+        next_energy=-4.0,
+        energy_lookup={**energy_lookup, 40: -4.0},
+        seed_idx=1,
+        is_current_location_clear=False,
+    )
+
+    assert updated == [10, 20, 40]
+    assert is_clear is True
 
 
 # ============================================================================
@@ -489,6 +509,21 @@ def test_available_locations_secondary_seed_replaces_tail():
 
     # Should replace tail: [10, 20, 40]
     assert updated == [10, 20, 40]
+
+
+@pytest.mark.unit
+def test_sorted_frontier_peek_push_matches_matlab_order() -> None:
+    """SortedFrontier should mirror MATLAB worst-to-best available_locations semantics."""
+    energy_lookup = np.full(100, 0.0, dtype=np.float64)
+    energy_lookup[10] = -1.0
+    energy_lookup[20] = -3.0
+    energy_lookup[30] = -5.0
+    energy_lookup[40] = -4.0
+    frontier = SortedFrontier([10, 20, 30], energy_lookup)
+
+    assert frontier.peek_best() == 30
+    frontier.push(40, -4.0, seed_idx=1, current_linear=30)
+    assert frontier.peek_best() == 40
 
 
 @pytest.mark.unit

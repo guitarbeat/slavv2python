@@ -4,7 +4,9 @@
 
 **Last Updated**: 2026-07-06
 
-> ✅ **2026-07-06 — Phase 1 closure policy (operator synthesis).** **Ship gate:** per-stage `prove-exact --stage edges` + `--stage network` under **ADR 0012** on fresh **`canonical_full_v5`** (Energy/Vertices carry forward from `canonical_full_v4`). **Stretch (non-blocking):** strict-field + candidate-overlap KPI on **`crop_M_exact_v3`**. Full operator sequence: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) · [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
+> ✅ **2026-07-06 (post-v5) — v3 baseline + v5 writer complete; Phase 1 still open.** Crop `crop_M_exact_v3` edges rerun succeeded; overlap KPI **57.89%**. Canonical `canonical_full_v5` writer succeeded (~2.1h); closure proof **invalid** (`adr0012_evaluated: false` — ownership maps missing on full volume). Strict-field edges **60,287 vs 69,500**. **Next:** watershed fixes on crop until **≥80%** overlap → `canonical_full_v6` with map prep. Policy: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) · [ADR 0012 post-v5 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-post-v5-watershed-iteration-and-v6-closure).
+
+> ✅ **2026-07-06 — Phase 1 closure policy (operator synthesis).** **Ship gate:** evaluated ADR 0012 per-stage `prove-exact` on full `180709_E` (`canonical_full_v6` after 80% crop milestone). **Stretch:** overlap KPI on `crop_M_exact_v3`. See [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
 
 > ⚠️ **2026-07-04 note — canonical full `180709_E` (`canonical_full_v4`) sequence ran; Energy ✅ + Vertices ✅ CERTIFIED on the full volume; Edges ⛔ + Network ⛔ FAIL (strict-field sequence only).** Historical `v4` checkpoints are **stale** for closure (pre–PR #103). Per-stage `prove-exact` results (`03_Analysis/exact_proof_<stage>.json`):
 > - **Energy PASS** — 0 scale mismatches / **16,777,216** voxels (ADR 0011 `np.allclose`; max \|Δ\|≈2.36×10⁻¹¹).
@@ -28,7 +30,7 @@
 
 ## 📊 Executive status (stage model)
 
-Phase 1 exit criterion ([ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)): per-stage `prove-exact` on full `180709_E` — Energy/Vertices under [ADR 0011](../../adr/0011-energy-float-certification-policy.md); Edges/Network under **ADR 0012 spatial bars** on **`canonical_full_v5`**. Strict-field `connections`/strand counts are a **non-blocking stretch** tracked on crop `v3`.
+Phase 1 exit criterion ([ADR 0012 post-v5 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-post-v5-watershed-iteration-and-v6-closure)): **evaluated** ADR 0012 per-stage `prove-exact` on full `180709_E` via `canonical_full_v6` (after ≥80% crop overlap milestone). Strict-field counts are stretch signal only.
 
 | Stage | Harness / prior work | Phase 1 certification bar |
 | :--- | :--- | :--- |
@@ -41,19 +43,34 @@ Phase 1 exit criterion ([ADR 0012 addendum](../../adr/0012-edge-watershed-parity
 
 ## 🚦 Active Phase 1 operations
 
-> **Closure policy (2026-07-06):** Phase 1 closes when **`canonical_full_v5`** passes per-stage `prove-exact --stage edges` + `--stage network` under **ADR 0012** on full `180709_E`. Strict-field gaps are a **non-blocking stretch** tracked on **`crop_M_exact_v3`** (candidate-overlap KPI). See [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch) and [.claude/HANDOFF.md](../../../.claude/HANDOFF.md).
+> **Closure policy (2026-07-06 post-v5):** Phase 1 closes when **`canonical_full_v6`** passes **evaluated** ADR 0012 per-stage proofs after **≥80%** crop overlap on `crop_M_exact_v3`. **`canonical_full_v5`** writer succeeded but proof was **not valid ADR 0012** (maps missing). See [HANDOFF](../../../.claude/HANDOFF.md).
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. |
-| **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_full_v2` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
-| **Crop harness run (audit)** | `workspace/runs/oracle_180709_E/crop_M_exact` | ✅ Per-stage ADR 0012 certified (2026-07-01). ⚠️ **Stale edges** for stretch KPI (2026-07-04 checkpoints; pre–PR #103). Retain as audit; do not use for new overlap metrics. |
-| **Crop stretch run (planned)** | `workspace/runs/oracle_180709_E/crop_M_exact_v3` | 🔲 **Next:** preflight from `crop_M_exact` → edges-only rerun on current `main` → `watershed_candidate_gap_probe.py` baseline. |
-| **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Fresh MATLAB batch `batch_260626-125646`; energy size `(64,512,512)`. |
-| **Canonical full run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v4` | ✅ Energy + Vertices **CERTIFIED** (2026-07-04). ⚠️ Edges/Network checkpoints **stale** (pre–PR #103); strict-field sequence FAIL documented — not the closure gate. |
-| **Canonical closure run (planned)** | `workspace/runs/oracle_180709_E/canonical_full_v5` | 🔲 **After crop v3 baseline:** preflight from `v4` → edges→network rerun → per-stage ADR 0012 proof → Phase 1 closure if green. |
+| **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_full_v2` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. ⚠️ Full oracle lacks `watershed_ownership_map.mat` (ADR 0012 edges proof blocked until supplied). |
+| **Crop harness run (audit)** | `workspace/runs/oracle_180709_E/crop_M_exact` | ✅ Per-stage ADR 0012 certified (2026-07-01). Stale for stretch KPI (pre–PR #103). |
+| **Crop stretch run** | `workspace/runs/oracle_180709_E/crop_M_exact_v3` | ✅ Edges rerun succeeded (2026-07-06). **Baseline overlap 57.89%** (8,979 / 15,511). Target **≥80%** before canonical v6. |
+| **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Batch `batch_260626-125646`; energy `(64,512,512)`. No ownership map artifact yet. |
+| **Canonical full run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v4` | ✅ Energy + Vertices **CERTIFIED** (2026-07-04). Stale edges/network (pre–PR #103). |
+| **Canonical closure run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v5` | ✅ Writer succeeded (2026-07-06, ~2.1h). ⛔ Proof invalid ADR 0012 (`adr0012_evaluated: false`); strict-field edges 60,287 vs 69,500. Preserve as audit. |
+| **Canonical closure run (planned)** | `workspace/runs/oracle_180709_E/canonical_full_v6` | 🔲 After **≥80%** crop overlap + ownership-map prep; preflight from `v5`. |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
+
+### Watershed iteration log (crop overlap KPI → 80% gate)
+
+| Date | Fix / change | Overlap (MATLAB pairs) | Notes |
+|------|--------------|------------------------|-------|
+| 2026-07-06 | Baseline `crop_M_exact_v3` (seed pop-rank fix in `FrontierQueue.__init__`) | **57.89%** (8,979 / 15,511) | Production path via `generate_watershed_candidates`. |
+| 2026-07-07 | `FrontierQueue.push` seed_idx tie-break | **57.89%** (no change) | Earlier **62.25%** was a false signal from gap probe calling the engine without `mpv[[2,0,1]]` permute — probe fixed. |
+| 2026-07-07 | List-based `available_locations` queue (reverted) | **11.56%** | Regressed; heap retained. |
+| 2026-07-07 | `FrontierQueue` peek-not-pop + deferred clear (MATLAB `available_locations(end)`) | **57.89%** (no change) | Semantically correct; KPI unchanged on crop. |
+| 2026-07-07 | **SortedFrontier** (faithful `available_locations` port) + insert tail-drop fix + MATLAB `min` strel argmin | **57.89%** (8,979 / 15,511); **17,253** candidates | Golden trace: **13,706 / 13,706** vertex `iteration_start` pops match MATLAB (1-based offset); first divergence at iteration **13,707** (post-vertex frontier). Harness: `scripts/watershed_frontier_diff.py`. Default backend: `watershed_frontier_backend=sorted` (`heap` fallback). |
+
+**Probe command:** `.\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 --oracle-root workspace/oracles/180709_E_crop_M_v2`
+
+**80% milestone target:** ≥12,409 / 15,511 MATLAB pairs before `canonical_full_v6`. **v6 closure playbook:** [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) § B (blocked until milestone).
 
 ### 🔎 2026-07-04: Edge shortfall root cause (generation gap, not prune gap)
 
@@ -200,10 +217,10 @@ If resuming exact parity work from a fresh thread, start with **[.claude/HANDOFF
 
 1. `slavv jobs list` — no concurrent writer on the target `--dest-run-root`.
 2. `slavv parity ensure-oracle-artifacts --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage all --no-repair` (and same for `180709_E_full_v2` before canonical work).
-3. **Stretch baseline:** preflight → `crop_M_exact_v3` from `crop_M_exact` → edges-only rerun on current `main` → `scripts/watershed_candidate_gap_probe.py`.
-4. **Closure run:** preflight → `canonical_full_v5` from `canonical_full_v4` → edges→network rerun → per-stage ADR 0012 proof on `v5`.
-5. If ADR 0012 proof fails on `v5`, triage measurement (freshness, `(64,512,512)` shapes, oracle pairing) before watershed code changes.
-6. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) after each proof.
+3. **Watershed iteration:** fix generation on crop until overlap **≥80%** (baseline **57.89%** on `crop_M_exact_v3`); log via `scripts/watershed_candidate_gap_probe.py`.
+4. **At 80%:** ownership-map prep → preflight `canonical_full_v5` → **`canonical_full_v6`** → **evaluated** ADR 0012 per-stage proof.
+5. Harness **fail loud** if ADR 0012 cannot evaluate (maps missing) — not a valid closure attempt.
+6. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md).
 
 Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../workflow/PARITY_JOB_MONITORING.md)).
 
@@ -211,7 +228,7 @@ Scratch diagnostics: `scripts/watershed_candidate_gap_probe.py`, `workspace/scra
 
 ### Operator commands
 
-See **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for the current command block (`crop_M_exact_v3` → `canonical_full_v5` → closure proof). Legacy `crop_M_exact` / `canonical_full_v4` commands below are **audit-only** (stale edges/network checkpoints).
+See **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for the current command block (watershed iteration → v6 closure). Legacy commands below are **audit-only**.
 
 ```powershell
 # --- Legacy audit (2026-07-04 checkpoints; do not use for Phase 1 closure) ---
@@ -340,9 +357,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Phase 1 closure (ship gate)** — Launch **`canonical_full_v5`** (preflight from `v4`, fresh edges→network on current `main`) and run per-stage ADR 0012 `prove-exact --stage edges` + `--stage network`. Energy + Vertices on `v4` are already certified; do not rerun them unless evidence is stale.
-2. **Stretch baseline pending** — Refresh **`crop_M_exact_v3`** (edges-only rerun) before logging candidate-overlap KPIs; `crop_M_exact` / `v4` edge checkpoints are pre–PR #103.
-3. **Watershed generation gap (stretch, non-blocking after closure)** — Strict-field shortfall localized to candidate *generation* ([§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap)). Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py`. Primary KPI: candidate overlap % on crop `v3`.
+1. **Watershed generation gap (primary)** — Crop overlap **57.89%** on `crop_M_exact_v3`; need **≥80%** before `canonical_full_v6`. Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py`. See [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap).
+2. **ADR 0012 measurement gap (canonical)** — Full oracle lacks `watershed_ownership_map.mat`; Python v5 checkpoint lacks `--include-debug-maps`. Supply both at v6 proof time ([HANDOFF](../../../.claude/HANDOFF.md) § B).
+3. **Phase 1 closure** — Blocked until (1) + evaluated ADR 0012 pass on `canonical_full_v6`. **`canonical_full_v5`** writer done; proof invalid (`adr0012_evaluated: false`).
 
-**Superseded guidance:** “>95% match” or strict-field `prove-exact-sequence` failure as the Phase 1 ship gate. Use ADR 0011/0012 per-stage bars for closure; see [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
+**Superseded guidance:** “>95% match” or strict-field fallback as closure verdict. Only **evaluated** ADR 0012 proofs count; see [ADR 0012 post-v5 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-post-v5-watershed-iteration-and-v6-closure).
 

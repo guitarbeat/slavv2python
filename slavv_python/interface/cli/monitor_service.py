@@ -12,8 +12,13 @@ from typing import Any
 
 import psutil
 
-from slavv_python.engine.constants import TRACKED_RUN_STAGES
+from slavv_python.analytics.parity.constants import (
+    EXPERIMENT_PROVENANCE_PATH,
+    RUN_MANIFEST_PATH,
+)
+from slavv_python.engine.constants import STATUS_COMPLETED, STATUS_PENDING, TRACKED_RUN_STAGES
 from slavv_python.engine.state import RunSnapshot, load_run_snapshot
+from slavv_python.engine.state.models import StageSnapshot
 from slavv_python.engine.state.progress import calculate_overall_progress, preprocess_complete
 from slavv_python.engine.state.status import target_stage_progress
 
@@ -243,14 +248,144 @@ def _load_proof_status(path: Path) -> ProofStatus:
 
 def _load_proof_statuses(run_dir: Path) -> tuple[ProofStatus, ...]:
     analysis = run_dir / "03_Analysis"
-    return tuple(
-        _load_proof_status(path)
-        for path in (
-            analysis / "exact_proof_energy.json",
-            analysis / "exact_proof.json",
-        )
-        if path.is_file()
+    preferred = (
+        analysis / "exact_proof_edges.json",
+        analysis / "exact_proof_network.json",
+        analysis / "exact_proof_energy.json",
+        analysis / "exact_proof_vertices.json",
+        analysis / "exact_proof.json",
     )
+    return tuple(_load_proof_status(path) for path in preferred if path.is_file())
+
+
+def _parity_manifest_payload(run_dir: Path) -> dict[str, Any] | None:
+    """Return a parity harness manifest when the run root stores one."""
+    for relative in (RUN_MANIFEST_PATH, Path("99_Metadata") / "run_snapshot.json"):
+        payload = _read_json(run_dir / relative)
+        if payload is None:
+            continue
+        if payload.get("kind") in {"parity_run", "parity_source_run"}:
+            return payload
+    return None
+
+
+def _snapshot_has_pipeline_stages(snapshot: RunSnapshot | None) -> bool:
+    if snapshot is None:
+        return False
+    return any(name in snapshot.stages for name in TRACKED_RUN_STAGES)
+
+
+def synthesize_snapshot_from_parity_artifacts(run_dir: Path) -> RunSnapshot | None:
+    """Rebuild a monitor-facing pipeline snapshot from parity manifest metrics."""
+    manifest = _parity_manifest_payload(run_dir)
+    if manifest is None:
+        return None
+    stage_metrics = manifest.get("stage_metrics")
+    if not isinstance(stage_metrics, dict) or not stage_metrics:
+        return None
+
+    job = _read_json(run_dir / "99_Metadata" / "parity_job.json") or {}
+    provenance = _read_json(run_dir / EXPERIMENT_PROVENANCE_PATH) or {}
+    target_stage = str(
+        job.get("stop_after") or provenance.get("stop_after") or manifest.get("stage") or "network"
+    )
+
+    stages: dict[str, StageSnapshot] = {}
+    for name in TRACKED_RUN_STAGES:
+        if name == "preprocess":
+            if any(
+                isinstance(stage_metrics.get(stage_name), dict)
+                and stage_metrics[stage_name].get("status") == STATUS_COMPLETED
+                for stage_name in ("energy", "vertices", "edges", "network")
+            ):
+                stages[name] = StageSnapshot(
+                    name=name,
+                    status=STATUS_COMPLETED,
+                    progress=1.0,
+                    detail="Preprocessing complete",
+                )
+            else:
+                stages[name] = StageSnapshot(name=name)
+            continue
+
+        metrics = stage_metrics.get(name)
+        if not isinstance(metrics, dict):
+            stages[name] = StageSnapshot(name=name)
+            continue
+        status = str(metrics.get("status") or STATUS_PENDING)
+        progress = 1.0 if status == STATUS_COMPLETED else 0.0
+        detail = f"{name.capitalize()} ready" if status == STATUS_COMPLETED else ""
+        stages[name] = StageSnapshot(
+            name=name,
+            status=status,
+            progress=progress,
+            detail=detail,
+            completed_at=metrics.get("completed_at"),
+            elapsed_seconds=float(metrics.get("elapsed_seconds") or 0.0),
+            peak_memory_bytes=int(metrics.get("peak_memory_bytes") or 0),
+        )
+
+    job_status = str(job.get("status") or "")
+    target_stage_snapshot = stages.get(target_stage, StageSnapshot(target_stage))
+    if job_status == "succeeded" and target_stage_snapshot.status == STATUS_COMPLETED:
+        run_status = "completed_target"
+        current_stage = target_stage
+        current_detail = "Run completed"
+    elif job_status == "running":
+        run_status = "running"
+        current_stage = next(
+            (
+                name
+                for name in TRACKED_RUN_STAGES
+                if stages.get(name, StageSnapshot(name)).status not in {STATUS_COMPLETED, "failed"}
+            ),
+            target_stage,
+        )
+        current_detail = stages.get(current_stage, StageSnapshot(current_stage)).detail
+    else:
+        run_status = (
+            "completed_target"
+            if target_stage_snapshot.status == STATUS_COMPLETED
+            else str(manifest.get("status") or STATUS_PENDING)
+        )
+        current_stage = target_stage if target_stage_snapshot.status == STATUS_COMPLETED else ""
+        current_detail = "Run completed" if run_status == "completed_target" else ""
+
+    timestamps = manifest.get("timestamps") or {}
+    elapsed_seconds = sum(
+        float(metrics.get("elapsed_seconds") or 0.0)
+        for metrics in stage_metrics.values()
+        if isinstance(metrics, dict)
+    )
+    snapshot = RunSnapshot(
+        run_id=str(manifest.get("run_id") or "unknown"),
+        status=run_status,
+        target_stage=target_stage,
+        current_stage=current_stage,
+        current_detail=current_detail,
+        overall_progress=calculate_overall_progress(
+            stages,
+            preprocess_done=preprocess_complete(stages, snapshot=None),
+        ),
+        elapsed_seconds=elapsed_seconds,
+        created_at=str(timestamps.get("created_at") or ""),
+        updated_at=str(timestamps.get("updated_at") or ""),
+        stages=stages,
+    )
+    snapshot.overall_progress = max(
+        snapshot.overall_progress,
+        target_stage_progress(snapshot),
+    )
+    return snapshot
+
+
+def resolve_run_monitor_snapshot(run_dir: Path) -> RunSnapshot | None:
+    """Load the pipeline snapshot, synthesizing from parity artifacts when clobbered."""
+    snapshot = load_run_snapshot(run_dir)
+    if _snapshot_has_pipeline_stages(snapshot):
+        return snapshot
+    synthesized = synthesize_snapshot_from_parity_artifacts(run_dir)
+    return synthesized if synthesized is not None else snapshot
 
 
 def _artifact_checks(run_dir: Path) -> tuple[ArtifactStatus, ...]:
@@ -363,7 +498,7 @@ def load_run_monitor_view(run_dir: str | Path) -> RunMonitorView:
     """Load a consolidated monitoring view for a structured run directory."""
     root = Path(run_dir).expanduser().resolve()
     snapshot_path = snapshot_path_for_run(root)
-    snapshot = load_run_snapshot(root)
+    snapshot = resolve_run_monitor_snapshot(root)
     pid_statuses = _load_pid_statuses(root)
     status, reason = _effective_status(snapshot, pid_statuses, run_dir=root)
     if status == "stale-running-snapshot":

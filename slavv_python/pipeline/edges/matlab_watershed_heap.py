@@ -7,7 +7,6 @@ MATLAB lineage: ``get_edges_by_watershed.m`` shared-state helpers.
 from __future__ import annotations
 
 import heapq
-import itertools
 from typing import cast
 
 import numpy as np
@@ -26,15 +25,153 @@ def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np
     return cast("np.ndarray", np.flatnonzero(border_mask.ravel(order="F")).astype(np.int64))
 
 
+def _matlab_global_watershed_insert_available_location(
+    available_locations: list[int],
+    next_location: int,
+    next_energy: float,
+    energy_lookup: dict[int, float] | np.ndarray,
+    seed_idx: int,
+    is_current_location_clear: bool,
+) -> tuple[list[int], bool]:
+    """Insert ``next_location`` into MATLAB worst-to-best ``available_locations`` order."""
+    is_clear = is_current_location_clear
+    updated = list(available_locations)
+    # MATLAB reassembly uses ``end-1`` when the current tail has not been cleared yet,
+    # for both primary and secondary seeds.
+    if not is_current_location_clear:
+        if updated:
+            updated.pop()
+        is_clear = True
+
+    target_energy = float(next_energy)
+
+    insert_at = len(updated)
+    for idx, loc in enumerate(updated):
+        mid_energy = float(energy_lookup[int(loc)])
+        if seed_idx == 1:
+            is_mid_worse = mid_energy > target_energy
+        else:
+            is_mid_worse = mid_energy >= target_energy
+        if not is_mid_worse:
+            insert_at = idx
+            break
+
+    updated.insert(insert_at, int(next_location))
+    return updated, is_clear
+
+
+def _matlab_global_watershed_reset_join_locations(
+    available_locations: list[int],
+    *,
+    next_vertex_locations: np.ndarray,
+    is_current_location_clear: bool,
+) -> tuple[list[int], bool]:
+    """Remove join targets from ``available_locations`` (MATLAB watershed join reset)."""
+    is_clear = is_current_location_clear
+    updated = list(available_locations)
+    if not is_clear:
+        if updated:
+            updated.pop()
+        is_clear = True
+
+    locations_to_reset = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
+    updated = [loc for loc in updated if loc not in locations_to_reset]
+    return updated, is_clear
+
+
+class SortedFrontier:
+    """Faithful port of MATLAB ``available_locations`` (stable worst-to-best sorted array)."""
+
+    def __init__(self, initial_locations: list[int], energy_lookup: np.ndarray):
+        self._energy_lookup = energy_lookup
+        self._available: list[int] = list(initial_locations)
+        self._is_current_location_clear = False
+
+    def begin_seed_loop(self) -> None:
+        """Reset per-iteration clear flag before MATLAB seed loop."""
+        self._is_current_location_clear = False
+
+    def __bool__(self) -> bool:
+        return bool(self._available)
+
+    def peek_best(self) -> int:
+        if not self._available:
+            raise KeyError("peek from an empty sorted frontier")
+        return int(self._available[-1])
+
+    def pop_best(self) -> int:
+        if not self._available:
+            raise KeyError("pop from an empty sorted frontier")
+        return int(self._available.pop())
+
+    def push(
+        self,
+        location: int,
+        energy: float,
+        seed_idx: int,
+        *,
+        current_linear: int | None = None,
+    ) -> None:
+        del current_linear
+        self._available, self._is_current_location_clear = (
+            _matlab_global_watershed_insert_available_location(
+                self._available,
+                next_location=int(location),
+                next_energy=float(energy),
+                energy_lookup=self._energy_lookup,
+                seed_idx=int(seed_idx),
+                is_current_location_clear=self._is_current_location_clear,
+            )
+        )
+
+    def discard_current_location_if_not_clear(self, current_linear: int) -> None:
+        del current_linear
+        if self._is_current_location_clear:
+            return
+        if self._available:
+            self._available.pop()
+        self._is_current_location_clear = True
+
+    def remove_first_occurrence(
+        self,
+        locations: list[int] | np.ndarray,
+        *,
+        current_linear: int | None = None,
+    ) -> None:
+        del current_linear
+        self._available, self._is_current_location_clear = (
+            _matlab_global_watershed_reset_join_locations(
+                self._available,
+                next_vertex_locations=np.asarray(locations, dtype=np.int64),
+                is_current_location_clear=self._is_current_location_clear,
+            )
+        )
+
+
+def build_watershed_frontier(
+    backend: str,
+    initial_locations: list[int],
+    energy_lookup: np.ndarray,
+) -> SortedFrontier | FrontierQueue:
+    """Select the watershed frontier implementation (``sorted`` default, ``heap`` fallback)."""
+    normalized = str(backend).strip().lower()
+    if normalized in {"", "sorted", "array", "matlab"}:
+        return SortedFrontier(initial_locations, energy_lookup)
+    if normalized == "heap":
+        return FrontierQueue(initial_locations, energy_lookup)
+    raise ValueError(
+        f"Unknown watershed frontier backend {backend!r}; expected 'sorted' or 'heap'."
+    )
+
+
 class FrontierQueue:
-    """Encapsulates MATLAB's exact priority and tie-breaking rules for the watershed frontier.
-    Optimized for O(log N) operations using heapq."""
+    """Legacy heap frontier (non-stable; retained for rollback and perf comparison)."""
 
     def __init__(self, initial_locations: list[int], energy_lookup: np.ndarray):
         self._energy_lookup = energy_lookup
         self._heap: list[list] = []
         self._entry_finder: dict[int, list] = {}
-        self._counter = itertools.count(1)
+        self._is_current_location_clear = False
 
         # Seed tie-break: MATLAB pops available_locations from the end, so use pop rank
         # (not Fortran linear index) to preserve energy-rank flood order at -Inf seeds.
@@ -47,11 +184,11 @@ class FrontierQueue:
             self._heap.append(entry)
 
         heapq.heapify(self._heap)
-
-        # Mutate the initial_locations list to maintain exact backward compatibility
-        # in case any caller is relying on the side effect of `self._queue = initial_locations`
-        # emptying the list.
         initial_locations.clear()
+
+    def begin_seed_loop(self) -> None:
+        """Reset per-iteration clear flag before MATLAB seed loop."""
+        self._is_current_location_clear = False
 
     def __bool__(self) -> bool:
         while self._heap:
@@ -60,6 +197,12 @@ class FrontierQueue:
                 return True
             heapq.heappop(self._heap)
         return False
+
+    def _remove_location(self, linear_index: int) -> None:
+        entry = self._entry_finder.get(int(linear_index))
+        if entry is not None:
+            entry[3] = True
+            del self._entry_finder[int(linear_index)]
 
     def peek_best(self) -> int:
         while self._heap:
@@ -78,29 +221,51 @@ class FrontierQueue:
                 return cast("int", loc)
         raise KeyError("pop from an empty priority queue")
 
-    def push(self, location: int, energy: float, seed_idx: int) -> None:
-        """Adds a location to the heap with MATLAB-exact tie-breaking.
+    def push(
+        self,
+        location: int,
+        energy: float,
+        seed_idx: int,
+        *,
+        current_linear: int | None = None,
+    ) -> None:
+        """Adds a location to the heap with MATLAB-exact tie-breaking."""
+        if not self._is_current_location_clear and current_linear is not None:
+            self._remove_location(current_linear)
+            self._is_current_location_clear = True
 
-        Uses Lowest Linear Index Priority: for identical energies, the voxel
-        with the smallest Fortran-order linear index is popped first.
-        """
         _target_index = int(location)
+        seed_rank = max(1, int(seed_idx))
+        tie_break = (seed_rank - 1) * (1 << 31) + _target_index
         if _target_index in self._entry_finder:
-            # Update existing entry if new energy is better
             entry = self._entry_finder[_target_index]
-            if energy < entry[0]:
+            if energy < entry[0] or (energy == entry[0] and tie_break < entry[1]):
                 entry[3] = True  # Mark old entry as deleted
             else:
                 return
 
-        # Entry: [energy, linear_index, location, is_deleted]
-        # Linear index serves as the secondary sort key for bit-perfect tie-breaking.
-        entry = [float(energy), _target_index, _target_index, False]
+        entry = [float(energy), tie_break, _target_index, False]
         self._entry_finder[_target_index] = entry
         heapq.heappush(self._heap, entry)
 
-    def remove_first_occurrence(self, locations: list[int] | np.ndarray) -> None:
+    def discard_current_location_if_not_clear(self, current_linear: int) -> None:
+        """MATLAB: when strel energy is not tolerated, pop tail if current not yet cleared."""
+        if self._is_current_location_clear:
+            return
+        self._remove_location(current_linear)
+        self._is_current_location_clear = True
+
+    def remove_first_occurrence(
+        self,
+        locations: list[int] | np.ndarray,
+        *,
+        current_linear: int | None = None,
+    ) -> None:
         """Removes the specified locations to handle watershed joins."""
+        if not self._is_current_location_clear and current_linear is not None:
+            self._remove_location(current_linear)
+            self._is_current_location_clear = True
+
         locations_to_reset = set(np.asarray(locations, dtype=np.int64).tolist())
         for loc in locations_to_reset:
             entry = self._entry_finder.get(loc)
@@ -140,10 +305,6 @@ class VoxelClaimMap:
         self.energy_temp_flat = self.energy_map_temp.ravel(order="F")
 
     def _initialize_vertices(self, vertex_positions: np.ndarray):
-        # vertex_positions are in physical ZYX order.
-        # We need MATLAB linear indices [Y, X, Z].
-        # The input shape to zyx_to_matlab_linear_indices must be the physical [Z, Y, X] shape.
-        # We derive it from our internal [Y, X, Z] shape.
         from slavv_python.utils.matlab_order import zyx_to_matlab_linear_indices
 
         physical_shape = (self.shape[2], self.shape[0], self.shape[1])
@@ -151,7 +312,6 @@ class VoxelClaimMap:
         self.number_of_vertices = len(self.vertex_locations)
 
         border_locations = _matlab_global_watershed_border_locations(self.shape)
-        # Use flat views to initialize values at MATLAB linear indices
         v_index_flat = self.vertex_index_map.ravel(order="F")
         temp_flat = self.energy_map_temp.ravel(order="F")
 
@@ -163,7 +323,6 @@ class VoxelClaimMap:
             idx = int(linear_index)
             v_index_flat[idx] = np.uint32(vertex_offset + 1)
             self.vertex_energies[vertex_offset] = self.vertex_energies_raw_flat[idx]
-            # vertex energies are encoded as -Inf to ensure their priority selection
             temp_flat[idx] = np.float64(-np.inf)
 
         self.initial_locations = [int(loc) for loc in self.vertex_locations[::-1]]
