@@ -34,6 +34,12 @@ concurrency:
 jobs:
   random-component-parity:
     name: R2019a random component parity (advisory)
+    # Only enqueue when the self-hosted MATLAB R2019a runner is online. Without
+    # this guard the job queues indefinitely (no matching runner exists), leaving
+    # a perpetually pending check on every PR. Set the repo/environment variable
+    # MATLAB_RUNNER_ONLINE=true once the runner is registered to re-enable it;
+    # workflow_dispatch always runs so the runner owner can trigger it manually.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.MATLAB_RUNNER_ONLINE == 'true' }}
     runs-on: [self-hosted, windows, matlab-r2019a]
     timeout-minutes: 10
     # Keep this advisory until the corpus has a confirmed green baseline; branch
