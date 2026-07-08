@@ -259,6 +259,9 @@ class EdgeManager:
                     ).write_candidate_checkpoint(
                         run_context.checkpoints_dir,
                         candidates_payload,
+                        include_debug_maps=bool(
+                            params.get("parity_include_debug_maps", False)
+                        ),
                     )
             handle.update(
                 units_total=3,

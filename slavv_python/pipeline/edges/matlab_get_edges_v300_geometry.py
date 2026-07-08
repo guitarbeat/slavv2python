@@ -10,6 +10,7 @@ import numpy as np
 from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
     build_matlab_local_strel_geometry,
 )
+from slavv_python.pipeline.edges.matlab_indexing import _matlab_watershed_min_candidate_energies
 
 if TYPE_CHECKING:
     from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
@@ -140,7 +141,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
             with np.errstate(invalid="ignore"):
                 adjusted *= directional_alignment
 
-    adjusted[~np.isfinite(adjusted)] = np.inf
+    adjusted = _matlab_watershed_min_candidate_energies(adjusted)
     return cast("np.ndarray", adjusted.astype(np.float64, copy=False))
 
 

@@ -27,6 +27,14 @@ def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np
     return cast("np.ndarray", matlab_linear_index_to_yxz(index, shape))
 
 
+def _matlab_watershed_min_candidate_energies(energies: np.ndarray) -> np.ndarray:
+    """Prepare strel energies for MATLAB ``min`` semantics (honor ``-Inf``, ignore ``NaN``/``+Inf``)."""
+    working = np.asarray(energies, dtype=np.float64).copy()
+    working[np.isnan(working)] = np.inf
+    working[np.isposinf(working)] = np.inf
+    return working
+
+
 def _argmin_with_linear_index_tiebreak(
     energies: np.ndarray,
     linear_indices: np.ndarray,

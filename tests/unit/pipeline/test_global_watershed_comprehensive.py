@@ -34,6 +34,10 @@ from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
+from slavv_python.pipeline.edges.matlab_indexing import (
+    _argmin_with_linear_index_tiebreak,
+    _matlab_watershed_min_candidate_energies,
+)
 from slavv_python.pipeline.edges.matlab_watershed_heap import (
     SortedFrontier,
     _matlab_global_watershed_insert_available_location,
@@ -421,6 +425,15 @@ def test_directional_suppression_is_iterative():
         f"Expected index 1 to be best after suppressing index 0, got {best_idx_2}"
     )
     assert adjusted[0] == 0.0
+
+
+@pytest.mark.unit
+def test_strel_seed_argmin_honors_negative_infinity_like_matlab() -> None:
+    """MATLAB ``min`` treats ``-Inf`` as a valid minimum and ignores ``NaN``."""
+    adjusted = np.array([-172.0, np.nan, -np.inf, -200.0], dtype=np.float64)
+    working = _matlab_watershed_min_candidate_energies(adjusted)
+    linear = np.array([100, 101, 102, 103], dtype=np.int64)
+    assert _argmin_with_linear_index_tiebreak(working, linear) == 2
 
 
 @pytest.mark.unit

@@ -87,6 +87,17 @@ def test_validate_parameters_rejects_legacy_parity_controls():
         )
 
 
+def test_validate_parameters_allows_parity_include_debug_maps():
+    validated = validate_parameters(
+        {
+            "comparison_exact_network": True,
+            "parity_include_debug_maps": True,
+        }
+    )
+
+    assert validated["parity_include_debug_maps"] is True
+
+
 def test_validate_parameters_warns_for_unusual_excitation_wavelength():
     with pytest.warns(UserWarning, match="Excitation wavelength outside typical range"):
         validated = validate_parameters({"excitation_wavelength_in_microns": 3.5})

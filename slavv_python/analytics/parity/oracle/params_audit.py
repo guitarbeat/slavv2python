@@ -49,7 +49,11 @@ def build_exact_params_audit(params: dict[str, Any]) -> dict[str, Any]:
     param_keys = {str(key) for key in params}
     shared_method_keys = sorted(param_keys & EXACT_SHARED_METHOD_PARAMETER_KEYS)
     orchestration_keys = sorted(param_keys & EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS)
-    disallowed_python_only_keys = sorted(key for key in param_keys if key.startswith("parity_"))
+    disallowed_python_only_keys = sorted(
+        key
+        for key in param_keys
+        if key.startswith("parity_") and key not in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
+    )
 
     required_exact_mismatches: list[dict[str, Any]] = []
     for key, expected_value in EXACT_REQUIRED_PARAMETER_VALUES.items():

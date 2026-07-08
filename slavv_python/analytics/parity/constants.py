@@ -119,6 +119,7 @@ EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS = frozenset(
         "energy_axis_permutation",
         "energy_storage_format",
         "n_jobs",
+        "parity_include_debug_maps",
         "return_all_scales",
     }
 )

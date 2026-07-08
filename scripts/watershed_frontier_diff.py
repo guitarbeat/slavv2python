@@ -121,6 +121,11 @@ def _regenerate_with_trace(
     params.setdefault("watershed_frontier_backend", "sorted")
     vertex_center_image = paint_vertex_center_image(vertices.positions, energy.energy.shape)
     microns_per_voxel = params.get("microns_per_voxel", [1.0, 1.0, 1.0])
+    mpv_engine = np.asarray(microns_per_voxel, dtype=np.float64).copy()
+    if len(mpv_engine) >= 3:
+        # Match generate_watershed_candidates: params are MATLAB [dy,dx,dz];
+        # engine re-permutes to [dy,dx,dz] via [[1,2,0]] on physical [dz,dy,dx].
+        mpv_engine = mpv_engine[[2, 0, 1]]
     tracer = JsonExecutionTracer(trace_path)
     payload = _generate_edge_candidates_matlab_global_watershed(
         energy.energy,
@@ -128,7 +133,7 @@ def _regenerate_with_trace(
         vertices.positions,
         vertices.scales,
         energy.lumen_radius_microns,
-        microns_per_voxel,
+        mpv_engine,
         vertex_center_image,
         params,
         tracer=tracer,

@@ -38,9 +38,10 @@ from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
 )
 from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
-    _matlab_frontier_directional_suppression_factors,
 )
 from slavv_python.pipeline.edges.matlab_indexing import (
+    _argmin_with_linear_index_tiebreak,
+    _matlab_watershed_min_candidate_energies,
     _matlab_linear_index_to_coord,
 )
 from slavv_python.pipeline.edges.matlab_watershed_heap import (
@@ -615,7 +616,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                 current_scale_index,
                 size_of_image=shape,
                 lumen_radius_microns=lumen_radius_microns,
-                microns_per_voxel=microns_per_voxel,
+                microns_per_voxel=mpv_matlab,
                 step_size_per_origin_radius=step_size_per_origin_radius,
             )
             full_unit_vectors = np.asarray(lut["unit_vectors"], dtype=np.float64)
@@ -657,7 +658,11 @@ def _generate_edge_candidates_matlab_global_watershed(
                 current_vertex_energy=float(claim_map.vertex_energies[current_vertex_index - 1]),
                 energy_tolerance=energy_tolerance,
             )
-            strel_idx = int(np.argmin(np.asarray(adjusted, dtype=np.float64)))
+            working_adjusted = _matlab_watershed_min_candidate_energies(adjusted)
+            strel_idx = _argmin_with_linear_index_tiebreak(
+                working_adjusted,
+                current_strel_linear,
+            )
             next_location = int(current_strel_linear[strel_idx])
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
             active_tracer.on_seed_selected(seed_idx, next_location, float(adjusted[strel_idx]))
@@ -748,14 +753,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             else:
                 queue.discard_current_location_if_not_clear(current_linear)
 
-            adjusted[strel_idx] = np.inf
-
-            adjusted *= _matlab_frontier_directional_suppression_factors(
-                current_strel_offsets,
-                selected_index=strel_idx,
-                microns_per_voxel=microns_per_voxel,
-            )
-            adjusted[~np.isfinite(adjusted)] = np.inf
+            strel_unit_vectors = np.asarray(current_strel["unit_vectors"], dtype=np.float64)
+            cosine_to_selected = np.sum(strel_unit_vectors * strel_unit_vectors[strel_idx], axis=1)
+            adjusted *= (1.0 - cosine_to_selected) / 2.0
+            adjusted = _matlab_watershed_min_candidate_energies(adjusted)
 
         if heartbeat is not None:
             now = time.monotonic()
@@ -776,7 +777,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         d_over_r_map=claim_map.d_over_r_map,
         branch_order_map=claim_map.branch_order_map,
         lumen_radius_microns=lumen_radius_microns,
-        microns_per_voxel=microns_per_voxel,
+        microns_per_voxel=mpv_matlab,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
 

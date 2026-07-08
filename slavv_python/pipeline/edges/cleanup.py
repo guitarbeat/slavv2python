@@ -119,10 +119,14 @@ def prune_orphan_edges(
             break
 
         # Remove found orphans from the active pool and the global keep mask
-        for pool_idx in sorted(orphans, reverse=True):
+        keep_indices = np.ones(len(active_pool), dtype=bool)
+        keep_indices[orphans] = False
+
+        for pool_idx in orphans:
             keep_mask[original_indices[pool_idx]] = False
-            del original_indices[pool_idx]
-            del active_pool[pool_idx]
+
+        original_indices = [original_indices[i] for i, keep in enumerate(keep_indices) if keep]
+        active_pool = [active_pool[i] for i, keep in enumerate(keep_indices) if keep]
 
     return keep_mask
 
@@ -241,6 +245,9 @@ def _find_orphan_indices(
     active_edge_voxels: list[np.ndarray], vertex_voxels: set[int]
 ) -> list[int]:
     """Identifies edges whose endpoints are not anchored to any vertex or existing interior edge."""
+    if not active_edge_voxels:
+        return []
+
     # Build reference of all 'grounded' voxels (vertices + interior segments of current edges)
     grounded_voxels = np.fromiter(vertex_voxels, dtype=np.int64)
     interior_voxels = (
@@ -251,14 +258,19 @@ def _find_orphan_indices(
 
     anchor_set = np.union1d(grounded_voxels, interior_voxels)
 
-    orphan_edges: list[int] = []
-    for i, voxels in enumerate(active_edge_voxels):
-        endpoints = voxels[[0, -1]]
-        # If neither end of the edge touches an anchor, it's an orphan
-        if not np.any(np.isin(endpoints, anchor_set)):
-            orphan_edges.append(i)
+    # Vectorized endpoint check
+    endpoints = np.array(
+        [[voxels[0], voxels[-1]] if voxels.size > 0 else [-1, -1] for voxels in active_edge_voxels],
+        dtype=np.int64
+    )
 
-    return orphan_edges
+    # Check which endpoints are in anchor_set.
+    in_anchor = np.isin(endpoints.ravel(), anchor_set).reshape(len(active_edge_voxels), 2)
+
+    # An edge is an orphan if neither endpoint is in the anchor set
+    is_orphan = ~np.any(in_anchor, axis=1)
+
+    return np.flatnonzero(is_orphan).tolist()
 
 
 __all__ = [

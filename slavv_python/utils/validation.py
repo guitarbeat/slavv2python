@@ -5,7 +5,12 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
+from slavv_python.analytics.parity.constants import EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
 from slavv_python.workflows.profiles import apply_pipeline_profile, normalize_pipeline_profile_name
+
+_ALLOWED_PARITY_PARAMETER_KEYS = frozenset(
+    key for key in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS if key.startswith("parity_")
+)
 
 
 def _coerce_integral_parameter(name: str, value: Any) -> Any:
@@ -23,7 +28,11 @@ def _coerce_integral_parameter(name: str, value: Any) -> Any:
 
 def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     """Validate parameters and populate defaults for the maintained pipeline."""
-    legacy_parity_keys = sorted(str(key) for key in params if str(key).startswith("parity_"))
+    legacy_parity_keys = sorted(
+        str(key)
+        for key in params
+        if str(key).startswith("parity_") and str(key) not in _ALLOWED_PARITY_PARAMETER_KEYS
+    )
     if legacy_parity_keys:
         joined = ", ".join(legacy_parity_keys)
         raise ValueError(f"legacy parity parameters are no longer supported: {joined}")

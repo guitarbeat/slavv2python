@@ -18,6 +18,8 @@ class EdgeCandidatePersistence(Protocol):
         self,
         checkpoints_dir: Path,
         candidates: dict[str, Any],
+        *,
+        include_debug_maps: bool = False,
     ) -> dict[str, Any] | None:
         """Persist a slim candidate snapshot for exact-route replay and fail-fast."""
 
@@ -29,8 +31,10 @@ class NoOpEdgeCandidatePersistence:
         self,
         checkpoints_dir: Path,
         candidates: dict[str, Any],
+        *,
+        include_debug_maps: bool = False,
     ) -> dict[str, Any] | None:
-        del checkpoints_dir, candidates
+        del checkpoints_dir, candidates, include_debug_maps
         return None
 
 

@@ -44,6 +44,7 @@ class JsonExecutionTracer:
         self.output_path = Path(output_path)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         self.output_path.write_text("")
+        self._iteration = 0
 
     def _append(self, event_type: str, data: dict[str, Any]) -> None:
         payload = {"event": event_type, **data}
@@ -63,6 +64,7 @@ class JsonExecutionTracer:
     def on_iteration_start(
         self, iteration: int, current_linear: int, current_energy: float
     ) -> None:
+        self._iteration = int(iteration)
         self._append(
             "iteration_start",
             {
@@ -76,6 +78,7 @@ class JsonExecutionTracer:
         self._append(
             "seed_selected",
             {
+                "iteration": self._iteration,
                 "seed_idx": seed_idx,
                 "selected_linear": selected_linear,
                 "selected_energy": selected_energy,

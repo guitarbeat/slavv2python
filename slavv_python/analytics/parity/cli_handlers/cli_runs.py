@@ -234,6 +234,7 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
             force_rerun_from=getattr(args, "force_rerun_from", None),
             memory_safety_fraction=float(args.memory_safety_fraction),
             force=bool(args.force),
+            force_kill=force_kill,
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,

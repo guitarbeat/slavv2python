@@ -574,4 +574,33 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
     assert chosen["connections"].tolist() == [[0, 1], [2, 3]]
 
 
+def test_prune_orphan_edges_vectorized_parity():
+    from slavv_python.pipeline.edges.cleanup import prune_orphan_edges
+    
+    # 3 vertices
+    vertex_positions = np.array([
+        [5, 5, 5],
+        [10, 10, 10],
+        [15, 15, 15]
+    ], dtype=np.float32)
+    
+    # 4 traces:
+    # 1. Traces connecting vertex 0 to vertex 1 (Not orphan)
+    # 2. Traces connecting vertex 1 to vertex 2 (Not orphan)
+    # 3. Floating trace not touching any vertex or edge (Orphan)
+    # 4. Trace connected to 3's interior but not to any vertex (Orphan - should be recursively pruned)
+    traces = [
+        np.array([[5, 5, 5], [6, 6, 6], [7, 7, 7], [8, 8, 8], [9, 9, 9], [10, 10, 10]], dtype=np.float32),
+        np.array([[10, 10, 10], [11, 11, 11], [12, 12, 12], [13, 13, 13], [14, 14, 14], [15, 15, 15]], dtype=np.float32),
+        np.array([[20, 20, 20], [21, 21, 21], [22, 22, 22]], dtype=np.float32),
+        np.array([[21, 21, 21], [30, 30, 30]], dtype=np.float32),
+    ]
+    
+    volume_shape = (50, 50, 50)
+    keep_mask = prune_orphan_edges(traces, volume_shape, vertex_positions)
+    
+    assert keep_mask.tolist() == [True, True, False, False]
+
+
 # Made with Bob
+
