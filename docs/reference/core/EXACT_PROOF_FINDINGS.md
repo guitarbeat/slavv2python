@@ -4,6 +4,8 @@
 
 **Last Updated**: 2026-07-08
 
+> ⚠️ **2026-07-08 (session) — Funnel localization + crop truncation fix (VALIDATED).** New offline probe `scripts/edge_selection_funnel_probe.py` replays the Python edge-selection funnel on the crop and measures overlap with the MATLAB oracle pair set after each stage. **Result: the dominant divergence is the CROP step, not generation (mostly closed) and not selection (faithful).** Of the 15,094 MATLAB pairs that ARE Python candidates, crop drops **1,284** (8.5%); degree-excess 128; cycles 51; generation gap (never a candidate) 417. **Fix:** MATLAB `crop_edges_V200` computes `uint16(radius/microns)` and `uint16(space)` — **truncation (floor)** — whereas Python `_matlab_crop_edges_V200` used `np.rint` (round). Rounding yields a larger radius than MATLAB's floor, so Python over-flags boundary points and over-crops. Changed space + radius to `np.floor` in `slavv_python/pipeline/edges/finalize.py:_matlab_crop_edges_V200`. **Validated via `prove-exact --stage edges` on crop:** crop final edges improved **14,403 → 14,922** (MATLAB 15,511), gap **1,108 → 589 (3.8%)**; MATLAB overlap 13,631 → 14,114 (+483 pairs). 61 edge unit tests green. The remaining 589 crop gap (777 crop-drops + 417 generation + degree/cycle) is a **symptom of residual trace-shape (generation) divergence** — the smoothing core (`_matlab_smooth_edges_v2`) was cross-checked against `smooth_edges_V2.m` and is faithful. Next: apply the same fix on `canonical_full_v6` (edges rerun) and attack the frontier-order generation divergence (iter 13,761) for full Phase 1 closure.
+
 > ⚠️ **2026-07-08 — `canonical_full_v6` writer completed; Edges ADR 0012 ✅ PASS; Network ADR 0012 ❌ FAIL.** Edges proof: `adr0012_evaluated: true`, ownership-map agreement **96.02%** (≥60% threshold), Python **63,302** vs MATLAB **69,500** connections. Network proof: strand endpoint-pair multiset mismatch — Python **43,043** vs MATLAB **48,049** strands. Network failure is **entirely downstream of the edge count gap** (no independent network bug; with identical MATLAB edges, Python network reproduces exact topology). Phase 1 remains open. Next action: investigate why Python generates ~6,198 fewer connections than MATLAB despite 97.31% candidate overlap on crop.
 
 > ✅ **2026-07-06 — Phase 1 closure policy (operator synthesis).** **Ship gate:** evaluated ADR 0012 per-stage `prove-exact` on full `180709_E` (`canonical_full_v6` after 80% crop milestone). **Stretch:** overlap KPI on `crop_M_exact_v3`. See [ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch).
@@ -36,7 +38,7 @@ Phase 1 exit criterion ([ADR 0012 post-v5 addendum](../../adr/0012-edge-watershe
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
 | **Vertices** | Verified on prior surfaces | 🟢 **PASS** vs `180709_E_crop_M_v2` (`prove-exact --stage vertices` exit 0): positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix (`ellipsoid_offsets` ports MATLAB `construct_structuring_element.m` float-radius membership); `energies` certify under the ADR 0011 `np.allclose` policy after the loader recovers true energies from the raw `vertices.mat` (curated artifact stored a rank ramp). |
-| **Edges** | Watershed parity fixes (2026-07-07) | 🟢 **ADR 0012 PASS** on full `180709_E_full_v2` (`canonical_full_v6`, 2026-07-08): `adr0012_evaluated: true`, ownership-map **96.02%** (≥60% threshold), Python **63,302** vs MATLAB **69,500** connections. ⛔ Strict-field FAIL (connection count gap). Use ADR 0012 spatial-bar proof (`prove-exact --stage edges`) for the closure bar. |
+| **Edges** | Watershed parity fixes (2026-07-07) + crop-truncation fix (2026-07-08) | 🟢 **ADR 0012 PASS** on full `180709_E_full_v2` (`canonical_full_v6`, 2026-07-08): `adr0012_evaluated: true`, ownership-map **96.02%** (≥60% threshold, pre-fix edges). Post-fix `canonical_full_v6` edges rerun: Python **65,436** vs MATLAB **69,500** (gap 4,064 vs pre-fix 6,198). ADR 0012 re-evaluation with `--include-debug-maps` pending. ⛔ Strict-field FAIL (residual connection gap is generation-divergence, not selection). |
 | **Network** | End-to-end pipeline runs | ⛔ **ADR 0012 FAIL** on full `180709_E_full_v2` (`canonical_full_v6`, 2026-07-08): strand endpoint-pair multiset mismatch — Python **43,043** vs MATLAB **48,049** strands. **Entirely downstream of edge count gap** (no independent network bug; isolated network with MATLAB edges reproduces exact topology). Phase 1 open until edge count gap resolved. |
 
 ---
@@ -50,7 +52,7 @@ Phase 1 exit criterion ([ADR 0012 post-v5 addendum](../../adr/0012-edge-watershe
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. |
 | **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_full_v2` | ✅ `ensure-oracle-artifacts --stage all` passes. ✅ Full oracle **`watershed_ownership_map.mat`** present (`batch_260626-125646/data/`). |
 | **Crop harness run (audit)** | `workspace/runs/oracle_180709_E/crop_M_exact` | ✅ Per-stage ADR 0012 certified (2026-07-01). Stale for stretch KPI (pre–PR #103). |
-| **Crop stretch run** | `workspace/runs/oracle_180709_E/crop_M_exact_v3` | ✅ Edges rerun (2026-07-07). **Overlap 97.31%** (15,094 / 15,511); **19,283** candidates. Golden trace diverges iter **13,761** (stretch). |
+| **Crop stretch run** | `workspace/runs/oracle_180709_E/crop_M_exact_v3` | ✅ Edges rerun (2026-07-07). **Overlap 97.31%** (15,094 / 15,511); **19,283** candidates. **2026-07-08 crop-truncation fix applied:** final edges **14,922** vs MATLAB 15,511 (gap 589, 3.8%; was 14,403 / gap 1,108). Golden trace diverges iter **13,761** (stretch). |
 | **Canonical full oracle** | `workspace/oracles/180709_E_full_v2` | ✅ Batch `batch_260626-125646`; energy `(64,512,512)`. ✅ `watershed_ownership_map.mat` (2026-07-07 MATLAB harness). |
 | **Canonical full run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v4` | ✅ Energy + Vertices **CERTIFIED** (2026-07-04). Stale edges/network (pre–PR #103). |
 | **Canonical closure run (audit)** | `workspace/runs/oracle_180709_E/canonical_full_v5` | ✅ Writer succeeded (2026-07-06, ~2.1h). ⛔ Proof invalid ADR 0012 (`adr0012_evaluated: false`); strict-field edges 60,287 vs 69,500. Preserve as audit. |
@@ -227,7 +229,7 @@ If resuming exact parity work from a fresh thread, start with **[.claude/HANDOFF
 
 Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../workflow/PARITY_JOB_MONITORING.md)).
 
-Scratch diagnostics: `scripts/watershed_candidate_gap_probe.py`, `workspace/scratch/edge_gap_split.py`, `workspace/scratch/edge_funnel_probe.py`, `workspace/scratch/matlab_edge_instr/`.
+Scratch diagnostics: `scripts/watershed_candidate_gap_probe.py`, `scripts/edge_selection_funnel_probe.py` (selection-funnel localization), `workspace/scratch/edge_gap_split.py`, `workspace/scratch/edge_funnel_probe.py`, `workspace/scratch/matlab_edge_instr/`.
 
 ### Operator commands
 
@@ -360,7 +362,7 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Watershed generation gap (primary)** — Crop overlap **57.89%** on `crop_M_exact_v3`; need **≥80%** before `canonical_full_v6`. Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py`. See [§ root cause](#-2026-07-04-edge-shortfall-root-cause-generation-gap-not-prune-gap).
+1. **Edge-count gap (dominant = crop step, residual = generation)** — Funnel probe localizes the dominant connection loss to the **crop step** (`_matlab_crop_edges_V200`), now fixed via MATLAB truncation (`np.floor` not `np.rint`). **Validated on both surfaces:** crop edges 14,403 → **14,922** (MATLAB 15,511, gap 589); `canonical_full_v6` edges 63,302 → **65,436** (MATLAB 69,500, gap **4,064** vs pre-fix 6,198 — 34% gap reduction). Candidate overlap on crop is **97.31%** (≥80% gate cleared). The residual gap is a **symptom of trace-shape (generation / frontier-order) divergence**, not selection. Fix surface: `matlab_get_edges_by_watershed.py` / `matlab_watershed_heap.py` (frontier order, iter 13,761).
 2. **ADR 0012 measurement gap (canonical)** — Full oracle lacks `watershed_ownership_map.mat`; Python v5 checkpoint lacks `--include-debug-maps`. Supply both at v6 proof time ([HANDOFF](../../../.claude/HANDOFF.md) § B).
 3. **Phase 1 closure** — Blocked until (1) + evaluated ADR 0012 pass on `canonical_full_v6`. **`canonical_full_v5`** writer done; proof invalid (`adr0012_evaluated: false`).
 

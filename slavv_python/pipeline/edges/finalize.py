@@ -83,10 +83,14 @@ def _matlab_crop_edges_v200(
         if not (np.all(np.isfinite(space_trace_arr)) and np.all(np.isfinite(scale_trace_arr))):
             excluded[edge_index] = True
             continue
-        space_trace_matrix = np.rint(space_trace_arr).astype(np.int64, copy=False)
-        scale_trace_vector = np.rint(scale_trace_arr).astype(np.int64, copy=False)
+        # MATLAB truncates (uint16/uint8) the presmoothed subscripts and the
+        # radius, i.e. floor for non-negative values, NOT round-half-to-even.
+        # Rounding larger than MATLAB's floor makes Python flag more
+        # boundary points as out-of-bounds and over-crop valid edges.
+        space_trace_matrix = np.floor(space_trace_arr).astype(np.int64, copy=False)
+        scale_trace_vector = np.floor(scale_trace_arr).astype(np.int64, copy=False)
         scale_trace_vector = np.clip(scale_trace_vector, 0, max(len(lumen_radii) - 1, 0))
-        radii_in_pixels = np.rint(
+        radii_in_pixels = np.floor(
             lumen_radii[scale_trace_vector][:, None] / voxel_size,
         ).astype(np.int64, copy=False)
 
