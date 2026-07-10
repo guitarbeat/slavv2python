@@ -278,8 +278,12 @@ def test_prove_exact_non_energy_stage_is_not_blocked_by_energy_evidence(tmp_path
         lambda _matlab, _python, stages, **_kwargs: {"passed": True, "stages": list(stages)},
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.proof.coordinator.render_exact_proof_report",
-        lambda _report: "report",
+        "slavv_python.analytics.parity.proof.coordinator.persist_exact_proof_report",
+        lambda dest, _report: (dest / "exact_proof.json", dest / "exact_proof.txt"),
+    )
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.proof.coordinator.persist_mismatch_diagnostics",
+        lambda *_args, **_kwargs: (None, None),
     )
     monkeypatch.setattr(
         ExactProofCoordinator,

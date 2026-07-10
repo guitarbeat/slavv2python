@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from slavv_python.analytics.parity.constants import EDGE_CANDIDATE_CHECKPOINT_PATH
 from slavv_python.analytics.parity.probes.matlab_fail_fast import build_candidate_snapshot_payload
-from slavv_python.engine.state.tracker import atomic_joblib_dump
+from slavv_python.engine.state.io import atomic_joblib_dump
 
 if TYPE_CHECKING:
     from pathlib import Path

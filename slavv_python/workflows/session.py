@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python import utils
-from slavv_python.engine.state.tracker import (
+from slavv_python.engine.constants import (
     PIPELINE_STAGES,
     PREPROCESS_STAGE,
 )

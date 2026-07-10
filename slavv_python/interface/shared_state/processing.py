@@ -7,7 +7,7 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.engine.state.tracker import fingerprint_jsonable
+from slavv_python.engine.state.io import fingerprint_jsonable
 from slavv_python.schema.app_run import AppRunState
 from slavv_python.schema.results import PipelineResult, normalize_pipeline_result
 

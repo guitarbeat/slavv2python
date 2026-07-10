@@ -1,4 +1,8 @@
-"""Report and table generation logic for native-first MATLAB-oracle parity experiments."""
+"""Experiment recording tables and count-delta summaries (not exact proof gates).
+
+Exact proof text/JSON: ``proof_report``. Counts extraction: ``counts``.
+Preflight text: ``runs.preflight.render_exact_preflight_report``.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +18,6 @@ from slavv_python.analytics.parity.constants import (
     SUMMARY_TEXT_PATH,
 )
 from slavv_python.analytics.parity.oracle.models import RunCounts  # noqa: TC001
-from slavv_python.analytics.parity.proof import counts as _counts
 from slavv_python.analytics.parity.utils import (
     entity_id_from_path,
     normalize_value,
@@ -28,10 +31,6 @@ from slavv_python.engine.state import atomic_write_text, load_json_dict, stable_
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-extract_matlab_counts = _counts.extract_matlab_counts
-extract_source_python_counts = _counts.extract_source_python_counts
-read_python_counts_from_run = _counts.read_python_counts_from_run
 
 
 def _coerce_table_cell(value: Any) -> Any:
@@ -266,35 +265,6 @@ def render_experiment_summary(summary_payload: dict[str, Any]) -> str:
             _format_delta(summary_payload.get("diff_vs_source_python", {})),
         ]
     )
-
-
-def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
-    """Render a compact exact-preflight report."""
-    status = "PASS" if report_payload.get("passed") else "FAIL"
-    lines = [
-        "Exact preflight report",
-        f"Status: {status}",
-    ]
-    if report_payload.get("forced"):
-        lines.append("Force: memory gate override enabled")
-    memory_gate = report_payload.get("memory_gate")
-    if isinstance(memory_gate, dict):
-        required_gb = memory_gate.get("required_bytes", 0) / (1024**3)
-        budget_gb = memory_gate.get("budget_bytes", 0) / (1024**3)
-        lines.append(
-            f"Memory gate: required {required_gb:.2f} GiB <= budget {budget_gb:.2f} GiB "
-            f"({'pass' if memory_gate.get('passed') else 'fail'})"
-        )
-    for error in report_payload.get("errors", []):
-        lines.append(f"Error: {error}")
-    if "error" in report_payload:
-        lines.append(f"Error: {report_payload['error']}")
-    for warning in report_payload.get("warnings", []):
-        lines.append(f"Warning: {warning}")
-    snapshot_status = (report_payload.get("checks") or {}).get("run_snapshot_status")
-    if snapshot_status:
-        lines.append(f"Run snapshot status: {snapshot_status}")
-    return "\n".join(lines)
 
 
 def persist_experiment_summary(dest_run_root: Path, summary_payload: dict[str, Any]) -> None:

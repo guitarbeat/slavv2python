@@ -30,7 +30,7 @@ from slavv_python.analytics.parity.proof.reports import (
     build_experiment_summary,
 )
 from slavv_python.analytics.parity.runs import jobs
-from slavv_python.analytics.parity.runs.execution import (
+from slavv_python.analytics.parity.runs.bootstrap import (
     derive_exact_params_from_oracle,
 )
 from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job

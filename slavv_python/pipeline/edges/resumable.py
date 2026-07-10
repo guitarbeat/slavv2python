@@ -31,7 +31,7 @@ def extract_edges_watershed_resumable(
     stage_controller: StageController,
 ) -> EdgeSet:
     """Extract watershed edges with per-label persisted units."""
-    from slavv_python.engine.state.tracker import atomic_joblib_dump
+    from slavv_python.engine.state.io import atomic_joblib_dump
 
     energy = energy_data.energy
     energy_sign = float(energy_data.extra.get("energy_sign", -1.0))

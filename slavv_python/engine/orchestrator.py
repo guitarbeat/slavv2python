@@ -9,10 +9,10 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from slavv_python import utils
+from slavv_python.engine.constants import PREPROCESS_STAGE
 from slavv_python.engine.executor import StageExecutor
 from slavv_python.engine.state.run_ledger import RunContext
 from slavv_python.engine.state.run_state import RunState
-from slavv_python.engine.state.tracker import PREPROCESS_STAGE
 
 if TYPE_CHECKING:
     from .state.models import ProgressEvent

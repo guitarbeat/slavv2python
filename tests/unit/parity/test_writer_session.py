@@ -12,6 +12,7 @@ from slavv_python.analytics.parity.runs.writer_lease import (
     write_writer_lease,
 )
 from slavv_python.analytics.parity.runs.writer_session import (
+    launch_writer_session,
     reconcile_stale_writer_lease,
     resume_writer_session,
 )
@@ -183,3 +184,65 @@ def test_resume_writer_session_monitor_registers_and_succeeds(tmp_path, monkeypa
     assert record is not None
     assert record.status == "succeeded"
     assert record.exit_code == 0
+
+
+@pytest.mark.unit
+def test_launch_writer_session_prepare_spawn_and_monitor(tmp_path, monkeypatch):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    oracle_root = tmp_path / "oracle"
+    oracle_root.mkdir()
+    registry = JobRegistry(tmp_path / "registry.jsonl")
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.JobRegistry",
+        lambda registry_path=None: registry,
+    )
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.ensure_monitor_daemon_running",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.reconcile_stale_writer_lease",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.reconcile_registry_writer_conflict",
+        lambda *_a, **_k: None,
+    )
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.prepare_detached_exact_run_launch",
+        lambda **_kwargs: (["python", "-m", "detached"], ["python", "-m", "probe"]),
+    )
+
+    def _fake_launch(**kwargs):
+        assert kwargs["command_override"] == ["python", "-m", "detached"]
+        assert kwargs["skip_preflight"] is True
+        return {
+            "pid": 4242,
+            "stdout": str(run_dir / "out.log"),
+            "stderr": str(run_dir / "err.log"),
+            "command": ["python", "-m", "detached"],
+            "oracle_root": str(oracle_root),
+            "pid_file": str(run_dir / "job.pid"),
+        }
+
+    monkeypatch.setattr(
+        "slavv_python.analytics.parity.runs.writer_session.launch_exact_run_job",
+        _fake_launch,
+    )
+
+    manifest = launch_writer_session(
+        run_dir,
+        oracle_root=oracle_root,
+        stop_after="edges",
+        force_rerun_from="edges",
+        skip_preflight=True,
+        skip_foreground_probe=True,
+        monitor=True,
+    )
+
+    assert manifest["pid"] == 4242
+    record = registry.get_job_by_run_dir(run_dir)
+    assert record is not None
+    assert record.pid == 4242
+    assert record.stage == "edges"

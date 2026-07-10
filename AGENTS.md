@@ -239,7 +239,7 @@ slavv2python/
 │   │   │   ├── commands.py              # slavv parity command registry (root)
 │   │   │   ├── constants.py / utils.py  # shared parity constants + IO/hash helpers (root)
 │   │   │   ├── proof/                   # coordinator, comparators, energy/ULP proofs, reports
-│   │   │   ├── runs/                    # resume, jobs, monitor_daemon, preflight, writer_lease, bootstrap, execution
+│   │   │   ├── runs/                    # resume, writer_session, jobs, monitor_daemon, preflight, writer_lease, bootstrap
 │   │   │   ├── oracle/                  # surfaces, oracle_artifacts, promotion, loaders, params_audit, models
 │   │   │   ├── probes/                  # adaptive_probes, trace_comparator, crop_export, edge_artifacts, matlab_fail_fast
 │   │   │   └── cli_handlers/            # cli_runs / cli_proofs / cli_diagnostics / cli_edges / cli_support

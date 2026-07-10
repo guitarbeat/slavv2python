@@ -221,7 +221,7 @@ class EdgeManager:
             )
         )
         if resumable:
-            from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
+            from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
 
             if use_watershed:
                 frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
@@ -337,7 +337,7 @@ class EdgeManager:
         ).copy()
 
         if resumable:
-            from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
+            from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
             from slavv_python.pipeline.edges.frontier_events import (
                 _build_frontier_candidate_lifecycle,
             )

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.engine.state.tracker import atomic_joblib_dump
+from slavv_python.engine.state.io import atomic_joblib_dump
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.detection import (
     choose_vertices_matlab_style,

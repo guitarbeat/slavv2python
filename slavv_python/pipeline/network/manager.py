@@ -168,7 +168,7 @@ class NetworkManager:
         Returns:
             NetworkResult: The final constructed network graph and metadata.
         """
-        from slavv_python.engine.state.tracker import atomic_joblib_dump
+        from slavv_python.engine.state.io import atomic_joblib_dump
 
         inputs = cls._inputs_from_stages(edges, vertices, params)
 

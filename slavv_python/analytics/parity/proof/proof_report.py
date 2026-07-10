@@ -1,8 +1,21 @@
-"""Human-readable exact-route proof report rendering."""
+"""Exact proof outcome: text render and JSON/text persistence.
+
+Owned by the proof package (Certification compare results). Not preflight
+(run lifecycle) and not experiment summary tables (``reports.py``).
+"""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from slavv_python.analytics.parity.constants import (
+    EXACT_PROOF_JSON_PATH,
+    EXACT_PROOF_TEXT_PATH,
+)
+from slavv_python.analytics.parity.utils import write_json_with_hash, write_text_with_hash
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def render_exact_proof_report(report: dict[str, Any]) -> str:
@@ -86,4 +99,20 @@ def render_exact_proof_report(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["render_exact_proof_report"]
+def persist_exact_proof_report(
+    dest_run_root: Path,
+    report_payload: dict[str, Any],
+) -> tuple[Path, Path]:
+    """Write JSON and text exact-proof artifacts under the run root."""
+    json_path = dest_run_root / EXACT_PROOF_JSON_PATH
+    text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_with_hash(json_path, report_payload)
+    write_text_with_hash(text_path, render_exact_proof_report(report_payload))
+    return json_path, text_path
+
+
+__all__ = [
+    "persist_exact_proof_report",
+    "render_exact_proof_report",
+]

@@ -17,7 +17,12 @@ from slavv_python.engine.constants import (
     STATUS_FAILED,
     STATUS_RUNNING,
 )
-from slavv_python.engine.state.io import atomic_write_json, load_json_dict
+from slavv_python.engine.state.io import (
+    atomic_write_json,
+    fingerprint_array,
+    fingerprint_jsonable,
+    load_json_dict,
+)
 from slavv_python.engine.state.layout import resolve_run_layout
 from slavv_python.engine.state.models import (  # noqa: TC001
     ProgressEvent,
@@ -53,7 +58,6 @@ from slavv_python.engine.state.snapshots import (
     persist_snapshot,
 )
 from slavv_python.engine.state.stage_handle import StageController
-from slavv_python.engine.state.tracker import fingerprint_array, fingerprint_jsonable
 
 if TYPE_CHECKING:
     import numpy as np

@@ -1,4 +1,16 @@
-"""In-process parity writer session: lease, job manifest, and registry as one transaction."""
+"""Parity Writer Session: one-writer claim, run, and finalize.
+
+Owns the operator invariant that a single writer holds a run root at a time:
+
+* **In-process resume** — ``resume_writer_session`` claims lease + local job
+  manifest (+ optional JobRegistry entry), then finalizes on success/failure.
+* **Detached launch** — ``launch_writer_session`` reconciles conflicts, runs
+  prepare/preflight probes, spawns the child, and optionally registers monitor.
+
+Adapters (storage only): ``writer_lease``, ``job_registry``,
+``parity_job_lifecycle``. Preflight and foreground probes stay in
+``launch_prepare`` / ``preflight`` (run gates, not the writer transaction).
+"""
 
 from __future__ import annotations
 
@@ -13,6 +25,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 from slavv_python.analytics.parity.runs.job_registry import JobRegistry
+from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
+from slavv_python.analytics.parity.runs.launch_prepare import (
+    LaunchPreparationError,
+    prepare_detached_exact_run_launch,
+)
 from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
     finalize_parity_job,
     mark_parity_job_running,
@@ -180,7 +197,88 @@ def resume_writer_session(
         raise
 
 
+def launch_writer_session(
+    dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
+    dataset_root: Path | None = None,
+    stop_after: str | None = None,
+    force_rerun_from: str | None = None,
+    memory_safety_fraction: float | None = None,
+    force: bool = False,
+    force_kill: bool = False,
+    skip_preflight: bool = False,
+    skip_foreground_probe: bool = False,
+    n_jobs: int | None = None,
+    monitor: bool = False,
+    python_executable: Path | None = None,
+) -> dict[str, Any]:
+    """Prepare and detach an exact-route writer; optionally register monitoring.
+
+    Returns the detached job manifest (pid, stdout/stderr paths, command).
+    Raises ``LaunchPreparationError`` when the run root is not safe to launch.
+    """
+    root = dest_run_root.expanduser().resolve()
+    try:
+        reconcile_stale_writer_lease(root, force_kill=force_kill)
+        reconcile_registry_writer_conflict(root, force_kill=force_kill)
+    except RuntimeError as exc:
+        raise LaunchPreparationError(str(exc)) from exc
+
+    detached_command, foreground_command = prepare_detached_exact_run_launch(
+        dest_run_root=root,
+        oracle_root=oracle_root,
+        dataset_root=dataset_root,
+        stop_after=stop_after,
+        force_rerun_from=force_rerun_from,
+        memory_safety_fraction=memory_safety_fraction,
+        force=force,
+        force_kill=force_kill,
+        skip_preflight=skip_preflight,
+        skip_foreground_probe=skip_foreground_probe,
+        n_jobs=n_jobs,
+        python_executable=python_executable,
+    )
+
+    print("Foreground probe command:")
+    print(" ".join(foreground_command))
+    print("Detached writer command:")
+    print(" ".join(detached_command))
+
+    manifest = launch_exact_run_job(
+        dest_run_root=root,
+        dataset_root=dataset_root.expanduser().resolve() if dataset_root else None,
+        oracle_root=oracle_root.expanduser().resolve() if oracle_root else None,
+        stop_after=stop_after,
+        force_rerun_from=force_rerun_from,
+        memory_safety_fraction=memory_safety_fraction,
+        force=force,
+        skip_preflight=True,
+        n_jobs=n_jobs,
+        command_override=detached_command,
+        python_executable=python_executable,
+    )
+
+    if monitor:
+        oracle_root_path = Path(manifest["oracle_root"]) if manifest.get("oracle_root") else None
+        stage = force_rerun_from or "all"
+        register_monitor_job(
+            run_dir=root,
+            oracle_root=oracle_root_path,
+            stage=stage,
+            command=" ".join(manifest["command"]),
+            pid=int(manifest["pid"]),
+            metadata={
+                "stop_after": stop_after,
+                "manifest_path": manifest.get("pid_file"),
+            },
+        )
+
+    return manifest
+
+
 __all__ = [
+    "launch_writer_session",
     "reconcile_registry_writer_conflict",
     "reconcile_stale_writer_lease",
     "register_monitor_job",

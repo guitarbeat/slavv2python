@@ -15,14 +15,12 @@ from slavv_python.analytics.parity.constants import (
     CHECKPOINTS_DIR,
     EDGE_CANDIDATE_CHECKPOINT_PATH,
     EDGE_REPLAY_PROOF_JSON_PATH,
-    EXACT_PROOF_JSON_PATH,
-    EXACT_PROOF_TEXT_PATH,
     EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL,
     LUT_PROOF_JSON_PATH,
 )
+from slavv_python.analytics.parity.oracle import params_audit
 from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface  # noqa: TC001
-from slavv_python.analytics.parity.oracle import params_audit
 from slavv_python.analytics.parity.oracle.params_audit import persist_param_storage
 from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     load_normalized_python_checkpoints,
@@ -51,7 +49,7 @@ from slavv_python.analytics.parity.proof.counts import (
 )
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_ORDER
 from slavv_python.analytics.parity.proof.mismatch_diagnostics import persist_mismatch_diagnostics
-from slavv_python.analytics.parity.proof.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.proof.proof_report import persist_exact_proof_report
 from slavv_python.analytics.parity.utils import write_json_with_hash
 from slavv_python.engine.state import (
     fingerprint_file,
@@ -214,17 +212,12 @@ class ExactProofCoordinator:
             }
         )
 
-        json_path = dest_run_root / EXACT_PROOF_JSON_PATH
-        text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
-
         from slavv_python.analytics.parity.utils import (
             payload_hash,
             write_json_with_hash,
-            write_text_with_hash,
         )
 
-        write_json_with_hash(json_path, report_payload)
-        write_text_with_hash(text_path, render_exact_proof_report(report_payload))
+        json_path, text_path = persist_exact_proof_report(dest_run_root, report_payload)
 
         mismatch_paths = persist_mismatch_diagnostics(
             dest_run_root,

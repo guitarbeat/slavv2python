@@ -36,14 +36,15 @@ from slavv_python.analytics.parity.oracle.surfaces import (
     write_run_manifest,
 )
 from slavv_python.analytics.parity.probes.adaptive_probes import ensure_rerun_allowed
-from slavv_python.analytics.parity.proof.reports import (
-    build_experiment_summary,
+from slavv_python.analytics.parity.proof.counts import (
     extract_matlab_counts,
     extract_source_python_counts,
+    read_python_counts_from_run,
+)
+from slavv_python.analytics.parity.proof.reports import (
+    build_experiment_summary,
     persist_experiment_summary,
     persist_recording_tables,
-    read_python_counts_from_run,
-    render_exact_preflight_report,
     render_experiment_summary,
 )
 from slavv_python.analytics.parity.runs.bootstrap import (
@@ -54,19 +55,15 @@ from slavv_python.analytics.parity.runs.bootstrap import (
     derive_exact_params_from_oracle,
     maybe_sync_exact_vertex_checkpoint,
 )
-from slavv_python.analytics.parity.runs.jobs import launch_exact_run_job
-from slavv_python.analytics.parity.runs.launch_prepare import (
-    LaunchPreparationError,
-    assert_no_conflicting_registry_writer,
-    prepare_detached_exact_run_launch,
-)
+from slavv_python.analytics.parity.runs.launch_prepare import LaunchPreparationError
 from slavv_python.analytics.parity.runs.preflight import (
+    render_exact_preflight_report,
     run_exact_preflight,
     run_exact_preflight_for_surfaces,
 )
 from slavv_python.analytics.parity.runs.resume import resume_exact_run
 from slavv_python.analytics.parity.runs.writer_session import (
-    register_monitor_job,
+    launch_writer_session,
     resume_writer_session,
 )
 from slavv_python.analytics.parity.utils import (
@@ -221,60 +218,23 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
     dest_run_root = Path(args.dest_run_root)
-    monitor = bool(getattr(args, "monitor", False))
-    force_kill = bool(getattr(args, "force_kill", False))
-
     try:
-        assert_no_conflicting_registry_writer(dest_run_root, force_kill=force_kill)
-        detached_command, foreground_command = prepare_detached_exact_run_launch(
-            dest_run_root=dest_run_root,
+        manifest = launch_writer_session(
+            dest_run_root,
             oracle_root=Path(args.oracle_root) if args.oracle_root else None,
             dataset_root=Path(args.dataset_root) if args.dataset_root else None,
             stop_after=args.stop_after,
             force_rerun_from=getattr(args, "force_rerun_from", None),
             memory_safety_fraction=float(args.memory_safety_fraction),
             force=bool(args.force),
-            force_kill=force_kill,
+            force_kill=bool(getattr(args, "force_kill", False)),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            monitor=bool(getattr(args, "monitor", False)),
         )
     except LaunchPreparationError as exc:
         raise SystemExit(str(exc)) from exc
-
-    print("Foreground probe command:")
-    print(" ".join(foreground_command))
-    print("Detached writer command:")
-    print(" ".join(detached_command))
-
-    manifest = launch_exact_run_job(
-        dest_run_root=dest_run_root,
-        dataset_root=Path(args.dataset_root) if args.dataset_root else None,
-        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
-        stop_after=args.stop_after,
-        force_rerun_from=getattr(args, "force_rerun_from", None),
-        memory_safety_fraction=float(args.memory_safety_fraction),
-        force=bool(args.force),
-        skip_preflight=True,
-        n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
-        command_override=detached_command,
-    )
-
-    # Register job if monitoring enabled
-    if monitor:
-        oracle_root_path = Path(manifest["oracle_root"]) if manifest.get("oracle_root") else None
-        stage = getattr(args, "force_rerun_from", None) or "all"
-        register_monitor_job(
-            run_dir=dest_run_root,
-            oracle_root=oracle_root_path,
-            stage=stage,
-            command=" ".join(manifest["command"]),
-            pid=int(manifest["pid"]),
-            metadata={
-                "stop_after": args.stop_after,
-                "manifest_path": manifest.get("pid_file"),
-            },
-        )
 
     print(manifest["pid"])
     print(manifest["stdout"])

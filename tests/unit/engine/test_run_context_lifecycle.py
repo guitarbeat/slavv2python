@@ -9,7 +9,7 @@ from tests.support.run_state_builders import build_run_context
 
 from slavv_python.engine.state import RunContext, load_run_snapshot
 from slavv_python.engine.state.status import target_stage_progress
-from slavv_python.engine.state.tracker import (
+from slavv_python.engine.constants import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
 )

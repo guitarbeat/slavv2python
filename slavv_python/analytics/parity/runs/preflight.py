@@ -21,7 +21,6 @@ from slavv_python.analytics.parity.oracle.surfaces import (
     oracle_energy_size_of_image,
 )
 from slavv_python.analytics.parity.proof.coordinator import ExactProofCoordinator
-from slavv_python.analytics.parity.proof.reports import render_exact_preflight_report
 from slavv_python.analytics.parity.utils import now_iso, write_json_with_hash, write_text_with_hash
 from slavv_python.engine.state import load_json_dict
 
@@ -29,6 +28,35 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from slavv_python.analytics.parity.oracle.models import DatasetSurface, OracleSurface
+
+
+def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
+    """Render a compact exact-preflight report (run gate, not proof compare)."""
+    status = "PASS" if report_payload.get("passed") else "FAIL"
+    lines = [
+        "Exact preflight report",
+        f"Status: {status}",
+    ]
+    if report_payload.get("forced"):
+        lines.append("Force: memory gate override enabled")
+    memory_gate = report_payload.get("memory_gate")
+    if isinstance(memory_gate, dict):
+        required_gb = memory_gate.get("required_bytes", 0) / (1024**3)
+        budget_gb = memory_gate.get("budget_bytes", 0) / (1024**3)
+        lines.append(
+            f"Memory gate: required {required_gb:.2f} GiB <= budget {budget_gb:.2f} GiB "
+            f"({'pass' if memory_gate.get('passed') else 'fail'})"
+        )
+    for error in report_payload.get("errors", []):
+        lines.append(f"Error: {error}")
+    if "error" in report_payload:
+        lines.append(f"Error: {report_payload['error']}")
+    for warning in report_payload.get("warnings", []):
+        lines.append(f"Warning: {warning}")
+    snapshot_status = (report_payload.get("checks") or {}).get("run_snapshot_status")
+    if snapshot_status:
+        lines.append(f"Run snapshot status: {snapshot_status}")
+    return "\n".join(lines)
 
 
 def _available_system_bytes() -> int:
@@ -253,6 +281,7 @@ def run_exact_preflight(
 __all__ = [
     "build_exact_preflight_report",
     "persist_exact_preflight_report",
+    "render_exact_preflight_report",
     "resolve_exact_run_image_shape",
     "run_exact_preflight",
     "run_exact_preflight_for_surfaces",

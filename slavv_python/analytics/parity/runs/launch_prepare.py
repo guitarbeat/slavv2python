@@ -8,10 +8,6 @@ from typing import Any, cast
 
 from slavv_python.analytics.parity.runs.jobs import build_resume_exact_run_command
 from slavv_python.analytics.parity.runs.preflight import run_exact_preflight
-from slavv_python.analytics.parity.runs.process_utils import (
-    is_process_alive,
-    is_python_process,
-)
 
 
 class LaunchPreparationError(RuntimeError):
@@ -168,31 +164,19 @@ def assert_no_conflicting_registry_writer(
     *,
     force_kill: bool,
 ) -> None:
-    """Reject launch when the global registry still tracks a live writer."""
-    from slavv_python.analytics.parity.runs.job_registry import JobRegistry
-    from slavv_python.analytics.parity.runs.process_utils import kill_process_tree
+    """Reject launch when the global registry still tracks a live writer.
 
-    registry = JobRegistry()
-    active_job = registry.get_job_by_run_dir(dest_run_root)
-    if (
-        active_job
-        and active_job.status == "running"
-        and is_process_alive(active_job.pid)
-        and is_python_process(active_job.pid)
-    ):
-        if not force_kill:
-            raise LaunchPreparationError(
-                f"Registry still tracks active writer PID {active_job.pid}. "
-                "Use --force-kill or wait for completion."
-            )
-        kill_process_tree(active_job.pid)
-        registry.update_job(
-            active_job.job_id,
-            status="interrupted",
-            completed_at=_now_iso(),
-            exit_code=None,
-            metadata={"reason": "terminated before relaunch"},
-        )
+    Thin adapter over ``writer_session.reconcile_registry_writer_conflict`` that
+    raises ``LaunchPreparationError`` for CLI-friendly launch failures.
+    """
+    from slavv_python.analytics.parity.runs.writer_session import (
+        reconcile_registry_writer_conflict,
+    )
+
+    try:
+        reconcile_registry_writer_conflict(dest_run_root, force_kill=force_kill)
+    except RuntimeError as exc:
+        raise LaunchPreparationError(str(exc)) from exc
 
 
 def _repo_root_from_path(path: Path) -> Path:
@@ -200,12 +184,6 @@ def _repo_root_from_path(path: Path) -> Path:
         if (parent / "pyproject.toml").is_file():
             return parent
     return Path.cwd()
-
-
-def _now_iso() -> str:
-    from slavv_python.analytics.parity.utils import now_iso
-
-    return now_iso()
 
 
 __all__ = [

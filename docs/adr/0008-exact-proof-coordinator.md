@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Exact-route parity orchestration was split across a monolithic `execution.py`, `proofs.py` (candidate capture calling frontier internals directly), and duplicate `RunCounts` helpers with incompatible report key shapes. `execution.py` is now a thin facade over `params_audit.py`, `surfaces.py`, and `bootstrap.py`.
+Exact-route parity orchestration was split across a monolithic `execution.py`, `proofs.py` (candidate capture calling frontier internals directly), and duplicate `RunCounts` helpers with incompatible report key shapes. The old `execution` barrel was deleted; call `params_audit`, `surfaces`, and `bootstrap` by name. Writer lifecycle lives in `writer_session`.
 
 ## Decision
 1. **`ExactProofCoordinator`** (`analytics/parity/proof/coordinator.py`) — `prove()`, `capture_candidates()`, `prepare_dest_run()`, typed loaders for exact energy/vertices.
@@ -40,3 +40,28 @@ Architecture review candidate #5 (scope A: in-process resume only) extracted the
 2. **`handle_resume_exact_run`** — reduced to `with resume_writer_session(...): resume_exact_run(...)`. Detached launch (`handle_launch_exact_run`) unchanged for this iteration; launch may adopt shared reconcile/register helpers later.
 
 **Consequences:** The one-writer invariant has a single testable home for in-process writers. Resume and launch can share reconcile/register helpers incrementally without duplicating finalize logic.
+
+## Addendum (2026-07-10): Detached launch + delete execution facade
+
+Architecture review candidate #3 finished the Writer Session surface:
+
+1. **`launch_writer_session`** — reconcile lease/registry → prepare (preflight/probe) → detach spawn → optional monitor register. `handle_launch_exact_run` is a thin CLI adapter.
+
+2. **`assert_no_conflicting_registry_writer`** — delegates to `reconcile_registry_writer_conflict` (single conflict policy).
+
+3. **Deleted `runs/execution.py`** — pure re-export barrel of `params_audit` / `surfaces` / `bootstrap`. Callers import real owners (e.g. `bootstrap.derive_exact_params_from_oracle`).
+
+**Unchanged:** Preflight remains under `runs/preflight` (not ExactProofCoordinator). Detached child still enters via `resume-exact-run` → `resume_writer_session`.
+
+## Addendum (2026-07-10): Exact proof report locality
+
+Architecture review candidate #4 sharpened proof vs run-lifecycle report ownership:
+
+| Surface | Owner |
+|---------|--------|
+| Exact proof JSON/text | `proof/proof_report.py` (`render_exact_proof_report`, `persist_exact_proof_report`) |
+| Count extraction | `proof/counts.py` (no more re-export aliases from `reports`) |
+| Experiment tables / delta summaries | `proof/reports.py` |
+| Preflight text | `runs/preflight.py` (`render_exact_preflight_report` + existing `persist_exact_preflight_report`) |
+
+`ExactProofCoordinator.prove` persists via `persist_exact_proof_report`. CLI/preflight no longer pull preflight rendering from the proof package.
