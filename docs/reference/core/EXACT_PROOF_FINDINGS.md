@@ -36,6 +36,10 @@
 
 Phase 1 exit criterion ([ADR 0012 post-v5 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-post-v5-watershed-iteration-and-v6-closure)): **evaluated** ADR 0012 per-stage `prove-exact` on full `180709_E` via `canonical_full_v6` (after ≥80% crop overlap milestone). Strict-field counts are stretch signal only.
 
+**Proposal figure:** quantitative summary of these metrics (crop overlap trajectory, edge-pair recovery waterfall, full-volume counts / certification table) —
+[figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf)
+([figures/README.md](../../../figures/README.md)). Regenerate the script when the numbers below move.
+
 | Stage | Harness / prior work | Phase 1 certification bar |
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |

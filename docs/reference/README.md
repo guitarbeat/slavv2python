@@ -55,6 +55,12 @@ than alternate versions of the same content:
 The `papers/` folder is background reading, not the source of truth
 for current Python behavior or exact MATLAB parity claims.
 
+## Proposal / methods figures
+
+- [figures/](../../figures/README.md) — quantitative MATLAB→Python exact-parity
+  journey multipanel (proposal appendix). Energy ULP/speedup drafts remain under
+  [research/figures/](../research/figures/).
+
 ## Live Status And Historical Context
 
 - [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) is the maintained owner

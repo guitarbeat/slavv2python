@@ -22,6 +22,7 @@ Run lifecycle lives in `slavv_python.engine.state`:
 - **`run_ledger.py`** — `RunContext` (fingerprints, resume policy, snapshot persistence).
 - **`stage_handle.py`** — `StageController` (checkpoint paths, `begin` / `update` / `complete`, `resume_state.json`).
 - **`snapshot_lifecycle.py`** — snapshot mutation helpers (`begin_stage_snapshot`, `complete_stage_snapshot`, etc.).
+- **`io.py` / `layout.py` / package `__init__`** — path and snapshot IO owners (there is **no** `tracker.py` barrel; import from the real modules).
 - Import `RunContext` / `StageController` from `slavv_python.engine` or `slavv_python.engine.state` (not a separate barrel module).
 
 - **Resumable State**: Fingerprints of input images and parameters determine whether a cached stage result can be reused.
@@ -83,7 +84,14 @@ See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 - **`capture_candidates()`** — edge candidate generation via `EdgeManager.discover_candidates()` (discovery strategy seam).
 - **`counts.py`** — canonical `RunCounts` extraction from reports and run directories (typed checkpoint loaders).
 
-The `analytics/parity/` package is grouped into themed subpackages: **`proof/`** (`coordinator`, comparators, `proof_report` for exact-proof JSON/text, `counts`, `reports` for experiment tables only, energy ULP/evidence), **`runs/`** (`resume`, `writer_session`, `jobs`, `monitor_daemon`, `preflight` including preflight text render, `writer_lease`, `bootstrap`, `launch_prepare`), **`oracle/`** (`surfaces`, `oracle_artifacts`, `promotion`, MATLAB/checkpoint loaders, `params_audit`, `models`), **`probes/`** (`adaptive_probes`, `trace_comparator`, `crop_export`, `edge_artifacts`, `matlab_fail_fast`), and **`cli_handlers/`** (the `cli_*` handler modules). At the package root stay `commands.py` (command registry), `constants.py`, and `utils.py`. `surfaces` is the dataset/oracle/run authority; `bootstrap` builds the init-exact-run layout; `writer_session` owns the one-writer lease/registry transaction for resume and detached launch.
+The `analytics/parity/` package is grouped into themed subpackages: **`proof/`** (`coordinator`, comparators, `proof_report` for exact-proof JSON/text, `counts`, `reports` for experiment tables only, energy ULP/evidence), **`runs/`** (`resume`, `writer_session` with `resume_writer_session` + `launch_writer_session`, `jobs`, `monitor_daemon`, `preflight` including preflight text render, `writer_lease`, `bootstrap`, `launch_prepare` — **no** `execution.py` re-export barrel), **`oracle/`** (`surfaces`, `oracle_artifacts`, `promotion`, MATLAB/checkpoint loaders, `params_audit`, `models`), **`probes/`** (`adaptive_probes`, `trace_comparator`, `crop_export`, `edge_artifacts`, `matlab_fail_fast`), and **`cli_handlers/`** (the `cli_*` handler modules). At the package root stay `commands.py` (command registry), `constants.py`, and `utils.py`. `surfaces` is the dataset/oracle/run authority; `bootstrap` builds the init-exact-run layout; `writer_session` owns the one-writer lease/registry transaction for resume and detached launch. See [ADR 0008](../../adr/0008-exact-proof-coordinator.md).
+
+### Visualization facade (`NetworkVisualizer`)
+`slavv_python.visualization.network_plots.visualizer` owns network plotting:
+
+- **`NetworkVisualizer`** — deep facade: theme defaults, Stage Result / dict adaptation, and export helpers.
+- **`network_plots/`** modules — individual plot builders; prefer the facade from application code.
+- Package `__init__` stays thin (re-exports only).
 
 ### Application run envelope (`AppRunState`)
 The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.

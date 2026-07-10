@@ -1,6 +1,6 @@
 # Folder Purpose Guide
 
-**Why do we have separate top-level folders?** This guide clarifies the distinct purposes of `slavv_python/`, `tests/`, and `workspace/`.
+**Why do we have separate top-level folders?** This guide clarifies the distinct purposes of `slavv_python/`, `tests/`, `docs/`, `figures/`, and `workspace/`.
 
 ## Quick Reference
 
@@ -8,6 +8,8 @@
 |:-------|:-----------------|:------------|:-----------------|
 | **`slavv_python/`** | Production package code | End users + developers | ✅ Yes |
 | **`tests/`** | Automated test suite | Developers + CI | ✅ Yes |
+| **`docs/`** | Maintained reference, ADRs, research notes | Developers + agents | ✅ Yes |
+| **`figures/`** | Proposal / methods multipanel figures + generators | Proposal / paper drafts | ✅ Yes |
 | **`workspace/`** | Experiment artifacts | Developer locally | ❌ No (.gitignore) |
 
 ---
@@ -61,13 +63,31 @@ python -m pytest -m "unit or integration"
 
 ---
 
+## figures/ — Proposal / methods figures
+
+**Purpose:** Checked-in publication multipanels (PDF/PNG) and their generators for
+the PhD proposal appendix and related methods write-ups.
+
+**Contains (current):**
+- `matlab_python_parity_journey.{pdf,png}` — quantitative MATLAB→Python exact-parity overview
+- `generate_matlab_python_parity_journey.py` — regenerator
+- [README.md](../../../figures/README.md) — caption, evidence sources, regenerate command
+
+**Not here:** runtime plotting (`slavv_python/visualization/`) or energy ULP/speedup
+drafts from live run artifacts ([docs/research/figures/](../../research/figures/)).
+
+---
+
 ## scripts/ — Developer Utilities
 
-> **Note:** `scripts/` has been removed. Developer tools are now CLI subcommands:
+> **Note:** Prefer CLI subcommands for product workflows:
 > - Parity runner → `slavv parity <subcommand>`
 > - Trace comparator → `slavv parity compare-traces`
 > - Crop export → `slavv parity export-crop`
 > - One-off diagnostics → `workspace/scratch/`
+>
+> Some checked-in generators remain under `scripts/` (e.g. `make_report_figures.py`)
+> and under `figures/` for proposal multipanels.
 
 ---
 

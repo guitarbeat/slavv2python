@@ -65,3 +65,10 @@ Architecture review candidate #4 sharpened proof vs run-lifecycle report ownersh
 | Preflight text | `runs/preflight.py` (`render_exact_preflight_report` + existing `persist_exact_preflight_report`) |
 
 `ExactProofCoordinator.prove` persists via `persist_exact_proof_report`. CLI/preflight no longer pull preflight rendering from the proof package.
+
+## Related figure
+
+Quantitative summary of the exact-parity port (crop overlap, recovery waterfall,
+full-volume counts / certification bars):
+[figures/matlab_python_parity_journey.pdf](../../figures/matlab_python_parity_journey.pdf)
+([figures/README.md](../../figures/README.md)).

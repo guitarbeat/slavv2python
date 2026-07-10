@@ -207,13 +207,14 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 
 ## Repository Map
 
-> **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `workspace/`.
+> **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/`.
 
-**Four Top-Level Folders** (plus vendored `external/` third-party source):
+**Top-level folders** (plus vendored `external/` third-party source):
 - **`slavv_python/`** — Production package code (installed via pip)
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Local experiment artifacts (gitignored, personal)
 - **`docs/`** — Maintained reference docs and archival investigation notes
+- **`figures/`** — Proposal / methods multipanel figures + generators ([figures/README.md](figures/README.md))
 
 ```text
 slavv2python/
@@ -280,6 +281,8 @@ slavv2python/
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
+├── figures/                            # Proposal / methods multipanels (PDF/PNG + generators)
+│
 ├── workspace/                          # LOCAL EXPERIMENT DATA (gitignored)
 │   ├── oracles/                        # Preserved MATLAB oracle vectors
 │   ├── runs/                           # Experiment trial runs
@@ -302,7 +305,8 @@ Read these first when working on relevant surfaces:
 |:---------|:-----|:--------|
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
-| Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` |
+| Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |
+| Proposal figures | [figures/README.md](figures/README.md) | Exact-parity journey multipanel (appendix) + regenerate |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results |

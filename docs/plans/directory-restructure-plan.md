@@ -32,7 +32,7 @@ links keep working.
 | New subpackage | Modules (current names) |
 |---|---|
 | `parity/proof/` | coordinator, proofs, artifact_comparator, array_normalization, energy_proof_evidence, energy_ulp_proof, mismatch_diagnostics, exact_proof_contract, proof_report, counts, reports, tables, index |
-| `parity/runs/` | resume, jobs, job_registry, launch_prepare, monitor_daemon, parity_job_lifecycle, process_utils, writer_lease, preflight, execution, bootstrap |
+| `parity/runs/` | resume, jobs, job_registry, launch_prepare, monitor_daemon, parity_job_lifecycle, process_utils, writer_lease, preflight, writer_session, bootstrap (no `execution.py` barrel — import owners directly; see ADR 0008) |
 | `parity/oracle/` | surfaces, oracle_artifacts, promotion, matlab_vector_loader, python_checkpoint_loader, params_audit, models, io, gaps |
 | `parity/probes/` | adaptive_probes, trace_comparator, crop_export, edge_artifacts, matlab_fail_fast |
 | `parity/cli/` | commands, cli_runs, cli_proofs, cli_diagnostics, cli_edges, cli_support |

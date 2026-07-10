@@ -15,6 +15,30 @@ For current behavior and proof status, prefer:
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-07-10
+
+### Added / Changed
+
+- **Proposal methods figure (exact-parity journey):** repo-root
+  [`figures/matlab_python_parity_journey.pdf`](../figures/matlab_python_parity_journey.pdf)
+  — three quantitative panels (crop candidate-pair overlap trajectory; MATLAB
+  edge-pair recovery waterfall; full-volume MATLAB vs Python counts +
+  certification table). Generator:
+  [`figures/generate_matlab_python_parity_journey.py`](../figures/generate_matlab_python_parity_journey.py).
+  Index: [`figures/README.md`](../figures/README.md). Linked from
+  [PARITY_METHODOLOGY](reference/core/PARITY_METHODOLOGY.md),
+  [research figures](research/figures/README.md), and
+  [FOLDER_PURPOSE_GUIDE](reference/core/FOLDER_PURPOSE_GUIDE.md).
+- **Architecture deepening (candidates 1–6):** glossary-aligned discovery names
+  (`TracingDiscovery` / `WatershedDiscovery`); deep `CandidateManifest`;
+  `launch_writer_session` + deleted `runs/execution.py` barrel; exact-proof
+  report locality (`persist_exact_proof_report` / preflight render under
+  `runs/preflight`); deleted `engine/state/tracker.py` barrel; deep
+  `NetworkVisualizer` facade. ADRs:
+  [0005](adr/0005-edge-discovery-strategy-seam.md),
+  [0008](adr/0008-exact-proof-coordinator.md). Architecture map:
+  [TECHNICAL_ARCHITECTURE.md](reference/core/TECHNICAL_ARCHITECTURE.md).
+
 ## [Unreleased] - 2026-07-01
 
 ### Added / Changed

@@ -4,7 +4,15 @@ Draft figures for the SLAVV port/optimization paper, generated **from real run
 artifacts** (no synthetic data) by
 [`scripts/make_report_figures.py`](../../../scripts/make_report_figures.py).
 
-Regenerate:
+**Related (proposal appendix, methods multipanel):** the quantitative
+MATLAB→Python exact-parity journey figure lives at repo-root
+[`figures/`](../../../figures/) (PDF + PNG + generator). See
+[figures/README.md](../../../figures/README.md). That figure summarizes crop
+overlap trajectory, edge-pair recovery waterfall, and full-volume counts /
+certification bars; it is maintained separately from the energy ULP/speedup
+set below.
+
+Regenerate energy/speedup drafts:
 
 ```powershell
 python scripts/make_report_figures.py `
@@ -27,3 +35,5 @@ python scripts/make_report_figures.py `
   the parallelism is bit-exact because reduction order is fixed.
 - The serial baseline is a measured reference (~44 s/chunk); for a final
   strong-scaling figure, run the A/B at `n_jobs ∈ {1,2,4,6,8}` and plot the curve.
+- For an appendix overview of the port (overlap, funnel, full-volume status),
+  use [figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf).

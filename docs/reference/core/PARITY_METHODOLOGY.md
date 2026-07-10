@@ -19,6 +19,12 @@ adversarially fact-checked. Sources are listed at the end.
 > (`np.allclose`) and ADR 0012 (ownership-map / topology multisets + sub-voxel trace
 > tolerance) are direct instances of this practice.
 
+**Figure (proposal appendix):** quantitative summary of the port —
+candidate-pair overlap trajectory, edge-pair recovery waterfall, full-volume
+counts and certification bars — at
+[figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf)
+([README](../../../figures/README.md)). Live numbers: [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
+
 ---
 
 ## 1. Golden-master / oracle testing is the dominant method

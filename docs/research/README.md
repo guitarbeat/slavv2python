@@ -20,4 +20,8 @@ concrete actions from it into [plans/](../plans/) or [TODO.md](../TODO.md).
 - [Review: the original SLAVV methodology paper](slavv-original-paper-review.md)
   — Mihelic et al. 2021 (PLOS Comp Biol): the method of record, with transcribed
   equations, validation framework, and what the port adds.
-- [Report figures](figures/) — data-backed draft figures for the paper.
+- [Report figures](figures/) — data-backed energy ULP / speedup drafts from run
+  artifacts (`scripts/make_report_figures.py`).
+- [Proposal / methods multipanel](../../figures/) — quantitative
+  MATLAB→Python exact-parity journey (crop overlap, edge recovery waterfall,
+  full-volume counts + certification table). Prefer the PDF for Word/LaTeX.

@@ -17,6 +17,11 @@ source fetch → 3-vote adversarial verification → synthesis).
 > [figures/](figures/) — the ULP histogram + parity composition (the
 > certification-policy argument) and the bit-exact ~4.1× speedup. Regenerate via
 > `scripts/make_report_figures.py`.
+>
+> **Proposal / methods multipanel** (crop overlap trajectory, edge-pair recovery
+> waterfall, full-volume MATLAB vs Python counts + certification table):
+> [figures/matlab_python_parity_journey.pdf](../../figures/matlab_python_parity_journey.pdf)
+> — see [figures/README.md](../../figures/README.md).
 
 ---
 
