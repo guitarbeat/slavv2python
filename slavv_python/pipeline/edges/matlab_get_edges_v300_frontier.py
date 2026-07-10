@@ -1,18 +1,21 @@
-"""MATLAB port barrel: ``get_edges_V300.m`` frontier tracing entry surface.
+"""MATLAB port barrel: ``get_edges_V300.m`` helpers for Watershed Discovery.
 
-Role: re-exports watershed discovery and frontier geometry helpers used when the
-exact-route selects the MATLAB frontier tracer.
+Re-exports geometry/indexing helpers used by Exact Route Watershed Discovery
+(``WatershedDiscovery`` → ``generate_watershed_candidates``).
 
 MATLAB source: ``external/Vectorization-Public/source/get_edges_V300.m``
 """
 
 from __future__ import annotations
 
-from slavv_python.pipeline.edges.candidate_payload import (
-    _candidate_endpoint_pair_set,
-    _candidate_incident_pair_counts,
+from slavv_python.pipeline.edges.candidate_manifest import (
+    endpoint_pairs_from_connections as _candidate_endpoint_pair_set,
+    incident_pair_counts as _candidate_incident_pair_counts,
 )
-from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
+from slavv_python.pipeline.edges.discovery import (
+    _use_matlab_frontier_tracer,
+    _use_watershed_discovery,
+)
 from slavv_python.pipeline.edges.edge_types import (
     BoolArray,
     Float64Array,
@@ -56,5 +59,6 @@ __all__ = [
     "_path_max_energy_from_linear_indices",
     "_trace_local_geodesic_between_vertices",
     "_use_matlab_frontier_tracer",
+    "_use_watershed_discovery",
     "_vertex_center_linear_lookup",
 ]

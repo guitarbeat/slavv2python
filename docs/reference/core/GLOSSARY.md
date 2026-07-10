@@ -20,9 +20,9 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Vertex Set** | The authoritative collection of Vertices for a given stage of a Run. A Vertex Set can contain both Seed and Bridge vertices. |
 | **Origin** | A starting vertex or seed point from which the extraction pipeline begins searching for edge candidates. (Synonym for Seed Vertex in some contexts) |
 | **Edge** | A finalized trace connecting two vertices. Edges represent the local skeleton of the vascular network. |
-| **Edge Discovery** | The process of identifying potential connectivity between Vertices by analyzing the energy field. |
-| **Tracing Discovery** | An Edge Discovery strategy that identifies centerlines via frontier propagation from individual Seed Vertices. |
-| **Watershed Discovery** | An Edge Discovery strategy that partitions the volume into regional influence zones (catchment basins) to identify adjacent Vertices. |
+| **Edge Discovery** | Identifying connectivity between Vertices from the energy field. Production strategies: Tracing Discovery (Paper Path) or Watershed Discovery (Exact Route). Not the skimage label-adjacency helper path. |
+| **Tracing Discovery** | Paper Path Edge Discovery via directional centerline propagation from Seed Vertices. Code: `TracingDiscovery` (legacy: `MaintainedTracingDiscovery`). |
+| **Watershed Discovery** | Exact Route Edge Discovery via regional catchment basins (MATLAB global watershed). Code: `WatershedDiscovery` → `generate_watershed_candidates` (legacy: `FrontierTracingDiscovery`). Not skimage `extract_edges_watershed`. |
 | **Strand** | A connected sequence of one or more edges that represents a distinct vascular branch or segment between junction points. |
 | **Candidate** | A potential edge trace identified during the frontier-searching or watershed phase. Candidates are evaluated for ownership and cleanup before becoming final edges. |
 | **Neighborhood** | The local spatial region around an Origin where multiple origins may compete for candidates. |

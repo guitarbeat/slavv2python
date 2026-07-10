@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import numpy as np
 
-from slavv_python.pipeline.edges.candidate_payload import (
+from slavv_python.pipeline.edges.candidate_manifest import (
     normalize_candidate_connection_sources,
 )
 from slavv_python.pipeline.edges.payloads import (

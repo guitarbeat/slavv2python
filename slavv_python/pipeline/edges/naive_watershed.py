@@ -1,4 +1,8 @@
-"""Shared per-label adjacency extraction for naive skimage watershed drivers."""
+"""Skimage label-adjacency helpers for the non-certification watershed path.
+
+Do not confuse with Watershed Discovery (Exact Route MATLAB global watershed).
+See ``discovery.WatershedDiscovery`` for the Certification Edge Discovery strategy.
+"""
 
 from __future__ import annotations
 

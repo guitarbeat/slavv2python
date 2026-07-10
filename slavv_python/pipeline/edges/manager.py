@@ -14,11 +14,13 @@ from slavv_python.pipeline.edges.audit import (
     _normalize_candidate_origin_counts,
 )
 from slavv_python.pipeline.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.pipeline.edges.discovery import (
+from slavv_python.pipeline.edges.candidate_manifest import (
     CandidateManifest,
-    EdgeDiscoveryContext,
-    _use_matlab_frontier_tracer,
     candidate_as_payload,
+)
+from slavv_python.pipeline.edges.discovery import (
+    EdgeDiscoveryContext,
+    _use_watershed_discovery,
     frontier_origin_counts,
     frontier_origin_counts_from_diagnostics,
     resolve_lumen_radius_pixels_axes,
@@ -175,15 +177,15 @@ class EdgeManager:
         vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
         logger.info("Vertex center lookup image created")
 
-        use_frontier = _use_matlab_frontier_tracer(energy_data.to_dict(), params)
+        use_watershed = _use_watershed_discovery(energy_data.to_dict(), params)
         discovery = select_edge_discovery(energy_data, params)
 
         if resumable:
             handle.begin(
                 detail=(
-                    "Generating edge candidates through MATLAB-style frontier workflow"
-                    if use_frontier
-                    else "Generating edge candidates through maintained frontier workflow"
+                    "Generating edge candidates through Watershed Discovery (Exact Route)"
+                    if use_watershed
+                    else "Generating edge candidates through Tracing Discovery (Paper Path)"
                 ),
                 units_total=3,
                 units_completed=0,
@@ -192,7 +194,7 @@ class EdgeManager:
             )
 
         heartbeat = None
-        if use_frontier and resumable:
+        if use_watershed and resumable:
 
             def heartbeat(iteration_count: int, candidate_count: int) -> None:
                 handle.update(
@@ -200,7 +202,7 @@ class EdgeManager:
                     units_completed=0,
                     substage="generate_candidates",
                     detail=(
-                        "Generating edge candidates through MATLAB-style frontier workflow "
+                        "Generating edge candidates through Watershed Discovery (Exact Route) "
                         f"(iterations={iteration_count}, candidates={candidate_count})"
                     ),
                     resumed=False,
@@ -221,7 +223,7 @@ class EdgeManager:
         if resumable:
             from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
-            if use_frontier:
+            if use_watershed:
                 frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
             else:
                 frontier_counts = frontier_origin_counts(manifest)
@@ -232,7 +234,7 @@ class EdgeManager:
             candidate_audit = _build_edge_candidate_audit(
                 manifest,
                 len(vertex_positions),
-                use_frontier_tracer=use_frontier,
+                use_frontier_tracer=use_watershed,
                 frontier_origin_counts=frontier_counts,
                 supplement_origin_counts={
                     int(origin_index): int(count)
@@ -250,7 +252,7 @@ class EdgeManager:
             )
             candidates_payload = candidate_as_payload(manifest)
             atomic_joblib_dump(candidates_payload, handle.artifact_path("candidates.pkl"))
-            if use_frontier and stage_controller is not None:
+            if use_watershed and stage_controller is not None:
                 run_context = stage_controller.run_context
                 if run_context is not None:
                     resolve_edge_candidate_persistence(
@@ -293,7 +295,7 @@ class EdgeManager:
             chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
         )
 
-        if use_frontier:
+        if use_watershed:
             if resumable:
                 handle.update(
                     units_total=3,
@@ -340,7 +342,7 @@ class EdgeManager:
                 _build_frontier_candidate_lifecycle,
             )
 
-            if use_frontier and manifest.frontier_lifecycle_events:
+            if use_watershed and manifest.frontier_lifecycle_events:
                 candidate_lifecycle = _build_frontier_candidate_lifecycle(
                     candidate_as_payload(manifest),
                     chosen_dict.get("chosen_candidate_indices"),

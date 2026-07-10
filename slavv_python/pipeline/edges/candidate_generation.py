@@ -52,11 +52,10 @@ def generate_watershed_candidates(
     params: dict[str, Any],
     **kwargs: Any,
 ) -> dict[str, Any]:
-    """
-    Generates candidates using a global shared-state watershed search.
+    """Generate candidates via Exact Route Watershed Discovery (MATLAB global watershed).
 
-    This is the high-precision route that perfectly mirrors MATLAB's
-    deterministic frontier insertion.
+    Engine entry for ``WatershedDiscovery``. Not the skimage label-adjacency path
+    in ``extract_edges_watershed``.
     """
     # The watershed engine performs its OWN [Z, Y, X] -> [Y, X, Z] reorientation
     # internally (np.transpose(energy, (1, 2, 0))) and permutes microns_per_voxel
@@ -307,7 +306,10 @@ def sort_candidates_by_quality(
     **_kwargs: Any,
 ) -> dict[str, Any] | Any:
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
-    from slavv_python.pipeline.edges.discovery import CandidateManifest
+    from slavv_python.pipeline.edges.candidate_manifest import (
+        CandidateManifest,
+        reorder_candidate_payload,
+    )
 
     metrics = np.asarray(
         candidates.metrics
@@ -322,6 +324,4 @@ def sort_candidates_by_quality(
     if isinstance(candidates, CandidateManifest):
         return candidates.reordered(sort_idx)
 
-    from slavv_python.pipeline.edges.candidate_payload import _reorder_candidate_payload
-
-    return _reorder_candidate_payload(candidates, sort_idx)
+    return reorder_candidate_payload(candidates, sort_idx)

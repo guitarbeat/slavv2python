@@ -60,7 +60,8 @@ The edges package exposes a deep module boundary:
 - **Unified API**: Exposes `run()`, `run_resumable()`, and `discover_candidates()` to support full pipeline and audit workflows.
 - **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
 - **`EdgeManager.run_resumable()`** — resumable tracing workflow (audit artifacts, parity checkpoints, selection, bridging, finalize).
-- **`discovery.select_edge_discovery()`** — strategy seam (`MaintainedTracingDiscovery` vs `FrontierTracingDiscovery`).
+- **`discovery.select_edge_discovery()`** — strategy seam (`TracingDiscovery` vs `WatershedDiscovery`; legacy aliases `MaintainedTracingDiscovery` / `FrontierTracingDiscovery`).
+- **`candidate_manifest.CandidateManifest`** — deep typed candidate Stage Result (append/reorder/endpoint/source normalize); `discovery` re-exports it.
 - **`resumable.py`** — watershed-only per-label unit persistence.
 
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).

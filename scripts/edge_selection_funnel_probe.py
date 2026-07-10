@@ -30,7 +30,7 @@ from slavv_python.pipeline.edges.cleanup import (
 from slavv_python.pipeline.edges.finalize import (
     prefilter_edge_indices_for_cleanup_matlab_style,
 )
-from slavv_python.pipeline.edges.candidate_payload import normalize_candidate_connection_sources
+from slavv_python.pipeline.edges.candidate_manifest import normalize_candidate_connection_sources
 from slavv_python.pipeline.edges.selection_payloads import (
     initialize_edge_selection_diagnostics,
     prepare_candidate_indices_for_cleanup,

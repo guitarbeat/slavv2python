@@ -9,7 +9,7 @@ import numpy as np
 if TYPE_CHECKING:
     from slavv_python.pipeline.edges.edge_types import Int32Array
 
-from slavv_python.pipeline.edges.candidate_payload import (
+from slavv_python.pipeline.edges.candidate_manifest import (
     normalize_candidate_connection_sources as _normalize_connection_sources,
 )
 

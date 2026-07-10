@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from slavv_python.pipeline.edges.discovery import CandidateManifest, candidate_as_payload
+from slavv_python.pipeline.edges.candidate_manifest import (
+    CandidateManifest,
+    candidate_as_payload,
+)
 from slavv_python.pipeline.edges.payloads import _merge_edge_diagnostics
 
 

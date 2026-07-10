@@ -30,11 +30,11 @@ def _load_edge_units(
 def extract_edges_watershed(
     energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
 ) -> EdgeSet:
-    """Extract vascular edges using a global watershed expansion strategy.
+    """Extract edges via skimage label adjacency (NOT Certification Watershed Discovery).
 
-    This method seeds a watershed from detected vertices and expands until
-    vessels meet or energy bounds are exceeded. It is typically used for
-    exact MATLAB parity runs.
+    Prefer ``EdgeManager`` / ``WatershedDiscovery`` for Exact Route parity and
+    ADR 0012. This helper seeds skimage watershed markers and links adjacent
+    labels — a different algorithm from MATLAB global Watershed Discovery.
 
     Args:
         energy_data: The multi-scale energy field result.

@@ -104,13 +104,16 @@ A structural [Vertex](#vertex) inserted during edge selection to resolve overlap
 The authoritative collection of [Vertices](#vertex) for a given stage of a [Run](#run). A Vertex Set can contain both Seed and Bridge vertices.
 
 ### Edge Discovery
-The process of identifying potential connectivity between [Vertices](#vertex) by analyzing the energy field.
+The process of identifying potential connectivity between [Vertices](#vertex) by analyzing the energy field. Production selection is **Tracing Discovery** (Paper Path) or **Watershed Discovery** (Exact Route).
+_Avoid_: Treating the skimage label-adjacency helper path as Edge Discovery for [Certification](#certification).
 
 ### Tracing Discovery
-An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via frontier propagation from individual Seed Vertices.
+An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via directional propagation from individual Seed Vertices (Paper Path). Code: `TracingDiscovery` (legacy alias `MaintainedTracingDiscovery`).
+_Avoid_: Calling Exact Route Watershed Discovery “maintained tracing.”
 
 ### Watershed Discovery
-An [Edge Discovery](#edge-discovery) strategy that partitions the volume into regional influence zones (catchment basins) to identify adjacent [Vertices](#vertex).
+An [Edge Discovery](#edge-discovery) strategy that partitions the volume into regional influence zones (catchment basins) to identify adjacent [Vertices](#vertex) (Exact Route / Certification path). Code: `WatershedDiscovery` → `generate_watershed_candidates` (legacy alias `FrontierTracingDiscovery`).
+_Avoid_: Conflating with skimage `extract_edges_watershed` / `naive_watershed` (different algorithm, not the ADR 0012 cert surface); calling this strategy only “frontier” without naming Watershed Discovery.
 
 ### Run State
 The complete collection of data persisted during a [Run](#run).

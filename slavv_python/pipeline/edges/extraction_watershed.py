@@ -1,4 +1,10 @@
-"""Watershed-based edge extraction paths."""
+"""Skimage label-adjacency edge extraction (NOT Certification Watershed Discovery).
+
+This module is the experimental/legacy path used by ``extract_edges_watershed``.
+Exact Route / ADR 0012 Certification uses ``WatershedDiscovery`` in
+``discovery.py`` → ``generate_watershed_candidates`` →
+``matlab_get_edges_by_watershed``.
+"""
 
 from __future__ import annotations
 

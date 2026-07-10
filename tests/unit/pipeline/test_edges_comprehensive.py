@@ -12,12 +12,22 @@ import pytest
 
 from slavv_python.engine import SlavvPipeline
 from slavv_python.pipeline.edges import selection as conflict_painting_module
-from slavv_python.pipeline.edges.candidate_manifest import _append_candidate_unit
+from slavv_python.pipeline.edges.candidate_manifest import (
+    CandidateManifest,
+    _append_candidate_unit,
+)
 from slavv_python.pipeline.edges.cleanup import (
     break_graph_cycles,
     remove_excess_vertex_degrees,
 )
-from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
+from slavv_python.pipeline.edges.discovery import (
+    FrontierTracingDiscovery,
+    MaintainedTracingDiscovery,
+    TracingDiscovery,
+    WatershedDiscovery,
+    _use_matlab_frontier_tracer,
+    _use_watershed_discovery,
+)
 from slavv_python.pipeline.edges.finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
@@ -228,15 +238,23 @@ def test_matlab_crop_edges_v200_excludes_edges_that_expand_past_image_bounds():
 
 
 @pytest.mark.unit
-def test_use_matlab_frontier_tracer_requirements():
-    assert _use_matlab_frontier_tracer(
+def test_use_watershed_discovery_requirements():
+    # Exact-compatible origin + MATLAB grid alignment selects Watershed Discovery.
+    assert _use_watershed_discovery(
         {"energy_origin": "python_native_hessian"},
         {"comparison_exact_network": True},
     )
-    assert not _use_matlab_frontier_tracer(
+    assert not _use_watershed_discovery(
         {"energy_origin": "python_pipeline"},
         {"comparison_exact_network": True},
     )
+    assert _use_matlab_frontier_tracer is _use_watershed_discovery
+
+
+@pytest.mark.unit
+def test_discovery_strategy_aliases_match_domain_names():
+    assert TracingDiscovery is MaintainedTracingDiscovery
+    assert WatershedDiscovery is FrontierTracingDiscovery
 
 
 @pytest.mark.unit
@@ -276,8 +294,6 @@ def test_append_candidate_unit_assigns_frontier_manifest_candidate_indices():
 
 @pytest.mark.unit
 def test_candidate_manifest_reordered_and_endpoint_pairs():
-    from slavv_python.pipeline.edges.discovery import CandidateManifest
-
     manifest = CandidateManifest(
         traces=[np.zeros((2, 3)), np.ones((2, 3))],
         connections=np.asarray([[0, 1], [2, 3]], dtype=np.int32),
