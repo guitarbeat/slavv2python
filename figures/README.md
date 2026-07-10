@@ -51,3 +51,26 @@ related methods write-ups. Distinct from:
 When numbers in [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md)
 move, update the constants in the generator and re-run the script before pasting
 into the proposal.
+
+## PhD proposal manuscript (live include)
+
+The figure is **wired into** the dissertation proposal appendix
+(Analytical Development) as:
+
+| Manuscript path | Role |
+|-----------------|------|
+| `PhD-Writing/manuscript/figures/fig-appendix-matlab-python-parity.{pdf,png}` | Asset copies (PDF preferred) |
+| `.../figures/include/appendix-matlab-python-parity.tex` | Caption + `\label{fig:appendix-matlab-python-parity}` |
+| `.../sections/30-backmatter/appendix/370-analytical-development.tex` | Prose + `\inputfigure{...}` |
+| `.../config/figure-assets.tex` | `\FigAppendixMatlabPythonParity` stem |
+
+**After regenerating here**, re-copy into the manuscript:
+
+```powershell
+Copy-Item -Force figures\matlab_python_parity_journey.pdf `
+  "D:\2P_Data\Aaron\New folder\PhD-Writing\manuscript\figures\fig-appendix-matlab-python-parity.pdf"
+Copy-Item -Force figures\matlab_python_parity_journey.png `
+  "D:\2P_Data\Aaron\New folder\PhD-Writing\manuscript\figures\fig-appendix-matlab-python-parity.png"
+```
+
+Then rebuild the standalone appendix PDF (`appendix.tex` / project Makefile).
