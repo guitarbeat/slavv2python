@@ -33,6 +33,15 @@ class MockTracer(ExecutionTracer):
     ):
         return None
 
+    def on_strel_state(self, **kwargs):
+        return None
+
+    def on_frontier_state(self, **kwargs):
+        return None
+
+    def frontier_state_targets(self):
+        return set()
+
 
 @pytest.mark.unit
 def test_global_watershed_execution_tracing():

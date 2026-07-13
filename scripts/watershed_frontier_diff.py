@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,8 @@ from slavv_python.pipeline.vertices.painting import paint_vertex_center_image
 
 
 def _sanitize_json_line(line: str) -> str:
-    return line.replace("-Inf", "-1e308").replace("Inf", "1e308").replace("NaN", "null")
+    sanitized = re.sub(r"(?<![A-Za-z])-Inf(?![A-Za-z])", "-Infinity", line)
+    return re.sub(r"(?<![A-Za-z])Inf(?![A-Za-z])", "Infinity", sanitized)
 
 
 def _load_trace(path: Path) -> list[dict[str, Any]]:
@@ -112,6 +114,8 @@ def _regenerate_with_trace(
     *,
     run_dir: Path,
     trace_path: Path,
+    state_iterations: list[int] | None = None,
+    state_linear_targets: list[int] | None = None,
 ) -> dict[str, Any]:
     source_surface = validate_exact_proof_source_surface(run_dir)
     energy = load_exact_energy_result(source_surface)
@@ -126,7 +130,11 @@ def _regenerate_with_trace(
         # Match generate_watershed_candidates: params are MATLAB [dy,dx,dz];
         # engine re-permutes to [dy,dx,dz] via [[1,2,0]] on physical [dz,dy,dx].
         mpv_engine = mpv_engine[[2, 0, 1]]
-    tracer = JsonExecutionTracer(trace_path)
+    tracer = JsonExecutionTracer(
+        trace_path,
+        state_iterations=state_iterations,
+        state_linear_targets=state_linear_targets,
+    )
     payload = _generate_edge_candidates_matlab_global_watershed(
         energy.energy,
         energy.scale_indices,
@@ -145,6 +153,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument(
+        "--oracle-root",
+        type=Path,
+        default=None,
+        help="Optional; ignored for regeneration (oracle comes from the run dir).",
+    )
+    parser.add_argument(
         "--matlab-trace",
         type=Path,
         default=Path("workspace/scratch/matlab_edge_dump/frontier_trace.jsonl"),
@@ -159,15 +173,41 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Regenerate the Python trace before diffing.",
     )
+    parser.add_argument(
+        "--state-iteration",
+        type=int,
+        action="append",
+        default=[],
+        help="When regenerating, also emit strel_state rows for this watershed iteration.",
+    )
+    parser.add_argument(
+        "--state-linear-target",
+        type=int,
+        action="append",
+        default=[],
+        help=(
+            "When regenerating, also emit strel_state rows whose strel contains this "
+            "0-based MATLAB-order linear index."
+        ),
+    )
     args = parser.parse_args(argv)
 
+    if args.oracle_root is not None and not args.oracle_root.exists():
+        raise FileNotFoundError(f"Missing oracle root: {args.oracle_root}")
+
     if args.regenerate_python:
-        payload = _regenerate_with_trace(run_dir=args.run_dir, trace_path=args.python_trace)
+        payload = _regenerate_with_trace(
+            run_dir=args.run_dir,
+            trace_path=args.python_trace,
+            state_iterations=args.state_iteration,
+            state_linear_targets=args.state_linear_target,
+        )
         print(
             json.dumps(
                 {
                     "python_candidate_pairs": int(payload["connections"].shape[0]),
                     "python_trace": str(args.python_trace),
+                    "oracle_root": str(args.oracle_root) if args.oracle_root is not None else None,
                 },
                 indent=2,
             )

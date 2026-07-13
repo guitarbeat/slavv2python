@@ -141,10 +141,17 @@ def _trace_missing_pairs(
     )
     traced_pairs = _endpoint_pair_set(np.asarray(payload["connections"], dtype=np.int64))
     traced_missing = sorted(matlab_pairs - traced_pairs)[:sample_size]
+    traced_overlap = matlab_pairs & traced_pairs
 
     return {
         "missing_from_run_checkpoint": missing_pairs,
         "missing_after_live_trace": traced_missing,
+        "live_overlap_pair_count": len(traced_overlap),
+        "live_overlap_fraction_of_matlab": (
+            float(len(traced_overlap) / len(matlab_pairs)) if matlab_pairs else 1.0
+        ),
+        "live_generation_gap_count": len(matlab_pairs - traced_pairs),
+        "live_extra_candidate_count": len(traced_pairs - matlab_pairs),
         "live_trace_pair_count": len(traced_pairs),
         "join_events_in_trace": _count_trace_events(trace_path, "join"),
         "join_skipped_events_in_trace": _count_trace_events(trace_path, "join_skipped"),

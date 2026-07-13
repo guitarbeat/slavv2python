@@ -41,11 +41,12 @@ from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
 )
 from slavv_python.pipeline.edges.matlab_indexing import (
     _argmin_with_linear_index_tiebreak,
-    _matlab_watershed_min_candidate_energies,
     _matlab_linear_index_to_coord,
+    _matlab_watershed_min_candidate_energies,
 )
 from slavv_python.pipeline.edges.matlab_watershed_heap import (
     VoxelClaimMap,
+    _claim_unowned_strel_arrays,
     _matlab_global_watershed_border_locations,
     _matlab_global_watershed_insert_available_location,
     _matlab_global_watershed_reset_join_locations,
@@ -563,11 +564,24 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     last_heartbeat_at = time.monotonic()
     iteration = 0
+    frontier_trace_targets = active_tracer.frontier_state_targets()
+
+    def _trace_frontier_state(label: str, *, iteration: int, current_linear: int) -> None:
+        snapshot_method = getattr(queue, "debug_snapshot", None)
+        if snapshot_method is None:
+            return
+        active_tracer.on_frontier_state(
+            iteration=iteration,
+            label=label,
+            current_linear=current_linear,
+            snapshot=snapshot_method(frontier_trace_targets),
+        )
 
     while queue:
         iteration += 1
         queue.begin_seed_loop()
         current_linear = queue.peek_best()
+        _trace_frontier_state("iteration_start", iteration=iteration, current_linear=current_linear)
 
         current_energy = claim_map.restore_vertex_energy(current_linear)
         active_tracer.on_iteration_start(iteration, current_linear, current_energy)
@@ -649,6 +663,25 @@ def _generate_edge_candidates_matlab_global_watershed(
             lut_size=current_strel["lut_size"],
         )
 
+        active_tracer.on_strel_state(
+            iteration=iteration,
+            current_linear=current_linear,
+            current_vertex_index=current_vertex_index,
+            current_scale_label=current_scale_label,
+            current_pointer_value=current_pointer_value,
+            current_d_over_r=current_d_over_r,
+            strel_linear=current_strel_linear,
+            strel_pointer_indices=current_strel_pointer_indices,
+            strel_r_over_R=current_strel_r_over_R,
+            raw_energies=current_strel_energies,
+            adjusted_energies=adjusted,
+            vertices_of_current_strel=vertices_of_current_strel,
+            is_without_vertex=_is_without_vertex,
+            pointer_values=claim_map.pointer_flat[current_strel_linear],
+            d_over_r_values=claim_map.d_over_r_flat[current_strel_linear],
+            size_values=size_map_flat[current_strel_linear],
+        )
+
         for seed_idx in _matlab_global_watershed_seed_index_range(
             current_pointer_value=current_pointer_value,
             edge_number_tolerance=edge_number_tolerance,
@@ -678,10 +711,20 @@ def _generate_edge_candidates_matlab_global_watershed(
                             seed_idx,
                             current_linear=current_linear,
                         )
+                        _trace_frontier_state(
+                            "after_push",
+                            iteration=iteration,
+                            current_linear=current_linear,
+                        )
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
                     queue.remove_first_occurrence(
                         current_strel_linear[is_next_vertex_in_strel],
+                        current_linear=current_linear,
+                    )
+                    _trace_frontier_state(
+                        "after_join_reset",
+                        iteration=iteration,
                         current_linear=current_linear,
                     )
 
@@ -752,6 +795,11 @@ def _generate_edge_candidates_matlab_global_watershed(
                         )
             else:
                 queue.discard_current_location_if_not_clear(current_linear)
+                _trace_frontier_state(
+                    "after_discard",
+                    iteration=iteration,
+                    current_linear=current_linear,
+                )
 
             strel_unit_vectors = np.asarray(current_strel["unit_vectors"], dtype=np.float64)
             cosine_to_selected = np.sum(strel_unit_vectors * strel_unit_vectors[strel_idx], axis=1)
@@ -817,25 +865,21 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     lut_size: int,
 ) -> dict[str, np.ndarray]:
     """Compatibility shim for unit tests."""
-    if len(strel_pointer_indices) != len(valid_linear):
-        raise AssertionError("Strel arrays must stay aligned")
-
-    vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
-    is_without_vertex = vertices_of_current_strel == 0
-
-    if np.any(is_without_vertex):
-        claim_linear = valid_linear[is_without_vertex]
-        claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-        if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
-            raise AssertionError("invalid claim pointers")
-
-        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
-        pointer_map_flat[claim_linear] = claim_pointers
-        energy_map_flat[claim_linear] = adjusted_energies[is_without_vertex]
-        d_over_r_map_flat[claim_linear] = (
-            np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float64) + current_d_over_r
-        )
-        size_map_flat[claim_linear] = np.int16(current_scale_label)
+    vertices_of_current_strel, is_without_vertex = _claim_unowned_strel_arrays(
+        current_vertex_index=current_vertex_index,
+        current_scale_label=current_scale_label,
+        current_d_over_r=current_d_over_r,
+        valid_linear=valid_linear,
+        strel_pointer_indices=strel_pointer_indices,
+        strel_r_over_R=strel_r_over_R,
+        adjusted_energies=adjusted_energies,
+        vertex_index_map_flat=vertex_index_map_flat,
+        pointer_map_flat=pointer_map_flat,
+        energy_map_flat=energy_map_flat,
+        d_over_r_map_flat=d_over_r_map_flat,
+        size_map_flat=size_map_flat,
+        lut_size=lut_size,
+    )
 
     return {
         "vertices_of_current_strel": vertices_of_current_strel,

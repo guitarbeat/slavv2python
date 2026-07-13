@@ -40,6 +40,7 @@ from slavv_python.pipeline.edges.matlab_indexing import (
 )
 from slavv_python.pipeline.edges.matlab_watershed_heap import (
     SortedFrontier,
+    VoxelClaimMap,
     _matlab_global_watershed_insert_available_location,
     _matlab_global_watershed_reset_join_locations,
 )
@@ -540,6 +541,24 @@ def test_sorted_frontier_peek_push_matches_matlab_order() -> None:
 
 
 @pytest.mark.unit
+def test_available_locations_primary_seed_preserves_tail_when_new_seed_is_best() -> None:
+    """MATLAB computes insertion index before clearing, so a best new seed appends after tail."""
+    energy_lookup = {10: -1.0, 20: -3.0, 30: -5.0, 40: -6.0}
+
+    updated, is_clear = _matlab_global_watershed_insert_available_location(
+        [10, 20, 30],
+        next_location=40,
+        next_energy=-6.0,
+        energy_lookup=energy_lookup,
+        seed_idx=1,
+        is_current_location_clear=False,
+    )
+
+    assert updated == [10, 20, 30, 40]
+    assert is_clear is True
+
+
+@pytest.mark.unit
 def test_reset_join_locations_removes_vertex_locations():
     """Test that joining vertices are removed from available_locations.
 
@@ -574,6 +593,38 @@ def test_reset_join_locations_handles_uncleared_tail():
 
     # Should remove tail (40) first, then remove 20
     assert updated == [10, 30]
+    assert is_clear is True
+
+
+@pytest.mark.unit
+def test_reset_join_locations_removes_first_duplicate_only():
+    """MATLAB reset deletes the first available occurrence for each reset value."""
+    available = [10, 20, 30, 20, 40]
+    next_vertex_locations = np.array([20], dtype=np.int64)
+
+    updated, is_clear = _matlab_global_watershed_reset_join_locations(
+        available,
+        next_vertex_locations=next_vertex_locations,
+        is_current_location_clear=True,
+    )
+
+    assert updated == [10, 30, 20, 40]
+    assert is_clear is True
+
+
+@pytest.mark.unit
+def test_reset_join_locations_preserves_tail_value_duplicates_when_uncleared():
+    """MATLAB drops an uncleared tail and excludes that value from reset deletion."""
+    available = [10, 40, 20, 40]
+    next_vertex_locations = np.array([40], dtype=np.int64)
+
+    updated, is_clear = _matlab_global_watershed_reset_join_locations(
+        available,
+        next_vertex_locations=next_vertex_locations,
+        is_current_location_clear=False,
+    )
+
+    assert updated == [10, 40, 20]
     assert is_clear is True
 
 
@@ -813,6 +864,23 @@ def test_initialize_state_sets_correct_data_types():
     assert state["energy_map_temp"].shape == (3, 3, 3)
     assert state["pointer_map"].shape == (3, 3, 3)
     assert state["vertex_index_map"].shape == (3, 3, 3)
+
+
+@pytest.mark.unit
+def test_restore_vertex_energy_preserves_negative_infinity_sentinel():
+    """Vertex centers must remain -Inf in the shared strel priority map."""
+    energy = np.arange(27, dtype=np.float64).reshape((3, 3, 3), order="F")
+    energy[1, 1, 1] = -42.0
+    claim_map = VoxelClaimMap(
+        energy.shape,
+        np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+        energy,
+    )
+    vertex_linear = int(claim_map.vertex_locations[0])
+
+    assert claim_map.energy_temp_flat[vertex_linear] == float("-inf")
+    assert claim_map.restore_vertex_energy(vertex_linear) == -42.0
+    assert claim_map.energy_temp_flat[vertex_linear] == float("-inf")
 
 
 @pytest.mark.unit

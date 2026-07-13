@@ -35,28 +35,36 @@ def _matlab_global_watershed_insert_available_location(
 ) -> tuple[list[int], bool]:
     """Insert ``next_location`` into MATLAB worst-to-best ``available_locations`` order."""
     is_clear = is_current_location_clear
-    updated = list(available_locations)
-    # MATLAB reassembly uses ``end-1`` when the current tail has not been cleared yet,
-    # for both primary and secondary seeds.
-    if not is_current_location_clear:
-        if updated:
-            updated.pop()
-        is_clear = True
+    original = list(available_locations)
 
     target_energy = float(next_energy)
 
-    insert_at = len(updated)
-    for idx, loc in enumerate(updated):
-        mid_energy = float(energy_lookup[int(loc)])
-        if seed_idx == 1:
-            is_mid_worse = mid_energy > target_energy
-        else:
-            is_mid_worse = mid_energy >= target_energy
-        if not is_mid_worse:
-            insert_at = idx
-            break
+    if not original:
+        return [int(next_location)], True
 
-    updated.insert(insert_at, int(next_location))
+    if seed_idx == 1:
+        if float(energy_lookup[int(original[0])]) <= target_energy:
+            insert_at = 0
+        else:
+            insert_at = len(original)
+            for idx in range(len(original) - 1, -1, -1):
+                if float(energy_lookup[int(original[idx])]) > target_energy:
+                    insert_at = idx + 1
+                    break
+    elif float(energy_lookup[int(original[-1])]) >= target_energy:
+        insert_at = len(original) if is_current_location_clear else len(original) - 1
+    else:
+        insert_at = len(original)
+        for idx, loc in enumerate(original):
+            if float(energy_lookup[int(loc)]) < target_energy:
+                insert_at = idx
+                break
+
+    if not is_current_location_clear:
+        is_clear = True
+        updated = [*original[:insert_at], int(next_location), *original[insert_at:-1]]
+    else:
+        updated = [*original[:insert_at], int(next_location), *original[insert_at:]]
     return updated, is_clear
 
 
@@ -69,14 +77,67 @@ def _matlab_global_watershed_reset_join_locations(
     """Remove join targets from ``available_locations`` (MATLAB watershed join reset)."""
     is_clear = is_current_location_clear
     updated = list(available_locations)
+    next_locations = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
+    locations_to_reset = sorted({int(loc) for loc in updated if int(loc) in next_locations})
     if not is_clear:
         if updated:
+            # MATLAB builds ``locations_to_reset`` before clearing the current tail, then
+            # removes the tail value from that reset list before popping ``end``.
+            tail_location = int(updated[-1])
+            locations_to_reset = [loc for loc in locations_to_reset if loc != tail_location]
             updated.pop()
         is_clear = True
 
-    locations_to_reset = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
-    updated = [loc for loc in updated if loc not in locations_to_reset]
+    reset_indices: list[int] = []
+    for location in locations_to_reset:
+        for idx, available_location in enumerate(updated):
+            if int(available_location) == int(location):
+                reset_indices.append(idx)
+                break
+
+    for idx in sorted(set(reset_indices), reverse=True):
+        del updated[idx]
     return updated, is_clear
+
+
+def _claim_unowned_strel_arrays(
+    *,
+    current_vertex_index: int,
+    current_scale_label: int,
+    current_d_over_r: float,
+    valid_linear: np.ndarray,
+    strel_pointer_indices: np.ndarray,
+    strel_r_over_R: np.ndarray,
+    adjusted_energies: np.ndarray,
+    vertex_index_map_flat: np.ndarray,
+    pointer_map_flat: np.ndarray,
+    energy_map_flat: np.ndarray,
+    d_over_r_map_flat: np.ndarray,
+    size_map_flat: np.ndarray,
+    lut_size: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Claim unowned strel voxels into flat shared watershed maps."""
+    if len(strel_pointer_indices) != len(valid_linear):
+        raise AssertionError("Strel arrays must stay aligned")
+
+    vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
+    is_without_vertex = vertices_of_current_strel == 0
+
+    if np.any(is_without_vertex):
+        claim_linear = valid_linear[is_without_vertex]
+        claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
+        if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
+            raise AssertionError("invalid claim pointers")
+
+        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
+        pointer_map_flat[claim_linear] = claim_pointers
+        energy_map_flat[claim_linear] = adjusted_energies[is_without_vertex]
+        d_over_r_map_flat[claim_linear] = (
+            np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float64) + current_d_over_r
+        )
+        size_map_flat[claim_linear] = np.int16(current_scale_label)
+
+    return vertices_of_current_strel, is_without_vertex
 
 
 class SortedFrontier:
@@ -98,6 +159,18 @@ class SortedFrontier:
         if not self._available:
             raise KeyError("peek from an empty sorted frontier")
         return int(self._available[-1])
+
+    def debug_snapshot(self, targets: set[int] | None = None, tail_count: int = 8) -> dict[str, object]:
+        target_set = targets or set()
+        return {
+            "length": len(self._available),
+            "is_current_location_clear": self._is_current_location_clear,
+            "tail": [int(value) for value in self._available[-tail_count:]],
+            "target_counts": {
+                str(int(target)): sum(1 for value in self._available if int(value) == int(target))
+                for target in sorted(target_set)
+            },
+        }
 
     def pop_best(self) -> int:
         if not self._available:
@@ -331,11 +404,10 @@ class VoxelClaimMap:
         )
 
     def restore_vertex_energy(self, linear_index: int) -> float:
-        """Restores a vertex's true energy if it was marked as -Inf."""
+        """Read vertex energy; leave shared -Inf sentinel in place (MATLAB)."""
         current_energy = float(self.energy_temp_flat[linear_index])
         if current_energy == float("-inf"):
             current_energy = float(self.vertex_energies_raw_flat[linear_index])
-            self.energy_temp_flat[linear_index] = current_energy
         return current_energy
 
     def claim_unowned_strel(
@@ -351,27 +423,19 @@ class VoxelClaimMap:
         size_map_flat: np.ndarray,
         lut_size: int,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels."""
-        if len(strel_pointer_indices) != len(valid_linear):
-            raise AssertionError("Strel arrays must stay aligned")
-
-        vertices_of_current_strel = np.asarray(
-            self.vertex_index_flat[valid_linear], dtype=np.uint32
+        """Claim unowned strel voxels into the shared maps."""
+        return _claim_unowned_strel_arrays(
+            current_vertex_index=current_vertex_index,
+            current_scale_label=current_scale_label,
+            current_d_over_r=current_d_over_r,
+            valid_linear=valid_linear,
+            strel_pointer_indices=strel_pointer_indices,
+            strel_r_over_R=strel_r_over_R,
+            adjusted_energies=adjusted_energies,
+            vertex_index_map_flat=self.vertex_index_flat,
+            pointer_map_flat=self.pointer_flat,
+            energy_map_flat=self.energy_flat,
+            d_over_r_map_flat=self.d_over_r_flat,
+            size_map_flat=size_map_flat,
+            lut_size=lut_size,
         )
-        is_without_vertex = vertices_of_current_strel == 0
-
-        if np.any(is_without_vertex):
-            claim_linear = valid_linear[is_without_vertex]
-            claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-            if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
-                raise AssertionError("Invalid claim pointers")
-
-            self.vertex_index_flat[claim_linear] = np.uint32(current_vertex_index)
-            self.pointer_flat[claim_linear] = claim_pointers
-            self.energy_flat[claim_linear] = adjusted_energies[is_without_vertex]
-            self.d_over_r_flat[claim_linear] = (
-                np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float64) + current_d_over_r
-            )
-            size_map_flat[claim_linear] = np.int16(current_scale_label)
-
-        return vertices_of_current_strel, is_without_vertex
