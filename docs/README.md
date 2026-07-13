@@ -68,17 +68,23 @@ Treat `investigations/` as historical context, not as an executable spec.
 
 ### Quick Reference
 
-1. **[Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)** ⭐ — Live run status, blockers, cold-start protocol
-2. **[Parity Methodology](reference/core/PARITY_METHODOLOGY.md)** — Why the bars are tolerance-based (literature-backed; validates ADR 0011/0012)
-3. **[Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md)** — Three-tier testing (synthetic → crop → canonical)
-3. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow
-4. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
-5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
-6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP. See also the Python SLAVV facade.
-7. **[Python SLAVV Facade](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md#internal-structure-post-hardening-refactor)** — `slavv_vectorize.py` (high-level orchestrator) + stage managers matching MATLAB `vectorize_V200`.
-8. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Accepted): `np.allclose` for continuous float fields, strict for discrete/topological
-9. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
-10. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
+1. **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** ⭐ — Operator decision point + commands (re-synthesize when findings move)
+2. **[Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)** ⭐ — Live run status, blockers, cold-start protocol
+3. **[TODO.md](TODO.md)** — Checkboxes only (ship tasks)
+4. **[Parity Methodology](reference/core/PARITY_METHODOLOGY.md)** — Why the bars are tolerance-based (literature-backed; validates ADR 0011/0012)
+5. **[Phase 1 Residual Experiment Analysis](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md)** — Current hypothesis, methodology, limitations, and next steps for the Network residual
+6. **[Experiment Analysis Template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md)** — Reusable structure for hypothesis-driven parity experiment notes
+7. **[Phase 1 → Phase 2 Transition Spec](plans/phase-1-to-phase-2-transition-spec.md)** — Baseline-freeze and handoff rules after Network ADR 0012 is green
+8. **[Unproductive Loops](reference/core/UNPRODUCTIVE_LOOPS.md)** — Anti-patterns (stale gates, probe orientation, Network misattribution)
+9. **[Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md)** — Three-tier testing (synthetic → crop → canonical)
+10. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow
+11. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
+12. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
+13. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP
+14. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011: `np.allclose` continuous floats
+15. **[Edge watershed parity bar](adr/0012-edge-watershed-parity-bar.md)** — ADR 0012 + post-v6 Network residual addendum
+16. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
+17. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
 
 ### Cold-Start Protocol
 

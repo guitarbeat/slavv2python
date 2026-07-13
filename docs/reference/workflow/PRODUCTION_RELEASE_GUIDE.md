@@ -12,8 +12,8 @@ Before a version can be tagged or deployed, the following gates must be green:
 
 ### 1. Mathematical Parity (The Exact Proof)
 The native-first exact route must pass the maintained parity certification.
-- **Goal**: sequential `prove-exact-sequence` passing for energy, vertices, edges, and network against the defined certification oracle — strict zero missing/extra for energy/vertices ([ADR 0011](../../adr/0011-energy-float-certification-policy.md)); the spatial ownership-map / multiset + sub-voxel trace bars for edges/network ([ADR 0012](../../adr/0012-edge-watershed-parity-bar.md)).
-- **Audit**: `prove-exact-sequence` must produce compliant `exact_proof` artifacts that are promoted to `workspace/reports/`.
+- **Goal**: sequential **per-stage** `prove-exact --stage <s>` passing for energy, vertices, edges, and network against the defined certification oracle — strict zero missing/extra for energy/vertices ([ADR 0011](../../adr/0011-energy-float-certification-policy.md)); **evaluated** ADR 0012 ownership-map / multiset + sub-voxel bars for edges/network ([ADR 0012](../../adr/0012-edge-watershed-parity-bar.md)). Do not treat `prove-exact-sequence` strict-field failure as the release ship gate.
+- **Audit**: per-stage `exact_proof_<stage>.json` with `adr0012_evaluated: true` for edges/network where applicable; promote durable summaries to `workspace/reports/`.
 
 ### 2. Quality Gate (CI/CD)
 The GitHub Actions `regression-gate.yml` must pass for the `main` branch.

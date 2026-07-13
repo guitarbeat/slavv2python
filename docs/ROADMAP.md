@@ -5,16 +5,20 @@ the project is headed. It does **not** track live status or tasks:
 
 - **Active status / proofs / blockers** → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
 - **Concrete next actions (checkboxes)** → [TODO.md](TODO.md)
+- **Operator brief (commands + decision point)** → [.claude/HANDOFF.md](../.claude/HANDOFF.md)
 - **Requirements & plans** → [plans/](plans/) · **Decisions** → [adr/](adr/)
 
 ---
 
 ## North Star
 
-A **bit-exact MATLAB→Python port** of the SLAVV vessel-extraction pipeline
-(Energy → Vertices → Edges → Network), *certified* against the MATLAB oracle on
-the canonical volume — and from that trusted foundation, a **faster, maintainable
-production pipeline**.
+A **certified MATLAB→Python port** of the SLAVV vessel-extraction pipeline
+(Energy → Vertices → Edges → Network) on the canonical volume — and from that
+trusted foundation, a **faster, maintainable production pipeline**.
+
+“Certified” means each stage’s **defined parity bar** (ADR 0011 / ADR 0012), not
+bit-identical watershed queue order or strict-field edge-pair equality as the
+ship metric.
 
 ---
 
@@ -26,64 +30,75 @@ faithfulness and memory safety:
 - `[Y, X, Z]` internal alignment + Fortran-order tie-breaking to reproduce
   MATLAB's column-major behavior; `float64` throughout.
 - Incremental octave-chunked energy engine (no large 4D buffers).
-- Certification policy established: [ADR 0011](adr/0011-energy-float-certification-policy.md)
+- Certification policy: [ADR 0011](adr/0011-energy-float-certification-policy.md)
   (strict discrete + `np.allclose` continuous) and
-  [ADR 0012](adr/0012-edge-watershed-parity-bar.md) (edge/network spatial bars).
+  [ADR 0012](adr/0012-edge-watershed-parity-bar.md) (edge ownership-map + network
+  strand/bifurcation multisets).
 - Random Component Parity Suite for unit-level energy faithfulness.
 
 ---
 
 ## Phase 1 — Exact-route certification (current)
 
-**Goal:** strict sequential certification on full `180709_E` via
-`prove-exact-sequence`, with the crop harness as the required pre-gate.
+**Goal:** evaluated per-stage `prove-exact` on full `180709_E` under ADR 0011
+(Energy, Vertices) and ADR 0012 (Edges, Network). Crop harness is the fast
+iteration surface; the canonical volume is the claim surface.
 
-- **Crop pre-gate (tier-2):** Energy ✅ and Vertices ✅ certified; **Edges** in
-  progress (closing to the ADR 0012 spatial ownership bar — residual is early
-  trace termination on long paths, not ordering); **Network** pending upstream.
-- **Canonical (tier-3):** the full-volume certification run is underway. A key
-  enabler landed this phase — **bit-exact threaded chunk parallelism** for the
-  exact-route energy stage (`--n-jobs`), cutting a multi-day energy run to
-  hours and making canonical certification practical
-  (see [solutions/parity/exact-energy-chunk-parallelism.md](solutions/parity/exact-energy-chunk-parallelism.md)).
+### Achieved (as of 2026-07-08 evidence)
 
-**Path to done:** close Edges parity → certify Network → green
-`prove-exact-sequence` on canonical `180709_E` → promote the summary to
-`workspace/reports/`. Details in the
-[Phase 1 spec](plans/phase-1-exact-route-spec.md) and [TODO.md](TODO.md).
+| Stage | Full `180709_E` | Notes |
+|-------|-----------------|-------|
+| Energy | ✅ CERTIFIED | ADR 0011; 0 scale mismatches / 16.8M voxels |
+| Vertices | ✅ CERTIFIED | ADR 0011 |
+| Edges | ✅ ADR 0012 PASS | `canonical_full_v6`, ownership **96.02%**, evaluated |
+| Network | ❌ OPEN | Multiset fail; **downstream of residual ~4k edge gap** |
+
+Also cleared: crop candidate overlap **97.31%** (old 80% launch gate), crop-edge
+`uint16` floor truncation fix, ownership-map measurement path.
+
+### Path to done
+
+1. **Residual watershed generation** on crop (golden-trace iter 13,761 / claiming
+   state) until connection gap drops enough that Network multisets can pass.
+2. Fresh canonical edges→network run (`canonical_full_v7` preferred) with debug
+   maps.
+3. Evaluated `prove-exact --stage edges` (regression check) + `--stage network`
+   → **Phase 1 closed** when both green.
+
+Do **not** use `prove-exact-sequence` strict-field failure as the ship gate.
+Details: [Phase 1 spec](plans/phase-1-exact-route-spec.md), [TODO.md](TODO.md),
+[HANDOFF](../.claude/HANDOFF.md).
 
 ---
 
-## Phase 2 — Performance & scale (next)
+## Phase 2 — Performance & scale (after Phase 1)
 
-The exact route is correct but compute-heavy. Once certification gives a trusted
-baseline, optimize *without* regressing parity (every change validated bit-exact
-against the oracle):
+The exact route is correct-enough for certification but compute-heavy. Once
+Phase 1 Network is green, optimize *without* silent parity regression:
 
-- **Parallelism (started):** bit-exact threaded chunk energy (`n_jobs`) and
-  per-chunk garbage collection are in. Next: auto-size `n_jobs` from core count
-  with a memory guard; evaluate process-level parallelism and further hot-loop
-  reductions; profile the vertices/edges/network stages.
-- **Throughput tooling:** `scripts/parity_run_throughput.py` for live run ETAs.
-- **Memory headroom:** continue trimming peak per-chunk memory for larger volumes.
+- **Parallelism (started):** bit-exact threaded chunk energy (`n_jobs`). Next:
+  auto-size `n_jobs`, vertices/edges/network profiling.
+- **Optional unwind:** after a frozen cert baseline, Phase 2 may relax
+  Fortran-order emulation toward idiomatic C-order — only under a new
+  topological-tolerance gate (see [phase-2-optimization-spec.md](plans/phase-2-optimization-spec.md)).
+- **Paper-profile certification:** same sequential bars on the public `paper`
+  profile (phase-1-spec F2) — program ship confidence requires this after exact
+  route.
 
 > **Research input:** [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
-> — cited methodology (golden-master differential testing), a bit-preserving vs
-> bit-perturbing technique matrix, and publication guidance for the eventual paper.
+
+**Do not start broad Phase 2 unwinding while Phase 1 Network is red.**
 
 ---
 
 ## Phase 3 — Breadth & productization (later)
 
-- **More volumes:** import and verify additional datasets (`neurovasc-db`) once
-  Phase 1 closes.
-- **Innovation path:** improvements beyond strict parity (speed/quality) on the
-  maintained Python route; reconcile or retire the demonstration shims in
-  `slavv_python/pipeline/slavv_vectorize.py` so the facade can't be mistaken for
-  the parity engine.
+- **More volumes:** `neurovasc-db` import and verify once Phase 1 closes.
+- **Innovation path:** improvements beyond strict parity on the maintained
+  Python route.
 - **Productization:** packaging and broader CLI / Streamlit UX polish.
 
 ---
 
 *Status lives in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md);
-this roadmap is intentionally narrative.*
+this roadmap is intentionally narrative. Last realigned: 2026-07-12.*

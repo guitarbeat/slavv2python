@@ -51,7 +51,6 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **Guidance**: Skip all image normalization/clipping when `comparison_exact_network=True`. Preserving the raw physical sensor values is the only way to match the LoG filtered intensities.
 
 ---
-*Last Updated: 2026-06-13*
 
 ## 10. The Coordinate Grid Expansion Trap
 *   **The Loop**: Addressing ArrayMemoryError issues in exact_mesh.py by attempting to optimize chunking (get_chunking_lattice_v190), while preserving the legacy MATLAB shim for _interp3_matlab_linear_inf which demanded a full 4D dense coordinate array (3, Y, X, Z).
@@ -62,3 +61,37 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **The Loop**: To achieve Phase 1 bit-perfect parity, the Python codebase was warped to emulate MATLAB's memory layout (Fortran order), bespoke rounding (_matlab_round), and edge cases.
 *   **The Reality**: This "Bug-for-Bug" compatibility guarantees exactness but severely punishes Python performance and blocks the adoption of C-backed ecosystem tools (e.g., scipy.ndimage, Numba).
 *   **Guidance**: Exact parity is a milestone, not a permanent architecture. Once the exact proof gate is passed, immediately branch to Phase 2 to unwind the emulation layers and restore native C-order [Z, Y, X] processing, accepting topological isomorphism over bit-perfect equivalence.
+*   **Guardrail**: Do **not** start Phase 2 unwinding while Network ADR 0012 is still red on the canonical volume.
+
+## 12. The Probe-Without-Orientation Trap
+*   **The Loop**: Reporting a “new” crop candidate-overlap KPI (e.g. 62%) after a probe or gap script change, then chasing code for a day.
+*   **The Reality**: Calling the watershed engine without the production `mpv` / orientation permute produces a **false signal**. The faithful SortedFrontier path was still at **57.89%** until a real generation fix moved it to **97.31%**.
+*   **Guidance**: Every offline probe must exercise the **same orientation contract** as `generate_watershed_candidates`. Cross-check with production `slavv` edges + `prove-exact` before celebrating a KPI move.
+
+## 13. The Ownership-Map Blind Closure Trap
+*   **The Loop**: Reading `prove-exact --stage edges` as a closure verdict when `adr0012_evaluated: false` (maps missing on oracle and/or Python checkpoint).
+*   **The Reality**: Harness fell back to strict-field messaging; agents claimed “Edges failed/passed” without a spatial bar. `canonical_full_v5` burned this.
+*   **Guidance**: Only **evaluated** ADR 0012 proofs count. Require MATLAB `watershed_ownership_map.mat` + Python `--include-debug-maps`. Fail loud if maps are absent.
+
+## 14. The Stale Operator Brief Trap
+*   **The Loop**: Agents follow HANDOFF / TODO / ROADMAP that still say “block on 80% crop overlap” or “Edges in progress” days after findings already show Edges PASS / Network FAIL on `v6`.
+*   **The Reality**: Meta drift is as expensive as a wrong algorithm hypothesis — writers and proofs get launched against the wrong gate.
+*   **Guidance**: [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md) is status truth. When its top banner changes, **same-session** re-synthesize [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) and [TODO.md](../../TODO.md) checkboxes. ROADMAP stays narrative but must not contradict the ship gate.
+
+## 15. The “Network Bug” Misattribution Trap
+*   **The Loop**: Opening a Network-stage rewrite because strand multisets fail ADR 0012 on full volume.
+*   **The Reality**: Stage isolation with **MATLAB edges** reproduces Network topology exactly. Multiset failure tracks the residual edge-connection gap (~4k on `v6`).
+*   **Guidance**: Network red + Edges ownership green ⇒ **generation residual**, not a Network port. Keep working watershed claim/strel / golden-trace diverge (crop iter ~13,761).
+
+## 16. The Round-vs-Truncate MATLAB Cast Trap
+*   **The Loop**: Porting MATLAB `uint16(x)` as `np.rint(x).astype(np.uint16)` (or similar “nearest int”) because “cast to integer means round.”
+*   **The Reality**: MATLAB `uint16` on a real converts via **truncation toward zero** (floor for positive radii/spaces). Rounding over-cropped edges (`crop_edges_V200`) and cost ~500 crop pairs / ~2k full connections until fixed.
+*   **Guidance**: For every MATLAB integer cast on continuous geometry, check truncation vs round-half-up explicitly; add a unit test against the MATLAB expression.
+
+## 17. The Retired-Gate Zombie Trap
+*   **The Loop**: After the 80% crop-overlap milestone cleared and `v6` evaluated Edges PASS, still treating “≥80% before any canonical work” or “57.89% baseline” as current operating law.
+*   **The Reality**: Historical gates become cargo-cult blockers and hide the real residual KPI (generation gap → Network multiset).
+*   **Guidance**: Mark cleared gates as historical in findings/HANDOFF. Current ship residual: **Network multiset** driven by **generation/claiming** residual.
+
+---
+*Last Updated: 2026-07-12*

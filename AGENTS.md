@@ -38,13 +38,14 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 **Choose your path based on what you're working on:**
 
 ### I'm working on MATLAB parity
-1. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Current decision point and operating sequence
-2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers
-3. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
+1. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Current decision point and operating sequence (post-v6: Network residual)
+2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers (status truth)
+3. Check if a rerun is active: `slavv jobs list` / `slavv status-exact-run --run-dir <dir>` or `99_Metadata/parity_job.pid`.
 4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
-5. Follow the operating sequence in [HANDOFF.md](.claude/HANDOFF.md) (findings cold-start defers there)
+5. Follow the operating sequence in [HANDOFF.md](.claude/HANDOFF.md); do not re-gate on the retired 80% crop-overlap milestone
 6. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
-7. See [Parity Experiments](#parity-experiments) workflow below
+7. If you change findings top-banner status, re-synthesize HANDOFF + [TODO.md](docs/TODO.md) checkboxes in the same session
+8. See [Parity Experiments](#parity-experiments) workflow below
 
 ### I'm fixing a bug or adding a feature
 1. Read impacted module(s) and nearest tests
@@ -146,23 +147,23 @@ The state in which every required [Pipeline](#pipeline) stage passes its defined
 _Avoid_: Treating strict-field `connections` / strand-count equality as the Phase 1 ship gate for Edges/Network; that is a separate [Strict-Field Stretch Goal](#strict-field-stretch-goal).
 
 ### Strict-Field Stretch Goal
-An engineering target where Edges and Network also match MATLAB on strict discrete fields (`connections` counts, strand multisets with order-sensitive comparators)—tracked in [Exact Proof Findings](#exact-proof-findings) and iterated on the [Crop Harness Volume](#crop-harness-volume), but **not** a [Certification](#certification) blocker once ADR 0012 passes on the [Canonical Volume](#canonical-volume).
-_Avoid_: Calling stretch progress "certified," blocking Phase 1 closure on strict-field gaps, or conflating it with the ADR 0012 ownership-map bar.
+An engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—tracked in [Exact Proof Findings](#exact-proof-findings) and iterated on the [Crop Harness Volume](#crop-harness-volume). **Network ADR 0012 multiset equality is the open ship gate**, not stretch: it can fail while Edges ownership passes because Network topology is a function of the emitted connection set (see [ADR 0012 post-v6 addendum](docs/adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)).
+_Avoid_: Calling stretch progress "certified," calling Network multiset failure "stretch only," or conflating ownership-map pass with Phase 1 closure.
 
-**Stretch KPIs:** Primary loop metric = **candidate generation overlap** (MATLAB final pairs present in Python candidates, crop harness). Milestone check = **strict-field** `prove-exact` / sequence delta on crop when overlap moves materially.
-_Avoid_: Using ownership-map % as the stretch tracker (already at cert bar) or strict-field counts alone on every iteration.
+**Post-v6 residual KPIs (primary loop):** golden-trace first-diverge iteration (crop), crop final connection gap, full edge connection gap, then **evaluated Network** `prove-exact`. Candidate-generation overlap ≥80% is a **cleared historical gate** (achieved **97.31%** on `crop_M_exact_v3`).
+_Avoid_: Re-blocking work on the old 80% gate, using ownership-map % as the residual tracker (already at cert bar on `v6`), or inventing non–lowest-linear-index queue tie-breaks.
 
-**Stretch run root:** Use a **new** crop harness directory (e.g. `crop_M_exact_v3`) seeded via preflight from the prior crop run; rerun Edges only on current `main`. Do not treat stale pre-fix crop checkpoints as the stretch baseline.
-_Avoid_: Logging stretch KPIs against `crop_M_exact` artifacts produced before watershed parity fixes landed on `main`.
+**Stretch run root:** Prefer `crop_M_exact_v3` (or a new crop root seeded via preflight); rerun Edges only on current `main`. Do not treat pre–PR #103 `crop_M_exact` as the residual baseline.
+_Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 
 ### Evaluated ADR 0012 Proof
 A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
 _Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
 
-**Phase 1 operating sequence:** (1) Watershed fixes on crop `v3` until overlap **≥80%**; (2) ownership-map prep + `canonical_full_v6` writer; (3) **evaluated** ADR 0012 per-stage proof → [Phase 1 Closure](#phase-1-closure) if green.
-_Avoid_: Launching full-volume writers before the 80% crop milestone, or claiming closure from strict-field fallback proofs.
+**Phase 1 operating sequence (post-v6):** (1) Residual watershed **generation / claiming-state** fixes on crop (golden-trace ~iter 13,761); (2) when crop residual moves materially, preflight a **new** canonical root (e.g. `canonical_full_v7`) from `v6` lineage, rerun Edges→Network with debug maps; (3) **evaluated** Network ADR 0012 (Edges regression check) → [Phase 1 Closure](#phase-1-closure) if green. Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md).
+_Avoid_: Claiming closure from Edges-only pass, treating Network red as a Network rewrite, or using `prove-exact-sequence` as the ship gate.
 
-**Closure run root:** Use a **new** canonical directory (e.g. `canonical_full_v6`) preflighted from the prior closure attempt; carry Energy/Vertices, rerun Edges → Network only.
+**Closure run root:** Prefer a **new** canonical directory (e.g. `canonical_full_v7`) preflighted from the prior closure attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve `canonical_full_v6` as audit (Edges ✅ Network ❌).
 
 ### Canonical Volume
 The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.
@@ -183,17 +184,17 @@ The single authoritative document for exact-route [Certification](#certification
 _Avoid_: Maintaining separate brainstorm and plan files for the same initiative; use `docs/brainstorms/` only before the spec exists.
 
 ### Phase 1 Closure
-The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` and `--stage network` pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. Does not require [Strict-Field Stretch Goal](#strict-field-stretch-goal) on the same run.
-_Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, or closing Phase 1 on [Crop Harness Volume](#crop-harness-volume) alone.
+The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` **and** `--stage network` both pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. As of `canonical_full_v6`, **Edges are green and Network is the open gate** (residual generation gap). Exact `connections` equality remains stretch, not an extra ship metric once Network multisets pass.
+_Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, closing Phase 1 on Edges-only, or closing on [Crop Harness Volume](#crop-harness-volume) alone.
 
-**Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on the canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
-_Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while stretch iteration uses fresher crop outputs.
+**Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on a fresh canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
+_Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while residual iteration uses fresher crop outputs.
 
-**Closure run root:** Use a **new** canonical run directory (e.g. `canonical_full_v6`) seeded via preflight from the prior canonical run; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite the prior canonical snapshot in place.
-_Avoid_: `--force-rerun-from edges` on the historical claim run root when that run is the audit record for a prior milestone.
+**Closure run root:** Prefer a **new** canonical run directory (e.g. `canonical_full_v7`) seeded via preflight from `v6`; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite `canonical_full_v6` in place (audit record: Edges ✅ Network ❌).
+_Avoid_: `--force-rerun-from edges` on a historical claim/audit run root when that run is the milestone record.
 
-**Closure failure policy:** If the closure proof fails [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the new canonical run, [Phase 1 Closure](#phase-1-closure) remains open. First triage measurement artifacts (checkpoint freshness, orientation/shape, oracle pairing, ownership-map probe)—do not assume a watershed code bug until those are ruled out. [Strict-Field Stretch Goal](#strict-field-stretch-goal) gaps do not reopen Phase 1 once ADR 0012 passes.
-_Avoid_: Blocking Phase 1 on strict-field counts when ADR 0012 already passes, or chasing watershed fixes before ruling out stale checkpoints / orientation.
+**Closure failure policy:** If Network fails ADR 0012 on the new canonical run while Edges still pass, treat it as **generation residual** first (confirm Network isolation with MATLAB edges still exact). If Edges ownership regresses, triage measurement artifacts (checkpoint freshness, orientation/shape, oracle pairing, ownership-map probe) before assuming a new watershed defect.
+_Avoid_: Opening a Network-stage rewrite project, or re-chasing the retired 80% crop-overlap gate.
 
 ### Exact Proof Findings
 The live status log for exact-parity work: active runs, `prove-exact` results, blockers, champion baselines, and a curated index of parity-related compound solutions under `docs/reference/core/EXACT_PROOF_FINDINGS.md`.

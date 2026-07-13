@@ -1,9 +1,16 @@
 # SLAVV MATLAB→Python Parity — Project Update
 
-**Date:** 2026-07-01
+**Date:** 2026-07-01  
 **Scope:** Bit-exact reproduction of the MATLAB SLAVV vessel-extraction pipeline
 (Energy → Vertices → Edges → Network) in Python, certified against a frozen
 MATLAB R2019a oracle.
+
+> ⚠️ **Point-in-time snapshot (2026-07-01).** Do **not** use this file as current
+> status. Live per-stage status, residual Network ship gate, and active blockers:
+> **[EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)** · operator
+> brief: **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** · tasks: **[TODO.md](TODO.md)**.
+> As of 2026-07-08+, full-volume Energy/Vertices/Edges ADR 0012 are green on the
+> closure path; **Network ADR 0012 remains the open Phase 1 ship gate**.
 
 ---
 

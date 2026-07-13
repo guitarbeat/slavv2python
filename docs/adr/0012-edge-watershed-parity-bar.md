@@ -51,6 +51,8 @@ Network geometry parity (Phase B) is a separate, scoped effort: a scale-subscrip
 
 ## Addendum (2026-07-06): Phase 1 closure bar vs strict-field stretch
 
+**Superseded operational details:** This addendum established the closure bar vs strict-field stretch distinction. Its concrete run names and operating order (`canonical_full_v5`) are historical; use the 2026-07-12 addendum and [.claude/HANDOFF.md](../../.claude/HANDOFF.md) for current planning.
+
 Phase 1 exact-route **ship confidence** uses **two tracked bars** for Edges/Network:
 
 1. **Certification bar (ship gate):** per-stage `prove-exact --stage edges` and `--stage network` on full `180709_E` against `180709_E_full_v2` under this ADR (ownership-map + trace tolerance for edges; strand/bifurcation multisets + sub-voxel geometry for network). Energy and Vertices remain under [ADR 0011](0011-energy-float-certification-policy.md). **Phase 1 closes when this passes on a fresh canonical run** (`canonical_full_v5`, seeded from `canonical_full_v4`, Edges→Network rerun from current `main`).
@@ -65,6 +67,8 @@ Phase 1 exact-route **ship confidence** uses **two tracked bars** for Edges/Netw
 
 ## Addendum (2026-07-06): Post-v5 watershed iteration and v6 closure
 
+**Superseded operational details:** This addendum explains why `v6` was launched and why evaluated ownership maps were required. The 80% crop-overlap launch gate was cleared and retired; it is no longer a current planning gate.
+
 After `canonical_full_v5` (writer succeeded, proof invalid):
 
 1. **v5 strict-field deficit is real but not a valid ADR 0012 verdict.** Full oracle `180709_E_full_v2` lacks `watershed_ownership_map.mat`; Python v5 checkpoint lacks `--include-debug-maps`. Proofs emitted `adr0012_evaluated: false` and must **not** be read as spatial-bar failure.
@@ -78,6 +82,33 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 5. **Closure verdict.** Phase 1 closes only on **evaluated** ADR 0012 per-stage proofs (`adr0012_evaluated: true`) on `canonical_full_v6`. Stretch strict-field progress on crop continues without blocking ship once evaluated ADR 0012 passes on full volume.
 
 **Operating order:** watershed fixes on crop → 80% milestone → map prep → v6 writer → evaluated ADR 0012 proof. See [.claude/HANDOFF.md](../../.claude/HANDOFF.md).
+
+## Addendum (2026-07-12): Post-v6 residual — Network is the open ship gate
+
+**What v6 proved (evaluated proofs on full `180709_E` / `canonical_full_v6`):**
+
+1. **Edges ADR 0012 PASS** — `adr0012_evaluated: true`, ownership-map agreement **~96%** (well above the 60% bar). Trace tolerance can still fail large numbers of edges; ownership carries the stage per this ADR.
+2. **Network ADR 0012 FAIL** — strand endpoint-pair multiset mismatch (Python ~44.6k vs MATLAB ~48.0k strands). **Stage isolation:** with identical MATLAB edges + vertices, Python Network reproduces MATLAB topology **exactly**. The failure is **entirely downstream of the residual edge-connection gap** (~4k fewer Python connections after the crop-truncation floor fix), not a Network port defect.
+3. **80% crop-overlap launch gate is historical** — cleared at **97.31%** candidate overlap on `crop_M_exact_v3` (2026-07-07). Do not re-block canonical work on that number.
+
+**Policy clarification (why Network still blocks Phase 1 even when Edges pass):**
+
+- Edges certification deliberately **does not** require exact pair-set equality (chaotic flood-fill).
+- Network certification **does** require order-independent **strand/bifurcation multiset** equality, which is a function of the **connection set** the watershed emitted.
+- Therefore ownership-map success can coexist with Network failure. That is expected, not a harness bug.
+- Closing Phase 1 means closing enough of the **generation / claiming-state** residual that Network multisets match — *not* rewriting Network, and *not* lowering the Network multiset bar without a new ADR.
+
+**Primary loop after v6** (see [.claude/HANDOFF.md](../../.claude/HANDOFF.md)):
+
+| Priority | Action |
+|----------|--------|
+| 1 | Crop golden-trace / strel-claim divergence (first split ~iter 13,761) |
+| 2 | Crop final connection gap + funnel probe (fast KPI) |
+| 3 | Fresh canonical edges→network (`v7` preferred) + evaluated Network proof |
+
+**Strict-field stretch** (exact 69,500 connections) remains non-blocking for messaging once Network ADR 0012 passes. In practice the generation work that makes Network pass also moves stretch KPIs.
+
+**Do not:** claim Phase 1 closed on Edges-only; treat Network red as a Network-stage rewrite; use `prove-exact-sequence` strict-field as the ship gate; destroy `canonical_full_v6` audit roots.
 
 ## Evidence references
 

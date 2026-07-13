@@ -19,6 +19,8 @@ default `paper` profile, export an authoritative `network.json`, and use the
 developer-only parity tooling separately when you need exact MATLAB artifact
 proof. Full stage managers and exact-parity route available.
 
+Method overview (paper stages): [SLAVV_METHOD_EXPLAINED.md](SLAVV_METHOD_EXPLAINED.md).
+
 ## Quick Start
 
 ```powershell

@@ -9,7 +9,9 @@ topic: pythonic-optimization-scalability
 # Phase 2: Pythonic Optimization & Scalability Spec
 
 **Author**: Engineering Team
-**Prerequisite**: Phase 1 Exact Parity Certification (Zero Missing/Extra)
+**Prerequisite**: Phase 1 exact-route certification under ADR 0011/0012, with the
+canonical baseline frozen per
+[phase-1-to-phase-2-transition-spec.md](phase-1-to-phase-2-transition-spec.md)
 **Research input**: [Post-parity optimization & the translation paper](../research/post-parity-optimization-and-paper.md)
 — cited methodology, a bit-preserving vs bit-perturbing technique matrix, and
 publication guidance.
@@ -18,9 +20,19 @@ publication guidance.
 
 ## 1. Executive Summary
 
-Phase 1 established a cryptographic-level trust guarantee by enforcing 100% bit-perfect parity between Python SLAVV and the legacy MATLAB oracle. To achieve this, the Python codebase was intentionally warped to emulate MATLAB's internal memory layouts (Fortran order), rounding errors, and idiosyncratic edge-case handling. 
+Phase 1 establishes trust by comparing Python SLAVV against preserved MATLAB
+oracles with stage-specific certification bars: ADR 0011 for Energy and
+Vertices, and evaluated ADR 0012 spatial/topology bars for Edges and Network.
+To reach those bars, the Python codebase intentionally preserves MATLAB-facing
+behaviors such as Fortran-order tie-breaking, rounding choices, and edge-case
+handling where they affect certified outputs.
 
-**Phase 2 represents the transition from emulation to optimization.** With mathematical correctness securely anchored by the exact-proof harness, Phase 2 will aggressively unwind the "bug-for-bug" MATLAB constraints. The goal is to return SLAVV to idiomatic, performant Python (C-order) and leverage the full power of modern data science ecosystems (e.g., SciPy, Numba, PyTorch, and CuPy) to achieve 10x-100x speedups.
+**Phase 2 represents the transition from emulation to optimization.** With a
+frozen Phase 1 canonical baseline and exact-proof harness, Phase 2 can unwind
+MATLAB-compatibility constraints behind explicit regression gates. The goal is
+to return SLAVV to idiomatic, performant Python (C-order) and leverage modern
+data science ecosystems (e.g., SciPy, Numba, PyTorch, and CuPy) to achieve
+10x-100x speedups without losing scientific/topological equivalence.
 
 ## 2. Core Objectives
 
@@ -34,13 +46,18 @@ Phase 1 established a cryptographic-level trust guarantee by enforcing 100% bit-
 ### 3.1 Memory Layout Unwinding (The "Great Transpose")
 *   **Problem:** Phase 1 forces the entire pipeline into Fortran-order `[Y, X, Z]` arrays simply to ensure MATLAB's `find()` tie-breaking logic is matched.
 *   **Action:** Refactor all stages to operate natively on C-order `[Z, Y, X]` numpy arrays. 
-*   **Validation:** Use the Phase 1 canonical outputs as a "fuzzy" baseline. Phase 2 outputs will no longer be bit-perfect with MATLAB due to tie-breaking, but they must be topologically isomorphic.
+*   **Validation:** Use the frozen Phase 1 canonical outputs as the baseline.
+    Phase 2 outputs are expected to differ in strict emission order and
+    tie-breaking details, but must satisfy the Phase 2 topology and spatial
+    regression gates.
 
 ### 3.2 Standard Library Re-Integration
 *   **Action:** Systematically audit and replace `matlab_*.py` parity ports with native equivalents where topological tolerance allows. 
     *   Replace exact mesh generation with native `np.meshgrid` and standard `np.linspace`.
     *   Replace `_matlab_round` with native `np.rint` or standard `round`.
-*   **Risk:** Edge cases near volume boundaries may generate slightly different candidate sets. We will need a "Topological Tolerance" gate to replace the Phase 1 "Exact Parity" gate.
+*   **Risk:** Edge cases near volume boundaries may generate slightly different
+    candidate sets. Phase 2 needs an explicit topology/spatial regression gate
+    before replacing any parity shim on the production path.
 
 ### 3.3 GPU-Accelerated Hessian Filtering
 *   **Problem:** The Energy stage relies on CPU-bound FFTs and a batched `np.linalg.eigh` loop that takes over an hour for canonical volumes.

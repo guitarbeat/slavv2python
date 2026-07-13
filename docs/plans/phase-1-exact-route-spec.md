@@ -28,7 +28,7 @@ Establish **program ship confidence** by first certifying the exact parity route
 
 ## Problem frame
 
-The public workflow is verified end-to-end. Energy and vertices are certified (ADR 0011). For **edges**, the watershed per-step math is a faithful MATLAB port (orientation bug fixed); the residual is emergent global-ordering sensitivity of the shared flood-fill, so edges certify on the voxel **ownership-map** (~63.5% agreement vs MATLAB) + per-edge trace tolerance ([ADR 0012](../adr/0012-edge-watershed-parity-bar.md)). The historical **88.7%** pair-match figure is deprecated — it was inflated by a double-transpose bug, and exact pair-set equality is the wrong measure for a chaotic flood-fill. **Network** topology is certified exact (strands/bifurcations) with sub-voxel strand geometry.
+The public workflow is verified end-to-end. Energy and vertices are certified on full `180709_E` (ADR 0011). For **edges**, the watershed per-step math is a faithful MATLAB port; residual generation/claiming sensitivity remains, so edges certify on the voxel **ownership-map** + per-edge trace tolerance ([ADR 0012](../adr/0012-edge-watershed-parity-bar.md)). On `canonical_full_v6` the ownership bar **passes** (~96% agreement; threshold 60%). The historical **88.7%** pair-match figure and early ~63.5% ownership baseline are superseded by live numbers in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md). **Network** certifies on strand/bifurcation **multisets** + sub-voxel geometry; that multiset can still fail while Edges ownership passes, because Network topology is a function of the emitted connection set (post-v6: Network is the open ship gate; isolation with MATLAB edges is exact).
 
 Ship confidence requires a **reproducible** certification on a **single canonical volume** rather than informal match-rate milestones: strict zero (energy/vertices discrete fields) and the ADR 0012 spatial bars (edges/network), per stage in order.
 
@@ -59,7 +59,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 **Certification bar**
 
 - R1. Success means **`prove-exact` reports zero missing and zero extra** for the stage under test—strict set equality on **discrete/topological fields** (counts, indices, `scale_indices`, connections, positions), not a percentage threshold. **Continuous floating-point fields** (e.g. `energy.energy`, `lumen_radius_microns`) are certified within `np.allclose(rtol=1e-7, atol=1e-9)` per [ADR 0011](../adr/0011-energy-float-certification-policy.md): bit-identical floats are unachievable across MATLAB/NumPy BLAS libraries, and the measured cross-library drift is ≤2×10⁻¹¹. ULP figures are diagnostics only.
-- R1a. **Edges and network supersede R1's strict pair-set bar** per [ADR 0012](../adr/0012-edge-watershed-parity-bar.md). The global watershed is a greedy shared-state flood-fill whose exact emission order (and therefore exact edge-pair set / strand order) is chaotically sensitive, while its per-step math is a faithful MATLAB port. Edges certify on **voxel ownership-map agreement** (Python `vertex_index_map` vs MATLAB, ~63.5% baseline on the crop) + per-edge trace tolerance; network certifies on **strand endpoint-pair and bifurcation multisets** (exact, order-independent) + per-strand geometry within a **sub-voxel** trace tolerance. Discrete inputs (orientation, LUTs, strel offsets, `edge_number_tolerance`) stay bit-faithful. Raw edge-pair overlap is explicitly **not** a certification metric.
+- R1a. **Edges and network supersede R1's strict pair-set bar** per [ADR 0012](../adr/0012-edge-watershed-parity-bar.md). The global watershed is a greedy shared-state flood-fill whose exact emission order (and therefore exact edge-pair set / strand order) is chaotically sensitive, while its per-step math is a faithful MATLAB port. Edges certify on **voxel ownership-map agreement** (Python `vertex_index_map` vs MATLAB; live agreement lives in findings — not a frozen ~63.5% baseline) + per-edge trace tolerance; network certifies on **strand endpoint-pair and bifurcation multisets** (exact, order-independent) + per-strand geometry within a **sub-voxel** trace tolerance. **Implication:** Edges can meet the ownership bar while Network still fails multisets if residual generation leaves a connection-set gap; that residual is an **edges-generation** problem, not a Network rewrite. Discrete inputs (orientation, LUTs, strel offsets, `edge_number_tolerance`) stay bit-faithful. Raw edge-pair overlap is explicitly **not** a certification metric.
 - R2. Certification uses a **native** pipeline: Python discovers vertices; no oracle vertex checkpoint injection for the certified run.
 - R3. **Sequential gating:** Energy must pass before vertices are judged; vertices before edges; edges before network. A failure at any stage blocks **certification** for **that workflow** until resolved.
 - R4. **Canonical volume** for the first milestone is **`180709_E` full volume** (not center crop) for the exact parity route.
@@ -85,11 +85,11 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 
 - **AE1. Energy gate blocks downstream** — Given energy `prove-exact` reports any missing/extra, vertices/edges/network are not certified.
 - **AE2. Edges pass only with matching vertex surface** — Vertex mismatch propagates to edge pair missing/extra until vertices pass.
-- **AE3. Phase 1 complete** — Sequential `prove-exact` passes for all four stages on the exact-route run; program ship confidence not claimed until phase 2.
+- **AE3. Phase 1 complete** — Per-stage `prove-exact` passes for Energy, Vertices, Edges, and Network on the exact-route run under their stage-specific bars (ADR 0011 for Energy/Vertices, ADR 0012 for Edges/Network); program ship confidence not claimed until phase 2.
 
 ## Success criteria
 
-**Phase 1 (P0):** Exact-route native run on full `180709_E` passes sequential `prove-exact` with zero missing/extra on energy, vertices, edges, and network.
+**Phase 1 (P0):** Exact-route native run on full `180709_E` passes per-stage `prove-exact`: Energy/Vertices strict discrete parity plus ADR 0011 float tolerance, and Edges/Network evaluated ADR 0012 spatial/topology bars.
 
 **Phase 2 (P1):** Paper profile passes the same strict bar; **program ship confidence** achieved.
 
@@ -113,7 +113,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 
 | Decision | Choice |
 |----------|--------|
-| Success bar | Strict zero missing/extra |
+| Success bar | Stage-specific parity: ADR 0011 for Energy/Vertices; evaluated ADR 0012 for Edges/Network |
 | Vertex source | Native discovery |
 | Gating | Sequential by stage |
 | Volume (milestone 1) | Full `180709_E` |
@@ -175,20 +175,23 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 ### U4 — Sequential certification (operator)
 
 ```powershell
-slavv parity prove-exact-sequence `
+slavv parity prove-exact --stage <stage> `
   --source-run-root workspace/runs/oracle_180709_E/<run> `
   --dest-run-root workspace/runs/oracle_180709_E/<run> `
   --oracle-root workspace/oracles/<oracle_id>
 ```
 
-Stop if any stage fails. Do not claim phase 1 complete until all four pass on the **same** dest root.
+Run stages in order and stop if any stage fails. For Edges/Network, only evaluated ADR 0012 proofs count; `prove-exact-sequence` strict-field output is diagnostic and is not the Phase 1 ship gate. Do not claim phase 1 complete until all four stage-specific bars pass on the **same** dest root.
 
-### U5 — Closure loop
+### U5 — Closure loop (post-v6 residual)
 
-- Crop energy passes → refresh crop vertices→network checkpoints, run crop `prove-exact-sequence`, verify canonical Oracle Artifacts with `ensure-oracle-artifacts`, and rerun canonical from energy.
-- Crop energy fails → inspect the first failing energy field, fix only the exact-route energy path, rerun crop from energy, then repeat the crop proof gate.
-- Vertices fail → fix discovery before edges.
-- Edges fail → use `diagnose-gaps`, `capture-candidates`, and `fail-fast`; record live blockers and accepted lessons in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
+Live operator sequence: [.claude/HANDOFF.md](../../.claude/HANDOFF.md). Summary:
+
+- Energy / Vertices certified on full volume → do not rerun without regression evidence.
+- Edges ownership evaluated PASS on `canonical_full_v6` → residual work is **generation/claiming** on crop (golden-trace, funnel probe), not reopening Energy.
+- Network multiset FAIL → confirm isolation with MATLAB edges still exact; fix watershed residual; then **new** canonical root (`v7`) edges→network + evaluated Network proof.
+- Prefer per-stage `prove-exact --stage <s>` with `adr0012_evaluated: true`. Do not use `prove-exact-sequence` strict-field as the ship gate.
+- Record blockers and KPIs only in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
 
 ## Risks
 

@@ -2,7 +2,7 @@
 
 **Single entry point** for what to do next, where plans live, and where to put new thoughts so they do not scatter across chat, ad-hoc notes, and stale markdown.
 
-> **Rule of thumb:** Checkboxes only here. **Status** → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). **Specs** → [plans/](plans/). **Fixes** → [solutions/](solutions/) (`/ce-compound`).
+> **Rule of thumb:** Checkboxes only here. **Status** → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). **Specs** → [plans/](plans/). **Fixes** → [solutions/](solutions/) (`/ce-compound`). **Operator brief** → [.claude/HANDOFF.md](../.claude/HANDOFF.md) (re-synthesize when findings top banner changes).
 
 ---
 
@@ -21,7 +21,7 @@
 
 **Do not duplicate:** Status tables and run state → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). This file = checkboxes + links only.
 
-**Phase 1:** [phase-1-exact-route-spec.md](plans/phase-1-exact-route-spec.md) · **Status:** [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations)
+**Phase 1:** [phase-1-exact-route-spec.md](plans/phase-1-exact-route-spec.md) · **Status:** [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations) · **Handoff:** [.claude/HANDOFF.md](../.claude/HANDOFF.md)
 
 ---
 
@@ -31,60 +31,67 @@
 
 ### 🎯 Phase 1 Certification Gates
 
-- [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22` (~7h 44m); `best_energy.npy` + `best_scale.npy` present. Evidence: [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
-- [x] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **PASS** under the ADR 0011 `np.allclose` gate (rtol=1e-7, atol=1e-9). `scale_indices` **0** mismatches; `energy` max \|Δ\|=**1.99×10⁻¹¹**; `lumen_radius_microns` max \|Δ\|=**7.1×10⁻¹⁵**. `prove-exact --stage energy` exit 0 (2026-06-24). Status: [findings § v2 proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-vs-oracle-v2-2026-06-24).
-- [x] **Diagnose Energy scale winners** — Resolved via fresh MATLAB `batch_260624-105705` → oracle v2; 0 scale mismatches.
-- [x] **Diagnose Energy float64 drift** — Triage complete (`workspace/scratch/energy_ulp_triage_v2.json`): cross-library NumPy/MKL drift at matching scales; no localized Python fix without gate change.
-- [x] **Energy certification policy** — [ADR 0011](adr/0011-energy-float-certification-policy.md) **ACCEPTED** (2026-06-24): Option B refined to `np.allclose(rtol=1e-7, atol=1e-9)` on continuous float fields (`energy.energy`, `lumen_radius_microns`, …); strict `scale_indices`/topology. Pure ULP rejected — it explodes near zero (36,074 false fails at 48 ULP despite \|Δ\|≤2×10⁻¹¹).
-- [x] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering; record commands and evidence requirements in the maintained parity workflow docs.
-- [x] **Crop Vertices Proof** — **PASS** vs `180709_E_crop_M_v2` (`prove-exact --stage vertices` exit 0): positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix; `energies` now certify under the ADR 0011 `np.allclose` policy after sourcing true energies from the raw `vertices.mat`. (Note: the CLI evidence-freshness guard now reports the energy checkpoint as stale because the vertices writer reran — operational only; re-run the energy writer or the full sequence to refresh.)
-- [x] **Decide vertex `energies` certification source** — Chose **(A)**: the loader recovers true physical energies from the raw `vertices.mat` (matched by exact integer position) instead of the curated rank ramp. Generalized: the comparator now applies `np.allclose` to **all** continuous float fields via `float_tol` (strict for integer/topological), with `--strict-floats` forcing strict everywhere.
-- [x] **Crop Edges Proof** — **PASS** vs `180709_E_crop_M_v2` under ADR 0012: ownership map agreement 63.51% (above 60.00% threshold) and trace-level match PASS. Parity fixes implemented: (1) `edge_number_tolerance` set to 2; (2) conflict painting disabled on exact route. Residual is emergent watershed order-sensitivity, certified under spatial bars.
-- [x] **Canonical full oracle** — Fresh MATLAB batch `batch_260626-125646` promoted to `180709_E_full_v2` (energy size `(64,512,512)`).
-- [x] **Exact-route energy parallelism** — `--n-jobs` threaded chunk energy is bit-exact (~4×); see [solution note](solutions/parity/exact-energy-chunk-parallelism.md). Default cert runs use `--n-jobs 6`.
-- [x] **Resume reorientation bug** — Resume double-permuted the full volume (energy `(512,64,512)` vs oracle `(64,512,512)`); crop dodged it via Y=X symmetry. **Fixed** (resume reorients like init) + regression test. See [solution note](solutions/parity/resume-energy-orientation.md).
-- [x] **Canonical Sequence (Energy/Vertices)** — `canonical_full_v4` (2026-07-04): **Energy ✅ + Vertices ✅ CERTIFIED** on full `180709_E`. Edges/Network on `v4` are audit-only (stale, pre–PR #103).
-- [x] **Crop stretch baseline (`crop_M_exact_v3`)** — Edges rerun succeeded (2026-07-06); gap probe **57.89%** overlap (8,979 / 15,511). See [findings § active ops](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations).
-- [x] **Canonical v5 writer (`canonical_full_v5`)** — Edges→network succeeded (~2.1h, 2026-07-06). Per-stage proof **not valid ADR 0012** (`adr0012_evaluated: false`; ownership maps missing). Strict-field edges 60,287 vs 69,500 — watershed gap unchanged. Audit only; see [HANDOFF](../../.claude/HANDOFF.md).
-- [ ] **Watershed generation → 80% crop overlap** — Primary blocker before `canonical_full_v6`. **Authoritative KPI: 57.89%** (8,979 / 15,511) on `crop_M_exact_v3` via production path. Use `scripts/watershed_candidate_gap_probe.py` (must match `generate_watershed_candidates`). Run edges with `.venv\\Scripts\\slavv.exe` after `pip install -e .`. See [iteration log](reference/core/EXACT_PROOF_FINDINGS.md#watershed-iteration-log-crop-overlap-kpi--80-gate).
-- [ ] **Canonical tier-3 gate (Phase 1 closure)** — After **≥80%** crop overlap: `canonical_full_v6` (preflight from `v5`) + ownership-map prep + per-stage **evaluated** ADR 0012 proof. See [HANDOFF](../../.claude/HANDOFF.md).
+- [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22`; evidence in findings / [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+- [x] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **PASS** (ADR 0011).
+- [x] **Energy certification policy** — [ADR 0011](adr/0011-energy-float-certification-policy.md) **ACCEPTED**.
+- [x] **Crop Vertices Proof** — **PASS** vs `180709_E_crop_M_v2`.
+- [x] **Crop Edges Proof (ADR 0012)** — **PASS** (ownership bar) on crop; residual stretch is strict-field / generation.
+- [x] **Canonical full oracle** — `180709_E_full_v2` + ownership map present.
+- [x] **Canonical Energy + Vertices** — `canonical_full_v4` **CERTIFIED**.
+- [x] **Crop candidate-overlap ≥80% gate** — **97.31%** (15,094 / 15,511) on `crop_M_exact_v3` (2026-07-07). **Retired as launch gate.**
+- [x] **Crop-edge truncation parity** — `uint16` floor vs `np.rint` fixed in `_matlab_crop_edges_V200`; crop final edges 14,403 → **14,922** (gap 589).
+- [x] **Canonical `v6` evaluated Edges ADR 0012** — **PASS** (ownership **96.02%**, `adr0012_evaluated: true`).
+- [x] **Residual watershed generation moved** — `-Inf` sentinel + queue insertion fixes moved crop first diverge **13,761 → 23,005** and crop candidate generation gap **417 → 0**. Refreshed crop final strict gap is **502**. See [HANDOFF](../.claude/HANDOFF.md) § A.
+- [x] **Canonical `v8` audit run** — full Edges ADR 0012 still **PASS**, but strict full counts regressed vs `v7` (Edges 66,057 vs 66,224; Network 45,254 vs 45,417). Keep `v7` as better full baseline.
+- [ ] **Canonical Network ADR 0012** — **FAIL** on `v8` and still best on `v7` (strands 45,417 vs 48,049). **Downstream of edge gap only.** Continue crop funnel/selection residual loop before a successor full run. **This is the only open Phase 1 ship gate.**
+- [ ] **Phase 1 closure** — Energy ✅ Vertices ✅ Edges ✅ Network ⬜ on a fresh evaluated full-volume run; evidence in findings + [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
 
-### 🛠️ Hardening & Infrastructure
-- [x] **PipelinePolicy Architecture** — Implemented declarative Baseline vs Innovation control for Energy, Vertices, and Edges.
-- [x] **Unified Math Kernel** — Centralized bit-perfect EIGH math in `energy/math.py`.
-- [x] **Unified Lattice Logic** — Created `utils/lattice.py` to prevent rounding errors in 3D chunking.
-- [x] **Oracle artifact manifest sync** — `ensure-oracle-artifacts` now reconciles readable normalized artifacts back into `oracle_manifest.json`.
-- [x] **Padded-FFT coarse-slice contract** — `_matlab_coarse_local_slices` + regression.
-- [x] **Canonical energy octave-3/4 divergence — root cause + fix** — root-caused (MATLAB ground-truth harness `workspace/scratch/matlab_energy_instr/`) to the coarse→fine **upsample mesh not bit-matching MATLAB `linspace`** at coarse-cell boundaries (a ~1-ULP mesh drift floors `interp3` into the wrong valid↔Inf cell, flipping the scale argmin). Fix `ca709a8d` (bit-exact MATLAB `linspace`: mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term) verified to <1e-17 vs MATLAB on integer- and sub-integer-landing voxels; 595 tests green. **Canonical `prove-exact --stage energy` CERTIFIED — 0 scale mismatches across all 16,777,216 voxels** (39,494 → 0). See [findings](reference/core/EXACT_PROOF_FINDINGS.md) + [solution note](solutions/parity/canonical-energy-high-octave-divergence.md).
-- [x] **Numba Painting Fix** — Ported round-half-up logic to `_choose_vertices_loop_numba`.
-- [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.
-- [x] **Reconcile `slavv_vectorize.py` convenience wrappers** — The standalone `get_vertices_v200_python` / `get_edges_by_watershed_python` / `choose_edges_v200_python` / `get_network_v190_python` `scipy`/`skimage` demonstration shims were removed from `slavv_python/pipeline/slavv_vectorize.py` (2026-07-03). The facade now exposes only `vectorize_python` + `get_energy_v202_python`, both delegating to the stage managers, so it can't be mistaken for the parity engine.
-- [x] **Crop tier-2 gate** — After crop Energy passes, per-stage `prove-exact` on crop under ADR 0011/0012 (all four stages pass on `crop_M_exact`, 2026-07-01).
+### 🛠️ Hardening & Infrastructure (done — keep as archive checkboxes)
+
+- [x] **PipelinePolicy Architecture**, unified math kernel, lattice utils, oracle manifest sync, padded-FFT coarse-slice contract.
+- [x] **Canonical energy octave-3/4 divergence** — bit-exact MATLAB `linspace`; full energy certified.
+- [x] **Exact-route energy parallelism** — bit-exact `--n-jobs`; resume reorientation fix.
+- [x] **Numba painting + systemic float64** on Innovation path.
+- [x] **`slavv_vectorize` facade cleanup** — no scipy/skimage demonstration shims as parity engine.
+- [x] **Parity job lifecycle** — dead-PID reconciliation tests.
 
 ### Harness & ops
 
-- [x] **Energy memory safety** — Removed large 4D chunk arrays in `matlab_get_energy_v202_chunked.py`; peak memory reduced 30x.
-- [x] **Internal Grid Alignment** — Anchored pipeline to **[Y, X, Z]** with Fortran (F) memory order to match MATLAB tie-breaking.
-- [x] **Watershed Robustness** — Resolved `KeyError` in `FrontierQueue` and restored directional suppression parity.
-- [x] **Parity job lifecycle reconciliation** — Dead-PID + running snapshot → persisted `interrupted`; terminal `parity_job.json` metadata. Tests: `tests/unit/parity/test_parity_job_lifecycle.py`.
-- [ ] **Parity change verification** — For each tested diagnosis, run the focused parity tests and Ruff checks before a long rerun; record the exact proof result using [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+- [x] Energy memory safety, internal **[Y,X,Z]** F-order, SortedFrontier default, fail-loud ADR 0012 when maps missing.
+- [x] **Experiment-analysis template** — Added [EXPERIMENT_ANALYSIS_TEMPLATE.md](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) and normalized the residual analysis entry point.
+- [x] **Phase 1 → Phase 2 transition spec** — Added [phase-1-to-phase-2-transition-spec.md](plans/phase-1-to-phase-2-transition-spec.md); transition remains gated on Network ADR 0012.
+- [ ] **Parity change verification** — For each tested diagnosis, run focused parity tests + Ruff before a long rerun; record proof result with [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+- [ ] **Doc freshness** — When findings top banner moves, same-session update of [HANDOFF](../.claude/HANDOFF.md) + this checklist (avoid multi-day operator drift).
 
-**Operational guardrails:** run `preflight-exact` before a recovery launch and never start concurrent writers for one `--dest-run-root`.
+**Operational guardrails:** `preflight-exact` before recovery launch; never concurrent writers on one `--dest-run-root`; use `.venv\Scripts\slavv.exe` after `pip install -e .`.
 
 ---
 
 ## Checklist — next (after Phase 1 gates)
 
-- [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `matlab_get_edges_by_watershed.py` (performance, not cert blocker).
-- [x] **API reference** — Public `SlavvPipeline` and internal `Manager` class docstrings.
-- [x] **Sparse Meshgrids** — Refactor `_interp3_matlab_linear_inf` to accept sparse coordinate meshes, saving >400MB for canonical volumes.
-- [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.
+- [x] **O(log N) frontier** — SortedFrontier / heap backends.
+- [x] **API reference** — public pipeline / manager docstrings.
+- [x] **Sparse Meshgrids** — sparse interp3 meshes for canonical memory.
+- [ ] **Freeze Phase 1 baseline after Network green** — record closure run root, proof hashes, release evidence, and figure metrics before Phase 2 starts.
+- [ ] **Phase 1 → Phase 2 handoff execution** — only after Network ADR 0012 green; follow [transition spec](plans/phase-1-to-phase-2-transition-spec.md), do not unwind Fortran emulation early.
+- [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
+- [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
+- [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after ship gate.
+
+---
+
+## Strategy notes (meta — keep short)
+
+1. **Ship gate is Network multiset on full volume**, not ownership % (already met) and not `prove-exact-sequence`.
+2. **Generation gap drives Network** — treat Network red as an edges-generation problem until isolation with MATLAB edges fails.
+3. **Crop is the iteration surface**; full volume is the claim surface. Prefer golden-trace + funnel probes over new scratch scripts.
+4. **Anti-patterns** → [UNPRODUCTIVE_LOOPS.md](reference/core/UNPRODUCTIVE_LOOPS.md).
 
 ---
 
 ## Historical context (superseded — do not treat as current tasks)
 
-Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate** as the certification bar. Phase 1 now uses **ADR 0011** (energy/vertices) plus **ADR 0012 spatial bars** (edges/network) via per-stage `prove-exact` on the canonical volume. Edge **88.7%** (v29) pair overlap is **deprecated**. Strict-field `prove-exact-sequence` failure is a **stretch signal**, not the Phase 1 ship gate ([ADR 0012 addendum](adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)).
+Older dashboard text referred to **v10 / 76% match**, **>95% edge match rate**, **57.89% crop overlap**, and **80% gate before v6**. Phase 1 now uses **ADR 0011** + **ADR 0012 evaluated per-stage proofs** on the canonical volume. Edge **88.7%** (v29) pair overlap is **deprecated**. Strict-field sequence failure is stretch signal only.
 
 ---
 
@@ -93,5 +100,6 @@ Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate*
 - [x] Contributor guide — `docs/CONTRIBUTING.md`
 - [x] Parity run evidence template — [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md)
 - [x] Glossary / architecture — `GLOSSARY.md`, `TECHNICAL_ARCHITECTURE.md`
-- [x] Parity pre-gate & certification guides — `PARITY_PRE_GATE.md`, `PARITY_CERTIFICATION_GUIDE.md`
+- [x] Parity pre-gate & certification guides
 - [x] Planning hub — this file; status + compound index in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
+- [x] **2026-07-12 meta realignment** — HANDOFF, ROADMAP, TODO, AGENTS operating sequence, ADR 0012 post-v6 addendum synced to findings
