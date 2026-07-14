@@ -74,6 +74,8 @@ def main(argv: list[str] | None = None) -> int:
         lumen_radius_pixels_axes,
         energy.energy.shape,
         params,
+        energy_map=energy.energy,
+        scale_indices=energy.scale_indices,
     )
 
     use_frontier = _use_matlab_frontier_tracer(energy.to_dict(), params)

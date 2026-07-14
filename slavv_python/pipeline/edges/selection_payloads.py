@@ -82,7 +82,21 @@ def prepare_candidate_indices_for_cleanup(
     if filtered_indices.size == 0:
         return []
 
-    ordered = filtered_indices[np.argsort(metrics[filtered_indices], kind="stable")]
+    lengths = np.asarray([len(energy_traces[index]) for index in filtered_indices], dtype=np.int64)
+    length_ordered = filtered_indices[np.argsort(lengths, kind="stable")]
+    # MATLAB clean_edge_pairs.m sorts by get_edge_metric(edge_energies), which
+    # computes max() in double precision. The persisted candidate metrics are
+    # float32 summaries and can collapse near-ties, changing the later cleanup
+    # row rank that MATLAB uses as "worst edge" priority.
+    sort_metrics = np.asarray(
+        [
+            np.nanmax(np.asarray(energy_traces[index], dtype=np.float64))
+            for index in length_ordered
+        ],
+        dtype=np.float64,
+    )
+    sort_metrics[np.isnan(sort_metrics)] = -1000.0
+    ordered = length_ordered[np.argsort(sort_metrics, kind="stable")]
 
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []

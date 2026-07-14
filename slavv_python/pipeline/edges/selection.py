@@ -12,6 +12,7 @@ from slavv_python.pipeline.edges.cleanup import (
     remove_excess_vertex_degrees,
 )
 from slavv_python.pipeline.edges.finalize import (
+    _matlab_precrop_resample_from_maps,
     prefilter_edge_indices_for_cleanup_matlab_style,
 )
 from slavv_python.pipeline.edges.payloads import _empty_edges_result
@@ -130,6 +131,9 @@ def _choose_edges_matlab_style(
     lumen_radius_pixels_axes: np.ndarray,
     image_shape: tuple[int, int, int],
     params: dict[str, Any],
+    *,
+    energy_map: np.ndarray | None = None,
+    scale_indices: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Choose final edges using MATLAB-shaped filtering and cleanup semantics."""
     traces = candidates["traces"]
@@ -148,6 +152,35 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
+    selection_traces = traces
+    selection_scale_traces = scale_traces
+    selection_energy_traces = energy_traces
+    selection_metrics = metrics
+    if energy_map is not None and scale_indices is not None:
+        resampled_spaces_yxz_one_based, resampled_scales, resampled_energies = (
+            _matlab_precrop_resample_from_maps(
+                [np.asarray(trace, dtype=np.float64) for trace in traces],
+                [np.asarray(trace, dtype=np.float64) for trace in scale_traces],
+                [np.asarray(trace, dtype=np.float64) for trace in energy_traces],
+                energy_map=np.asarray(energy_map),
+                scale_indices=np.asarray(scale_indices),
+            )
+        )
+        selection_traces = [
+            np.asarray(space_trace[:, [2, 0, 1]] - 1.0, dtype=np.float64)
+            for space_trace in resampled_spaces_yxz_one_based
+        ]
+        selection_scale_traces = resampled_scales
+        selection_energy_traces = resampled_energies
+        selection_metrics = np.asarray(
+            [
+                np.max(energy_trace) if len(energy_trace) else -1000.0
+                for energy_trace in selection_energy_traces
+            ],
+            dtype=np.float64,
+        )
+        selection_metrics[np.isnan(selection_metrics)] = -1000.0
+
     # 1. MATLAB crops edges (out-of-bounds) BEFORE choosing best unique trajectories.
     # See vectorize_V200.m:3595 (crop) then 3620 (clean_edge_pairs).
     all_discovery_indices = list(range(len(traces)))
@@ -162,6 +195,8 @@ def _choose_edges_matlab_style(
             dtype=np.float32,
         ),
         size_of_image=image_shape,
+        energy_map=energy_map,
+        scale_indices=scale_indices,
     )
     diagnostics["cropped_edge_count"] = cropped_edge_count
 
@@ -173,8 +208,8 @@ def _choose_edges_matlab_style(
     # 2. Choose best unique trajectories from in-bounds candidates.
     filtered_indices = prepare_candidate_indices_for_cleanup(
         connections,
-        metrics,
-        energy_traces,
+        selection_metrics,
+        selection_energy_traces,
         diagnostics,
         subset_indices=kept_after_crop,
         reject_nonnegative_energy_edges=not bool(
@@ -234,8 +269,8 @@ def _choose_edges_matlab_style(
         start_vertex, end_vertex = (int(value) for value in connections[index])
         current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
         current_source_code = source_code_by_label.get(current_source, 0)
-        trace = np.asarray(traces[index], dtype=np.float32)
-        scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
+        trace = np.asarray(selection_traces[index], dtype=np.float32)
+        scale_trace = np.asarray(selection_scale_traces[index], dtype=np.int16)
 
         endpoint_coord_groups: list[np.ndarray] = []
         endpoint_coords: np.ndarray = np.zeros((0, 3), dtype=np.int32)
@@ -344,7 +379,7 @@ def _choose_edges_matlab_style(
         return empty
 
     chosen_connections = connections[chosen_indices]
-    chosen_metrics = metrics[chosen_indices]
+    chosen_metrics = selection_metrics[chosen_indices]
     keep_degree = remove_excess_vertex_degrees(
         chosen_connections,
         chosen_metrics,
@@ -361,7 +396,7 @@ def _choose_edges_matlab_style(
         return empty
 
     keep_orphans = prune_orphan_edges(
-        [traces[index] for index in after_degree_indices],
+        [selection_traces[index] for index in after_degree_indices],
         image_shape,
         vertex_positions,
     )
@@ -384,11 +419,11 @@ def _choose_edges_matlab_style(
         "dict[str, Any]",
         build_selected_edges_result(
             final_indices,
-            traces,
+            selection_traces,
             connections,
-            metrics,
-            energy_traces,
-            scale_traces,
+            selection_metrics,
+            selection_energy_traces,
+            selection_scale_traces,
             connection_sources,
             vertex_positions,
             diagnostics,
@@ -404,6 +439,9 @@ def choose_edges_for_workflow(
     lumen_radius_pixels_axes: np.ndarray,
     image_shape: tuple[int, int, int],
     params: dict[str, Any],
+    *,
+    energy_map: np.ndarray | None = None,
+    scale_indices: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Route edge cleanup through the maintained workflow-specific chooser."""
     from slavv_python.pipeline.edges.discovery import candidate_as_payload
@@ -417,6 +455,8 @@ def choose_edges_for_workflow(
         lumen_radius_pixels_axes,
         image_shape,
         params,
+        energy_map=energy_map,
+        scale_indices=scale_indices,
     )
     return cast("dict[str, Any]", result)
 

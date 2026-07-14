@@ -43,7 +43,23 @@
 - [x] **Canonical `v6` evaluated Edges ADR 0012** — **PASS** (ownership **96.02%**, `adr0012_evaluated: true`).
 - [x] **Residual watershed generation moved** — `-Inf` sentinel + queue insertion fixes moved crop first diverge **13,761 → 23,005** and crop candidate generation gap **417 → 0**. Refreshed crop final strict gap is **502**. See [HANDOFF](../.claude/HANDOFF.md) § A.
 - [x] **Canonical `v8` audit run** — full Edges ADR 0012 still **PASS**, but strict full counts regressed vs `v7` (Edges 66,057 vs 66,224; Network 45,254 vs 45,417). Keep `v7` as better full baseline.
-- [ ] **Canonical Network ADR 0012** — **FAIL** on `v8` and still best on `v7` (strands 45,417 vs 48,049). **Downstream of edge gap only.** Continue crop funnel/selection residual loop before a successor full run. **This is the only open Phase 1 ship gate.**
+- [x] **Crop-axis finalization parity** — align MATLAB-order voxel spacing to Python `[Z,Y,X]` traces before edge smoothing/crop. Crop final overlap improved to **15,361 / 15,511** with **150** missing and **367** extra pairs; later LUT unit-vector refresh leaves the current overlap at **15,362 / 15,511** with **149** missing and **365** extra pairs.
+- [x] **MATLAB post-watershed finalization parity** — raw MATLAB watershed candidates and Python candidates match exactly (**19,225 / 19,225**). Python now mirrors MATLAB `resample_vectors` → map-resampled energy/size → smoothing/crop unsigned casts → cleanup. Refreshed crop final edges are **15,511** vs MATLAB **15,511**, with **15,510 / 15,511** overlap (**1** missing, **1** extra).
+- [x] **Canonical `v10` audit run** — full Edges ADR 0012 still **PASS** (`70,247` vs MATLAB `69,500`, ownership **99.9867%**), but Network ADR 0012 still **FAIL** and now over-selects (`48,583` vs MATLAB `48,049` strands).
+- [x] **Canonical `v15` audit run** — full Edges ADR 0012 **PASS** evaluated with exact strict count (**69,500 / 69,500**), ownership **99.999863%**, and **0** trace failures. Network ADR 0012 still **FAILS** by one strand (**48,048 / 48,049**).
+- [x] **Python claim-state trace hardening** — `strel_state` now separates pre-claim and post-claim `vertex_index` / `pointer` / `d_over_r` / `size` values; no-writer probes still show crop candidate generation **15,511 / 15,511**.
+- [x] **MATLAB claim-state trace instrumentation** — opt-in state rows added in `external/Vectorization-Public/source/get_edges_by_watershed.m`; scratch Edges-only trace confirms iter **13,761** strel state matches Python and iter **23,005** diverges before strel claim.
+- [x] **Frontier action tracing** — compact push / join-reset / discard target rows added for Python and MATLAB; target history shows Python bad-pop location `2844114` is pushed by both implementations at iter **19,247** and removed by MATLAB at iter **22,421**.
+- [x] **Reject shared priority-map restore hypothesis** — restoring popped vertex origins in `energy_temp_flat` moved the local split but regressed live crop generation to **14,936 / 15,511** with **575** missing MATLAB pairs; do not carry that patch forward.
+- [x] **Join-reset predecessor-state fix** — orthogonal direction factor handling fixes MATLAB's iter-**22,421** join reset for `2844114` without regressing the **15,511 / 15,511** crop generation baseline; the next split moved to **25,495**.
+- [x] **LUT unit-vector frontier trace parity** — using MATLAB strel LUT `unit_vectors` fixes the iter-**25,495** tiny-positive direction case. Crop golden frontier trace now matches MATLAB end-to-end; refreshed candidates are **15,511 / 15,511** with **19,225** candidates and **3,714** extras.
+- [x] **MATLAB cleanup row-order parity** — `prepare_candidate_indices_for_cleanup()` now sorts by double-precision `max(edge_energies)` like MATLAB `get_edge_metric`; `scripts/compare_clean_edge_pairs_matlab.py` shows **0** row-index mismatches for `clean_edge_pairs`, degree pruning, and cycle pruning on the crop candidate surface.
+- [x] **Reject crop chunk-eligibility hypothesis** — `scripts/edge_selection_funnel_probe.py --apply-matlab-chunk-eligibility` emulates MATLAB `get_edges_V300` read/write chunk emission; crop is single-chunk and drops **0 / 19,225** candidates, so chunk windows do not explain candidate extras.
+- [x] **Bounded golden-trace regression** — after stopping stale trace writers, `scripts/watershed_frontier_diff.py --stop-after-iteration 30000` reports `bounded_match`, well past the retired iter-**13,761** split.
+- [x] **Quantify degree/cycle displacement** — funnel aggregate output shows degree loss **103** MATLAB pairs (**99** with incident surviving extras, **97** with better-metric extras) and cycle loss **32** pairs (**32** with earlier/better incident extras).
+- [x] **Reject broad boundary suppression** — final extras skew boundary-adjacent, but a geometry-only boundary candidate filter worsens overlap (threshold 1 → **14,984** overlap / **527** missing); even oracle zero-degree-boundary suppression only reaches **15,377** overlap / **134** missing.
+- [ ] **Final edge-set one-pair residual** — resolve the remaining crop equal-count swap: Python keeps `[4043, 6281]`, MATLAB keeps `[4212, 6281]`; both share vertex `6281` and tie on resampled metric. Cleanup, chunk eligibility, broad boundary filtering, and the retired frontier split are now regression guards.
+- [ ] **Canonical Network ADR 0012** — **FAIL** on `v15` by one strand (Python 48,048 vs MATLAB 48,049). Full Edges are evaluated green and exact-count; residual is one edge-pair swap / one strand split. **This is the only open Phase 1 ship gate.**
 - [ ] **Phase 1 closure** — Energy ✅ Vertices ✅ Edges ✅ Network ⬜ on a fresh evaluated full-volume run; evidence in findings + [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
 
 ### 🛠️ Hardening & Infrastructure (done — keep as archive checkboxes)
@@ -83,7 +99,7 @@
 ## Strategy notes (meta — keep short)
 
 1. **Ship gate is Network multiset on full volume**, not ownership % (already met) and not `prove-exact-sequence`.
-2. **Generation gap drives Network** — treat Network red as an edges-generation problem until isolation with MATLAB edges fails.
+2. **Final edge-set balance drives Network** — generation/frontier parity is closed on the crop; treat Network red as downstream of the residual edge set until isolation with MATLAB edges fails.
 3. **Crop is the iteration surface**; full volume is the claim surface. Prefer golden-trace + funnel probes over new scratch scripts.
 4. **Anti-patterns** → [UNPRODUCTIVE_LOOPS.md](reference/core/UNPRODUCTIVE_LOOPS.md).
 

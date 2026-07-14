@@ -621,6 +621,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_strel_linear = cast("Int64Array", current_strel["linear_indices"])
         current_strel_offsets = cast("Int32Array", current_strel["offsets"])
         current_strel_pointer_indices = cast("Int64Array", current_strel["pointer_indices"])
+        current_strel_unit_vectors = cast("Float64Array", current_strel["unit_vectors"])
 
         current_strel_energies = claim_map.energy_temp_flat[current_strel_linear]
 
@@ -639,6 +640,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         adjusted = _matlab_frontier_adjusted_neighbor_energies(
             current_strel_energies,
             neighbor_offsets=current_strel_offsets,
+            neighbor_unit_vectors=current_strel_unit_vectors,
             neighbor_r_over_R=current_strel_r_over_R,
             neighbor_scale_indices=size_map_flat[current_strel_linear],
             propagated_scale_index=origin_scale_label,
@@ -651,6 +653,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             distance_tolerance=distance_tolerance,
         )
 
+        strel_vertex_values_before_claim = claim_map.vertex_index_flat[current_strel_linear].copy()
+        strel_pointer_values_before_claim = claim_map.pointer_flat[current_strel_linear].copy()
+        strel_d_over_r_values_before_claim = claim_map.d_over_r_flat[current_strel_linear].copy()
+        strel_size_values_before_claim = size_map_flat[current_strel_linear].copy()
         vertices_of_current_strel, _is_without_vertex = claim_map.claim_unowned_strel(
             current_vertex_index=current_vertex_index,
             current_scale_label=current_scale_label_for_writing,
@@ -662,6 +668,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],
         )
+        strel_vertex_values_after_claim = claim_map.vertex_index_flat[current_strel_linear]
+        strel_pointer_values_after_claim = claim_map.pointer_flat[current_strel_linear]
+        strel_d_over_r_values_after_claim = claim_map.d_over_r_flat[current_strel_linear]
+        strel_size_values_after_claim = size_map_flat[current_strel_linear]
 
         active_tracer.on_strel_state(
             iteration=iteration,
@@ -675,11 +685,15 @@ def _generate_edge_candidates_matlab_global_watershed(
             strel_r_over_R=current_strel_r_over_R,
             raw_energies=current_strel_energies,
             adjusted_energies=adjusted,
-            vertices_of_current_strel=vertices_of_current_strel,
+            vertices_of_current_strel=strel_vertex_values_before_claim,
             is_without_vertex=_is_without_vertex,
-            pointer_values=claim_map.pointer_flat[current_strel_linear],
-            d_over_r_values=claim_map.d_over_r_flat[current_strel_linear],
-            size_values=size_map_flat[current_strel_linear],
+            pointer_values=strel_pointer_values_before_claim,
+            d_over_r_values=strel_d_over_r_values_before_claim,
+            size_values=strel_size_values_before_claim,
+            vertex_values_after_claim=strel_vertex_values_after_claim,
+            pointer_values_after_claim=strel_pointer_values_after_claim,
+            d_over_r_values_after_claim=strel_d_over_r_values_after_claim,
+            size_values_after_claim=strel_size_values_after_claim,
         )
 
         for seed_idx in _matlab_global_watershed_seed_index_range(
@@ -705,6 +719,17 @@ def _generate_edge_candidates_matlab_global_watershed(
                     branch_order = int(claim_map.branch_order_flat[current_linear]) + seed_idx - 1
                     claim_map.branch_order_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
+                        active_tracer.on_frontier_action(
+                            iteration=iteration,
+                            action="push",
+                            current_linear=current_linear,
+                            locations=np.asarray([next_location], dtype=np.int64),
+                            details={
+                                "seed_idx": int(seed_idx),
+                                "energy": float(claim_map.energy_temp_flat[next_location]),
+                                "branch_order": int(branch_order),
+                            },
+                        )
                         queue.push(
                             next_location,
                             float(claim_map.energy_temp_flat[next_location]),
@@ -718,8 +743,19 @@ def _generate_edge_candidates_matlab_global_watershed(
                         )
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
+                    reset_locations = current_strel_linear[is_next_vertex_in_strel]
+                    active_tracer.on_frontier_action(
+                        iteration=iteration,
+                        action="join_reset_candidates",
+                        current_linear=current_linear,
+                        locations=reset_locations,
+                        details={
+                            "next_vertex_index": int(next_vertex_index),
+                            "seed_idx": int(seed_idx),
+                        },
+                    )
                     queue.remove_first_occurrence(
-                        current_strel_linear[is_next_vertex_in_strel],
+                        reset_locations,
                         current_linear=current_linear,
                     )
                     _trace_frontier_state(
@@ -794,6 +830,13 @@ def _generate_edge_candidates_matlab_global_watershed(
                             current_linear=current_linear,
                         )
             else:
+                active_tracer.on_frontier_action(
+                    iteration=iteration,
+                    action="discard_current",
+                    current_linear=current_linear,
+                    locations=np.asarray([current_linear], dtype=np.int64),
+                    details={"seed_idx": int(seed_idx)},
+                )
                 queue.discard_current_location_if_not_clear(current_linear)
                 _trace_frontier_state(
                     "after_discard",

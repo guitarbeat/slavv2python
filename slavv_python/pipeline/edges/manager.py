@@ -290,6 +290,8 @@ class EdgeManager:
             lumen_radius_pixels_axes,
             energy.shape,
             params,
+            energy_map=energy_data.energy,
+            scale_indices=energy_data.scale_indices,
         )
         chosen_payload = (
             chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)

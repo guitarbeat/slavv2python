@@ -81,7 +81,7 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
         }
         return {"audit": True}
 
-    def fake_choose_edges_for_workflow(*args):
+    def fake_choose_edges_for_workflow(*args, **_kwargs):
         calls["choose_args"] = args
         return chosen
 
@@ -211,7 +211,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     )
     monkeypatch.setattr(
         "slavv_python.pipeline.edges.manager.choose_edges_for_workflow",
-        lambda *_args: chosen,
+        lambda *_args, **_kwargs: chosen,
     )
     monkeypatch.setattr(
         "slavv_python.pipeline.edges.manager.add_vertices_to_edges_matlab_style",
@@ -292,7 +292,7 @@ def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path,
         lambda *_args, **_kwargs: candidates,
     )
 
-    def fake_choose_edges_for_workflow(*args):
+    def fake_choose_edges_for_workflow(*args, **_kwargs):
         calls["lumen_radius_pixels_axes"] = args[4]
         return chosen
 

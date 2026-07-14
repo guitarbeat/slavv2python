@@ -22,8 +22,8 @@ related methods write-ups. Distinct from:
 | Panel | Content | Primary evidence |
 |-------|---------|------------------|
 | **(a)** | Crop candidate-pair overlap trajectory vs MATLAB | [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md) watershed iteration log |
-| **(b)** | Waterfall of MATLAB edge-pair recovery (generation vs crop/residual) | Findings 2026-07-08 funnel / overlap counts |
-| **(c)** | Full-volume strict counts (MATLAB vs Python) + certification metrics table | `canonical_full_v6` / ADR 0011–0012 |
+| **(b)** | Waterfall of MATLAB edge-pair recovery (generation vs final cleanup residual) | Findings current crop funnel / overlap counts |
+| **(c)** | Full-volume strict counts (MATLAB vs Python) + certification metrics table | latest canonical audit / ADR 0011–0012 |
 
 **Regenerate:**
 
@@ -38,11 +38,11 @@ related methods write-ups. Distinct from:
 > on the crop harness (*n* = 15,511), across iterative frontier-backend fixes. Shaded
 > region marks the now-retired 80% threshold for historical context.
 > **(b)** Waterfall of MATLAB edge-pair recovery on the same crop after generation fixes:
-> residual losses partition into a generation gap (-417) and crop/residual selection
-> (-172); 14,922 of 15,511 MATLAB pairs are recovered in the Python final set.
+> candidate generation covers 15,511 of 15,511 MATLAB final pairs, while final cleanup
+> currently retains 15,362 of 15,511 with 149 missing and 365 extra Python pairs.
 > **(c)** Strict stage counts on full volume `180709_E` (left) versus certification
-> metrics under ADR 0011/0012 spatial and float bars (right). Network shortfall is
-> entirely downstream of the residual edge-generation gap.
+> metrics under ADR 0011/0012 spatial and float bars (right). Network mismatch is
+> entirely downstream of the residual edge-set mismatch.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),
@@ -62,20 +62,20 @@ also needs a progress dashboard. Treat figures as a decision aid:
    - label the 80% crop-overlap gate as retired / historical;
    - make Network ADR 0012 the visible open ship gate;
    - keep Edges ownership pass separate from strict-field connection gap;
-   - show that Network failure is downstream of the residual edge-generation gap.
+   - show that Network failure is downstream of the residual edge-set mismatch.
 2. **Add a residual-iteration figure** when the next metric moves. Suggested file:
    `watershed_residual_iteration_map.{pdf,png}`. Suggested panels:
-   - crop golden-trace first divergence (`~13,761` baseline);
-   - crop final edge gap (`589` baseline) and candidate-generation gap;
-   - full edge gap (`4,064` baseline) feeding full Network strand gap (`3,454` baseline).
+   - crop golden-trace status (current crop trace matches end-to-end);
+   - crop final missing/extra gap (`149` missing, `365` extra current);
+   - full edge over/under count feeding full Network strand gap.
 3. **Move constants into a shared data file** before adding more figures. Suggested
    file: `figures/parity_metrics_current.json`. Both figure generators should read
    from it so captions and panels do not drift.
 4. **Regenerate only when metrics move**:
-   - first-diverge iteration moves later;
+   - frontier trace status regresses or moves to a new trace surface;
    - crop final edge gap drops;
-   - candidate-generation gap drops;
-   - full `canonical_full_v7` edge/network counts change;
+   - candidate-generation gap regresses from zero;
+   - successor full edge/network counts change;
    - evaluated Network ADR 0012 changes status.
 
 Do not use the figures as live status. Live status remains

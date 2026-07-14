@@ -96,17 +96,17 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 - Edges certification deliberately **does not** require exact pair-set equality (chaotic flood-fill).
 - Network certification **does** require order-independent **strand/bifurcation multiset** equality, which is a function of the **connection set** the watershed emitted.
 - Therefore ownership-map success can coexist with Network failure. That is expected, not a harness bug.
-- Closing Phase 1 means closing enough of the **generation / claiming-state** residual that Network multisets match — *not* rewriting Network, and *not* lowering the Network multiset bar without a new ADR.
+- Closing Phase 1 means closing enough of the residual **edge-set** mismatch that Network multisets match — *not* rewriting Network, and *not* lowering the Network multiset bar without a new ADR.
 
 **Primary loop after v6** (see [.claude/HANDOFF.md](../../.claude/HANDOFF.md)):
 
 | Priority | Action |
 |----------|--------|
-| 1 | Crop golden-trace / strel-claim divergence (first split ~iter 13,761) |
-| 2 | Crop final connection gap + funnel probe (fast KPI) |
-| 3 | Fresh canonical edges→network (`v7` preferred) + evaluated Network proof |
+| 1 | Crop final connection gap + funnel probe (fast KPI); current crop frontier trace matches |
+| 2 | Candidate-to-final cleanup balance: crop/degree/orphan/cycle missing and extra pairs |
+| 3 | Fresh successor canonical edges→network + evaluated Network proof after crop residual moves |
 
-**Strict-field stretch** (exact 69,500 connections) remains non-blocking for messaging once Network ADR 0012 passes. In practice the generation work that makes Network pass also moves stretch KPIs.
+**Strict-field stretch** (exact 69,500 connections) remains non-blocking for messaging once Network ADR 0012 passes. In practice the edge-set work that makes Network pass also moves stretch KPIs.
 
 **Do not:** claim Phase 1 closed on Edges-only; treat Network red as a Network-stage rewrite; use `prove-exact-sequence` strict-field as the ship gate; destroy `canonical_full_v6` audit roots.
 

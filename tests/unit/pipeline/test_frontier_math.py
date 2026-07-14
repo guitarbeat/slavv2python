@@ -97,6 +97,52 @@ def test_matlab_frontier_adjusted_neighbor_energies_penalizes_reverse_direction(
     assert adjusted[1] == 0.0
 
 
+def test_matlab_frontier_adjusted_neighbor_energies_clamps_orthogonal_inf():
+    adjusted = _matlab_frontier_adjusted_neighbor_energies(
+        np.array([-np.inf, -5.0], dtype=np.float64),
+        neighbor_offsets=np.array([[-1, -3, 0], [2, -1, 0]], dtype=np.int32),
+        neighbor_unit_vectors=np.array(
+            [
+                [-0.31622776601683794, -0.9486832980505138, 0.0],
+                [0.8944271909999157, -0.44721359549995787, 0.0],
+            ],
+            dtype=np.float64,
+        ),
+        neighbor_r_over_R=np.array([0.9655487789047452, 0.6827460891299358]),
+        neighbor_scale_indices=np.array([18, 18], dtype=np.int16),
+        propagated_scale_index=20,
+        current_d_over_r=2.613843646939426,
+        origin_radius_microns=3.0,
+        current_forward_unit=np.array([0.9486832980505138, -0.31622776601683794, 0.0]),
+        microns_per_voxel=np.array([0.916, 0.916, 1.99688]),
+        lumen_radius_microns=np.array([1.44333576, 1.5, 3.0], dtype=np.float64),
+    )
+
+    assert np.isposinf(adjusted[0])
+    assert adjusted[1] < 0.0
+
+
+def test_matlab_frontier_adjusted_neighbor_energies_preserves_tiny_forward_inf():
+    adjusted = _matlab_frontier_adjusted_neighbor_energies(
+        np.array([-np.inf], dtype=np.float64),
+        neighbor_offsets=np.array([[-1, -3, -1]], dtype=np.int32),
+        neighbor_unit_vectors=np.array(
+            [[-0.26035664126594477, -0.7810699237978344, -0.5675774779597597]],
+            dtype=np.float64,
+        ),
+        neighbor_r_over_R=np.array([0.8292597011257157]),
+        neighbor_scale_indices=np.array([2], dtype=np.int16),
+        propagated_scale_index=29,
+        current_d_over_r=1.3569868034152721,
+        origin_radius_microns=4.08237,
+        current_forward_unit=np.array([0.9486832980505138, -0.31622776601683794, 0.0]),
+        microns_per_voxel=np.array([0.916, 0.916, 1.99688]),
+        lumen_radius_microns=np.array([1.44333576, 1.5, 4.08237], dtype=np.float64),
+    )
+
+    assert np.isneginf(adjusted[0])
+
+
 def test_matlab_frontier_adjusted_neighbor_energies_penalizes_long_total_distance():
     near = _matlab_frontier_adjusted_neighbor_energies(
         np.array([-5.0], dtype=np.float32),

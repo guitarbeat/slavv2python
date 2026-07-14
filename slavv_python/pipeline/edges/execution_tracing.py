@@ -58,6 +58,10 @@ class ExecutionTracer(Protocol):
         pointer_values: np.ndarray,
         d_over_r_values: np.ndarray,
         size_values: np.ndarray,
+        vertex_values_after_claim: np.ndarray,
+        pointer_values_after_claim: np.ndarray,
+        d_over_r_values_after_claim: np.ndarray,
+        size_values_after_claim: np.ndarray,
     ) -> None: ...
 
     def on_frontier_state(
@@ -67,6 +71,16 @@ class ExecutionTracer(Protocol):
         label: str,
         current_linear: int,
         snapshot: dict[str, Any],
+    ) -> None: ...
+
+    def on_frontier_action(
+        self,
+        *,
+        iteration: int,
+        action: str,
+        current_linear: int,
+        locations: np.ndarray,
+        details: dict[str, Any] | None = None,
     ) -> None: ...
 
     def frontier_state_targets(self) -> set[int]: ...
@@ -82,6 +96,8 @@ class JsonExecutionTracer:
         state_iterations: Iterable[int] | None = None,
         state_linear_targets: Iterable[int] | None = None,
         state_sample_limit: int = 12,
+        trace_frontier_snapshots: bool = True,
+        trace_core_events: bool = True,
     ):
         self.output_path = Path(output_path)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -90,6 +106,8 @@ class JsonExecutionTracer:
         self._state_iterations = {int(value) for value in state_iterations or ()}
         self._state_linear_targets = {int(value) for value in state_linear_targets or ()}
         self._state_sample_limit = max(1, int(state_sample_limit))
+        self._trace_frontier_snapshots = bool(trace_frontier_snapshots)
+        self._trace_core_events = bool(trace_core_events)
 
     def _append(self, event_type: str, data: dict[str, Any]) -> None:
         payload = {"event": event_type, **data}
@@ -110,6 +128,8 @@ class JsonExecutionTracer:
         self, iteration: int, current_linear: int, current_energy: float
     ) -> None:
         self._iteration = int(iteration)
+        if not self._trace_core_events:
+            return
         self._append(
             "iteration_start",
             {
@@ -120,6 +140,8 @@ class JsonExecutionTracer:
         )
 
     def on_seed_selected(self, seed_idx: int, selected_linear: int, selected_energy: float) -> None:
+        if not self._trace_core_events:
+            return
         self._append(
             "seed_selected",
             {
@@ -133,6 +155,8 @@ class JsonExecutionTracer:
     def on_join(
         self, start_vertex: int, end_vertex: int, half_1: list[int], half_2: list[int]
     ) -> None:
+        if not self._trace_core_events:
+            return
         self._append(
             "join",
             {
@@ -154,6 +178,8 @@ class JsonExecutionTracer:
         iteration: int,
         current_linear: int,
     ) -> None:
+        if not self._trace_core_events:
+            return
         self._append(
             "join_skipped",
             {
@@ -184,6 +210,10 @@ class JsonExecutionTracer:
         pointer_values: np.ndarray,
         d_over_r_values: np.ndarray,
         size_values: np.ndarray,
+        vertex_values_after_claim: np.ndarray,
+        pointer_values_after_claim: np.ndarray,
+        d_over_r_values_after_claim: np.ndarray,
+        size_values_after_claim: np.ndarray,
     ) -> None:
         if not self._should_trace_strel_state(iteration, strel_linear):
             return
@@ -196,6 +226,13 @@ class JsonExecutionTracer:
         pointer_arr = np.asarray(pointer_values, dtype=np.int64).reshape(-1)
         d_over_r_arr = np.asarray(d_over_r_values, dtype=np.float64).reshape(-1)
         size_arr = np.asarray(size_values, dtype=np.int64).reshape(-1)
+        vertices_after_arr = np.asarray(vertex_values_after_claim, dtype=np.int64).reshape(-1)
+        pointer_after_arr = np.asarray(pointer_values_after_claim, dtype=np.int64).reshape(-1)
+        d_over_r_after_arr = np.asarray(
+            d_over_r_values_after_claim,
+            dtype=np.float64,
+        ).reshape(-1)
+        size_after_arr = np.asarray(size_values_after_claim, dtype=np.int64).reshape(-1)
         strel_pointer_arr = np.asarray(strel_pointer_indices, dtype=np.int64).reshape(-1)
         strel_r_arr = np.asarray(strel_r_over_R, dtype=np.float64).reshape(-1)
 
@@ -235,6 +272,10 @@ class JsonExecutionTracer:
                     pointer_arr=pointer_arr,
                     d_over_r_arr=d_over_r_arr,
                     size_arr=size_arr,
+                    vertices_after_arr=vertices_after_arr,
+                    pointer_after_arr=pointer_after_arr,
+                    d_over_r_after_arr=d_over_r_after_arr,
+                    size_after_arr=size_after_arr,
                 ),
                 "targets": self._strel_rows(
                     target_indices,
@@ -248,6 +289,10 @@ class JsonExecutionTracer:
                     pointer_arr=pointer_arr,
                     d_over_r_arr=d_over_r_arr,
                     size_arr=size_arr,
+                    vertices_after_arr=vertices_after_arr,
+                    pointer_after_arr=pointer_after_arr,
+                    d_over_r_after_arr=d_over_r_after_arr,
+                    size_after_arr=size_after_arr,
                 ),
             },
         )
@@ -272,6 +317,34 @@ class JsonExecutionTracer:
             },
         )
 
+    def on_frontier_action(
+        self,
+        *,
+        iteration: int,
+        action: str,
+        current_linear: int,
+        locations: np.ndarray,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        location_arr = np.asarray(locations, dtype=np.int64).reshape(-1)
+        target_locations = [
+            int(location)
+            for location in location_arr.tolist()
+            if int(location) in self._state_linear_targets
+        ]
+        if not target_locations:
+            return
+        self._append(
+            "frontier_action",
+            {
+                "iteration": int(iteration),
+                "action": str(action),
+                "current_linear": int(current_linear),
+                "target_locations": target_locations,
+                "details": details or {},
+            },
+        )
+
     def frontier_state_targets(self) -> set[int]:
         return set(self._state_linear_targets)
 
@@ -284,6 +357,8 @@ class JsonExecutionTracer:
         return bool(linear_values & self._state_linear_targets)
 
     def _should_trace_frontier_state(self, iteration: int, snapshot: dict[str, Any]) -> bool:
+        if not self._trace_frontier_snapshots:
+            return False
         if int(iteration) in self._state_iterations:
             return True
         if not self._state_linear_targets:
@@ -307,6 +382,10 @@ class JsonExecutionTracer:
         pointer_arr: np.ndarray,
         d_over_r_arr: np.ndarray,
         size_arr: np.ndarray,
+        vertices_after_arr: np.ndarray,
+        pointer_after_arr: np.ndarray,
+        d_over_r_after_arr: np.ndarray,
+        size_after_arr: np.ndarray,
     ) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         for index in indices:
@@ -324,6 +403,10 @@ class JsonExecutionTracer:
                     "pointer_before_claim": int(pointer_arr[idx]),
                     "d_over_r_before_claim": float(d_over_r_arr[idx]),
                     "size_before_claim": int(size_arr[idx]),
+                    "vertex_index_after_claim": int(vertices_after_arr[idx]),
+                    "pointer_after_claim": int(pointer_after_arr[idx]),
+                    "d_over_r_after_claim": float(d_over_r_after_arr[idx]),
+                    "size_after_claim": int(size_after_arr[idx]),
                 }
             )
         return rows
@@ -375,6 +458,10 @@ class NullExecutionTracer:
         pointer_values: np.ndarray,
         d_over_r_values: np.ndarray,
         size_values: np.ndarray,
+        vertex_values_after_claim: np.ndarray,
+        pointer_values_after_claim: np.ndarray,
+        d_over_r_values_after_claim: np.ndarray,
+        size_values_after_claim: np.ndarray,
     ) -> None:
         pass
 
@@ -385,6 +472,17 @@ class NullExecutionTracer:
         label: str,
         current_linear: int,
         snapshot: dict[str, Any],
+    ) -> None:
+        pass
+
+    def on_frontier_action(
+        self,
+        *,
+        iteration: int,
+        action: str,
+        current_linear: int,
+        locations: np.ndarray,
+        details: dict[str, Any] | None = None,
     ) -> None:
         pass
 

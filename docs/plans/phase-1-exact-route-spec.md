@@ -188,8 +188,8 @@ Run stages in order and stop if any stage fails. For Edges/Network, only evaluat
 Live operator sequence: [.claude/HANDOFF.md](../../.claude/HANDOFF.md). Summary:
 
 - Energy / Vertices certified on full volume → do not rerun without regression evidence.
-- Edges ownership evaluated PASS on `canonical_full_v6` → residual work is **generation/claiming** on crop (golden-trace, funnel probe), not reopening Energy.
-- Network multiset FAIL → confirm isolation with MATLAB edges still exact; fix watershed residual; then **new** canonical root (`v7`) edges→network + evaluated Network proof.
+- Edges ownership evaluated PASS on canonical audit roots → residual work is the crop **edge-set funnel** (candidate-to-final cleanup balance), not reopening Energy.
+- Network multiset FAIL → confirm isolation with MATLAB edges still exact; fix edge-set residual; then **new successor** canonical root edges→network + evaluated Network proof.
 - Prefer per-stage `prove-exact --stage <s>` with `adr0012_evaluated: true`. Do not use `prove-exact-sequence` strict-field as the ship gate.
 - Record blockers and KPIs only in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
 

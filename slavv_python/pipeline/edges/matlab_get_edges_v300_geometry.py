@@ -81,6 +81,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
     raw_energies: np.ndarray,
     *,
     neighbor_offsets: np.ndarray,
+    neighbor_unit_vectors: np.ndarray | None = None,
     neighbor_r_over_R: np.ndarray,
     neighbor_scale_indices: np.ndarray | None,
     propagated_scale_index: int,
@@ -124,19 +125,24 @@ def _matlab_frontier_adjusted_neighbor_energies(
         forward = np.asarray(current_forward_unit, dtype=np.float64).reshape(3)
         forward_norm = float(np.linalg.norm(forward))
         if forward_norm > 1e-12:
-            forward = forward / forward_norm
-            neighbor_vectors: np.ndarray = (
-                np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
-            )
-            neighbor_norms = np.linalg.norm(neighbor_vectors, axis=1)
-            directional_alignment: np.ndarray = np.zeros(
-                (len(neighbor_vectors),),
-                dtype=np.float64,
-            )
-            valid = neighbor_norms > 1e-12
-            directional_alignment[valid] = (
-                np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
-            )
+            if neighbor_unit_vectors is None:
+                neighbor_vectors: np.ndarray = (
+                    np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+                )
+                neighbor_norms = np.linalg.norm(neighbor_vectors, axis=1)
+                directional_alignment = np.zeros(
+                    (len(neighbor_vectors),),
+                    dtype=np.float64,
+                )
+                valid = neighbor_norms > 1e-12
+                directional_alignment[valid] = (
+                    np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
+                )
+            else:
+                directional_alignment = np.sum(
+                    np.asarray(neighbor_unit_vectors, dtype=np.float64) * forward,
+                    axis=1,
+                )
             directional_alignment[directional_alignment < 0.0] = 0.0
             with np.errstate(invalid="ignore"):
                 adjusted *= directional_alignment

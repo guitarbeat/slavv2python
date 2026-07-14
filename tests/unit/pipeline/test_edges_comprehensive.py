@@ -32,6 +32,7 @@ from slavv_python.pipeline.edges.finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
     normalize_edges_matlab_style,
+    prefilter_edge_indices_for_cleanup_matlab_style,
 )
 from slavv_python.pipeline.edges.primitives import _finalize_traced_edge
 from slavv_python.pipeline.edges.selection import (
@@ -181,6 +182,26 @@ def test_prepare_candidate_indices_for_cleanup_filters_by_energy_threshold():
 
 
 @pytest.mark.unit
+def test_prepare_candidate_indices_for_cleanup_uses_float64_energy_metric_for_sorting():
+    connections = np.array([[0, 1], [2, 3]], dtype=np.int32)
+    metrics = np.array([-13.758037567138672, -13.758037567138672], dtype=np.float32)
+    energy_traces = [
+        np.array([-20.0, -13.758037661352596] * 4, dtype=np.float64)[:7],
+        np.array([-20.0, -13.758037107868688] * 3, dtype=np.float64),
+    ]
+
+    indices = prepare_candidate_indices_for_cleanup(
+        connections,
+        metrics,
+        energy_traces,
+        {},
+        reject_nonnegative_energy_edges=False,
+    )
+
+    assert indices == [0, 1]
+
+
+@pytest.mark.unit
 def test_remove_excess_vertex_degrees_limits_degree_by_pruning_worst_edges():
     connections = np.array([[0, 1], [0, 2], [0, 3]], dtype=np.int32)
     metrics = np.array([-10.0, -5.0, -1.0], dtype=np.float32)
@@ -230,6 +251,30 @@ def test_matlab_crop_edges_v200_excludes_edges_that_expand_past_image_bounds():
         size_of_image=(3, 3, 3),
     )
     assert excluded.tolist() == [True, False]
+
+
+@pytest.mark.unit
+def test_prefilter_crop_aligns_matlab_voxel_spacing_to_zyx_traces():
+    kept, cropped = prefilter_edge_indices_for_cleanup_matlab_style(
+        [0],
+        [
+            np.array(
+                [[2.0, 211.0, 142.0], [2.0, 211.0, 144.0], [2.0, 212.0, 148.0]],
+                dtype=np.float32,
+            )
+        ],
+        [np.array([16.0, 17.0, 15.0], dtype=np.float32)],
+        [np.array([-273.0, -260.0, -300.0], dtype=np.float32)],
+        lumen_radius_microns=np.array(
+            [1.4] * 15 + [2.571732, 2.672696, 2.777624],
+            dtype=np.float32,
+        ),
+        microns_per_voxel=np.array([0.916, 0.916, 1.99688], dtype=np.float32),
+        size_of_image=(64, 256, 256),
+    )
+
+    assert kept == [0]
+    assert cropped == 0
 
 
 # ==============================================================================
@@ -472,7 +517,7 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
 
 
 @pytest.mark.unit
-def test_choose_edges_preserves_discovery_order_when_metrics_are_equal():
+def test_choose_edges_prefers_shorter_trace_when_metrics_are_equal():
     vertex_positions = np.array([[1, 1, 1], [1, 6, 1]], dtype=np.float32)
     vertex_scales = np.array([0, 0], dtype=np.int16)
     shorter_trace = np.array([[1, 1, 1], [1, 4, 1], [1, 6, 1]], dtype=np.float32)
@@ -496,7 +541,7 @@ def test_choose_edges_preserves_discovery_order_when_metrics_are_equal():
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
     )
-    assert np.array_equal(chosen["traces"][0], candidates["traces"][0])
+    assert np.array_equal(chosen["traces"][0], shorter_trace)
 
 
 @pytest.mark.unit
@@ -592,31 +637,31 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
 
 def test_prune_orphan_edges_vectorized_parity():
     from slavv_python.pipeline.edges.cleanup import prune_orphan_edges
-    
+
     # 3 vertices
-    vertex_positions = np.array([
-        [5, 5, 5],
-        [10, 10, 10],
-        [15, 15, 15]
-    ], dtype=np.float32)
-    
+    vertex_positions = np.array([[5, 5, 5], [10, 10, 10], [15, 15, 15]], dtype=np.float32)
+
     # 4 traces:
     # 1. Traces connecting vertex 0 to vertex 1 (Not orphan)
     # 2. Traces connecting vertex 1 to vertex 2 (Not orphan)
     # 3. Floating trace not touching any vertex or edge (Orphan)
     # 4. Trace connected to 3's interior but not to any vertex (Orphan - should be recursively pruned)
     traces = [
-        np.array([[5, 5, 5], [6, 6, 6], [7, 7, 7], [8, 8, 8], [9, 9, 9], [10, 10, 10]], dtype=np.float32),
-        np.array([[10, 10, 10], [11, 11, 11], [12, 12, 12], [13, 13, 13], [14, 14, 14], [15, 15, 15]], dtype=np.float32),
+        np.array(
+            [[5, 5, 5], [6, 6, 6], [7, 7, 7], [8, 8, 8], [9, 9, 9], [10, 10, 10]], dtype=np.float32
+        ),
+        np.array(
+            [[10, 10, 10], [11, 11, 11], [12, 12, 12], [13, 13, 13], [14, 14, 14], [15, 15, 15]],
+            dtype=np.float32,
+        ),
         np.array([[20, 20, 20], [21, 21, 21], [22, 22, 22]], dtype=np.float32),
         np.array([[21, 21, 21], [30, 30, 30]], dtype=np.float32),
     ]
-    
+
     volume_shape = (50, 50, 50)
     keep_mask = prune_orphan_edges(traces, volume_shape, vertex_positions)
-    
+
     assert keep_mask.tolist() == [True, True, False, False]
 
 
 # Made with Bob
-
