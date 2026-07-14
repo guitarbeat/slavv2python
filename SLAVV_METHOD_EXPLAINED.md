@@ -57,9 +57,9 @@ f_{G} = \frac{\sigma}{\sigma + r}
 \(R\) is the effective radius the filter responds to. \(f_G\) balances smooth (noise-tolerant) vs sharp (better localized); the authors tried about 0.6, 0.8, and 1.0. Ideal kernels:
 
 \[
-K_{S}(\rho) = \mathbf{1}_{\{\rho < r\}}
+K_{S}(\rho) = \mathbf{1}*{\{\rho < r\}}
 \qquad
-K_{A}(\rho) = \delta(\rho - r)
+K*{A}(\rho) = \delta(\rho - r)
 \]
 
 \(\rho\) is distance from the kernel center. \(K_S\) is the solid lumen model; \(K_A\) is the wall shell. Software knobs for the mix include `spherical_to_annular_ratio` and `gaussian_to_ideal_ratio`.
