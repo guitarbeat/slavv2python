@@ -17,7 +17,7 @@ flat “all green” dashboards.
 | File | Claim | Why it is interesting |
 |------|-------|------------------------|
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
-| [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a 1-pair swap | Missing vs extra side-by-side; after generation closed, extras displaced MATLAB pairs in faithful cleanup |
+| [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a closed pair multiset | Missing vs extra; generation extras → cleanup displacement → re-selection closes crop (guard) |
 | [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched - Network still -1 strand | Signed residual across `v4→v16`; Network tracks Edges; at v16 Edges PASS while Network multiset FAIL |
 | [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels Network still fails ADR 0012 by one strand | Absolute mismatch budget; Network multiset FAIL is the open ship gate |
 
@@ -47,8 +47,9 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 > Crop residual collapse. Early work was a generation gap (~6.5k missing).
 > Once candidates covered the oracle set, remaining missing pairs were
-> displaced by extra candidates during faithful degree/cycle cleanup; after
-> post-watershed finalization the residual is an equal-count 1-pair swap.
+> displaced by extras during faithful cleanup; re-selection closes the crop
+> pair multiset (regression guard). Full-volume residual is a separate join-
+> displacement class on the claim surface.
 
 **Agreement**
 
@@ -61,11 +62,12 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 **Mismatch budget**
 
-> Absolute residual on the full-volume surface (`canonical_full_v16` proofs).
-> Energy and vertices are closed; Edges ownership/count pass ADR 0012. The open
-> ship gate is Network strand multiset FAIL (48,048 / 48,049), downstream of
-> one equal-metric degree-pruning swap (crop: MATLAB `[4212, 6281]` vs Python
-> `[4043, 6281]`). Approximate strand % is not the ADR 0012 bar.
+> Absolute residual on the full-volume claim surface (see findings for the live
+> run root). Energy and vertices are closed; Edges ownership/count pass ADR 0012.
+> The open ship gate is Network strand **multiset** FAIL, downstream of a full
+> **Edge Set** residual (generation join displacement after equal post-resample
+> max—crop pair multiset is closed on re-selection). Approximate strand % is not
+> the ADR 0012 bar. Live pair/strand numbers: EXACT_PROOF_FINDINGS only.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),
@@ -85,7 +87,7 @@ the status log and not the methodology paper alone.
 | Figure | Story beat | Primary docs |
 |------|------------|--------------|
 | Trajectory | Generation residual: cosmetics flat; LUT leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
-| Funnel | Final residual collapse: extras after gen closed → 1-pair swap | Funnel/cleanup notes in findings; [PHASE1 residual](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
+| Funnel | Final residual collapse after gen closed → open Network gate | Findings funnel/cleanup + [PHASE1 residual framing](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
 | Agreement | Full under→over→Edges matched; Network tracks Edges; still open | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set” |
 | Cert table | Absolute residual budget; Network multiset FAIL = ship gate | Findings executive status; ADR 0012 ship vs stretch |
 

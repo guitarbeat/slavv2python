@@ -6,11 +6,10 @@
 MATLAB R2019a oracle.
 
 > ⚠️ **Point-in-time snapshot (2026-07-01).** Do **not** use this file as current
-> status. Live per-stage status, residual Network ship gate, and active blockers:
-> **[EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)** · operator
-> brief: **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** · tasks: **[TODO.md](TODO.md)**.
-> As of 2026-07-08+, full-volume Energy/Vertices/Edges ADR 0012 are green on the
-> closure path; **Network ADR 0012 remains the open Phase 1 ship gate**.
+> status. **Authority map:** [docs/README.md](README.md#documentation-authority-map-one-concept--one-home).
+> Live status → [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md) ·
+> commands → [HANDOFF](../.claude/HANDOFF.md) · tasks → [TODO](TODO.md).
+> Network ADR 0012 multiset remains the open Phase 1 ship gate until findings say otherwise.
 
 ---
 

@@ -58,8 +58,10 @@
 - [x] **Bounded golden-trace regression** — after stopping stale trace writers, `scripts/watershed_frontier_diff.py --stop-after-iteration 30000` reports `bounded_match`, well past the retired iter-**13,761** split.
 - [x] **Quantify degree/cycle displacement** — funnel aggregate output shows degree loss **103** MATLAB pairs (**99** with incident surviving extras, **97** with better-metric extras) and cycle loss **32** pairs (**32** with earlier/better incident extras).
 - [x] **Reject broad boundary suppression** — final extras skew boundary-adjacent, but a geometry-only boundary candidate filter worsens overlap (threshold 1 → **14,984** overlap / **527** missing); even oracle zero-degree-boundary suppression only reaches **15,377** overlap / **134** missing.
-- [ ] **Final edge-set one-pair residual** — resolve the remaining crop equal-count swap: Python keeps `[4043, 6281]`, MATLAB keeps `[4212, 6281]`; both share vertex `6281` and tie on resampled metric. Cleanup, chunk eligibility, broad boundary filtering, and the retired frontier split are now regression guards.
-- [ ] **Canonical Network ADR 0012** — **FAIL** on `v16` (and `v15`) by one strand (Python 48,048 vs MATLAB 48,049; `exact_proof_network.json` `passed: false`). Full Edges are evaluated green and exact-count on `v16`. Residual is one edge-pair swap / one strand split. **This is the only open Phase 1 ship gate.**
+- [x] **Crop final edge-set residual** — re-selection via `select_and_finalize_edge_set` / `scripts/persist_crop_edges_selection.py` on `crop_M_exact_v3` yields **15,511 / 15,511** undirected pair overlap vs `180709_E_crop_M_v2` (both keep `[4043, 6281]`; crop one-pair swap closed on current main). Generation/frontier/cleanup regression guards remain green.
+- [x] **Full residual localized (not fixed in production)** — funnel: degree-excess only; equal post-resample max; Python extra `cand 46698` `(26444,38584)` displaces oracle `(34897,38584)`. MATLAB cleanup ≡ Python on same surface. **Ablation:** drop `46698` only → **69,500 / 69,500** pair overlap. See findings 2026-07-15 banner.
+- [ ] **Full production fix: suppress/displace-safe the `(26444→38584)` watershed join** — match MATLAB join/emission so the extra candidate is not generated (or not earlier-ranked under equal post-resample max). Do **not** reintroduce cleanup endpoint secondary keys.
+- [ ] **Canonical Network ADR 0012** — **FAIL** on `v16` proofs on disk (48,048 / 48,049 strands). Expected green once full Edge Set multiset matches after generation fix + Edges→Network re-proof. **Open Phase 1 ship gate.**
 - [ ] **Phase 1 closure** — Energy ✅ Vertices ✅ Edges ✅ Network ⬜ on evaluated full-volume proofs; evidence in findings + [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
 
 ### 🛠️ Hardening & Infrastructure (done — keep as archive checkboxes)
@@ -98,10 +100,10 @@
 
 ## Strategy notes (meta — keep short)
 
-1. **Ship gate is Network multiset on full volume**, not ownership % (already met) and not `prove-exact-sequence`.
-2. **Final edge-set balance drives Network** — generation/frontier parity is closed on the crop; treat Network red as downstream of the residual edge set until isolation with MATLAB edges fails.
-3. **Crop is the iteration surface**; full volume is the claim surface. Prefer golden-trace + funnel probes over new scratch scripts.
-4. **Anti-patterns** → [UNPRODUCTIVE_LOOPS.md](reference/core/UNPRODUCTIVE_LOOPS.md).
+1. **Ship gate is Network multiset on full volume**, not ownership % and not `prove-exact-sequence`.
+2. **Edge Set multiset drives Network** — crop generation/selection are regression guards; full residual is Candidate Set join displacement (see findings), not a Network rewrite.
+3. **Crop = guard; full = claim.** Prefer funnel / cleanup comparator / `select_and_finalize_edge_set` over new selection forks.
+4. **Anti-patterns** → [UNPRODUCTIVE_LOOPS.md](reference/core/UNPRODUCTIVE_LOOPS.md). **Authority map** → [docs/README.md](README.md#documentation-authority-map-one-concept--one-home).
 
 ---
 
@@ -119,3 +121,4 @@ Older dashboard text referred to **v10 / 76% match**, **>95% edge match rate**, 
 - [x] Parity pre-gate & certification guides
 - [x] Planning hub — this file; status + compound index in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
 - [x] **2026-07-12 meta realignment** — HANDOFF, ROADMAP, TODO, AGENTS operating sequence, ADR 0012 post-v6 addendum synced to findings
+- [x] **2026-07-15 docs consolidate** — authority map in docs/README; residual narrative → findings-only KPIs; ROADMAP/AGENTS/ADR0012/PHASE1 residual/figures aligned to join-displacement residual (not crop pair swap)

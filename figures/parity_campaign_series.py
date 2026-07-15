@@ -19,7 +19,7 @@ CANONICAL_MATLAB_STRANDS = 48_049
 # Network ADR 0012 residual on claim surface (Python - MATLAB strand multiset)
 NETWORK_STRAND_RESIDUAL = -1
 CANONICAL_PYTHON_STRANDS = CANONICAL_MATLAB_STRANDS + NETWORK_STRAND_RESIDUAL
-# Edge multiset residual count (equal-metric swap class; count delta is 0, multiset Δ = 1)
+# Edge multiset residual count (connection multiset Δ = 1; strict count can still match)
 EDGE_PAIR_MULTISET_RESIDUAL = 1
 
 ORACLE_CROP_ID = "180709_E_crop_M_v2"
@@ -34,9 +34,10 @@ LOG_FLOOR_COUNT = 0.85
 RETIRED_GATE_OVERLAP_FRAC = 0.80
 RETIRED_GATE_MISSING = round(CROP_N_MATLAB_FINAL_PAIRS * (1.0 - RETIRED_GATE_OVERLAP_FRAC))
 
-# Crop single-pair swap residual (degree-pruning hub)
-CROP_SWAP_MATLAB_PAIR = (4212, 6281)
-CROP_SWAP_PYTHON_PAIR = (4043, 6281)
+# Full-volume residual class (generation join displacement → degree-excess)
+# Crop final pair multiset is closed on re-selection (guard only).
+FULL_RESIDUAL_MATLAB_PAIR = (34897, 38584)
+FULL_RESIDUAL_PYTHON_PAIR = (26444, 38584)
 
 ColorKey = Literal["accent", "muted", "amber", "green", "steel"]
 # Which y-series an annotation arrow anchors to (view must not infer this from color)
@@ -142,11 +143,12 @@ class FunnelPhase:
     annotation: Annotation | None = None
 
 
-FUNNEL_CLAIM = "Crop residual collapsed from thousands to a single pair swap"
+FUNNEL_CLAIM = "Crop residual collapsed from thousands to a closed pair multiset"
 FUNNEL_FOOTNOTE = (
-    f"Crop final residual vs MATLAB oracle pairs ({ORACLE_CROP_ID}). "
-    f"Middle columns use published checkpoints: generation extras \u2248 candidates \u2212 "
-    f"{CROP_N_MATLAB_FINAL_PAIRS:,}; later columns are final missing/extra after selection."
+    f"Crop residual vs MATLAB oracle pairs ({ORACLE_CROP_ID}). "
+    f"Middle columns: generation extras \u2248 candidates \u2212 "
+    f"{CROP_N_MATLAB_FINAL_PAIRS:,}; later columns are final missing/extra after Edge Selection. "
+    "Crop re-selection closes the pair multiset (regression guard); full-volume residual is separate."
 )
 
 FUNNEL_PHASES: list[FunnelPhase] = [
@@ -181,12 +183,25 @@ FUNNEL_PHASES: list[FunnelPhase] = [
         missing=1,
         extra=1,
         annotation=Annotation(
-            text="equal-count\n1-pair swap",
-            text_x=3.35,
+            text="brief 1-pair\ncheckpoint",
+            text_x=2.55,
+            text_y=18,
+            color_key="muted",
+            series="extra",
+        ),
+    ),
+    FunnelPhase(
+        id="reselection_closed",
+        label="Re-selection\nclosed",
+        missing=0,
+        extra=0,
+        annotation=Annotation(
+            text="crop pair multiset\nclosed (guard)",
+            text_x=3.85,
             text_y=12,
             color_key="green",
             bold=True,
-            series="extra",
+            series="missing",
         ),
     ),
 ]
@@ -318,8 +333,9 @@ CERT_TAKEAWAY = (
     f"{CANONICAL_CLAIM_RUN}.\n"
     "Open ship gate: Network strand multiset FAIL "
     f"({CANONICAL_PYTHON_STRANDS:,} / {CANONICAL_MATLAB_STRANDS:,}) — "
-    "one degree-pruning pair swap\n"
-    f"(crop: MATLAB {list(CROP_SWAP_MATLAB_PAIR)} vs Python {list(CROP_SWAP_PYTHON_PAIR)}). "
+    "downstream of one full Edge Set multiset residual\n"
+    f"(MATLAB {list(FULL_RESIDUAL_MATLAB_PAIR)} vs Python {list(FULL_RESIDUAL_PYTHON_PAIR)}; "
+    "join displacement under equal post-resample max). "
     "Not an independent Network bug."
 )
 
@@ -361,7 +377,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="pair multiset \u0394",
         residual_display=str(EDGE_PAIR_MULTISET_RESIDUAL),
         denom=f"{CANONICAL_MATLAB_EDGES:,}",
-        reading="one equal-metric swap",
+        reading="join displacement (full)",
         tone="residual",
     ),
     CertRow(

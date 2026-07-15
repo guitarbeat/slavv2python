@@ -98,17 +98,17 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 - Therefore ownership-map success can coexist with Network failure. That is expected, not a harness bug.
 - Closing Phase 1 means closing enough of the residual **edge-set** mismatch that Network multisets match — *not* rewriting Network, and *not* lowering the Network multiset bar without a new ADR.
 
-**Primary loop after v6** (see [.claude/HANDOFF.md](../../.claude/HANDOFF.md)):
+**Primary loop after v6** (live residual class evolves—**status only in** [EXACT_PROOF_FINDINGS](../reference/core/EXACT_PROOF_FINDINGS.md); commands in [.claude/HANDOFF.md](../../.claude/HANDOFF.md)):
 
 | Priority | Action |
 |----------|--------|
-| 1 | Crop final connection gap + funnel probe (fast KPI); current crop frontier trace matches |
-| 2 | Candidate-to-final cleanup balance: crop/degree/orphan/cycle missing and extra pairs |
-| 3 | Fresh successor canonical edges→network + evaluated Network proof after crop residual moves |
+| 1 | Full **Edge Set** multiset residual (Candidate Set / join emission displacing degree-excess)—not a Network rewrite; not cleanup secondary-key hacks that break MATLAB≡Python cleanup parity |
+| 2 | Crop Edge Selection + frontier/generation as **regression guards** (crop pair multiset closed on re-selection) |
+| 3 | Successor/re-selected canonical Edges→Network + **evaluated** Network ADR 0012 multiset proof when the Edge Set moves |
 
-**Strict-field stretch** (exact 69,500 connections) remains non-blocking for messaging once Network ADR 0012 passes. In practice the edge-set work that makes Network pass also moves stretch KPIs.
+**Strict-field stretch** (exact connection multiset / order) remains non-blocking for messaging once Network ADR 0012 passes.
 
-**Do not:** claim Phase 1 closed on Edges-only; treat Network red as a Network-stage rewrite; use `prove-exact-sequence` strict-field as the ship gate; destroy `canonical_full_v6` audit roots.
+**Do not:** claim Phase 1 closed on Edges-only; treat Network red as a Network-stage rewrite; use `prove-exact-sequence` strict-field as the ship gate; destroy historical claim/audit run roots (`v6`…current).
 
 ## Evidence references
 

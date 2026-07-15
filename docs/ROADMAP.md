@@ -44,30 +44,26 @@ faithfulness and memory safety:
 (Energy, Vertices) and ADR 0012 (Edges, Network). Crop harness is the fast
 iteration surface; the canonical volume is the claim surface.
 
-### Achieved (as of 2026-07-08 evidence)
+### Achieved (definition; live claim surface in findings)
 
 | Stage | Full `180709_E` | Notes |
 |-------|-----------------|-------|
-| Energy | ✅ CERTIFIED | ADR 0011; 0 scale mismatches / 16.8M voxels |
+| Energy | ✅ CERTIFIED | ADR 0011 |
 | Vertices | ✅ CERTIFIED | ADR 0011 |
-| Edges | ✅ ADR 0012 PASS | `canonical_full_v6`, ownership **96.02%**, evaluated |
-| Network | ❌ OPEN | Multiset fail; **downstream of residual ~4k edge gap** |
+| Edges | ✅ ADR 0012 PASS evaluated | Exact connection count + ownership on current claim root — **numbers in findings** |
+| Network | ❌ OPEN | Multiset equality still red — **downstream of residual Edge Set**, not a Network rewrite |
 
-Also cleared: crop candidate overlap **97.31%** (old 80% launch gate), crop-edge
-`uint16` floor truncation fix, ownership-map measurement path.
+Also cleared historically: crop generation / 80% gate, post-watershed finalization parity, crop final pair multiset on re-selection (regression guard). **Do not copy live pair/strand counts here.**
 
 ### Path to done
 
-1. **Residual watershed generation** on crop (golden-trace iter 13,761 / claiming
-   state) until connection gap drops enough that Network multisets can pass.
-2. Fresh canonical edges→network run (`canonical_full_v7` preferred) with debug
-   maps.
-3. Evaluated `prove-exact --stage edges` (regression check) + `--stage network`
-   → **Phase 1 closed** when both green.
+1. **Full Edge Set residual** — production fix for the displacing watershed join (localized; see findings banner + ablation). Crop Edge Selection stays green as guard.
+2. Re-select or successor canonical Edges→Network; evaluated `prove-exact --stage edges` + `--stage network`.
+3. **Phase 1 closed** when Network multiset is green on the claim root.
 
 Do **not** use `prove-exact-sequence` strict-field failure as the ship gate.
-Details: [Phase 1 spec](plans/phase-1-exact-route-spec.md), [TODO.md](TODO.md),
-[HANDOFF](../.claude/HANDOFF.md).
+Details: [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md), [TODO.md](TODO.md),
+[HANDOFF](../.claude/HANDOFF.md), [Phase 1 spec](plans/phase-1-exact-route-spec.md).
 
 ---
 

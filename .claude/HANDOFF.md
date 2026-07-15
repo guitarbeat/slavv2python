@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-07-15 (consolidate-concepts: v16 proofs on disk; Network still FAIL; Phase 1 OPEN)
+**Last synthesized:** 2026-07-15 (docs consolidate: authority map; residual = full join displacement / ablation; crop = guard; Network FAIL; Phase 1 OPEN)
 
 This is the single successor brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -27,15 +27,15 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 
 **Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality (see findings for claim run root and counts). Do not treat approximate strand-count % as a pass. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
 
-**Latest residual fix:** MATLAB standalone instrumentation proved Python raw candidates match MATLAB raw watershed candidates exactly (**19,225 / 19,225**). The active divergence was post-watershed finalization: MATLAB runs `resample_vectors`, re-samples energy/size from maps, smooths, then crops with unsigned integer casts before cleanup. Python now mirrors that path and carries resampled traces/energies/metrics into cleanup. Refreshed crop candidate generation remains **15,511/15,511** with **19,225** raw candidates; refreshed crop final selected edges are **15,511** vs MATLAB **15,511**, with **15,510** MATLAB pairs retained (missing **1**, extra **1**).
+**Crop final residual closed (2026-07-15):** re-selection with current Edge Selection (`select_and_finalize_edge_set` / `scripts/persist_crop_edges_selection.py`) on `crop_M_exact_v3` yields **15,511 / 15,511** undirected pair overlap vs `180709_E_crop_M_v2`. Crop is a regression guard, not the active residual surface.
 
-**Latest full result:** `canonical_full_v16` completed Edges→Network. Edges ADR 0012 passed evaluated with exact strict count (**69,500 / 69,500**), ownership agreement **99.999863%**, and **0** trace failures. Network ADR 0012 still fails by one strand (**48,048 / 48,049**) — same residual class as `v15`. Prefer `v16` as the current claim surface; keep `v15` as audit.
+**Full residual (active):** re-selection → **69,499 / 69,500** pair overlap. Degree-excess drops oracle `(34897,38584)` in favor of earlier equal-metric **extra** `cand 46698` `(26444,38584)` (origin 26444; not in oracle final). Cleanup MATLAB≡Python on that surface. **Ablation:** remove only `46698` → **69,500 / 69,500**. Production next step = watershed **join emission** for that pair, not cleanup reorder.
 
-**Latest cleanup comparator result:** `scripts/compare_clean_edge_pairs_matlab.py` now exports the resampled post-crop candidate list and calls MATLAB `clean_edge_pairs`, `clean_edges_vertex_degree_excess`, and `clean_edges_cycles`. Python matches MATLAB row indices exactly at all three cleanup stages on that surface. The sole remaining crop swap occurs in degree pruning: Python keeps `[4043, 6281]` while MATLAB keeps `[4212, 6281]`; both have the same resampled metric (`-15.137922715664892`) and share vertex `6281`. A broad endpoint-descending tie-break trial was rejected because it regressed crop to **7 missing / 9 extra**.
+**Latest full result:** `canonical_full_v16` Edges ADR 0012 still **PASS** evaluated (exact count / ownership); Network ADR 0012 still **FAIL** by one strand (**48,048 / 48,049**) until residual pair is fixed and Network re-proved. Prefer `v16` as claim surface; keep `v15` as audit.
 
-**Latest rejected hypothesis:** `scripts/edge_selection_funnel_probe.py --apply-matlab-chunk-eligibility` emulates the `get_edges_V300` reading/writing chunk emission rule. On the crop, MATLAB's edge chunk lattice is a single chunk under `max_voxels_per_node = 1e8`, and the diagnostic drops **0 / 19,225** candidates. Chunk read/write windows do **not** explain raw candidate extras, which are now known to be MATLAB raw candidates removed later by finalization/cleanup.
+**Prior cleanup note:** on the Python crop candidate surface, MATLAB `clean_edge_pairs` / degree / cycle row indices matched Python (**0** mismatches). Broad endpoint-descending tie-break was rejected (crop regressed to **7 missing / 9 extra**). Revisit only **narrow** ties at full hub **38584**.
 
-**Latest displacement result:** `scripts/edge_selection_funnel_probe.py` now reports a single final displacement. Degree pruning loses **1** MATLAB pair (`[4212, 6281]`), displaced by incident surviving extra `[4043, 6281]` with the same resampled metric and earlier row order. Cycle pruning leaves final count equal at **15,511**.
+**Latest rejected hypothesis:** chunk eligibility does **not** explain residual (crop single-chunk, **0** drops). Crop displacement/funnel notes superseded by closed crop pair multiset.
 
 **Latest extra-source result:** candidate extras are diffuse at generation time (top extra-producing origins emit only **2** extras each), while final extras concentrate more around boundary-adjacent / MATLAB-zero-degree vertices. A production-style geometry boundary cutoff is rejected: removing candidates touching vertices within 1 voxel of a boundary worsens overlap to **14,984** and missing pairs to **527**. An oracle-aware zero-degree-boundary upper bound improves only modestly to **15,377** overlap / **134** missing / **238** extras, so boundary-adjacent zero-degree vertices are a symptom, not the root cause.
 
@@ -65,8 +65,8 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 | KPI | Surface | Role |
 |-----|---------|------|
 | **Golden-trace first-diverge iteration** | crop, `scripts/watershed_frontier_diff.py` | Latest: **match** through the crop trace; iter 22,421 and 25,495 splits are fixed |
-| **Crop final connection gap** | crop prove-exact / funnel probe | Latest: Python **15,511** vs MATLAB **15,511**; overlap **15,510** (missing **1**, extra **1**) |
-| **Full edge connection gap** | `canonical_full_v16` audit | Exact count **69,500** vs **69,500** with one multiset swap residual |
+| **Crop final connection gap** | crop re-selection / pair set | **Closed:** **15,511 / 15,511** overlap on current Edge Selection |
+| **Full edge connection gap** | `canonical_full_v16` re-selection | Count **69,500**; pair overlap **69,499** (swap at hub **38584**) |
 | **Network strand multiset** | full `prove-exact --stage network` on `v16` | **Only** Phase 1 ship remaining (FAIL 48,048 / 48,049) |
 
 ### Do not waste cycles on
@@ -83,7 +83,7 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 
 ### A. Crop final-selection loop (primary — until Network can pass)
 
-1. Work on the single crop pair swap first. Candidate generation covers all crop MATLAB pairs, the crop frontier trace matches MATLAB, and post-watershed finalization/cleanup now matches MATLAB row choices except for one equal-metric degree-pruning tie: Python keeps `[4043, 6281]` while MATLAB keeps `[4212, 6281]`. Do not re-open the shared vertex-origin restore patch; it regressed live crop generation.
+1. Work the **full** one-pair residual at hub **38584** (Python `(26444, 38584)` vs MATLAB `(34897, 38584)`). Crop final pair multiset is closed — keep crop re-selection as a regression guard. Do not re-open the shared vertex-origin restore patch or broad endpoint-descending cleanup reorder.
 2. After each fix, reinstall the local package and check that no parity writer is already active:
    ```powershell
    .\.venv\Scripts\pip.exe install -e .

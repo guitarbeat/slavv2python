@@ -34,9 +34,10 @@ python -m mypy
 |--------------|----------|
 | 🤖 Start AI work | [AGENTS.md](../AGENTS.md) ⭐ → [TODO.md](TODO.md) |
 | 🔬 Check parity status | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) ⭐ |
+| 🧭 Who owns which doc | [docs/README.md authority map](README.md#documentation-authority-map-one-concept--one-home) |
 | 🧪 Run parity tests | [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md) |
 | 📊 Monitor long jobs | [PARITY_JOB_MONITORING.md](reference/workflow/PARITY_JOB_MONITORING.md) |
-| 📖 Understand term | [AGENTS.md § Glossary](../AGENTS.md#domain-glossary) |
+| 📖 Understand term | [AGENTS.md § Glossary](../AGENTS.md#domain-glossary) (Edge Set / Candidate Set / Edge Selection) |
 | 🛠️ Find task | [TODO.md](TODO.md) |
 | 🏗️ Understand arch | [TECHNICAL_ARCHITECTURE.md](reference/core/TECHNICAL_ARCHITECTURE.md) |
 | 📝 Coding style | [PYTHON_NAMING_GUIDE.md](reference/workflow/PYTHON_NAMING_GUIDE.md) |

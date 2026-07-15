@@ -80,7 +80,7 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 
 ## 15. The “Network Bug” Misattribution Trap
 *   **The Loop**: Opening a Network-stage rewrite because strand multisets fail ADR 0012 on full volume.
-*   **The Reality**: Stage isolation with **MATLAB edges** reproduces Network topology exactly. Multiset failure tracks the residual edge-connection gap (~4k on `v6`).
+*   **The Reality**: Stage isolation with **MATLAB edges** reproduces Network topology exactly. Multiset failure tracks the residual **Edge Set** (connection multiset)—historically a large gap on early claim roots; live residual class is only in [EXACT_PROOF_FINDINGS](EXACT_PROOF_FINDINGS.md).
 *   **Guidance**: Network red + Edges ownership green ⇒ **generation residual**, not a Network port. Keep working watershed claim/strel / golden-trace diverge (crop iter ~13,761).
 
 ## 16. The Round-vs-Truncate MATLAB Cast Trap

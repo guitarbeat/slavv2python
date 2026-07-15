@@ -5,15 +5,22 @@
 
 ---
 
-The documentation tree has several explicit owners:
+### Documentation authority map (one concept → one home)
 
-- `reference/` for maintained technical guidance and live parity status
-- `TODO.md` for active task checkboxes
-- `plans/` for active specs
-- `adr/` for architecture decisions
-- `investigations/` for intentionally archival narratives that still help explain the current Python codebase
+| Concern | Canonical home | Not here |
+|---------|----------------|----------|
+| Live parity status, residual claim, proof paths | [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md) | ROADMAP, PI_UPDATE, residual analysis, figure captions |
+| Operator commands / decision point | [.claude/HANDOFF.md](../.claude/HANDOFF.md) | Scattered chat notes |
+| Task checkboxes | [TODO.md](TODO.md) | Findings (status only) |
+| Domain glossary | [AGENTS.md § Domain Glossary](../AGENTS.md#domain-glossary) | Parallel redefinitions (mirror: [GLOSSARY.md](reference/core/GLOSSARY.md)) |
+| Architecture decisions | [adr/](adr/) | TODO / HANDOFF |
+| Specs (requirements + plan) | [plans/](plans/) | Brainstorms after promotion |
+| Experiment *framing* (hypothesis, method) | [PHASE1 residual](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) + [template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Live KPIs |
+| Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
+| Archival deep dives | [investigations/](investigations/) | Executable specs |
 
 Treat `investigations/` as historical context, not as an executable spec.
+Other maintained guidance lives under `reference/` (workflow, core, backends).
 
 ---
 
