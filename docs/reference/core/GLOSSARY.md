@@ -26,8 +26,8 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Tracing Discovery** | Paper Path Edge Discovery via directional centerline propagation from Seed Vertices. Code: `TracingDiscovery` (legacy: `MaintainedTracingDiscovery`). |
 | **Watershed Discovery** | Exact Route Edge Discovery via regional catchment basins (MATLAB global watershed). Code: `WatershedDiscovery` → `generate_watershed_candidates` (legacy: `FrontierTracingDiscovery`). Not skimage `extract_edges_watershed`. |
 | **Candidate** | A single potential edge (trace + endpoints/metrics) from Edge Discovery before acceptance into the Edge Set. Not a finalized edge. |
-| **Candidate Set** | Authoritative collection of Candidates from Edge Discovery; input to Edge Selection that yields the Edge Set. Code: `CandidateManifest` / `candidates.pkl`. Not the Edges Stage Result. |
-| **Edge Selection** | Post-Edge Discovery process: Candidate Set → Edge Set (choose, optional Bridge Vertices, finalize). Bridge may be skipped under policy; still Edge Selection. Code: `select_and_finalize_edge_set`. Not Edge Discovery itself. |
+| **Candidate Set** | Authoritative Candidates from Edge Discovery; input to Edge Selection. Mid-stage Edges Checkpoint (not a Stage Result). Code: `CandidateManifest`. Path dual-write (`candidates.pkl` / `checkpoint_edge_candidates.pkl`) is packaging, not two concepts. |
+| **Edge Selection** | Post-Edge Discovery: Candidate Set → Edge Set (choose, optional Bridge Vertices, finalize). Sole production path: `select_and_finalize_edge_set`. EdgeManager owns stage lifecycle; residual may call the pure function—must not re-implement selection. No “Chosen Edge Set” domain type. |
 | **Strand** | A connected sequence of one or more edges that represents a distinct vascular branch or segment between junction points. |
 | **Neighborhood** | The local spatial region around an Origin where multiple origins may compete for candidates. |
 | **Frontier** | The active set of pixels at the leading edge of a trace expansion or watershed search. |

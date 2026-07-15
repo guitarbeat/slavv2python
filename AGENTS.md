@@ -118,12 +118,12 @@ A single potential edge (trace + connection endpoints and metrics) produced by [
 _Avoid_: Calling a finalized edge in the Edge Set a Candidate.
 
 ### Candidate Set
-The authoritative collection of [Candidates](#candidate) produced by [Edge Discovery](#edge-discovery). Input to [Edge Selection](#edge-selection) that yields the [Edge Set](#edge-set). Code: `CandidateManifest` / `candidates.pkl`.
-_Avoid_: Candidate Manifest (implementation packaging name); treating the Candidate Set as the Edges [Stage Result](#stage-result) or Network input.
+The authoritative collection of [Candidates](#candidate) produced by [Edge Discovery](#edge-discovery). Input to [Edge Selection](#edge-selection) that yields the [Edge Set](#edge-set). Code: `CandidateManifest`. Durable mid-stage [Checkpoint](#checkpoint) of Edges (resume / residual Edge Selection)—not a second [Stage Result](#stage-result). Multiple on-disk names (`candidates.pkl`, `checkpoint_edge_candidates.pkl`) are packaging dual-write for one concept, not two domain objects.
+_Avoid_: Candidate Manifest as domain language; inventing separate “candidate artifact” vs “candidate checkpoint” terms; treating the Candidate Set as the Edges Stage Result or Network input.
 
 ### Edge Selection
-The post-[Edge Discovery](#edge-discovery) process that turns a [Candidate Set](#candidate-set) into an [Edge Set](#edge-set): choose which candidates survive, optionally insert [Bridge Vertices](#bridge-vertex), then finalize. Bridge insertion may be skipped under policy (e.g. residual scripts); the process is still Edge Selection. Code: `select_and_finalize_edge_set`.
-_Avoid_: Calling Edge Discovery “selection”; calling only the choose step Edge Selection when discussing the full Candidate Set → Edge Set contract; treating intermediate chosen payloads as the Edges [Stage Result](#stage-result).
+The post-[Edge Discovery](#edge-discovery) process that turns a [Candidate Set](#candidate-set) into an [Edge Set](#edge-set): choose which candidates survive, optionally insert [Bridge Vertices](#bridge-vertex), then finalize. Bridge insertion may be skipped under policy (e.g. residual scripts); the process is still Edge Selection. Code: `select_and_finalize_edge_set`—the **only** production Candidate Set → Edge Set path. Stage lifecycle (resume, checkpoints, artifacts, policy wiring) stays on `EdgeManager`; residual scripts may call the pure Edge Selection function but must not re-implement choose/bridge/finalize. There is **no** third domain collection between Candidate Set and Edge Set—in-flight “chosen” payloads and files such as `chosen_edges.pkl` are implementation/debug [Artifacts](#artifact), not a Stage Result or glossary type.
+_Avoid_: Calling Edge Discovery “selection”; forking selection in parity scripts or a second helper stack; promoting “Chosen Edge Set” / intermediate chosen payloads as the Edges Stage Result.
 
 ### Tracing Discovery
 An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via directional propagation from individual Seed Vertices (Paper Path). Code: `TracingDiscovery` (legacy alias `MaintainedTracingDiscovery`).
