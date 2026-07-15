@@ -81,9 +81,13 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
         }
         return {"audit": True}
 
-    def fake_choose_edges_for_workflow(*args, **_kwargs):
-        calls["choose_args"] = args
-        return chosen
+    def fake_select_and_finalize(manifest, energy_data, vertices, params, **_kwargs):
+        calls["choose_args"] = (manifest, energy_data, vertices, params)
+        payload = chosen.to_dict() if isinstance(chosen, EdgeSet) else dict(chosen)
+        payload["lumen_radius_microns"] = np.asarray(
+            energy_data.lumen_radius_microns, dtype=np.float64
+        ).copy()
+        return EdgeSet.from_dict(payload)
 
     monkeypatch.setattr(
         "slavv_python.pipeline.edges.discovery.generate_directional_candidates",
@@ -94,12 +98,8 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
         fake_build_edge_candidate_audit,
     )
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.choose_edges_for_workflow",
-        fake_choose_edges_for_workflow,
-    )
-    monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.finalize_edges_matlab_style",
-        lambda chosen, **_kwargs: chosen.to_dict() if hasattr(chosen, "to_dict") else chosen,
+        "slavv_python.pipeline.edges.manager.select_and_finalize_edge_set",
+        fake_select_and_finalize,
     )
 
     result = extract_edges_resumable(energy_data, vertices, params, stage_controller)
@@ -209,19 +209,14 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         "slavv_python.pipeline.edges.discovery.sort_candidates_by_quality",
         fake_finalize,
     )
+    def fake_select_frontier(*_args, **_kwargs):
+        payload = chosen.to_dict()
+        payload["lumen_radius_microns"] = np.array([1.0], dtype=np.float64)
+        return EdgeSet.from_dict(payload)
+
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.choose_edges_for_workflow",
-        lambda *_args, **_kwargs: chosen,
-    )
-    monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.add_vertices_to_edges_matlab_style",
-        lambda selected, *_args, **_kwargs: (
-            selected.to_dict() if hasattr(selected, "to_dict") else selected
-        ),
-    )
-    monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.finalize_edges_matlab_style",
-        lambda chosen, **_kwargs: chosen,
+        "slavv_python.pipeline.edges.manager.select_and_finalize_edge_set",
+        fake_select_frontier,
     )
 
     result = extract_edges_resumable(energy_data, vertices, params, stage_controller)
@@ -297,15 +292,15 @@ def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path,
         return chosen
 
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.choose_edges_for_workflow",
+        "slavv_python.pipeline.edges.selection_workflow.choose_edges_for_workflow",
         fake_choose_edges_for_workflow,
     )
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.add_vertices_to_edges_matlab_style",
+        "slavv_python.pipeline.edges.selection_workflow.add_vertices_to_edges_matlab_style",
         lambda selected, *_args, **_kwargs: selected,
     )
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.manager.finalize_edges_matlab_style",
+        "slavv_python.pipeline.edges.selection_workflow.finalize_edges_matlab_style",
         lambda selected, **_kwargs: selected,
     )
 

@@ -16,15 +16,19 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Pipeline** | The authoritative sequence of computational stages (Energy → Vertices → Edges → Network) required to transform a 3D vascular volume into a vectorized graph representation. |
 | **Vertex** | A localized point of interest in the vascular volume, characterized by a 3D position, an estimated radius, and a local energy value. |
 | **Seed Vertex** | A Vertex identified directly from the energy field as a local minimum. These serve as the initial discovery points for the Pipeline. |
-| **Bridge Vertex** | A structural Vertex inserted during edge selection to resolve overlaps or connectivity gaps. These are topologically necessary but were not originally identified as energy minima. |
-| **Vertex Set** | The authoritative collection of Vertices for a given stage of a Run. A Vertex Set can contain both Seed and Bridge vertices. |
+| **Bridge Vertex** | A structural Vertex inserted during Edge Selection. Owned by the Edge Set (bridge fields on the edge payload), not by rewriting the Vertices-stage Vertex Set. |
+| **Vertex Set** | Vertices-stage Stage Result: pre-bridge seed set for Edge Discovery/Selection. Network may use Vertex Set ∪ Edge Set bridges as a working list; that composite is not a second Vertices Stage Result. |
+| **Edge Set** | The Edges-stage Stage Result: finalized edges after Edge Discovery and Edge Selection. Code: `EdgeSet`. Not a Candidate Set. |
+
 | **Origin** | A starting vertex or seed point from which the extraction pipeline begins searching for edge candidates. (Synonym for Seed Vertex in some contexts) |
-| **Edge** | A finalized trace connecting two vertices. Edges represent the local skeleton of the vascular network. |
-| **Edge Discovery** | Identifying connectivity between Vertices from the energy field. Production strategies: Tracing Discovery (Paper Path) or Watershed Discovery (Exact Route). Not the skimage label-adjacency helper path. |
+| **Edge** | A finalized trace connecting two vertices. Edges represent the local skeleton of the vascular network. Members of an Edge Set. |
+| **Edge Discovery** | Identifying connectivity between Vertices from the energy field. Produces a Candidate Set (not an Edge Set). Production strategies: Tracing Discovery (Paper Path) or Watershed Discovery (Exact Route). Not the skimage label-adjacency helper path. |
 | **Tracing Discovery** | Paper Path Edge Discovery via directional centerline propagation from Seed Vertices. Code: `TracingDiscovery` (legacy: `MaintainedTracingDiscovery`). |
 | **Watershed Discovery** | Exact Route Edge Discovery via regional catchment basins (MATLAB global watershed). Code: `WatershedDiscovery` → `generate_watershed_candidates` (legacy: `FrontierTracingDiscovery`). Not skimage `extract_edges_watershed`. |
+| **Candidate** | A single potential edge (trace + endpoints/metrics) from Edge Discovery before acceptance into the Edge Set. Not a finalized edge. |
+| **Candidate Set** | Authoritative collection of Candidates from Edge Discovery; input to Edge Selection that yields the Edge Set. Code: `CandidateManifest` / `candidates.pkl`. Not the Edges Stage Result. |
+| **Edge Selection** | Post-Edge Discovery process: Candidate Set → Edge Set (choose, optional Bridge Vertices, finalize). Bridge may be skipped under policy; still Edge Selection. Code: `select_and_finalize_edge_set`. Not Edge Discovery itself. |
 | **Strand** | A connected sequence of one or more edges that represents a distinct vascular branch or segment between junction points. |
-| **Candidate** | A potential edge trace identified during the frontier-searching or watershed phase. Candidates are evaluated for ownership and cleanup before becoming final edges. |
 | **Neighborhood** | The local spatial region around an Origin where multiple origins may compete for candidates. |
 | **Frontier** | The active set of pixels at the leading edge of a trace expansion or watershed search. |
 | **Lowest Linear Index Priority** | The secondary tie-breaking rule for Vertex and Edge Discovery. When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized. |

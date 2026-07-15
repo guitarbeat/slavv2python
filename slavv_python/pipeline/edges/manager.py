@@ -13,7 +13,6 @@ from slavv_python.pipeline.edges.audit import (
     _build_edge_candidate_audit,
     _normalize_candidate_origin_counts,
 )
-from slavv_python.pipeline.edges.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.pipeline.edges.candidate_manifest import (
     CandidateManifest,
     candidate_as_payload,
@@ -26,9 +25,8 @@ from slavv_python.pipeline.edges.discovery import (
     resolve_lumen_radius_pixels_axes,
     select_edge_discovery,
 )
-from slavv_python.pipeline.edges.finalize import finalize_edges_matlab_style
 from slavv_python.pipeline.edges.payloads import _empty_edges_result
-from slavv_python.pipeline.edges.selection import choose_edges_for_workflow
+from slavv_python.pipeline.edges.selection_workflow import select_and_finalize_edge_set
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.painting import paint_vertex_center_image
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
@@ -157,8 +155,6 @@ class EdgeManager:
         policy = PipelinePolicy.from_params(params)
         energy = energy_data.energy
         vertex_positions = vertices.positions
-        vertex_scales = vertices.scales
-        lumen_radius_microns = energy_data.lumen_radius_microns
         microns_per_voxel = np.array(
             params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
             dtype=policy.precision,
@@ -261,9 +257,7 @@ class EdgeManager:
                     ).write_candidate_checkpoint(
                         run_context.checkpoints_dir,
                         candidates_payload,
-                        include_debug_maps=bool(
-                            params.get("parity_include_debug_maps", False)
-                        ),
+                        include_debug_maps=bool(params.get("parity_include_debug_maps", False)),
                     )
             handle.update(
                 units_total=3,
@@ -278,65 +272,19 @@ class EdgeManager:
                 units_total=3,
                 units_completed=1,
                 substage="choose_edges",
-                detail="Choosing edges",
+                detail="Choosing, bridging, and finalizing edges",
                 resumed=False,
             )
 
-        chosen = choose_edges_for_workflow(
+        # Post-Edge Discovery: single deep module shared with residual scripts
+        edge_set = select_and_finalize_edge_set(
             manifest,
-            vertex_positions,
-            vertex_scales,
-            lumen_radius_microns,
-            lumen_radius_pixels_axes,
-            energy.shape,
+            energy_data,
+            vertices,
             params,
-            energy_map=energy_data.energy,
-            scale_indices=energy_data.scale_indices,
+            apply_bridge_vertices=use_watershed,
         )
-        chosen_payload = (
-            chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
-        )
-
-        if use_watershed:
-            if resumable:
-                handle.update(
-                    units_total=3,
-                    units_completed=2,
-                    substage="bridge_vertices",
-                    detail="Adding MATLAB-style bridge vertices",
-                    resumed=False,
-                )
-            chosen_payload = add_vertices_to_edges_matlab_style(
-                chosen_payload,
-                vertices.to_dict(),
-                energy=energy,
-                scale_indices=energy_data.scale_indices,
-                microns_per_voxel=microns_per_voxel,
-                lumen_radius_microns=lumen_radius_microns,
-                lumen_radius_pixels_axes=lumen_radius_pixels_axes,
-                size_of_image=energy.shape,
-                params=params,
-            )
-
-        if resumable:
-            handle.update(
-                units_total=3,
-                units_completed=2,
-                substage="finalize_edges",
-                detail="Finalizing edges",
-                resumed=False,
-            )
-
-        chosen_payload = finalize_edges_matlab_style(
-            chosen_payload,
-            lumen_radius_microns=lumen_radius_microns,
-            microns_per_voxel=microns_per_voxel,
-            size_of_image=energy.shape,
-        )
-        chosen_dict = cast("dict[str, Any]", chosen_payload)
-        chosen_dict["lumen_radius_microns"] = np.asarray(
-            lumen_radius_microns, dtype=np.float64
-        ).copy()
+        chosen_dict = edge_set.to_dict()
 
         if resumable:
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json

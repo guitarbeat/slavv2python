@@ -2,7 +2,8 @@
 
 ## Public lifecycle (preferred)
 
-* ``EdgeManager`` — stage facade (discovery → selection → bridge → finalize)
+* ``EdgeManager`` — stage facade (discovery → selection workflow → Edge Set)
+* ``select_and_finalize_edge_set`` — deep post-discovery path (choose → bridge → finalize)
 * ``select_edge_discovery`` / ``TracingDiscovery`` / ``WatershedDiscovery`` —
   Edge Discovery strategy seam (domain names from AGENTS glossary)
 
@@ -42,6 +43,7 @@ from .edges import (
     extract_edges_watershed_resumable,
 )
 from .manager import EdgeManager
+from .selection_workflow import select_and_finalize_edge_set
 
 __all__ = [
     "CandidateManifest",
@@ -57,5 +59,6 @@ __all__ = [
     "extract_edges_resumable",
     "extract_edges_watershed",
     "extract_edges_watershed_resumable",
+    "select_and_finalize_edge_set",
     "select_edge_discovery",
 ]

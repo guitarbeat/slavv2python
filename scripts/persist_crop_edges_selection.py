@@ -1,13 +1,14 @@
-"""Complete the crop edge selection in-process (no watershed re-run) and persist
-the chosen edges, mirroring slavv_python/pipeline/edges/manager.py:_run_tracing
-selection/bridge/finalize path. Used to validate the crop-truncation fix on the
-existing fresh candidates.pkl without re-running the slow watershed.
+"""Complete crop edge selection without re-running Watershed Discovery.
+
+Uses ``select_and_finalize_edge_set`` (same post-discovery path as EdgeManager)
+on an existing ``candidates.pkl``.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import joblib
@@ -20,15 +21,7 @@ from slavv_python.analytics.parity.proof.coordinator import (
     load_exact_vertex_set,
 )
 from slavv_python.engine.state import load_json_dict
-from slavv_python.pipeline.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.pipeline.edges.discovery import (
-    PipelinePolicy,
-    _use_matlab_frontier_tracer,
-    candidate_as_payload,
-    resolve_lumen_radius_pixels_axes,
-)
-from slavv_python.pipeline.edges.finalize import finalize_edges_matlab_style
-from slavv_python.pipeline.edges.selection import choose_edges_for_workflow
+from slavv_python.pipeline.edges.selection_workflow import select_and_finalize_edge_set
 from slavv_python.utils.safe_unpickle import safe_load
 
 
@@ -57,47 +50,11 @@ def main(argv: list[str] | None = None) -> int:
     vertices = load_exact_vertex_set(source, energy)
     params = load_json_dict(source.validated_params_path) or {}
 
-    microns_per_voxel = np.asarray(
-        params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float64
-    )
-    policy = PipelinePolicy.from_params(params)
-    lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(energy, microns_per_voxel, policy)
-
     candidates = safe_load(args.run_dir / "04_Edges" / "candidates.pkl")
     matlab_pairs = _load_oracle_pairs(args.oracle_root)
 
-    chosen = choose_edges_for_workflow(
-        candidate_as_payload(candidates),
-        vertices.positions,
-        vertices.scales,
-        energy.lumen_radius_microns,
-        lumen_radius_pixels_axes,
-        energy.energy.shape,
-        params,
-        energy_map=energy.energy,
-        scale_indices=energy.scale_indices,
-    )
-
-    use_frontier = _use_matlab_frontier_tracer(energy.to_dict(), params)
-    if use_frontier:
-        chosen = add_vertices_to_edges_matlab_style(
-            chosen,
-            vertices.to_dict(),
-            energy=energy,
-            scale_indices=energy.scale_indices,
-            microns_per_voxel=microns_per_voxel,
-            lumen_radius_microns=energy.lumen_radius_microns,
-            lumen_radius_pixels_axes=lumen_radius_pixels_axes,
-            size_of_image=energy.energy.shape,
-            params=params,
-        )
-
-    chosen = finalize_edges_matlab_style(
-        chosen,
-        lumen_radius_microns=energy.lumen_radius_microns,
-        microns_per_voxel=microns_per_voxel,
-        size_of_image=energy.energy.shape,
-    )
+    edge_set = select_and_finalize_edge_set(candidates, energy, vertices, params)
+    chosen = edge_set.to_dict()
 
     connections = np.asarray(chosen.get("connections", np.zeros((0, 2))), dtype=np.int32)
     chosen_pair_count = len(_pair_set(connections))
@@ -117,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         "checkpoint": str(
             args.run_dir / "02_Output" / "python_results" / "checkpoints" / "checkpoint_edges.pkl"
         ),
-        "completed_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "completed_at": datetime.now(UTC).isoformat(),
         "stage": "edges",
     }
     (args.run_dir / "04_Edges" / "stage_manifest.json").write_text(

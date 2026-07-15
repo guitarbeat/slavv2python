@@ -99,14 +99,31 @@ A localized point of interest in the vascular volume, characterized by a 3D posi
 A [Vertex](#vertex) identified directly from the energy field as a local minimum. These serve as the initial discovery points for the [Pipeline](#pipeline).
 
 ### Bridge Vertex
-A structural [Vertex](#vertex) inserted during edge selection to resolve overlaps or connectivity gaps. These are topologically necessary but were not originally identified as energy minima.
+A structural [Vertex](#vertex) inserted during [Edge Selection](#edge-selection) to resolve overlaps or connectivity gaps. These are topologically necessary but were not originally identified as energy minima. **Owned by the [Edge Set](#edge-set)** (e.g. bridge position/scale/energy fields on the edge payload), not by rewriting the Vertices-stage [Vertex Set](#vertex-set).
 
 ### Vertex Set
-The authoritative collection of [Vertices](#vertex) for a given stage of a [Run](#run). A Vertex Set can contain both Seed and Bridge vertices.
+The authoritative collection of [Vertices](#vertex) for the Vertices stage of a [Run](#run)—the pre-bridge seed set used as input to [Edge Discovery](#edge-discovery) and [Edge Selection](#edge-selection). Network (and similar consumers) may form a working list as Vertex Set ∪ [Bridge Vertices](#bridge-vertex) from the [Edge Set](#edge-set); that composite is not a separate Vertices [Stage Result](#stage-result).
+_Avoid_: Assuming the Vertices checkpoint already includes Bridge Vertices; treating seed+bridge as a second Vertices Stage Result.
+
+### Edge Set
+The Edges-stage [Stage Result](#stage-result): the finalized, authoritative collection of edges (traces, connections, energies) after [Edge Discovery](#edge-discovery) and [Edge Selection](#edge-selection). Code: `EdgeSet`.
+_Avoid_: Calling a [Candidate Set](#candidate-set) (`candidates.pkl`, `CandidateManifest`) an Edge Set; that is pre-finalization input, not the Edges Stage Result.
 
 ### Edge Discovery
-The process of identifying potential connectivity between [Vertices](#vertex) by analyzing the energy field. Production selection is **Tracing Discovery** (Paper Path) or **Watershed Discovery** (Exact Route).
+The process of identifying potential connectivity between [Vertices](#vertex) by analyzing the energy field. Production selection is **Tracing Discovery** (Paper Path) or **Watershed Discovery** (Exact Route). Output is a [Candidate Set](#candidate-set), not an [Edge Set](#edge-set).
 _Avoid_: Treating the skimage label-adjacency helper path as Edge Discovery for [Certification](#certification).
+
+### Candidate
+A single potential edge (trace + connection endpoints and metrics) produced by [Edge Discovery](#edge-discovery) before it is accepted into the [Edge Set](#edge-set).
+_Avoid_: Calling a finalized edge in the Edge Set a Candidate.
+
+### Candidate Set
+The authoritative collection of [Candidates](#candidate) produced by [Edge Discovery](#edge-discovery). Input to [Edge Selection](#edge-selection) that yields the [Edge Set](#edge-set). Code: `CandidateManifest` / `candidates.pkl`.
+_Avoid_: Candidate Manifest (implementation packaging name); treating the Candidate Set as the Edges [Stage Result](#stage-result) or Network input.
+
+### Edge Selection
+The post-[Edge Discovery](#edge-discovery) process that turns a [Candidate Set](#candidate-set) into an [Edge Set](#edge-set): choose which candidates survive, optionally insert [Bridge Vertices](#bridge-vertex), then finalize. Bridge insertion may be skipped under policy (e.g. residual scripts); the process is still Edge Selection. Code: `select_and_finalize_edge_set`.
+_Avoid_: Calling Edge Discovery “selection”; calling only the choose step Edge Selection when discussing the full Candidate Set → Edge Set contract; treating intermediate chosen payloads as the Edges [Stage Result](#stage-result).
 
 ### Tracing Discovery
 An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via directional propagation from individual Seed Vertices (Paper Path). Code: `TracingDiscovery` (legacy alias `MaintainedTracingDiscovery`).
