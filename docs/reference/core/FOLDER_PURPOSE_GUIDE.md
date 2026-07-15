@@ -73,7 +73,9 @@ the PhD proposal appendix and related methods write-ups.
 - `parity_funnel.{pdf,png}` — crop edge-pair recovery funnel
 - `parity_agreement.{pdf,png}` — canonical per-stage agreement
 - `parity_cert_table.{pdf,png}` — ADR 0011/0012 gate status table
-- `generate_matlab_python_parity_journey.py` — regenerator (four standalone figures)
+- `generate_parity_claim_figures.py` — regenerator (four standalone claim figures)
+- `parity_campaign_series.py` — campaign constants / series data (edit when findings move)
+- `generate_matlab_python_parity_journey.py` — legacy entry point (calls the claim regenerator)
 - [README.md](../../../figures/README.md) — captions, evidence sources, regenerate command
 
 **Not here:** runtime plotting (`slavv_python/visualization/`) or energy ULP/speedup

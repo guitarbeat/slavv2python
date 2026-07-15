@@ -19,11 +19,12 @@ For current behavior and proof status, prefer:
 
 ### Added / Changed
 
-- **Proposal methods figures (exact-parity journey):** four standalone figures
+- **Proposal methods figures (exact-parity claims):** four standalone figures
   under [`figures/`](../figures/) — `parity_trajectory`, `parity_funnel`,
   `parity_agreement`, `parity_cert_table` (PDF + PNG each; no multipanel).
+  Data: [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py).
   Generator:
-  [`figures/generate_matlab_python_parity_journey.py`](../figures/generate_matlab_python_parity_journey.py).
+  [`figures/generate_parity_claim_figures.py`](../figures/generate_parity_claim_figures.py).
   Index: [`figures/README.md`](../figures/README.md).
 - **Architecture deepening (candidates 1–6):** glossary-aligned discovery names
   (`TracingDiscovery` / `WatershedDiscovery`); deep `CandidateManifest`;

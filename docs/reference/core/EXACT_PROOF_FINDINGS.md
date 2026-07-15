@@ -55,8 +55,8 @@
 Phase 1 exit criterion ([ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)): **evaluated** ADR 0012 on full `180709_E` for **both** Edges and Network. As of `canonical_full_v10`, Edges ✅ PASS (ownership 99.9867%); Network ❌ FAIL (downstream of residual edge-set mismatch). Strict-field connection equality is stretch signal only once Network multisets pass. Operator brief: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md).
 
 **Proposal figure:** quantitative summary of these metrics (crop overlap trajectory, edge-pair recovery waterfall, full-volume counts / certification table) —
-[figures/README.md](../../../figures/README.md) (standalone: `parity_trajectory`, `parity_funnel`, `parity_agreement`, `parity_cert_table`)
-([figures/README.md](../../../figures/README.md)). Regenerate the script when the numbers below move.
+[figures/README.md](../../../figures/README.md) (standalone: `parity_trajectory`, `parity_funnel`, `parity_agreement`, `parity_cert_table`).
+Update constants in [`figures/parity_campaign_series.py`](../../../figures/parity_campaign_series.py) when the numbers below move, then run `generate_parity_claim_figures.py`.
 
 | Stage | Harness / prior work | Phase 1 certification bar |
 | :--- | :--- | :--- |

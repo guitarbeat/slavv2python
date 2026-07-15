@@ -21,14 +21,19 @@ flat “all green” dashboards.
 | [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a 1-pair swap | Missing vs extra side-by-side; after generation closed, extras displaced MATLAB pairs in faithful cleanup |
 | [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under- then over-selected, then matched | Signed residual across `v4→v16`; Network tracks Edges (no independent Network bug); ownership PASS while still −4k edges |
 | [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels residual is one edge-pair swap | Absolute mismatch budget; only the multiset Δ=1 rows are highlighted |
-| [`generate_matlab_python_parity_journey.py`](generate_matlab_python_parity_journey.py) | Generator | Writes all four |
+
+| Script | Role |
+|--------|------|
+| [`parity_campaign_series.py`](parity_campaign_series.py) | **Edit this when findings KPIs move** — all counts, labels, callouts, cert tones |
+| [`generate_parity_claim_figures.py`](generate_parity_claim_figures.py) | View layer — paints series data to PDF/PNG |
+| [`generate_matlab_python_parity_journey.py`](generate_matlab_python_parity_journey.py) | Legacy entry point (delegates to claim regenerator) |
 
 Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 **Regenerate:**
 
 ```powershell
-.\.venv\Scripts\python.exe figures\generate_matlab_python_parity_journey.py
+.\.venv\Scripts\python.exe figures\generate_parity_claim_figures.py
 ```
 
 ### Suggested captions
@@ -69,7 +74,8 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md),
 [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
 
-When numbers in findings move, update constants in the generator and re-run.
+When numbers in findings move, update constants in
+[`parity_campaign_series.py`](parity_campaign_series.py) and re-run the generator.
 
 ## PhD proposal manuscript (live include)
 
