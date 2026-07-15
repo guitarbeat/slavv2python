@@ -9,7 +9,7 @@
 | **`slavv_python/`** | Production package code | End users + developers | ✅ Yes |
 | **`tests/`** | Automated test suite | Developers + CI | ✅ Yes |
 | **`docs/`** | Maintained reference, ADRs, research notes | Developers + agents | ✅ Yes |
-| **`figures/`** | Proposal / methods multipanel figures + generators | Proposal / paper drafts | ✅ Yes |
+| **`figures/`** | Proposal / methods standalone figures + generators | Proposal / paper drafts | ✅ Yes |
 | **`workspace/`** | Experiment artifacts | Developer locally | ❌ No (.gitignore) |
 
 ---
@@ -65,18 +65,16 @@ python -m pytest -m "unit or integration"
 
 ## figures/ — Proposal / methods figures
 
-**Purpose:** Checked-in publication multipanels (PDF/PNG) and their generators for
-the PhD proposal appendix and related methods write-ups.
+**Purpose:** Checked-in publication **standalone** claim figures (PDF/PNG) and
+their generators for the PhD proposal appendix and related methods write-ups.
 
-**Contains (current):**
-- `parity_trajectory.{pdf,png}` — crop candidate-pair overlap trajectory
-- `parity_funnel.{pdf,png}` — crop edge-pair recovery funnel
-- `parity_agreement.{pdf,png}` — canonical per-stage agreement
-- `parity_cert_table.{pdf,png}` — ADR 0011/0012 gate status table
-- `generate_parity_claim_figures.py` — regenerator (four standalone claim figures)
-- `parity_campaign_series.py` — campaign constants / series data (edit when findings move)
-- `generate_matlab_python_parity_journey.py` — legacy entry point (calls the claim regenerator)
-- [README.md](../../../figures/README.md) — captions, evidence sources, regenerate command
+**Canonical inventory, captions, and regenerate commands:**
+[figures/README.md](../../../figures/README.md).
+
+**Contains (summary):** four claim charts (`parity_trajectory`, `parity_funnel`,
+`parity_agreement`, `parity_cert_table`); data in `parity_campaign_series.py`;
+regenerator `generate_parity_claim_figures.py` (legacy wrapper
+`generate_matlab_python_parity_journey.py`).
 
 **Not here:** runtime plotting (`slavv_python/visualization/`) or energy ULP/speedup
 drafts from live run artifacts ([docs/research/figures/](../../research/figures/)).
@@ -92,7 +90,7 @@ drafts from live run artifacts ([docs/research/figures/](../../research/figures/
 > - One-off diagnostics → `workspace/scratch/`
 >
 > Some checked-in generators remain under `scripts/` (e.g. `make_report_figures.py`)
-> and under `figures/` for proposal multipanels.
+> and under `figures/` for proposal claim figures.
 
 ---
 

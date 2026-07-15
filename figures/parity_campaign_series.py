@@ -199,7 +199,7 @@ AGREEMENT_CLAIM = "Full-volume Edges under-selected, then over-selected, then ma
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
     f"(MATLAB edges = {CANONICAL_MATLAB_EDGES:,}; strands = {CANONICAL_MATLAB_STRANDS:,}). "
-    "v15/v16 edge residual 0; Network still \u22121 strand under ADR 0012 multiset bar (PASS)."
+    "v15/v16 edge residual 0; Network still \u22121 strand — ADR 0012 multiset FAIL (open ship gate)."
 )
 
 CANONICAL_AUDITS: list[CanonicalAudit] = [
@@ -263,7 +263,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v16",
         edge_delta=0,
         network_delta=-1,
-        note="ADR 0012\nbars PASS",
+        note="Edges PASS;\nNet FAIL",
         end_label_style=True,
     ),
 ]
@@ -286,12 +286,12 @@ class CertRow:
     tone: CertTone
 
 
-CERT_CLAIM = "On 180M voxels the residual is one edge-pair selection swap"
+CERT_CLAIM = "On 180M voxels Network still fails ADR 0012 by one strand"
 CERT_TAKEAWAY = (
-    "Takeaway: Energy/Vertices are closed. Edges ownership far exceeds the \u226560% ADR 0012 bar.\n"
-    "The only open multiset residual is one degree-pruning pair swap on a shared hub vertex\n"
-    f"(crop: MATLAB {list(CROP_SWAP_MATLAB_PAIR)} vs Python {list(CROP_SWAP_PYTHON_PAIR)}) "
-    "\u2014 Network\u2019s \u22121 strand is the same event."
+    "Takeaway: Energy/Vertices closed; Edges ownership/count evaluated PASS on canonical_full_v16.\n"
+    "Open ship gate: Network strand multiset FAIL (48,048 / 48,049) — one degree-pruning pair swap\n"
+    f"(crop: MATLAB {list(CROP_SWAP_MATLAB_PAIR)} vs Python {list(CROP_SWAP_PYTHON_PAIR)}). "
+    "Not an independent Network bug."
 )
 
 CERT_ROWS: list[CertRow] = [
@@ -340,7 +340,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="strand multiset \u0394",
         residual_display="1",
         denom=f"{CANONICAL_MATLAB_STRANDS:,}",
-        reading="downstream of that swap",
+        reading="ADR 0012 FAIL (open gate)",
         tone="residual",
     ),
 ]

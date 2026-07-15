@@ -59,8 +59,8 @@
 - [x] **Quantify degree/cycle displacement** — funnel aggregate output shows degree loss **103** MATLAB pairs (**99** with incident surviving extras, **97** with better-metric extras) and cycle loss **32** pairs (**32** with earlier/better incident extras).
 - [x] **Reject broad boundary suppression** — final extras skew boundary-adjacent, but a geometry-only boundary candidate filter worsens overlap (threshold 1 → **14,984** overlap / **527** missing); even oracle zero-degree-boundary suppression only reaches **15,377** overlap / **134** missing.
 - [ ] **Final edge-set one-pair residual** — resolve the remaining crop equal-count swap: Python keeps `[4043, 6281]`, MATLAB keeps `[4212, 6281]`; both share vertex `6281` and tie on resampled metric. Cleanup, chunk eligibility, broad boundary filtering, and the retired frontier split are now regression guards.
-- [ ] **Canonical Network ADR 0012** — **FAIL** on `v15` by one strand (Python 48,048 vs MATLAB 48,049). Full Edges are evaluated green and exact-count; residual is one edge-pair swap / one strand split. **This is the only open Phase 1 ship gate.**
-- [ ] **Phase 1 closure** — Energy ✅ Vertices ✅ Edges ✅ Network ⬜ on a fresh evaluated full-volume run; evidence in findings + [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+- [ ] **Canonical Network ADR 0012** — **FAIL** on `v16` (and `v15`) by one strand (Python 48,048 vs MATLAB 48,049; `exact_proof_network.json` `passed: false`). Full Edges are evaluated green and exact-count on `v16`. Residual is one edge-pair swap / one strand split. **This is the only open Phase 1 ship gate.**
+- [ ] **Phase 1 closure** — Energy ✅ Vertices ✅ Edges ✅ Network ⬜ on evaluated full-volume proofs; evidence in findings + [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
 
 ### 🛠️ Hardening & Infrastructure (done — keep as archive checkboxes)
 

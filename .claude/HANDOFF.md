@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-07-14 (MATLAB post-watershed finalization parity; one crop pair swap remains)
+**Last synthesized:** 2026-07-15 (consolidate-concepts: v16 proofs on disk; Network still FAIL; Phase 1 OPEN)
 
 This is the single successor brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -27,14 +27,14 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 |-------|-------------------|--------|
 | **Energy** | `canonical_full_v4` / `180709_E_full_v2` | ✅ CERTIFIED (ADR 0011) |
 | **Vertices** | same | ✅ CERTIFIED (ADR 0011) |
-| **Edges** | `canonical_full_v15` audit | ✅ ADR 0012 PASS evaluated (`v15`: 69,500 / 69,500; trace failures 0) |
-| **Network** | `canonical_full_v15` audit | ❌ ADR 0012 FAIL (`v15`: 48,048 / 48,049 strands; short by 1) |
+| **Edges** | `canonical_full_v16` audit | ✅ ADR 0012 PASS evaluated (`exact_proof_edges.json`: 69,500 / 69,500; ownership 99.999863%; trace failures 0) |
+| **Network** | `canonical_full_v16` audit | ❌ ADR 0012 FAIL (`exact_proof_network.json`: 48,048 / 48,049 strands) |
 
-**Phase 1 is OPEN** solely because Network fails ADR 0012. Edges stage certification is done on `v6`. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
+**Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality. Do not treat ~99.998% strand-count agreement as a pass. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
 
 **Latest residual fix:** MATLAB standalone instrumentation proved Python raw candidates match MATLAB raw watershed candidates exactly (**19,225 / 19,225**). The active divergence was post-watershed finalization: MATLAB runs `resample_vectors`, re-samples energy/size from maps, smooths, then crops with unsigned integer casts before cleanup. Python now mirrors that path and carries resampled traces/energies/metrics into cleanup. Refreshed crop candidate generation remains **15,511/15,511** with **19,225** raw candidates; refreshed crop final selected edges are **15,511** vs MATLAB **15,511**, with **15,510** MATLAB pairs retained (missing **1**, extra **1**).
 
-**Latest full result:** `canonical_full_v15` completed Edges→Network from `v10` Energy/Vertices with current post-watershed finalization code. Edges ADR 0012 passed evaluated with exact strict count (**69,500 / 69,500**), ownership agreement **99.999863%**, and **0** trace failures. Network ADR 0012 still fails by one strand (**48,048 / 48,049**). The full edge-pair delta is one swap: MATLAB has `(34897, 38584)`, Python has `(26444, 38584)`. Network endpoint delta: MATLAB has `(34897, 55337)` and `(26444, 41666)`, Python has `(41666, 55337)`.
+**Latest full result:** `canonical_full_v16` completed Edges→Network. Edges ADR 0012 passed evaluated with exact strict count (**69,500 / 69,500**), ownership agreement **99.999863%**, and **0** trace failures. Network ADR 0012 still fails by one strand (**48,048 / 48,049**) — same residual class as `v15`. Prefer `v16` as the current claim surface; keep `v15` as audit.
 
 **Latest cleanup comparator result:** `scripts/compare_clean_edge_pairs_matlab.py` now exports the resampled post-crop candidate list and calls MATLAB `clean_edge_pairs`, `clean_edges_vertex_degree_excess`, and `clean_edges_cycles`. Python matches MATLAB row indices exactly at all three cleanup stages on that surface. The sole remaining crop swap occurs in degree pruning: Python keeps `[4043, 6281]` while MATLAB keeps `[4212, 6281]`; both have the same resampled metric (`-15.137922715664892`) and share vertex `6281`. A broad endpoint-descending tie-break trial was rejected because it regressed crop to **7 missing / 9 extra**.
 
@@ -71,8 +71,8 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 |-----|---------|------|
 | **Golden-trace first-diverge iteration** | crop, `scripts/watershed_frontier_diff.py` | Latest: **match** through the crop trace; iter 22,421 and 25,495 splits are fixed |
 | **Crop final connection gap** | crop prove-exact / funnel probe | Latest: Python **15,511** vs MATLAB **15,511**; overlap **15,510** (missing **1**, extra **1**) |
-| **Full edge connection gap** | `canonical_full_v15` audit | Latest residual is exact count but one pair swap: **69,500** vs **69,500** |
-| **Network strand multiset** | full `prove-exact --stage network` | **Only** Phase 1 ship remaining |
+| **Full edge connection gap** | `canonical_full_v16` audit | Exact count **69,500** vs **69,500** with one multiset swap residual |
+| **Network strand multiset** | full `prove-exact --stage network` on `v16` | **Only** Phase 1 ship remaining (FAIL 48,048 / 48,049) |
 
 ### Do not waste cycles on
 

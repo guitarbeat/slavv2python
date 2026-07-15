@@ -4,13 +4,10 @@ Draft figures for the SLAVV port/optimization paper, generated **from real run
 artifacts** (no synthetic data) by
 [`scripts/make_report_figures.py`](../../../scripts/make_report_figures.py).
 
-**Related (proposal appendix, methods multipanel):** the quantitative
-MATLAB→Python exact-parity journey figure lives at repo-root
-[`figures/`](../../../figures/) (PDF + PNG + generator). See
-[figures/README.md](../../../figures/README.md). That figure summarizes crop
-overlap trajectory, edge-pair recovery waterfall, and full-volume counts /
-certification bars; it is maintained separately from the energy ULP/speedup
-set below.
+**Related (proposal appendix):** four standalone MATLAB→Python exact-parity
+claim figures live at repo-root [`figures/`](../../../figures/). See
+[figures/README.md](../../../figures/README.md). Maintained separately from the
+energy ULP/speedup set below.
 
 Regenerate energy/speedup drafts:
 

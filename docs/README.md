@@ -58,7 +58,7 @@ Treat `investigations/` as historical context, not as an executable spec.
 9. [Research syntheses](research/README.md)
 10. [Investigation index](investigations/README.md)
 11. [Test placement guide](../tests/README.md)
-12. [Proposal / methods figures](../figures/README.md) — exact-parity journey multipanel
+12. [Proposal / methods figures](../figures/README.md) — exact-parity standalone claim figures
 
 ---
 

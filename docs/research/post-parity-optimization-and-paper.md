@@ -18,10 +18,8 @@ source fetch → 3-vote adversarial verification → synthesis).
 > certification-policy argument) and the bit-exact ~4.1× speedup. Regenerate via
 > `scripts/make_report_figures.py`.
 >
-> **Proposal / methods multipanel** (crop overlap trajectory, edge-pair recovery
-> waterfall, full-volume MATLAB vs Python counts + certification table):
-> [figures/README.md](../../figures/README.md)
-> — see [figures/README.md](../../figures/README.md).
+> **Proposal / methods claim figures** (standalone trajectory / residual collapse /
+> signed residual / mismatch budget): [figures/README.md](../../figures/README.md).
 
 ---
 

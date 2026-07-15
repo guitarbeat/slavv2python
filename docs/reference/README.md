@@ -60,8 +60,8 @@ for current Python behavior or exact MATLAB parity claims.
 ## Proposal / methods figures
 
 - [figures/](../../figures/README.md) — quantitative MATLAB→Python exact-parity
-  journey multipanel (proposal appendix). Energy ULP/speedup drafts remain under
-  [research/figures/](../research/figures/).
+  standalone claim figures (proposal appendix). Energy ULP/speedup drafts remain
+  under [research/figures/](../research/figures/).
 
 ## Live Status And Historical Context
 

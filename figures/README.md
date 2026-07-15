@@ -20,7 +20,7 @@ flat “all green” dashboards.
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
 | [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a 1-pair swap | Missing vs extra side-by-side; after generation closed, extras displaced MATLAB pairs in faithful cleanup |
 | [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under- then over-selected, then matched | Signed residual across `v4→v16`; Network tracks Edges (no independent Network bug); ownership PASS while still −4k edges |
-| [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels residual is one edge-pair swap | Absolute mismatch budget; only the multiset Δ=1 rows are highlighted |
+| [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels Network still fails ADR 0012 by one strand | Absolute mismatch budget; Network multiset FAIL is the open ship gate |
 
 | Script | Role |
 |--------|------|
@@ -58,16 +58,16 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 > Edges under-selected through `v7`, over-selected at `v10` after the axis /
 > finalization fix, then matched at `v15`/`v16`. Network strand residual
 > tracks the edge-set residual throughout — evidence against an independent
-> Network-stage defect. Ownership-map ADR 0012 could PASS while strict
-> connection residual remained thousands of edges.
+> Network-stage defect. At `v16`, Edges PASS while Network still fails multiset
+> equality by one strand (open ship gate).
 
 **Mismatch budget**
 
-> Absolute residual on the certified full-volume surface. Energy and vertices
-> are closed. Edges ownership disagrees on ~8 of 5.84M claimed voxels. The
-> only multiset residual is one equal-metric degree-pruning swap (crop:
-> MATLAB `[4212, 6281]` vs Python `[4043, 6281]`); Network’s −1 strand is
-> the same event.
+> Absolute residual on the full-volume surface (`canonical_full_v16` proofs).
+> Energy and vertices are closed; Edges ownership/count pass ADR 0012. The open
+> ship gate is Network strand multiset FAIL (48,048 / 48,049), downstream of
+> one equal-metric degree-pruning swap (crop: MATLAB `[4212, 6281]` vs Python
+> `[4043, 6281]`). Approximate strand % is not the ADR 0012 bar.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),
