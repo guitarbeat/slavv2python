@@ -20,8 +20,5 @@ concrete actions from it into [plans/](../plans/) or [TODO.md](../TODO.md).
 - [Review: the original SLAVV methodology paper](slavv-original-paper-review.md)
   — Mihelic et al. 2021 (PLOS Comp Biol): the method of record, with transcribed
   equations, validation framework, and what the port adds.
-- [Report figures](figures/) — data-backed energy ULP / speedup drafts from run
-  artifacts (`scripts/make_report_figures.py`).
-- [Proposal / methods claim figures](../../figures/README.md) — four standalone
-  exact-parity charts (trajectory, residual collapse, signed residual, mismatch
-  budget). Prefer PDF for Word/LaTeX.
+- [Publication figures](../../figures/README.md) — claim charts + [research drafts](../../figures/research/)
+  (ULP / speedup; regenerate via `scripts/make_report_figures.py`).

@@ -10,7 +10,7 @@ Usage::
     python scripts/make_report_figures.py \
         --ulp-json workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis/exact_proof_energy_ulp.json \
         --run-log <baguette-log> \
-        --out-dir docs/research/figures
+        --out-dir figures/research
 """
 
 from __future__ import annotations
@@ -184,7 +184,7 @@ def main() -> None:
         default=44.4,
         help="Measured serial baseline (default from the n_jobs=1 run)",
     )
-    parser.add_argument("--out-dir", type=Path, default=Path("docs/research/figures"))
+    parser.add_argument("--out-dir", type=Path, default=Path("figures/research"))
     args = parser.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)

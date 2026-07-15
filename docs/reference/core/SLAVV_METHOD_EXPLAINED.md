@@ -1,9 +1,11 @@
 # How the SLAVV Method Works
 
+[Up: Reference Docs](../README.md) · [Research paper review](../../research/slavv-original-paper-review.md)
+
 Original method from Mihelic et al. (2021): how a 3D two-photon volume becomes a network of vessel centerlines.
 
 **Paper:** Mihelic SA, Sikora WA, Hassan AM, Williamson MR, Jones TA, Dunn AK. *Segmentation-Less, Automated, Vascular Vectorization.* PLOS Computational Biology 17(10): e1009451 (2021).  
-**DOI:** [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451) · **PDF:** [docs/reference/papers/journal.pcbi.1009451.pdf](docs/reference/papers/journal.pcbi.1009451.pdf)
+**DOI:** [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451) · **PDF:** [journal.pcbi.1009451.pdf](../papers/journal.pcbi.1009451.pdf)
 
 ---
 

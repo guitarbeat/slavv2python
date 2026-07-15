@@ -48,8 +48,8 @@ the logic is identical.
 | **Energy** (crop) | ✅ **Certified** | Scale indices exact (0 mismatches); energy within 2e-11; passes the ADR 0011 gate. |
 | **Energy** (full canonical) | ✅ **Certified** | Last discrepancy (octave-3/4 scale mismatches) traced to the upsample interpolation mesh and fixed (see below). Full-volume proof passes: **0 scale mismatches across all 16,777,216 voxels**; energy within tolerance (max \|Δ\| ≈ 2.4e-11, ADR 0011). |
 | **Vertices** | ✅ **Certified** | Positions and discovery scales exact; energies sourced from the MATLAB record. |
-| **Edges** | ✅ **Certified (ADR 0012)** | The watershed is a greedy shared-state flood-fill whose exact voxel claims are order-sensitive; certified on **voxel-ownership agreement + per-edge trace tolerance**, after fixing a grid-orientation bug. The per-step math matches MATLAB exactly. |
-| **Network** | ✅ **Topology exact; geometry sub-voxel (ADR 0012)** | Strand and bifurcation topology reproduce MATLAB **100%** (10,722 strands, 5,601 bifurcations, 0 missing/extra). Residual is sub-voxel smoothing drift, certified under a trace tolerance. |
+| **Edges** | ✅ **Certified on crop (ADR 0012)**; full-volume status in findings | Watershed certified on **ownership-map + trace tolerance**, not exact pair-set equality. Crop bar met as of this memo; full claim surface evolved after 2026-07-01. |
+| **Network** | ⚠️ **Not Phase 1 closed** (see findings) | Crop isolation with MATLAB edges can be topology-exact; **full-volume Network ADR 0012 multiset equality remained the open ship gate after this memo.** Do not read this row as full-canonical Network certification. |
 
 ---
 

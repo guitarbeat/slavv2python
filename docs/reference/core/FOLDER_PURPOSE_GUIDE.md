@@ -71,13 +71,12 @@ their generators for the PhD proposal appendix and related methods write-ups.
 **Canonical inventory, captions, and regenerate commands:**
 [figures/README.md](../../../figures/README.md).
 
-**Contains (summary):** four claim charts (`parity_trajectory`, `parity_funnel`,
-`parity_agreement`, `parity_cert_table`); data in `parity_campaign_series.py`;
-regenerator `generate_parity_claim_figures.py` (legacy wrapper
-`generate_matlab_python_parity_journey.py`).
+**Contains (summary):**
+- Claim charts: `parity_trajectory`, `parity_funnel`, `parity_agreement`, `parity_cert_table`
+- Data + regenerator: `parity_campaign_series.py`, `generate_parity_claim_figures.py`
+- Research drafts: [`figures/research/`](../../../figures/research/) (ULP / speedup)
 
-**Not here:** runtime plotting (`slavv_python/visualization/`) or energy ULP/speedup
-drafts from live run artifacts ([docs/research/figures/](../../research/figures/)).
+**Not here:** runtime plotting (`slavv_python/visualization/`).
 
 ---
 
@@ -90,7 +89,7 @@ drafts from live run artifacts ([docs/research/figures/](../../research/figures/
 > - One-off diagnostics → `workspace/scratch/`
 >
 > Some checked-in generators remain under `scripts/` (e.g. `make_report_figures.py`)
-> and under `figures/` for proposal claim figures.
+> writing into `figures/research/`, and under `figures/` for claim figures.
 
 ---
 

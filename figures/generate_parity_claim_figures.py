@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -114,6 +115,17 @@ _TONE_COLOR = {
 Drawer = Callable[[plt.Axes], None]
 
 
+@dataclass(frozen=True)
+class FigureSpec:
+    stem: str
+    figsize: tuple[float, float]
+    left: float
+    right: float
+    top: float
+    bottom: float
+    drawer: Drawer
+
+
 def _claim(ax: plt.Axes, text: str) -> None:
     ax.set_title(text, loc="left", pad=8, fontweight="bold", fontsize=10, color=INK)
 
@@ -163,6 +175,14 @@ def _log_count_formatter(v: float, _: object) -> str:
     return f"{round(v):,}"
 
 
+def _pad_limits(values: np.ndarray, pad_frac: float = 0.12) -> tuple[float, float]:
+    lo = float(np.min(values))
+    hi = float(np.max(values))
+    span = max(hi - lo, 1.0)
+    pad = span * pad_frac
+    return lo - pad, hi + pad
+
+
 # ---------------------------------------------------------------------------
 # Drawers (view only)
 # ---------------------------------------------------------------------------
@@ -179,7 +199,8 @@ def draw_trajectory(ax: plt.Axes) -> None:
     x = np.arange(len(steps))
 
     ax.set_yscale("log")
-    ax.set_ylim(0.7, 2.0e4)
+    y_lo, y_hi = _pad_limits(y_plot, pad_frac=0.35)
+    ax.set_ylim(max(0.7, y_lo * 0.5), max(y_hi, 2.0e4))
     ax.set_xlim(-0.45, len(steps) - 0.45)
 
     ax.axhline(RETIRED_GATE_MISSING, color=MID, ls=(0, (3, 2)), lw=0.9, zorder=1)
@@ -221,7 +242,7 @@ def draw_trajectory(ax: plt.Axes) -> None:
         if step.kind == "closed":
             ax.text(
                 x[i],
-                2.8,
+                max(2.8, y_plot[i] * 2.5),
                 "0 missing\n(gen. closed)",
                 ha="center",
                 va="bottom",
@@ -325,8 +346,12 @@ def draw_funnel(ax: plt.Axes) -> None:
                 fontweight="bold",
             )
         if phase.annotation is not None:
-            # Anchor on the extra bar when present (the interesting series)
-            anchor_y = float(phase.extra) if phase.extra is not None else float(phase.missing)
+            if phase.annotation.series == "missing":
+                anchor_y = float(phase.missing)
+            elif phase.annotation.series == "extra" and phase.extra is not None:
+                anchor_y = float(phase.extra)
+            else:
+                anchor_y = float(phase.extra) if phase.extra is not None else float(phase.missing)
             _annotate(ax, i, max(anchor_y, LOG_FLOOR_COUNT), phase.annotation)
 
     ax.set_xticks(x)
@@ -345,13 +370,28 @@ def draw_agreement(ax: plt.Axes) -> None:
     edge_d = np.array([a.edge_delta for a in audits], dtype=float)
     net_d = np.array([a.network_delta for a in audits], dtype=float)
     x = np.arange(len(audits))
+    y_lo, y_hi = _pad_limits(np.concatenate([edge_d, net_d]), pad_frac=0.15)
 
     ax.axhline(0, color=INK, lw=0.85, zorder=1)
-    ax.fill_between([-0.6, len(audits) - 0.4], 0, 3200, color="#E8F5E9", alpha=0.55, zorder=0)
-    ax.fill_between([-0.6, len(audits) - 0.4], -11000, 0, color="#FFEBEE", alpha=0.45, zorder=0)
+    ax.fill_between(
+        [-0.6, len(audits) - 0.4],
+        0,
+        max(y_hi, 500),
+        color="#E8F5E9",
+        alpha=0.55,
+        zorder=0,
+    )
+    ax.fill_between(
+        [-0.6, len(audits) - 0.4],
+        min(y_lo, -500),
+        0,
+        color="#FFEBEE",
+        alpha=0.45,
+        zorder=0,
+    )
     ax.text(
         len(audits) - 0.65,
-        2200,
+        max(y_hi * 0.55, 500),
         "Python over",
         ha="right",
         va="center",
@@ -361,7 +401,7 @@ def draw_agreement(ax: plt.Axes) -> None:
     )
     ax.text(
         len(audits) - 0.65,
-        -9800,
+        min(y_lo * 0.9, -500),
         "Python under",
         ha="right",
         va="center",
@@ -400,7 +440,7 @@ def draw_agreement(ax: plt.Axes) -> None:
 
     for i, audit in enumerate(audits):
         ed = audit.edge_delta
-        if audit.end_label_style:
+        if audit.near_zero_edge:
             ax.text(
                 x[i] + 0.08,
                 ed + 350,
@@ -411,11 +451,13 @@ def draw_agreement(ax: plt.Axes) -> None:
                 color=ACCENT,
                 fontweight="bold",
             )
-            if audit.network_delta != 0 and i == len(audits) - 1:
+            if audit.show_network_label and audit.network_delta != 0:
+                nd = audit.network_delta
+                net_txt = f"net \u2212{abs(nd)}" if nd < 0 else f"net +{nd}"
                 ax.text(
                     x[i] + 0.08,
-                    audit.network_delta - 550,
-                    f"net \u2212{abs(audit.network_delta)}",
+                    nd - 550,
+                    net_txt,
                     ha="left",
                     va="top",
                     fontsize=6.8,
@@ -435,17 +477,17 @@ def draw_agreement(ax: plt.Axes) -> None:
                 fontweight="bold",
             )
         if audit.annotation is not None:
-            # Network-track callout anchors on network series; others on edges
-            anchor_y = (
-                float(audit.network_delta) if audit.annotation.color_key == "steel" else float(ed)
-            )
+            if audit.annotation.series == "network":
+                anchor_y = float(audit.network_delta)
+            else:
+                anchor_y = float(ed)
             _annotate(ax, i, anchor_y, audit.annotation)
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{a.label}\n{a.note}" for a in audits], fontsize=6.5)
     ax.set_ylabel("Signed residual count\n(Python \u2212 MATLAB)")
     ax.set_xlim(-0.55, len(audits) - 0.15)
-    ax.set_ylim(-11000, 3500)
+    ax.set_ylim(y_lo, y_hi)
     ax.legend(frameon=False, loc="center right", fontsize=6.6)
     _footnote(ax, AGREEMENT_FOOTNOTE, y=-0.18)
 
@@ -585,19 +627,18 @@ def main() -> list[Path]:
     out_dir = Path(__file__).resolve().parent
     written: list[Path] = []
 
-    specs: list[tuple[str, tuple[float, float], tuple[float, float, float, float], Drawer]] = [
-        ("parity_trajectory", (7.2, 4.2), (0.12, 0.97, 0.90, 0.18), draw_trajectory),
-        ("parity_funnel", (7.2, 4.0), (0.11, 0.97, 0.90, 0.16), draw_funnel),
-        ("parity_agreement", (7.4, 4.4), (0.12, 0.97, 0.90, 0.22), draw_agreement),
-        ("parity_cert_table", (7.0, 4.0), (0.02, 0.99, 0.92, 0.04), draw_cert_table),
+    specs = [
+        FigureSpec("parity_trajectory", (7.2, 4.2), 0.12, 0.97, 0.90, 0.18, draw_trajectory),
+        FigureSpec("parity_funnel", (7.2, 4.0), 0.11, 0.97, 0.90, 0.16, draw_funnel),
+        FigureSpec("parity_agreement", (7.4, 4.4), 0.12, 0.97, 0.90, 0.22, draw_agreement),
+        FigureSpec("parity_cert_table", (7.0, 4.0), 0.02, 0.99, 0.92, 0.04, draw_cert_table),
     ]
 
-    for stem, figsize, margins, drawer in specs:
-        left, right, top, bottom = margins
-        fig, ax = plt.subplots(figsize=figsize)
-        fig.subplots_adjust(left=left, right=right, top=top, bottom=bottom)
-        drawer(ax)
-        written.append(_save(fig, stem, out_dir))
+    for spec in specs:
+        fig, ax = plt.subplots(figsize=spec.figsize)
+        fig.subplots_adjust(left=spec.left, right=spec.right, top=spec.top, bottom=spec.bottom)
+        spec.drawer(ax)
+        written.append(_save(fig, spec.stem, out_dir))
 
     return written
 

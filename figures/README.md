@@ -1,13 +1,12 @@
-# Proposal / methods figures
+# Publication figures
 
-Committed **publication-oriented** figures for the PhD proposal appendix and
-related methods write-ups. Distinct from:
+All committed **publication-oriented** assets for the PhD proposal appendix and
+methods write-ups. Distinct from runtime plotting (`slavv_python/visualization/`).
 
 | Location | Role |
 |----------|------|
-| **`figures/` (this folder)** | Proposal / methods figures; regenerate from checked-in scripts |
-| [`docs/research/figures/`](../docs/research/figures/) | Data-backed energy ULP / speedup drafts from run artifacts (`scripts/make_report_figures.py`) |
-| `slavv_python/visualization/` | Runtime plotting API (`NetworkVisualizer`), not paper figures |
+| **`figures/` (claim charts)** | Exact-parity claim figures + regenerator |
+| [`figures/research/`](research/) | Data-backed energy ULP / speedup drafts (`scripts/make_report_figures.py`) |
 
 ## MATLAB→Python exact-parity figures
 
@@ -26,7 +25,6 @@ flat “all green” dashboards.
 |--------|------|
 | [`parity_campaign_series.py`](parity_campaign_series.py) | **Edit this when findings KPIs move** — all counts, labels, callouts, cert tones |
 | [`generate_parity_claim_figures.py`](generate_parity_claim_figures.py) | View layer — paints series data to PDF/PNG |
-| [`generate_matlab_python_parity_journey.py`](generate_matlab_python_parity_journey.py) | Legacy entry point (delegates to claim regenerator) |
 
 Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
@@ -76,6 +74,31 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 When numbers in findings move, update constants in
 [`parity_campaign_series.py`](parity_campaign_series.py) and re-run the generator.
+
+## Figure ↔ documentation story map
+
+Live KPIs and stage pass/fail live only in
+[EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
+These figures are a **publication highlight reel** of the residual campaign—not
+the status log and not the methodology paper alone.
+
+| Figure | Story beat | Primary docs |
+|------|------------|--------------|
+| Trajectory | Generation residual: cosmetics flat; LUT leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
+| Funnel | Final residual collapse: extras after gen closed → 1-pair swap | Funnel/cleanup notes in findings; [PHASE1 residual](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
+| Agreement | Full under→over→Edges matched; Network tracks Edges; still open | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set” |
+| Cert table | Absolute residual budget; Network multiset FAIL = ship gate | Findings executive status; ADR 0012 ship vs stretch |
+
+**Told by these four:** watershed residual campaign (generation → selection → open Network gate).
+
+**Not told here (complementary sets):**
+
+| Gap | Where it lives |
+|-----|----------------|
+| Why `allclose` not pure ULP | [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md), [research figures](research/README.md) |
+| Bit-exact energy parallelism / speedup | [research figures](research/README.md), post-parity paper notes |
+| Why ownership ≥60% not pair-set equality | [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md), [PARITY_METHODOLOGY](../docs/reference/core/PARITY_METHODOLOGY.md) |
+| Operator next action | [HANDOFF](../.claude/HANDOFF.md), [TODO](../docs/TODO.md) |
 
 ## PhD proposal manuscript (live include)
 

@@ -21,16 +21,11 @@ status. When findings top-banner changes, re-synthesize this file the same day.
 
 > **Single canonical status source:** [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
 
-### Snapshot (do not invent numbers — confirm in findings)
+### Snapshot
 
-| Stage | Canonical surface | Status |
-|-------|-------------------|--------|
-| **Energy** | `canonical_full_v4` / `180709_E_full_v2` | ✅ CERTIFIED (ADR 0011) |
-| **Vertices** | same | ✅ CERTIFIED (ADR 0011) |
-| **Edges** | `canonical_full_v16` audit | ✅ ADR 0012 PASS evaluated (`exact_proof_edges.json`: 69,500 / 69,500; ownership 99.999863%; trace failures 0) |
-| **Network** | `canonical_full_v16` audit | ❌ ADR 0012 FAIL (`exact_proof_network.json`: 48,048 / 48,049 strands) |
+**Authoritative stage table + proof paths:** [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md) (executive status + active ops). Synthesize the residual narrative below from that source; do not invent numbers.
 
-**Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality. Do not treat ~99.998% strand-count agreement as a pass. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
+**Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality (see findings for claim run root and counts). Do not treat approximate strand-count % as a pass. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
 
 **Latest residual fix:** MATLAB standalone instrumentation proved Python raw candidates match MATLAB raw watershed candidates exactly (**19,225 / 19,225**). The active divergence was post-watershed finalization: MATLAB runs `resample_vectors`, re-samples energy/size from maps, smooths, then crops with unsigned integer casts before cleanup. Python now mirrors that path and carries resampled traces/energies/metrics into cleanup. Refreshed crop candidate generation remains **15,511/15,511** with **19,225** raw candidates; refreshed crop final selected edges are **15,511** vs MATLAB **15,511**, with **15,510** MATLAB pairs retained (missing **1**, extra **1**).
 

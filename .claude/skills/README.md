@@ -1,6 +1,6 @@
 # Skills Catalog
 
-Reusable agent skills for `slavv2python` (29 total). Each skill lives in
+Reusable agent skills for `slavv2python` (30 total). Each skill lives in
 `<skill-name>/SKILL.md`. Invoke a skill by name; see individual `SKILL.md` files
 for arguments and detailed steps.
 
@@ -10,6 +10,7 @@ for arguments and detailed steps.
 | Skill | Purpose |
 |-------|---------|
 | [`check-compiler-errors`](check-compiler-errors/SKILL.md) | Run compile and type-check commands and report failures |
+| [`consolidate-concepts`](consolidate-concepts/SKILL.md) | Deduplicate docs terms and code constants into one canonical home |
 | [`control-cli`](control-cli/SKILL.md) | Build or adapt a local harness to drive, inspect, and profile an interactive CLI or TUI without external services. |
 | [`control-ui`](control-ui/SKILL.md) | Build or adapt a local browser/CDP harness to drive and inspect a web, IDE, or Electron UI. |
 | [`deslop`](deslop/SKILL.md) | Remove AI-generated code slop and clean up code style |

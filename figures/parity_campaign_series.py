@@ -16,6 +16,12 @@ from typing import Literal
 CROP_N_MATLAB_FINAL_PAIRS = 15_511
 CANONICAL_MATLAB_EDGES = 69_500
 CANONICAL_MATLAB_STRANDS = 48_049
+# Network ADR 0012 residual on claim surface (Python - MATLAB strand multiset)
+NETWORK_STRAND_RESIDUAL = -1
+CANONICAL_PYTHON_STRANDS = CANONICAL_MATLAB_STRANDS + NETWORK_STRAND_RESIDUAL
+# Edge multiset residual count (equal-metric swap class; count delta is 0, multiset Δ = 1)
+EDGE_PAIR_MULTISET_RESIDUAL = 1
+
 ORACLE_CROP_ID = "180709_E_crop_M_v2"
 ORACLE_FULL_VOLUME = "180709_E"
 # Latest full-volume claim/audit surface (Phase 1 still open — Network multiset FAIL)
@@ -33,6 +39,8 @@ CROP_SWAP_MATLAB_PAIR = (4212, 6281)
 CROP_SWAP_PYTHON_PAIR = (4043, 6281)
 
 ColorKey = Literal["accent", "muted", "amber", "green", "steel"]
+# Which y-series an annotation arrow anchors to (view must not infer this from color)
+AnnotationSeries = Literal["point", "edge", "network", "extra", "missing"]
 
 
 @dataclass(frozen=True)
@@ -44,6 +52,7 @@ class Annotation:
     text_y: float  # absolute y in data units
     color_key: ColorKey = "muted"
     bold: bool = False
+    series: AnnotationSeries = "point"
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +89,7 @@ TRAJECTORY_STEPS: list[TrajectoryStep] = [
             text_x=0.5,
             text_y=1_200,
             color_key="muted",
+            series="point",
         ),
     ),
     TrajectoryStep(
@@ -99,6 +109,7 @@ TRAJECTORY_STEPS: list[TrajectoryStep] = [
             text_y=2_500,
             color_key="accent",
             bold=True,
+            series="point",
         ),
     ),
     TrajectoryStep(
@@ -161,6 +172,7 @@ FUNNEL_PHASES: list[FunnelPhase] = [
             text_x=1.15,
             text_y=40,
             color_key="muted",
+            series="extra",
         ),
     ),
     FunnelPhase(
@@ -174,6 +186,7 @@ FUNNEL_PHASES: list[FunnelPhase] = [
             text_y=12,
             color_key="green",
             bold=True,
+            series="extra",
         ),
     ),
 ]
@@ -191,16 +204,25 @@ class CanonicalAudit:
     edge_delta: int  # Python - MATLAB connections
     network_delta: int  # Python - MATLAB strands
     note: str
-    # Prefer end-of-series label offsets when True (avoids collision near zero)
-    end_label_style: bool = False
+    # When True, show network residual label (near-zero edge residual region)
+    show_network_label: bool = False
     annotation: Annotation | None = None
 
+    @property
+    def near_zero_edge(self) -> bool:
+        """Use end-of-series label layout when edge residual is exact match."""
+        return self.edge_delta == 0
 
-AGREEMENT_CLAIM = "Full-volume Edges under-, over-, then matched - Network still -1 strand"
+
+AGREEMENT_CLAIM = (
+    f"Full-volume Edges under-, over-, then matched - Network still "
+    f"{NETWORK_STRAND_RESIDUAL:+d} strand"
+)
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
     f"(MATLAB edges = {CANONICAL_MATLAB_EDGES:,}; strands = {CANONICAL_MATLAB_STRANDS:,}). "
-    "v15/v16 edge residual 0; Network still \u22121 strand — ADR 0012 multiset FAIL (open ship gate)."
+    f"v15/v16 edge residual 0; Network still {NETWORK_STRAND_RESIDUAL:+d} strand — "
+    "ADR 0012 multiset FAIL (open ship gate)."
 )
 
 CANONICAL_AUDITS: list[CanonicalAudit] = [
@@ -222,6 +244,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
             text_x=0.05,
             text_y=-7_000,
             color_key="muted",
+            series="edge",
         ),
     ),
     CanonicalAudit(
@@ -235,6 +258,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
             text_x=2.55,
             text_y=-8_200,
             color_key="steel",
+            series="network",
         ),
     ),
     CanonicalAudit(
@@ -249,23 +273,24 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
             text_y=2_400,
             color_key="amber",
             bold=True,
+            series="edge",
         ),
     ),
     CanonicalAudit(
         id="v15",
         label="v15",
         edge_delta=0,
-        network_delta=-1,
+        network_delta=NETWORK_STRAND_RESIDUAL,
         note="edges exact;\n1 strand",
-        end_label_style=True,
+        show_network_label=True,
     ),
     CanonicalAudit(
         id="v16",
         label="v16",
         edge_delta=0,
-        network_delta=-1,
+        network_delta=NETWORK_STRAND_RESIDUAL,
         note="Edges PASS;\nNet FAIL",
-        end_label_style=True,
+        show_network_label=True,
     ),
 ]
 
@@ -291,7 +316,9 @@ CERT_CLAIM = "On 180M voxels Network still fails ADR 0012 by one strand"
 CERT_TAKEAWAY = (
     "Takeaway: Energy/Vertices closed; Edges ownership/count evaluated PASS on "
     f"{CANONICAL_CLAIM_RUN}.\n"
-    "Open ship gate: Network strand multiset FAIL (48,048 / 48,049) — one degree-pruning pair swap\n"
+    "Open ship gate: Network strand multiset FAIL "
+    f"({CANONICAL_PYTHON_STRANDS:,} / {CANONICAL_MATLAB_STRANDS:,}) — "
+    "one degree-pruning pair swap\n"
     f"(crop: MATLAB {list(CROP_SWAP_MATLAB_PAIR)} vs Python {list(CROP_SWAP_PYTHON_PAIR)}). "
     "Not an independent Network bug."
 )
@@ -332,7 +359,7 @@ CERT_ROWS: list[CertRow] = [
     CertRow(
         stage="Edges connections",
         quantity="pair multiset \u0394",
-        residual_display="1",
+        residual_display=str(EDGE_PAIR_MULTISET_RESIDUAL),
         denom=f"{CANONICAL_MATLAB_EDGES:,}",
         reading="one equal-metric swap",
         tone="residual",
@@ -340,7 +367,7 @@ CERT_ROWS: list[CertRow] = [
     CertRow(
         stage="Network strands",
         quantity="strand multiset \u0394",
-        residual_display="1",
+        residual_display=str(abs(NETWORK_STRAND_RESIDUAL)),
         denom=f"{CANONICAL_MATLAB_STRANDS:,}",
         reading="ADR 0012 FAIL (open gate)",
         tone="residual",

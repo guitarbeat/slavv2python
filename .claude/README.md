@@ -1,8 +1,18 @@
-# .agents Directory
+# `.claude` — unified agent home
 
-This directory contains AI agent definitions, instructions, skills, and orchestration artifacts for the slavv2python repository.
+Single repository location for AI agent definitions, instructions, skills,
+rules, prompts, and operator handoff. **Supersedes** former top-level
+`.agents/` (skills registry drop) and `.kiro/` (IDE specs).
 
-## 📁 Directory Structure
+| Former path | Now |
+|-------------|-----|
+| `.agents/skills/*` | [`.claude/skills/`](skills/) |
+| `.kiro/specs/matlab-python-parity/` | [docs/investigations/kiro-matlab-python-parity/](../docs/investigations/kiro-matlab-python-parity/) (archive) |
+
+Do not re-create `.agents` or `.kiro` for new work. Add skills under `skills/`,
+agents under `agents/`, and planning under `docs/plans/` + `docs/TODO.md`.
+
+## Directory structure
 
 ```
 .claude/
@@ -35,6 +45,7 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
     ├── completed/                     # Archived successful orchestrations
     └── README.md                      # Orchestration guide
 ```
+
 
 ## 🎯 Quick Start
 

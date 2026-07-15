@@ -41,24 +41,22 @@ Canonical closure loop:
 
 ## Current results
 
-**Do not invent numbers.** Confirm the active table in
-[EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) (executive status +
-active ops). Snapshot at last synthesis (2026-07-15):
+**Do not invent or re-table live KPIs here.** Single source of truth:
 
-| Surface | Metric | Current value | Interpretation |
-|---|---:|---:|---|
-| Crop `crop_M_exact_v3` | Candidate overlap | 15,511 / 15,511 (100%) | Generation gap 0; 80% gate retired. |
-| Crop final residual | Missing / extra | **1 / 1** | Equal-count pair swap. |
-| Crop golden trace | First split | match | Generation regression guard. |
-| Full `canonical_full_v16` | Edges ADR 0012 | PASS evaluated | 69,500 / 69,500; ownership 99.999863%. |
-| Full `canonical_full_v16` | Network ADR 0012 | **FAIL** | 48,048 / 48,049 strands; open ship gate. |
+| Need | Read |
+|------|------|
+| Stage pass/fail, claim run root | [EXACT_PROOF_FINDINGS](../core/EXACT_PROOF_FINDINGS.md) executive status + active ops |
+| Operator residual narrative | [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) |
+| Open checkboxes | [TODO.md](../../TODO.md) |
+
+Hypothesis above is the *interpretation frame*; if findings banner or Network proof status moves, re-read findings before planning—not this section.
 
 ## Interpretation
 
 - Energy and Vertices should not be rerun without regression evidence.
-- Edges ownership + exact connection count are green on `v16`; do not reopen unless proofs regress.
-- Network fails because the edge multiset still differs by one swap — not a Network rewrite.
-- Next useful work is equal-metric degree-pruning tie resolution on crop, then a fresh Network proof if the connection set moves.
+- Edges ownership/count green on the current claim surface → do not reopen unless proofs regress.
+- Network fails because the edge multiset still differs by residual swap class — not a Network rewrite.
+- Next useful work is equal-metric degree-pruning tie resolution on crop, then Network proof only if the connection set moves.
 
 ## Limitations
 

@@ -25,6 +25,7 @@ Read these first when working on the live implementation:
 | [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
 | [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |
 | [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md) | Engine design, component overview, and processing workflow | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
+| [SLAVV Method Explained](core/SLAVV_METHOD_EXPLAINED.md) | Paper-stage walkthrough of the original MATLAB method (Mihelic et al. 2021) | [Research paper review](../research/slavv-original-paper-review.md) |
 
 ## Workflow Docs
 
@@ -59,9 +60,8 @@ for current Python behavior or exact MATLAB parity claims.
 
 ## Proposal / methods figures
 
-- [figures/](../../figures/README.md) — quantitative MATLAB→Python exact-parity
-  standalone claim figures (proposal appendix). Energy ULP/speedup drafts remain
-  under [research/figures/](../research/figures/).
+- [figures/](../../figures/README.md) — all publication figures (claim charts +
+  [research drafts](../../figures/research/)).
 
 ## Live Status And Historical Context
 

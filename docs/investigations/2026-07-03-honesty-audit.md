@@ -1,6 +1,6 @@
 # Honesty Audit: Spec Task Execution Session (matlab-python-parity)
 
-**Scope**: Tasks 3–9 of `.kiro/specs/matlab-python-parity/tasks.md`, executed across
+**Scope**: Tasks 3–9 of `docs/investigations/kiro-matlab-python-parity/tasks.md` (archived from `.kiro/specs/matlab-python-parity/`), executed across
 commits `17e1498e` ("1") and `2c3e5145` ("complete property-based test suite and Tier 1
 CI gate"), both pushed to `main` on 2026-07-02.
 

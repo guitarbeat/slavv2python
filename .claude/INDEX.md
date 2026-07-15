@@ -1,6 +1,7 @@
-# .agents Directory Index
+# `.claude` Directory Index
 
-Quick reference catalog of all agents, instructions, rules, skills, and orchestrations.
+Quick reference catalog of all agents, instructions, rules, skills, and orchestrations
+(unified agent home; former `.agents` / `.kiro` roots removed).
 Includes the fast task-oriented lookups formerly kept in `QUICK_REFERENCE.md`
 (see [Quick Reference](#-quick-reference) at the end).
 

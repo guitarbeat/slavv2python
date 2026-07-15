@@ -160,8 +160,8 @@ _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
 _Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
 
-**Phase 1 operating sequence (current):** (1) Crop equal-metric degree-pruning pair-swap triage (generation already closed; golden trace matches); (2) when crop residual moves materially, preflight a **new** canonical root from the latest certified Energy/Vertices lineage, rerun Edges→Network with debug maps; (3) **evaluated** Network ADR 0012 multiset equality (Edges regression check) → [Phase 1 Closure](#phase-1-closure) if green. Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). Live claim surface: findings / HANDOFF (e.g. `canonical_full_v16`: Edges ✅ Network ❌).
-_Avoid_: Claiming closure from Edges-only pass, treating Network red as a Network rewrite, treating ~99.998% strand count as multiset pass, or using `prove-exact-sequence` as the ship gate.
+**Phase 1 operating sequence (current):** (1) Crop equal-metric degree-pruning pair-swap triage (generation already closed; golden trace matches); (2) when crop residual moves materially, preflight a **new** canonical root from the latest certified Energy/Vertices lineage, rerun Edges→Network with debug maps; (3) **evaluated** Network ADR 0012 multiset equality (Edges regression check) → [Phase 1 Closure](#phase-1-closure) if green. Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). **Live claim surface:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) only.
+_Avoid_: Claiming closure from Edges-only pass, treating Network red as a Network rewrite, treating approximate strand-count % as multiset pass, or using `prove-exact-sequence` as the ship gate.
 
 **Closure run root:** Prefer a **new** canonical directory preflighted from the prior attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve historical audits (`v6`…`v16`) in place.
 
@@ -184,7 +184,8 @@ The single authoritative document for exact-route [Certification](#certification
 _Avoid_: Maintaining separate brainstorm and plan files for the same initiative; use `docs/brainstorms/` only before the spec exists.
 
 ### Phase 1 Closure
-The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` **and** `--stage network` both pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. **Live status** (not frozen here): [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) — as of `canonical_full_v16`, Edges ✅ Network ❌ (one-strand multiset residual; open ship gate). Exact `connections` equality remains stretch once Network multisets pass.
+The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` **and** `--stage network` both pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. Exact `connections` equality remains stretch once Network multisets pass.
+**Live whether closed:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) (banner + executive status only—do not freeze run IDs or strand counts here).
 _Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, closing Phase 1 on Edges-only, treating approximate strand-count % as Network ADR 0012 pass, or closing on [Crop Harness Volume](#crop-harness-volume) alone.
 
 **Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on a fresh canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
@@ -215,7 +216,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Local experiment artifacts (gitignored, personal)
 - **`docs/`** — Maintained reference docs and archival investigation notes
-- **`figures/`** — Proposal / methods standalone claim figures + generators ([figures/README.md](figures/README.md))
+- **`figures/`** — Publication figures (claim charts + `figures/research/` ULP/speedup) ([figures/README.md](figures/README.md))
 
 ```text
 slavv2python/
@@ -282,7 +283,7 @@ slavv2python/
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
-├── figures/                            # Proposal / methods standalone claim figures + generators
+├── figures/                            # Publication figures (claim + research/)
 │
 ├── workspace/                          # LOCAL EXPERIMENT DATA (gitignored)
 │   ├── oracles/                        # Preserved MATLAB oracle vectors
@@ -307,7 +308,7 @@ Read these first when working on relevant surfaces:
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |
-| Proposal figures | [figures/README.md](figures/README.md) | Exact-parity claim figures (appendix) + regenerate |
+| Publication figures | [figures/README.md](figures/README.md) | Claim charts + research ULP/speedup + regenerators |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results |
