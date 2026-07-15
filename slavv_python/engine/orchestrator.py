@@ -107,6 +107,8 @@ class SlavvPipeline:
 
         image = preprocess_image(image, parameters, run_context)
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
+        if stop_after == PREPROCESS_STAGE:
+            return self._finalize_run(run_context, run_state, stop_after)
 
         # 1. Energy
         from slavv_python.pipeline.energy.manager import EnergyManager
