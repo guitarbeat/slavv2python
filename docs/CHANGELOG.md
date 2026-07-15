@@ -19,16 +19,12 @@ For current behavior and proof status, prefer:
 
 ### Added / Changed
 
-- **Proposal methods figure (exact-parity journey):** repo-root
-  [`figures/matlab_python_parity_journey.pdf`](../figures/matlab_python_parity_journey.pdf)
-  — three quantitative panels (crop candidate-pair overlap trajectory; MATLAB
-  edge-pair recovery waterfall; full-volume MATLAB vs Python counts +
-  certification table). Generator:
+- **Proposal methods figures (exact-parity journey):** four standalone figures
+  under [`figures/`](../figures/) — `parity_trajectory`, `parity_funnel`,
+  `parity_agreement`, `parity_cert_table` (PDF + PNG each; no multipanel).
+  Generator:
   [`figures/generate_matlab_python_parity_journey.py`](../figures/generate_matlab_python_parity_journey.py).
-  Index: [`figures/README.md`](../figures/README.md). Linked from
-  [PARITY_METHODOLOGY](reference/core/PARITY_METHODOLOGY.md),
-  [research figures](research/figures/README.md), and
-  [FOLDER_PURPOSE_GUIDE](reference/core/FOLDER_PURPOSE_GUIDE.md).
+  Index: [`figures/README.md`](../figures/README.md).
 - **Architecture deepening (candidates 1–6):** glossary-aligned discovery names
   (`TracingDiscovery` / `WatershedDiscovery`); deep `CandidateManifest`;
   `launch_writer_session` + deleted `runs/execution.py` barrel; exact-proof

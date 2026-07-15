@@ -70,5 +70,5 @@ Architecture review candidate #4 sharpened proof vs run-lifecycle report ownersh
 
 Quantitative summary of the exact-parity port (crop overlap, recovery waterfall,
 full-volume counts / certification bars):
-[figures/matlab_python_parity_journey.pdf](../../figures/matlab_python_parity_journey.pdf)
+[figures/README.md](../../figures/README.md)
 ([figures/README.md](../../figures/README.md)).

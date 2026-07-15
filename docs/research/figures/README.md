@@ -36,4 +36,4 @@ python scripts/make_report_figures.py `
 - The serial baseline is a measured reference (~44 s/chunk); for a final
   strong-scaling figure, run the A/B at `n_jobs ∈ {1,2,4,6,8}` and plot the curve.
 - For an appendix overview of the port (overlap, funnel, full-volume status),
-  use [figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf).
+  use the standalone set under [figures/](../../../figures/) (see [figures/README.md](../../../figures/README.md)).

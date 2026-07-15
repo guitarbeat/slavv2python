@@ -69,9 +69,12 @@ python -m pytest -m "unit or integration"
 the PhD proposal appendix and related methods write-ups.
 
 **Contains (current):**
-- `matlab_python_parity_journey.{pdf,png}` — quantitative MATLAB→Python exact-parity overview
-- `generate_matlab_python_parity_journey.py` — regenerator
-- [README.md](../../../figures/README.md) — caption, evidence sources, regenerate command
+- `parity_trajectory.{pdf,png}` — crop candidate-pair overlap trajectory
+- `parity_funnel.{pdf,png}` — crop edge-pair recovery funnel
+- `parity_agreement.{pdf,png}` — canonical per-stage agreement
+- `parity_cert_table.{pdf,png}` — ADR 0011/0012 gate status table
+- `generate_matlab_python_parity_journey.py` — regenerator (four standalone figures)
+- [README.md](../../../figures/README.md) — captions, evidence sources, regenerate command
 
 **Not here:** runtime plotting (`slavv_python/visualization/`) or energy ULP/speedup
 drafts from live run artifacts ([docs/research/figures/](../../research/figures/)).

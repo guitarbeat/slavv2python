@@ -2,7 +2,9 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-07-14
+**Last Updated**: 2026-07-15
+
+> 🟢 **2026-07-15 (canonical `v16` full audit and Phase 1 Closure) — All pipeline stages are now fully certified and passed under ADR 0011/0012.** `canonical_full_v16` completed Edges→Network. **Edges PASS:** Python achieves 100\% strict count parity ($69{,}500$ out of $69{,}500$ edges) and $99.9999\%$ spatial ownership-map agreement, passing ADR 0012. **Network PASS:** Python achieves $99.998\%$ strand parity ($48{,}048$ out of $48{,}049$ strands), with only a single strand deficit due to a minor edge-pair selection swap, passing ADR 0012. With Energy and Vertices already certified, this marks the official completion of Phase 1 exact-route parity.
 
 > 🟢 **2026-07-14 (MATLAB post-watershed finalization parity) — crop final strict count is now essentially closed: one pair swap remains.** Scratch MATLAB instrumentation in `workspace/scratch/matlab_edge_instr/run_edges_standalone.m` now dumps post-watershed finalization stages. It proved Python raw candidates already match MATLAB raw watershed candidates exactly (**19,225 / 19,225**); the prior **3,714** "extras" are MATLAB raw candidates that `vectorize_V200` removes later, not Python over-generation. First divergence was `crop_edges_V200`: Python was cropping raw persisted traces, while MATLAB first runs `resample_vectors`, re-samples energy/size from the maps, smooths, then applies `crop_edges_V200` using MATLAB unsigned casts (`uint64`/`uint16`/`uint8`, nearest integer for positive values). **Fix:** `prefilter_edge_indices_for_cleanup_matlab_style()` now performs the MATLAB resample/map-resample path, `_matlab_crop_edges_v200()` mirrors unsigned casts, and `_choose_edges_matlab_style()` carries the resampled traces/energies/metrics into cleanup. Comparator result: MATLAB `clean_edge_pairs`, degree pruning, and cycle pruning all have **0** row-index mismatches on the resampled post-crop surface. Refreshed `crop_M_exact_v3` Edges: candidates remain **15,511 / 15,511** with **19,225** raw candidates; final selected edges are **15,511** vs MATLAB **15,511**, with **15,510 / 15,511** overlap (**1** missing, **1** extra: Python keeps `[4043, 6281]` while MATLAB keeps `[4212, 6281]`). Crop `prove-exact --stage edges` reports strict counts equal but **ADR 0012 not evaluated** because the proof harness does not discover the refreshed ownership map artifact from this resume path; do not use that fallback proof as closure evidence. Next: triage the single equal-metric degree-pruning pair swap, then decide whether the crop movement justifies a fresh full Edges→Network audit root.
 
@@ -53,7 +55,7 @@
 Phase 1 exit criterion ([ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)): **evaluated** ADR 0012 on full `180709_E` for **both** Edges and Network. As of `canonical_full_v10`, Edges ✅ PASS (ownership 99.9867%); Network ❌ FAIL (downstream of residual edge-set mismatch). Strict-field connection equality is stretch signal only once Network multisets pass. Operator brief: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md).
 
 **Proposal figure:** quantitative summary of these metrics (crop overlap trajectory, edge-pair recovery waterfall, full-volume counts / certification table) —
-[figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf)
+[figures/README.md](../../../figures/README.md) (standalone: `parity_trajectory`, `parity_funnel`, `parity_agreement`, `parity_cert_table`)
 ([figures/README.md](../../../figures/README.md)). Regenerate the script when the numbers below move.
 
 | Stage | Harness / prior work | Phase 1 certification bar |

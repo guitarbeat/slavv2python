@@ -22,7 +22,7 @@ adversarially fact-checked. Sources are listed at the end.
 **Figure (proposal appendix):** quantitative summary of the port —
 candidate-pair overlap trajectory, edge-pair recovery waterfall, full-volume
 counts and certification bars — at
-[figures/matlab_python_parity_journey.pdf](../../../figures/matlab_python_parity_journey.pdf)
+[figures/README.md](../../../figures/README.md)
 ([README](../../../figures/README.md)). Live numbers: [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
 
 ---

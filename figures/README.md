@@ -5,25 +5,25 @@ related methods write-ups. Distinct from:
 
 | Location | Role |
 |----------|------|
-| **`figures/` (this folder)** | Proposal / methods multipanels; regenerate from checked-in scripts |
+| **`figures/` (this folder)** | Proposal / methods figures; regenerate from checked-in scripts |
 | [`docs/research/figures/`](../docs/research/figures/) | Data-backed energy ULP / speedup drafts from run artifacts (`scripts/make_report_figures.py`) |
 | `slavv_python/visualization/` | Runtime plotting API (`NetworkVisualizer`), not paper figures |
 
-## MATLAB→Python exact-parity journey
+## MATLAB→Python exact-parity figures
 
-| File | Use |
-|------|-----|
-| [`matlab_python_parity_journey.pdf`](matlab_python_parity_journey.pdf) | **Preferred for Word/LaTeX** (vector text) |
-| [`matlab_python_parity_journey.png`](matlab_python_parity_journey.png) | Preview / slides (600 dpi) |
-| [`generate_matlab_python_parity_journey.py`](generate_matlab_python_parity_journey.py) | Generator |
+**Design rule:** four **standalone** claim-driven figures. Each answers one
+non-trivial question. Prefer residual / signed delta / absolute counts over
+flat “all green” dashboards.
 
-**Design:** three pure-data panels (no schematic dashboard chrome):
+| File | Claim | Why it is interesting |
+|------|-------|------------------------|
+| [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
+| [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a 1-pair swap | Missing vs extra side-by-side; after generation closed, extras displaced MATLAB pairs in faithful cleanup |
+| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under- then over-selected, then matched | Signed residual across `v4→v16`; Network tracks Edges (no independent Network bug); ownership PASS while still −4k edges |
+| [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels residual is one edge-pair swap | Absolute mismatch budget; only the multiset Δ=1 rows are highlighted |
+| [`generate_matlab_python_parity_journey.py`](generate_matlab_python_parity_journey.py) | Generator | Writes all four |
 
-| Panel | Content | Primary evidence |
-|-------|---------|------------------|
-| **(a)** | Crop candidate-pair overlap trajectory vs MATLAB | [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md) watershed iteration log |
-| **(b)** | Waterfall of MATLAB edge-pair recovery (generation vs final cleanup residual) | Findings current crop funnel / overlap counts |
-| **(c)** | Full-volume strict counts (MATLAB vs Python) + certification metrics table | latest canonical audit / ADR 0011–0012 |
+Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 **Regenerate:**
 
@@ -31,76 +31,68 @@ related methods write-ups. Distinct from:
 .\.venv\Scripts\python.exe figures\generate_matlab_python_parity_journey.py
 ```
 
-**Suggested caption** (proposal appendix):
+### Suggested captions
 
-> **Figure X. Quantitative exact-parity validation of the SLAVV MATLAB→Python port.**
-> **(a)** Fraction of MATLAB final edge pairs present among Python watershed candidates
-> on the crop harness (*n* = 15,511), across iterative frontier-backend fixes. Shaded
-> region marks the now-retired 80% threshold for historical context.
-> **(b)** Waterfall of MATLAB edge-pair recovery on the same crop after generation fixes:
-> candidate generation covers 15,511 of 15,511 MATLAB final pairs, while final cleanup
-> currently retains 15,362 of 15,511 with 149 missing and 365 extra Python pairs.
-> **(c)** Strict stage counts on full volume `180709_E` (left) versus certification
-> metrics under ADR 0011/0012 spatial and float bars (right). Network mismatch is
-> entirely downstream of the residual edge-set mismatch.
+**Trajectory**
+
+> Generation residual on the crop harness (*n* = 15,511 MATLAB final pairs):
+> pairs still absent from Python candidates after successive frontier fixes.
+> Queue-order cosmetics recovered zero pairs; a single directional-LUT +
+> suppression change recovered 6,115 pairs and cleared the retired 80% gate.
+
+**Funnel**
+
+> Crop residual collapse. Early work was a generation gap (~6.5k missing).
+> Once candidates covered the oracle set, remaining missing pairs were
+> displaced by extra candidates during faithful degree/cycle cleanup; after
+> post-watershed finalization the residual is an equal-count 1-pair swap.
+
+**Agreement**
+
+> Signed residual (Python − MATLAB) on full `180709_E` across closure audits.
+> Edges under-selected through `v7`, over-selected at `v10` after the axis /
+> finalization fix, then matched at `v15`/`v16`. Network strand residual
+> tracks the edge-set residual throughout — evidence against an independent
+> Network-stage defect. Ownership-map ADR 0012 could PASS while strict
+> connection residual remained thousands of edges.
+
+**Mismatch budget**
+
+> Absolute residual on the certified full-volume surface. Energy and vertices
+> are closed. Edges ownership disagrees on ~8 of 5.84M claimed voxels. The
+> only multiset residual is one equal-metric degree-pruning swap (crop:
+> MATLAB `[4212, 6281]` vs Python `[4043, 6281]`); Network’s −1 strand is
+> the same event.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),
-[ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md), and the
-[Phase 1 residual experiment analysis](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md).
+[ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md),
+[EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
 
-When numbers in [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md)
-move, update the constants in the generator and re-run the script before pasting
-into the proposal.
-
-## Figure improvement plan for parity iteration
-
-The committed parity figure is proposal-ready, but the active engineering loop
-also needs a progress dashboard. Treat figures as a decision aid:
-
-1. **Refresh the existing journey figure** after any findings change:
-   - label the 80% crop-overlap gate as retired / historical;
-   - make Network ADR 0012 the visible open ship gate;
-   - keep Edges ownership pass separate from strict-field connection gap;
-   - show that Network failure is downstream of the residual edge-set mismatch.
-2. **Add a residual-iteration figure** when the next metric moves. Suggested file:
-   `watershed_residual_iteration_map.{pdf,png}`. Suggested panels:
-   - crop golden-trace status (current crop trace matches end-to-end);
-   - crop final missing/extra gap (`149` missing, `365` extra current);
-   - full edge over/under count feeding full Network strand gap.
-3. **Move constants into a shared data file** before adding more figures. Suggested
-   file: `figures/parity_metrics_current.json`. Both figure generators should read
-   from it so captions and panels do not drift.
-4. **Regenerate only when metrics move**:
-   - frontier trace status regresses or moves to a new trace surface;
-   - crop final edge gap drops;
-   - candidate-generation gap regresses from zero;
-   - successor full edge/network counts change;
-   - evaluated Network ADR 0012 changes status.
-
-Do not use the figures as live status. Live status remains
-[EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md); figures
-are publication and planning summaries generated from that record.
+When numbers in findings move, update constants in the generator and re-run.
 
 ## PhD proposal manuscript (live include)
 
-The figure is **wired into** the dissertation proposal appendix
-(Analytical Development) as:
+| Manuscript asset | Source stem | Include |
+|------------------|-------------|---------|
+| `fig-appendix-parity-trajectory` | `parity_trajectory` | `figures/include/appendix-parity-trajectory.tex` |
+| `fig-appendix-parity-funnel` | `parity_funnel` | `figures/include/appendix-parity-funnel.tex` |
+| `fig-appendix-parity-agreement` | `parity_agreement` | `figures/include/appendix-parity-agreement.tex` |
+| `fig-appendix-parity-cert-table` | `parity_cert_table` | `figures/include/appendix-parity-cert-table.tex` |
 
-| Manuscript path | Role |
-|-----------------|------|
-| `PhD-Writing/manuscript/figures/fig-appendix-matlab-python-parity.{pdf,png}` | Asset copies (PDF preferred) |
-| `.../figures/include/appendix-matlab-python-parity.tex` | Caption + `\label{fig:appendix-matlab-python-parity}` |
-| `.../sections/30-backmatter/appendix/370-analytical-development.tex` | Prose + `\inputfigure{...}` |
-| `.../config/figure-assets.tex` | `\FigAppendixMatlabPythonParity` stem |
+Macros: `PhD-Writing/manuscript/config/figure-assets.tex`.
+Prose: `sections/30-backmatter/appendix/370-analytical-development.tex`.
 
-**After regenerating here**, re-copy into the manuscript:
+**After regenerating here**, re-copy:
 
 ```powershell
-Copy-Item -Force figures\matlab_python_parity_journey.pdf `
-  "D:\2P_Data\Aaron\New folder\PhD-Writing\manuscript\figures\fig-appendix-matlab-python-parity.pdf"
-Copy-Item -Force figures\matlab_python_parity_journey.png `
-  "D:\2P_Data\Aaron\New folder\PhD-Writing\manuscript\figures\fig-appendix-matlab-python-parity.png"
+$dst = "D:\2P_Data\Aaron\PhD-Writing\manuscript\figures"
+Copy-Item -Force figures\parity_trajectory.pdf  "$dst\fig-appendix-parity-trajectory.pdf"
+Copy-Item -Force figures\parity_trajectory.png  "$dst\fig-appendix-parity-trajectory.png"
+Copy-Item -Force figures\parity_funnel.pdf      "$dst\fig-appendix-parity-funnel.pdf"
+Copy-Item -Force figures\parity_funnel.png      "$dst\fig-appendix-parity-funnel.png"
+Copy-Item -Force figures\parity_agreement.pdf   "$dst\fig-appendix-parity-agreement.pdf"
+Copy-Item -Force figures\parity_agreement.png   "$dst\fig-appendix-parity-agreement.png"
+Copy-Item -Force figures\parity_cert_table.pdf  "$dst\fig-appendix-parity-cert-table.pdf"
+Copy-Item -Force figures\parity_cert_table.png  "$dst\fig-appendix-parity-cert-table.png"
 ```
-
-Then rebuild the standalone appendix PDF (`appendix.tex` / project Makefile).

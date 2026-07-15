@@ -20,7 +20,7 @@ source fetch → 3-vote adversarial verification → synthesis).
 >
 > **Proposal / methods multipanel** (crop overlap trajectory, edge-pair recovery
 > waterfall, full-volume MATLAB vs Python counts + certification table):
-> [figures/matlab_python_parity_journey.pdf](../../figures/matlab_python_parity_journey.pdf)
+> [figures/README.md](../../figures/README.md)
 > — see [figures/README.md](../../figures/README.md).
 
 ---
