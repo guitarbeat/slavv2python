@@ -19,7 +19,7 @@ flat “all green” dashboards.
 |------|-------|------------------------|
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
 | [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a 1-pair swap | Missing vs extra side-by-side; after generation closed, extras displaced MATLAB pairs in faithful cleanup |
-| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under- then over-selected, then matched | Signed residual across `v4→v16`; Network tracks Edges (no independent Network bug); ownership PASS while still −4k edges |
+| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched - Network still -1 strand | Signed residual across `v4→v16`; Network tracks Edges; at v16 Edges PASS while Network multiset FAIL |
 | [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels Network still fails ADR 0012 by one strand | Absolute mismatch budget; Network multiset FAIL is the open ship gate |
 
 | Script | Role |

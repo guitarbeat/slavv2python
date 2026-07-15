@@ -150,8 +150,8 @@ _Avoid_: Treating strict-field `connections` / strand-count equality as the Phas
 An engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—tracked in [Exact Proof Findings](#exact-proof-findings) and iterated on the [Crop Harness Volume](#crop-harness-volume). **Network ADR 0012 multiset equality is the open ship gate**, not stretch: it can fail while Edges ownership passes because Network topology is a function of the emitted connection set (see [ADR 0012 post-v6 addendum](docs/adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)).
 _Avoid_: Calling stretch progress "certified," calling Network multiset failure "stretch only," or conflating ownership-map pass with Phase 1 closure.
 
-**Post-v6 residual KPIs (primary loop):** golden-trace first-diverge iteration (crop), crop final connection gap, full edge connection gap, then **evaluated Network** `prove-exact`. Candidate-generation overlap ≥80% is a **cleared historical gate** (achieved **97.31%** on `crop_M_exact_v3`).
-_Avoid_: Re-blocking work on the old 80% gate, using ownership-map % as the residual tracker (already at cert bar on `v6`), or inventing non–lowest-linear-index queue tie-breaks.
+**Post-v6 residual KPIs (primary loop):** crop final connection residual (current: one equal-metric pair swap), full edge multiset residual, then **evaluated Network** `prove-exact` multiset equality. Live numbers: [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md). Candidate-generation overlap ≥80% is a **cleared historical gate** (achieved **97.31%**, now **100%** on crop).
+_Avoid_: Re-blocking work on the old 80% gate, using ownership-map % as the residual tracker (already at cert bar), treating approximate strand-count % as Network pass, or inventing non–lowest-linear-index queue tie-breaks.
 
 **Stretch run root:** Prefer `crop_M_exact_v3` (or a new crop root seeded via preflight); rerun Edges only on current `main`. Do not treat pre–PR #103 `crop_M_exact` as the residual baseline.
 _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
@@ -160,10 +160,10 @@ _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
 _Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
 
-**Phase 1 operating sequence (post-v6):** (1) Residual watershed **generation / claiming-state** fixes on crop (golden-trace ~iter 13,761); (2) when crop residual moves materially, preflight a **new** canonical root (e.g. `canonical_full_v7`) from `v6` lineage, rerun Edges→Network with debug maps; (3) **evaluated** Network ADR 0012 (Edges regression check) → [Phase 1 Closure](#phase-1-closure) if green. Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md).
-_Avoid_: Claiming closure from Edges-only pass, treating Network red as a Network rewrite, or using `prove-exact-sequence` as the ship gate.
+**Phase 1 operating sequence (current):** (1) Crop equal-metric degree-pruning pair-swap triage (generation already closed; golden trace matches); (2) when crop residual moves materially, preflight a **new** canonical root from the latest certified Energy/Vertices lineage, rerun Edges→Network with debug maps; (3) **evaluated** Network ADR 0012 multiset equality (Edges regression check) → [Phase 1 Closure](#phase-1-closure) if green. Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). Live claim surface: findings / HANDOFF (e.g. `canonical_full_v16`: Edges ✅ Network ❌).
+_Avoid_: Claiming closure from Edges-only pass, treating Network red as a Network rewrite, treating ~99.998% strand count as multiset pass, or using `prove-exact-sequence` as the ship gate.
 
-**Closure run root:** Prefer a **new** canonical directory (e.g. `canonical_full_v7`) preflighted from the prior closure attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve `canonical_full_v6` as audit (Edges ✅ Network ❌).
+**Closure run root:** Prefer a **new** canonical directory preflighted from the prior attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve historical audits (`v6`…`v16`) in place.
 
 ### Canonical Volume
 The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.
@@ -190,7 +190,7 @@ _Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closur
 **Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on a fresh canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
 _Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while residual iteration uses fresher crop outputs.
 
-**Closure run root:** Prefer a **new** canonical run directory (e.g. `canonical_full_v7`) seeded via preflight from `v6`; carry forward certified Energy/Vertices, rerun Edges → Network only. Do not overwrite `canonical_full_v6` in place (audit record: Edges ✅ Network ❌).
+**Closure run root:** Prefer a **new** canonical run directory seeded via preflight from the latest certified Energy/Vertices lineage; rerun Edges → Network only. Do not overwrite historical claim/audit roots in place.
 _Avoid_: `--force-rerun-from edges` on a historical claim/audit run root when that run is the milestone record.
 
 **Closure failure policy:** If Network fails ADR 0012 on the new canonical run while Edges still pass, treat it as **generation residual** first (confirm Network isolation with MATLAB edges still exact). If Edges ownership regresses, triage measurement artifacts (checkpoint freshness, orientation/shape, oracle pairing, ownership-map probe) before assuming a new watershed defect.

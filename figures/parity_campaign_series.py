@@ -18,7 +18,8 @@ CANONICAL_MATLAB_EDGES = 69_500
 CANONICAL_MATLAB_STRANDS = 48_049
 ORACLE_CROP_ID = "180709_E_crop_M_v2"
 ORACLE_FULL_VOLUME = "180709_E"
-CANONICAL_RUN_CLOSED = "canonical_full_v16"
+# Latest full-volume claim/audit surface (Phase 1 still open — Network multiset FAIL)
+CANONICAL_CLAIM_RUN = "canonical_full_v16"
 
 # Log-scale floor so zero residual remains visible as a bar/point
 LOG_FLOOR_COUNT = 0.85
@@ -195,7 +196,7 @@ class CanonicalAudit:
     annotation: Annotation | None = None
 
 
-AGREEMENT_CLAIM = "Full-volume Edges under-selected, then over-selected, then matched"
+AGREEMENT_CLAIM = "Full-volume Edges under-, over-, then matched - Network still -1 strand"
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
     f"(MATLAB edges = {CANONICAL_MATLAB_EDGES:,}; strands = {CANONICAL_MATLAB_STRANDS:,}). "
@@ -288,7 +289,8 @@ class CertRow:
 
 CERT_CLAIM = "On 180M voxels Network still fails ADR 0012 by one strand"
 CERT_TAKEAWAY = (
-    "Takeaway: Energy/Vertices closed; Edges ownership/count evaluated PASS on canonical_full_v16.\n"
+    "Takeaway: Energy/Vertices closed; Edges ownership/count evaluated PASS on "
+    f"{CANONICAL_CLAIM_RUN}.\n"
     "Open ship gate: Network strand multiset FAIL (48,048 / 48,049) — one degree-pruning pair swap\n"
     f"(crop: MATLAB {list(CROP_SWAP_MATLAB_PAIR)} vs Python {list(CROP_SWAP_PYTHON_PAIR)}). "
     "Not an independent Network bug."
