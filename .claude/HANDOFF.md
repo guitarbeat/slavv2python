@@ -28,7 +28,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 - Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ❌ — one-strand residual class.
 - **No independent Network bug:** MATLAB edges → Python Network topology exact.
 - **Crop = regression guard** (generation / frontier / re-selection closed). **Full volume = claim surface.**
-- **Active residual class:** Candidate Set join displacement at degree-excess (extra join outranks oracle pair under equal post-resample max). Ablation documented in ONE TRUTH. Production fix = watershed **join emission**, not cleanup reorder / secondary keys.
+- **Active residual class:** Candidate Set join displacement at degree-excess (extra join outranks oracle pair under equal post-resample max). Ablation documented in ONE TRUTH. Production fix = watershed **join emission**, not cleanup reorder / secondary keys. **2026-07-17: three join-emission fix variants attempted and reverted (crop regressed each time) — localized selection-rule tweaks cannot target the one residual hub without breaking the 19,225 crop balance. Fix requires a faithful MATLAB-semantics watershed rewrite, scoped separately. Blocker OPEN.**
 - Prefer current claim root in findings (`v16` at last synthesis); preserve prior audits in place.
 
 ### Do not

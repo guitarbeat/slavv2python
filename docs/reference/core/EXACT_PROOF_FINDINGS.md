@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
-**Last Updated:** 2026-07-16  
+**Last Updated:** 2026-07-17  
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only).
 
@@ -38,6 +38,63 @@
 - **Full residual:** Edge Selection degree-excess drops oracle pair `(34897, 38584)` in favor of earlier equal-metric **extra** candidate **`46698`** `(26444, 38584)`. Cleanup Python≡MATLAB on the same Candidate Set (0 row-index mismatches on comparator).
 - **Ablation:** drop only `cand 46698` → undirected pair overlap **69,500 / 69,500**. Production fix = stop emitting / displacing that join (watershed join emission), **not** a cleanup secondary-key hack.
 - Scratch localization artifact: `workspace/scratch/full_residual_pair_raw.npz` (indices `46698`, `56786`).
+
+### Phase A revalidation (2026-07-17) — evidence refreshed, code fix still open
+
+Offline on `canonical_full_v16` (no writer):
+
+| Check | Result |
+|-------|--------|
+| Candidate coverage of MATLAB finals | **69,500 / 69,500** (`only_mat=0`); **15,150** Python-only extras among **84,650** candidates |
+| Baseline `select_and_finalize_edge_set` | only_py=`(26444,38584)` only_mat=`(34897,38584)` |
+| Ablation drop `cand 46698` | **only_py=0 only_mat=0** (reconfirmed) |
+| Funnel loss stage | **degree-excess only** (crop keeps both; cycles not the residual) |
+| Chunk eligibility (`--apply-matlab-chunk-eligibility`) | drops **0** candidates on full volume |
+| Ownership vs MATLAB `watershed_ownership_map.mat` (perm `(0,2,1)`) | claimed-label agree **~100%**; residual verts **exact** basin counts; **3** label mismatches + **5** mat-only voxels elsewhere (not near residual hub) |
+| Residual origins | `46698` origin **26444**; `56786` origin **34897**; hub **38584** |
+| Post-resample metrics | equal max **−4.870152991855598** for residual pair (and a third hub edge `70676`); raw max differed (−9.24 vs −7.73) |
+| MATLAB final partners | `26444`→`{41666}` only; `38584`→`{34897,55337}` only |
+
+**Interpretation:** residual is still a **Candidate Set** issue that degree-excess resolves against MATLAB under equal post-resample max. Ownership identity at residual verts + chunk eligibility drops 0 rule out basin-map drift and chunk windows.
+
+**2026-07-17 local watershed probe** (`workspace/scratch/phase_a_local_watershed_joins.py`): reduced energy crop + **386** vertices within r=24 of hub **38584** still emits **both** residual joins under that **non-production** surface (also float32 cast — not exact-route fidelity). Treat as a **hint only**, not proof of full-volume emission locality. For a real locality/order claim: instrument full-volume join emission (`ExecutionTracer.on_join`) for origins `{26444,34897}` — do not invent a second watershed universe.
+
+**Open dual hypothesis (not yet resolved):**
+
+1. **Non-emission:** MATLAB never records join origin **26444→38584** (need join-trace / raw MATLAB candidates).
+2. **Emission order among equal-metric ties:** both joins exist; MATLAB lists oracle pair earlier so degree-excess prunes the extra instead (Python has `cand 46698` before `56786` after length+metric stable sort). Prior broad endpoint-descending tertiary sort **regressed crop** — any tertiary key must be proven crop-safe.
+
+Shared post-resample bottleneck for three hub edges is space `[30,295,51]` (metric −4.870…). **No production code fix yet.**
+
+### Join-emission fix attempts (2026-07-17) — all reverted, blocker OPEN
+
+Three production fix variants were implemented in `matlab_get_edges_by_watershed.py`
+(join block, ~L744-831), each gated by the crop raw-candidate parity guard
+(19,225/19,225) and the unit suite. **All reverted; production code unchanged.**
+
+**Definitive evidence gathered:** traces for `cand 46698` (origin 26444) and
+`cand 56786` (origin 34897) both terminate at the **identical meeting voxel
+`[50,25,293]`**. This confirms the residual is H2 (same-location multi-join), and
+that MATLAB's `find(~adjacency(current, others), 1, 'last')` (highest-index other
+watershed) selects 34897 over 26444 at that location — exactly what degree-excess
+then keeps, dropping `26444→38584`.
+
+| Attempt | Change | Crop result | Verdict |
+|---|---|---|---|
+| A | Emit join to *all* claimed-in-strel vertices, descending index | 19,225 → **30,472** | Rejected (over-emit) |
+| B | Faithful `vertex_index_map` set only at pop (MATLAB L165 semantics) | bridge unit test fails (0 vs 1 connection) | Rejected (too strict) |
+| C | Single join/pop, partner = highest-index not-yet-adjacent (MATLAB `find(...,'last')`) | 19,225 → **23,264** | Rejected (global perturbation) |
+
+**Learning:** the 19,225 crop match is a delicate empirical balance calibrated to the
+current argmin-neighbor partner selection. A localized selection-rule tweak cannot
+target only the one residual hub without disturbing thousands of other joins. The
+correct fix requires reproducing MATLAB's full `while ~all(adjacency(others, current))`
+multi-join loop with pop-only `vertex_index_map` labeling — a deep architectural
+change (explicitly warned against in HANDOFF), not a safe incremental patch.
+
+**Conclusion:** residual needs a faithful, fully-MATLAB-semantics watershed rewrite,
+validated first on crop (19,225/19,225) before any full run. Scoped as its own effort.
+**Network one-strand residual (48,048 vs 48,049) remains UNFIXED.**
 
 **Do not claim:** “100% parity”, “all four stages certified on full volume”, approximate strand-count % as Network pass, or Phase 1 closed from Edges-only.
 
@@ -405,7 +462,7 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 > Live residual detail and counts: [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk) only.
 
-1. **Full Edge Set residual (generation join displacement)** — extra watershed join displaces the oracle pair at degree-excess under equal post-resample max (see ONE TRUTH ablation). Cleanup is faithful. **Production fix = join/emission**, not cleanup reorder.
+1. **Full Edge Set residual (generation join displacement)** — extra watershed join displaces the oracle pair at degree-excess under equal post-resample max (see ONE TRUTH + Phase A table). Cleanup faithful; chunk eligibility not causal; ownership not divergent at residual verts. **Production fix = join/emission for origin 26444**, not cleanup reorder. Code line not yet identified.
 2. **Phase 1 ship gate = Network ADR 0012 multiset** — Edges evaluated PASS on claim root; Network FAIL until Edge Set multiset matches (MATLAB-edge isolation exact). Do not reopen Network as an independent port.
 3. **Crop / frontier / cleanup** — regression guards only (closed on re-selection; generation gap 0; golden trace match; cleanup comparator green).
 

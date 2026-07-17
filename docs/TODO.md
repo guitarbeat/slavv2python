@@ -21,10 +21,11 @@
 
 ### Ship tasks (open)
 
-- [ ] **1. Production fix — full residual join**  
-  Stop emitting (or stop displacing with) the extra watershed join that degree-excess prefers over the oracle pair at the residual hub. Match MATLAB join/emission.  
-  **Do not:** cleanup secondary keys, endpoint-descending reorder, shared `energy_temp_flat` vertex-origin restore without a new probe.  
-  **After fix:** crop guards still green (frontier match, generation closed, re-selection pair multiset).
+- [ ] **1. Production fix — full residual join** — **BLOCKED (2026-07-17)**  
+  Stop emitting the extra watershed join `cand 46698` `(26444→38584)` that degree-excess prefers over oracle `(34897,38584)` under equal post-resample max.  
+  **2026-07-17:** ablation reconfirmed; both residual candidates terminate at same meeting voxel `[50,25,293]` (H2 confirmed). Three join-emission fix variants implemented + reverted — each regressed crop raw-candidate parity (19,225): emit-all-broad → 30,472; pop-only faithful map → bridge test fails; single-join highest-index → 23,264. **Localized selection tweaks cannot target the one hub without breaking the 19,225 crop balance.** Fix requires faithful MATLAB-semantics watershed rewrite (multi-join `while ~all` loop + pop-only labeling), scoped as its own effort. Production code unchanged.  
+  **Do not:** cleanup secondary keys, endpoint-descending reorder, shared `energy_temp_flat` vertex-origin restore, or another guess at the join block.  
+  **See:** [ONE TRUTH residual](reference/core/EXACT_PROOF_FINDINGS.md#join-emission-fix-attempts-2026-07-17--all-reverted-blocker-open).
 
 - [ ] **2. Successor full Edges → Network + evaluated proofs**  
   New claim root (do not overwrite prior audits). Carry certified Energy/Vertices; rerun edges→network with ownership maps.  
