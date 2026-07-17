@@ -8,12 +8,13 @@ file stays intentionally lightweight. It highlights the current product surface
 and recent changes without trying to preserve superseded workflow plans as if
 they were still active.
 
-For current behavior and proof status, prefer:
+For current behavior and **live proof status**, prefer:
 
-- [README.md](../README.md)
-- [AGENTS.md](../AGENTS.md)
+- [ONE TRUTH (exact proof findings)](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)
+- [README.md](../README.md) · [AGENTS.md](../AGENTS.md)
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
-- [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
+
+Changelog entries below are **dated product notes**, not the live parity table.
 
 ## [Unreleased] - 2026-07-10
 
@@ -40,7 +41,7 @@ For current behavior and proof status, prefer:
 
 ### Added / Changed
 
-- **Full crop sequence certified**: Verified that all four pipeline stages (Energy → Vertices → Edges → Network) successfully pass sequence proof validation (`prove-exact-sequence`) on the crop harness (`180709_E_crop_M_v2`), matching all ADR 0011 and ADR 0012 gates.
+- **Full crop sequence certified (crop harness only)**: All four stages pass sequence / ADR bars on the crop harness (`180709_E_crop_M_v2`). **Not** Phase 1 full-volume closure — see [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 - **Auditor support for cache-resumed energy runs**: Resolved a proof coordinator blocker by propagating a `resumed` flag for cached energy runs (where `elapsed_seconds == 0.0`), preventing incorrect freshness validation failures.
 - **Canonical energy octave-3/4 divergence — root cause + bit-exact `linspace` fix**: the residual canonical `scale_indices` mismatches (v3: 39,494/16.8M) were root-caused, via a MATLAB R2019a ground-truth harness (`workspace/scratch/matlab_energy_instr/`), to the Python coarse→fine **upsample mesh not bit-matching MATLAB `linspace`** — at coarse-cell boundaries a ~1-ULP mesh drift floored `interp3` into the wrong cell (valid↔`Inf`), flipping the per-voxel scale argmin. `n_jobs` and chunk seams were ruled out; an interim grid-snap heuristic was rejected (MATLAB `linspace` does not always land on integers). Fix replaces `_matlab_zero_based_linspace` with a bit-exact MATLAB port (mod-based `d1`, multiply-then-divide, forced endpoints, integer phase term), reproducing MATLAB to **<1e-17** on both integer- and sub-integer-landing voxels; full suite green (595 passed). **Canonical `prove-exact --stage energy` now CERTIFIES: 0 scale mismatches across all 16,777,216 voxels** (39,494 → 0), energy max \|Δ\|≈2.4e-11 under the ADR 0011 gate. See [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md) and [solution note](solutions/parity/canonical-energy-high-octave-divergence.md).
 - **Tolerance parity gate (ADR 0011 Accepted)**: Phase 1 certification compares continuous float fields with `np.allclose` (rtol=1e-7, atol=1e-9) and discrete/topological fields strictly; `--strict-floats` forces bit-identity for regression. Wired across stages via a comparator `float_tol`. Pure ULP was rejected (it explodes near zero).
@@ -48,7 +49,7 @@ For current behavior and proof status, prefer:
 - **Vertices stage CERTIFIED** on crop v2 (positions + scales exact, 13,706 = 13,706; energies sourced from raw `vertices.mat`). Fixed `ellipsoid_offsets` to port MATLAB `construct_structuring_element.m` float-radius membership.
 - **Edges parity fixes**: `edge_number_tolerance` hard-coded to 2 (per `get_edges_V300.m`); conflict painting disabled on the exact route (MATLAB comments out `choose_edges_V200`).
 - **Edges RESOLVED + ADR 0012 Accepted**: Fixed a double-transpose orientation bug in `generate_watershed_candidates` (the watershed ran on a scrambled grid). On the correct grid the per-step math (orientation, `r_over_R`, size/direction penalties) matches MATLAB exactly; the residual is **emergent watershed global-ordering sensitivity**, not a local bug. Certification bar is now **voxel ownership-map agreement (~63.5%) + per-edge trace tolerance**, not exact pair-set equality. The old 9,429 → 13,775 / 88.7% pair-overlap figures are **deprecated** (inflated by the wrong grid). MATLAB R2019a ground-truth harness retained under `workspace/scratch/matlab_edge_instr/`.
-- **Network stage certified (ADR 0012)**: Topology **exact** — strands 10,722/10,722 (endpoint-pair multiset) and bifurcations 5,601/5,601 (0 missing/extra) on curated edges. Added an order-independent network comparator (`_compare_network_stage`), fixed a strand-scale off-by-one normalization, and fixed a strand-assembly trace-orientation bug in `_build_graph_state` (→ 100% strand point-count match). Residual is a sub-voxel strand-smoothing kernel floor, certified under trace tolerance.
+- **Network stage certified under stage isolation (ADR 0012)**: Topology **exact** when fed identical MATLAB edges — strands 10,722/10,722 (endpoint-pair multiset) and bifurcations 5,601/5,601 on curated edges. Comparator + assembly fixes landed. **Does not claim** full-volume native-pipeline Network multiset green (open ship gate lives in ONE TRUTH).
 - **Dev tooling**: `/prove-parity` skill (`.claude/skills/`) + AGENTS.md guardrails (verify-before-commit, PowerShell line-count gotcha, parity-metric rule).
 - **Mismatch diagnostics** no longer crash on ragged edge-trace fields (edge stage now emits per-field evidence).
 

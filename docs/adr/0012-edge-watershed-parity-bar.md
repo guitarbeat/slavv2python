@@ -51,23 +51,32 @@ Network geometry parity (Phase B) is a separate, scoped effort: a scale-subscrip
 
 ## Addendum (2026-07-06): Phase 1 closure bar vs strict-field stretch
 
-**Superseded operational details:** This addendum established the closure bar vs strict-field stretch distinction. Its concrete run names and operating order (`canonical_full_v5`) are historical; use the 2026-07-12 addendum and [.claude/HANDOFF.md](../../.claude/HANDOFF.md) for current planning.
+> **DEPRECATED as operational runbook** (kept for decision history).  
+> **Live status / claim root:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).  
+> **Commands:** [.claude/HANDOFF.md](../../.claude/HANDOFF.md).  
+> Concrete roots named below (`v5`, crop 80% loop) are **historical** — do not use as current targets.
+
+**Policy that remains in force:**
 
 Phase 1 exact-route **ship confidence** uses **two tracked bars** for Edges/Network:
 
-1. **Certification bar (ship gate):** per-stage `prove-exact --stage edges` and `--stage network` on full `180709_E` against `180709_E_full_v2` under this ADR (ownership-map + trace tolerance for edges; strand/bifurcation multisets + sub-voxel geometry for network). Energy and Vertices remain under [ADR 0011](0011-energy-float-certification-policy.md). **Phase 1 closes when this passes on a fresh canonical run** (`canonical_full_v5`, seeded from `canonical_full_v4`, Edges→Network rerun from current `main`).
+1. **Certification bar (ship gate):** per-stage `prove-exact --stage edges` and `--stage network` on full `180709_E` against `180709_E_full_v2` under this ADR (ownership-map + trace tolerance for edges; strand/bifurcation multisets + sub-voxel geometry for network). Energy and Vertices remain under [ADR 0011](0011-energy-float-certification-policy.md). **Phase 1 closes when this passes on a fresh canonical claim root** (name lives only in ONE TRUTH; do not freeze IDs here).
 
-2. **Strict-field stretch (non-blocking):** exact `connections` / strand-count equality vs MATLAB, tracked on a refreshed crop harness (`crop_M_exact_v3`). **Primary loop KPI:** candidate-generation overlap (MATLAB final pairs present in Python candidates). **Milestone check:** strict-field `prove-exact` on crop when overlap moves materially. Does **not** block Phase 1 once the certification bar passes on full volume.
+2. **Strict-field stretch (non-blocking):** exact `connections` / strand-count equality vs MATLAB on crop. Does **not** block Phase 1 once the certification bar passes on full volume.
 
-**If the certification bar fails on `canonical_full_v5`:** Phase 1 remains open. Triage measurement first (checkpoint freshness, orientation/shape, oracle pairing, ownership probe) before assuming a watershed code defect. **If it passes:** declare Phase 1 closed; continue strict-field stretch on crop without reopening the ship gate.
+**If the certification bar fails:** Phase 1 remains open. Triage measurement first (checkpoint freshness, orientation/shape, oracle pairing, ownership probe) before assuming a watershed code defect. **If it passes:** declare Phase 1 closed; continue strict-field stretch on crop without reopening the ship gate.
 
-**Operating order:** refresh crop `v3` (edges only, ~minutes) → launch canonical `v5` (edges→network) → per-stage ADR 0012 proof on `v5`. Do not use `prove-exact-sequence` strict-field failure as the Phase 1 closure gate.
+Do not use `prove-exact-sequence` strict-field failure as the Phase 1 closure gate.
 
 **Considered:** closing Phase 1 on crop ADR 0012 alone, or requiring strict-field on full volume before closure — rejected; canonical volume is the Phase 1 claim surface (spec R1a), and ADR 0012 already records why exact pair-set equality is the wrong ship metric.
 
+### Historical note (2026-07-06 operating order — do not execute)
+
+Original operating order was: refresh crop `v3` → launch `canonical_full_v5` → proof. Superseded by later full audits; see session diary in findings if needed.
+
 ## Addendum (2026-07-06): Post-v5 watershed iteration and v6 closure
 
-**Superseded operational details:** This addendum explains why `v6` was launched and why evaluated ownership maps were required. The 80% crop-overlap launch gate was cleared and retired; it is no longer a current planning gate.
+> **DEPRECATED as operational runbook.** Explains why `v6` was launched and why evaluated ownership maps were required. The 80% crop-overlap launch gate was cleared and retired. **Live residual:** ONE TRUTH.
 
 After `canonical_full_v5` (writer succeeded, proof invalid):
 
@@ -79,17 +88,19 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 
 4. **v6 run shape.** Preflight from `canonical_full_v5` → new run root `canonical_full_v6`; carry certified Energy/Vertices; rerun **Edges → Network only**. Before proof: (a) MATLAB `watershed_ownership_map.mat` via instrumented harness on full `180709_E`; (b) Python `vertex_index_map` via `--include-debug-maps` on edge capture.
 
-5. **Closure verdict.** Phase 1 closes only on **evaluated** ADR 0012 per-stage proofs (`adr0012_evaluated: true`) on `canonical_full_v6`. Stretch strict-field progress on crop continues without blocking ship once evaluated ADR 0012 passes on full volume.
+5. **Closure verdict (policy):** Phase 1 closes only on **evaluated** ADR 0012 per-stage proofs (`adr0012_evaluated: true`) on the **current** full claim root (not a frozen `v6` ID). Stretch strict-field progress on crop continues without blocking ship once evaluated ADR 0012 passes on full volume.
 
-**Operating order:** watershed fixes on crop → 80% milestone → map prep → v6 writer → evaluated ADR 0012 proof. See [.claude/HANDOFF.md](../../.claude/HANDOFF.md).
+**Historical operating order (do not execute):** watershed fixes on crop → 80% milestone → map prep → `v6` writer → evaluated ADR 0012 proof.
 
 ## Addendum (2026-07-12): Post-v6 residual — Network is the open ship gate
 
-**What v6 proved (evaluated proofs on full `180709_E` / `canonical_full_v6`):**
+> **Policy still in force.** **Live counts / claim root:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. The `v6` numbers below are a **historical milestone**, not the current residual.
 
-1. **Edges ADR 0012 PASS** — `adr0012_evaluated: true`, ownership-map agreement **~96%** (well above the 60% bar). Trace tolerance can still fail large numbers of edges; ownership carries the stage per this ADR.
-2. **Network ADR 0012 FAIL** — strand endpoint-pair multiset mismatch (Python ~44.6k vs MATLAB ~48.0k strands). **Stage isolation:** with identical MATLAB edges + vertices, Python Network reproduces MATLAB topology **exactly**. The failure is **entirely downstream of the residual edge-connection gap** (~4k fewer Python connections after the crop-truncation floor fix), not a Network port defect.
-3. **80% crop-overlap launch gate is historical** — cleared at **97.31%** candidate overlap on `crop_M_exact_v3` (2026-07-07). Do not re-block canonical work on that number.
+**What `v6` first proved (historical evaluated proofs on full `180709_E`):**
+
+1. **Edges ADR 0012 PASS** — `adr0012_evaluated: true`, ownership-map agreement well above the 60% bar (exact % is historical). Trace tolerance can still fail large numbers of edges; ownership carries the stage per this ADR.
+2. **Network ADR 0012 FAIL** — strand endpoint-pair multiset mismatch. **Stage isolation:** with identical MATLAB edges + vertices, Python Network reproduces MATLAB topology **exactly**. Failure is **downstream of residual Edge Set**, not a Network port defect.
+3. **80% crop-overlap launch gate is historical** — cleared 2026-07-07. Do not re-block canonical work on that number.
 
 **Policy clarification (why Network still blocks Phase 1 even when Edges pass):**
 

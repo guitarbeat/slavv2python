@@ -13,24 +13,26 @@ optimization work. This spec prevents broad Phase 2 refactors from starting
 before the full-volume Network ADR 0012 ship gate is green and the canonical
 baseline is frozen.
 
-**Live status:** [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md)
-**Operator brief:** [HANDOFF](../../.claude/HANDOFF.md)
-**Phase 1 spec:** [phase-1-exact-route-spec.md](phase-1-exact-route-spec.md)
+**Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
+**Operator brief:** [HANDOFF](../../.claude/HANDOFF.md)  
+**Phase 1 spec:** [phase-1-exact-route-spec.md](phase-1-exact-route-spec.md)  
 **Phase 2 draft:** [phase-2-optimization-spec.md](phase-2-optimization-spec.md)
+
+> **Do not freeze a preferred run ID in this spec.** Use the claim/closure root named in ONE TRUTH (or a **new successor** of that root). Historical names such as `canonical_full_v7` are audit lineage only.
 
 ---
 
 ## Entry criteria
 
-Do not start this transition until all are true on a fresh canonical full-volume
-run root, preferably `canonical_full_v7` or successor:
+Do not start this transition until all are true on a **fresh** canonical full-volume
+run root (successor of the current claim surface in ONE TRUTH; never overwrite prior audits):
 
 1. Energy passes the ADR 0011 bar on full `180709_E`.
 2. Vertices pass the ADR 0011 bar on full `180709_E`.
 3. Edges pass an **evaluated** ADR 0012 proof against `180709_E_full_v2`.
 4. Network passes an **evaluated** ADR 0012 proof against `180709_E_full_v2`.
 5. Proof evidence is recorded in
-   [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
+   [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 6. The closure run root and oracle are not overwritten after proof.
 
 ## Exit criteria

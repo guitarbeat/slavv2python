@@ -1,15 +1,20 @@
 # SLAVV MATLAB→Python Parity — Project Update
 
 **Date:** 2026-07-01  
-**Scope:** Bit-exact reproduction of the MATLAB SLAVV vessel-extraction pipeline
+**Status:** ⛔ **DEPRECATED as live status** (frozen narrative memo).  
+**Scope (historical):** Bit-exact reproduction of the MATLAB SLAVV vessel-extraction pipeline
 (Energy → Vertices → Edges → Network) in Python, certified against a frozen
 MATLAB R2019a oracle.
 
-> ⚠️ **Point-in-time snapshot (2026-07-01).** Do **not** use this file as current
-> status. **Authority map:** [docs/README.md](README.md#documentation-authority-map-one-concept--one-home).
-> Live status → [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md) ·
-> commands → [HANDOFF](../.claude/HANDOFF.md) · tasks → [TODO](TODO.md).
-> Network ADR 0012 multiset remains the open Phase 1 ship gate until findings say otherwise.
+> ⛔ **Do not use this file for pass/fail, claim root, residual KPIs, or “what’s next.”**  
+> **Migrated authority:**  
+> - Live status → [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
+> - Commands → [HANDOFF](../.claude/HANDOFF.md)  
+> - Tasks → [TODO](TODO.md)  
+> - Map → [docs/README authority map](README.md#documentation-authority-map-one-concept--one-home)  
+>
+> Body below is a **2026-07-01** snapshot (crop-era + full Energy story). Full-volume
+> Edges evaluated PASS and Network one-strand residual are **not** described here.
 
 ---
 
@@ -32,9 +37,8 @@ difference in one interpolation coordinate), and corrected with a bit-exact port
 
 ## Certification status by stage
 
-> **Canonical status source:** [docs/reference/core/EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
-> is the single source of truth for current per-stage parity status; the table below is a
-> point-in-time snapshot (2026-07-01).
+> **Canonical status source:** [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)
+> only. The table below is a **frozen 2026-07-01 snapshot** and is **not** live status.
 
 Certification is **evidence-based**: each stage's Python output is compared field-by-field
 to the MATLAB oracle. Discrete fields (scale indices, graph topology) must match exactly;

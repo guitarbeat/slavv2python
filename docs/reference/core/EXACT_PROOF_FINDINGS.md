@@ -108,12 +108,15 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 | 2026-07-14 | Bounded golden-trace regression after stale writer cleanup | **bounded_match** through iteration **30,000** | Killed two stale `watershed_frontier_diff.py --regenerate-python` processes that were interleaving JSONL writes. Patched bounded comparison so `--stop-after-iteration` compares only iteration-bearing rows. Current bounded trace passes well beyond the retired 13,761 split. |
 | 2026-07-14 | Test boundary-based suppression as extra-candidate explanation | **Rejected** as production rule | Geometry-only endpoint boundary filter damages overlap badly (threshold 1: overlap **14,984**, missing **527**). Oracle-aware zero-degree-boundary upper bound is only modest (best tested: overlap **15,377**, missing **134**, extras **238**), so boundary-adjacent zero-degree endpoints are not the root cause. |
 | 2026-07-14 | Match MATLAB post-watershed finalization and cleanup surface | **100%** generation; final **15,510 / 15,511** overlap | MATLAB raw watershed candidates equal Python raw candidates (**19,225 / 19,225**). Python now mirrors `resample_vectors`, map-resampled size/energy, smooth/crop unsigned casts, and cleanup on resampled traces. Refreshed crop final edges are **15,511** vs MATLAB **15,511** with one pair swap (`[4043, 6281]` vs `[4212, 6281]`). |
+| 2026-07-15 | Crop re-selection + full residual localization | Crop final **15,511 / 15,511** (closed); full pair **69,499 / 69,500** | Crop one-pair swap closed under current Edge Selection. Full residual = degree-excess displacement by extra join `cand 46698` (ablation → 69,500/69,500). Claim root **`canonical_full_v16`**: Edges ✅ Network ❌ (one strand). **Live detail:** [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk). |
 
 **Probe command:** `.\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 --oracle-root workspace/oracles/180709_E_crop_M_v2`
 
-**80% milestone:** ✅ **cleared** (2026-07-07). **Post-frontier-match residual playbook:** [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) § A (crop final missing/extra loop) → § B (successor full run only when crop residual improves).
+**80% milestone:** ✅ **cleared** (2026-07-07). **Current residual playbook:** [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) § A (full join-displacement residual; crop = regression guard) → § B (successor full claim run after production fix). Do **not** re-open the retired crop one-pair loop as primary.
 
 ### 🔎 2026-07-04: Edge shortfall root cause (generation gap, not prune gap)
+
+> **Historical diagnosis (2026-07-04).** Superseded as *current residual class* by ONE TRUTH (crop generation closed; full residual is join displacement after faithful selection). Kept for investigation trail only.
 
 **Question:** why do Edges (and therefore Network) fail strict-field parity on both crop and full `180709_E`?
 
@@ -254,14 +257,16 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 ### Cold-start protocol
 
-If resuming exact parity work from a fresh thread, start with **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** (post-v6 operator synthesis). Summary:
+If resuming exact parity work from a fresh thread:
 
-1. `slavv jobs list` — no concurrent writer on the target `--dest-run-root`.
-2. `slavv parity ensure-oracle-artifacts --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage all --no-repair` (and same for `180709_E_full_v2` before canonical work).
-3. **Residual loop (primary):** crop frontier trace now **matches** MATLAB, raw watershed candidates match MATLAB exactly, and checkpoint generation gap is **0**. Final strict residual is one equal-count pair swap after the 2026-07-14 post-watershed finalization fix. Measure with `scripts/edge_selection_funnel_probe.py`; keep `scripts/watershed_frontier_diff.py` and `scripts/watershed_candidate_gap_probe.py` as regression guards.
-4. **Current full-volume refresh:** **`canonical_full_v10`** completed from `v8` lineage with debug maps. Edges ADR 0012 still passed, but full strict connection and Network strand counts over-select versus MATLAB. Crop final metrics have since moved to one pair swap; decide whether to resolve that local tie before launching another successor full root.
-5. Harness **fail loud** if ADR 0012 cannot evaluate (maps missing) — not a valid closure attempt. `v6` already has evaluated Edges PASS.
-6. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md). Re-synthesize HANDOFF if this findings top banner changes.
+1. Read **[ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)** (pass/fail, claim root, residual). Do **not** use the session diary or mid-file historical notes as status.
+2. Read **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for commands only.
+3. `slavv jobs list` — no concurrent writer on the target `--dest-run-root`.
+4. `slavv parity ensure-oracle-artifacts --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage all --no-repair` (and same for `180709_E_full_v2` before canonical work).
+5. **Residual loop (primary):** full-volume Candidate Set **join displacement** at degree-excess (see ONE TRUTH ablation). Crop frontier/generation/re-selection are **regression guards** (closed). Prefer `scripts/edge_selection_funnel_probe.py` on the claim root; keep crop `watershed_frontier_diff.py` / `watershed_candidate_gap_probe.py` as guards.
+6. **Claim surface:** name and counts only in ONE TRUTH (currently `canonical_full_v16` lineage until ONE TRUTH moves). Historical audits `v6`…`v15` are not the open residual surface.
+7. Harness **fail loud** if ADR 0012 cannot evaluate (maps missing) — not a valid closure attempt.
+8. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md). Re-synthesize HANDOFF if ONE TRUTH changes.
 
 Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../workflow/PARITY_JOB_MONITORING.md)).
 
@@ -269,7 +274,7 @@ Scratch diagnostics: prefer promoted `scripts/*` probes; historical `workspace/s
 
 ### Operator commands
 
-See **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for the current command block (crop final missing/extra loop → successor full closure). Legacy commands below are **audit-only**.
+See **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for the current command block (full residual → successor full claim run). Legacy commands below are **audit-only**.
 
 ```powershell
 # --- Legacy audit (2026-07-04 checkpoints; do not use for Phase 1 closure) ---
