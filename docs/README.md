@@ -22,6 +22,17 @@
 
 **One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
 
+### Deprecated / migrated (do not treat as live status)
+
+| Surface | Disposition |
+|---------|-------------|
+| [PI_UPDATE.md](PI_UPDATE.md) | ⛔ Frozen 2026-07-01 memo → ONE TRUTH |
+| [kiro-matlab-python-parity/](investigations/kiro-matlab-python-parity/README.md) | ⛔ Do not execute; requirements → phase-1 spec, tasks → TODO |
+| [2026-07-03-honesty-audit.md](investigations/2026-07-03-honesty-audit.md) | ⛔ Session archive |
+| ADR 0012 addenda naming `v5`/`v6` as current ops | ⛔ Policy history; live ops → ONE TRUTH + HANDOFF |
+| CHANGELOG “Network certified” / “crop sequence certified” | Dated product notes; **not** full-volume Phase 1 closed |
+| Findings session diary + mid-file 2026-07-04 shortfall essay | Historical trail only |
+
 Treat `investigations/` and the findings session diary as historical context, not as an executable spec.
 Other maintained guidance lives under `reference/` (workflow, core, backends).
 

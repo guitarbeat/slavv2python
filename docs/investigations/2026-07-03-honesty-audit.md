@@ -1,15 +1,15 @@
 # Honesty Audit: Spec Task Execution Session (matlab-python-parity)
 
+**Status:** ⛔ **DEPRECATED archive** (2026-07-03 session). Not live status.  
+**Live parity:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).  
+**Related archive:** [kiro-matlab-python-parity](kiro-matlab-python-parity/README.md) (do not execute).
+
 **Scope**: Tasks 3–9 of `docs/investigations/kiro-matlab-python-parity/tasks.md` (archived from `.kiro/specs/matlab-python-parity/`), executed across
 commits `17e1498e` ("1") and `2c3e5145` ("complete property-based test suite and Tier 1
 CI gate"), both pushed to `main` on 2026-07-02.
 
-**Watch for**: Task 9 (Tier 2 crop harness) is marked complete in `tasks.md` but the
-on-disk `exact_proof.json` records a hard FAIL on the edges stage. `EXACT_PROOF_FINDINGS.md`
-carries an "ALL FOUR STAGES CERTIFIED" header that dates from a prior session and refers to
-ADR 0012 spatial bars — not the raw-connection-count comparison that `prove-exact-sequence`
-ran on 2026-07-02. The "2 bugs fixed" claimed for Task 8 are cosmetic reformats and one
-test-seam guard, not production logic fixes.
+**Historical watch (session-local):** Task 9 crop harness vs strict-field sequence FAIL;
+findings “ALL FOUR STAGES CERTIFIED” header confusion (now collapsed into ONE TRUTH + session diary).
 
 ---
 

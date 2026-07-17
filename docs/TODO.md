@@ -31,6 +31,10 @@
 
 ### 🎯 Phase 1 Certification Gates
 
+> **Done rows below are historical snapshots** (counts frozen at completion time).  
+> **Live residual / claim root / pass-fail:** [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only.  
+> Open rows at the bottom of this section are the only ship tasks.
+
 - [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22`; evidence in findings / [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
 - [x] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **PASS** (ADR 0011).
 - [x] **Energy certification policy** — [ADR 0011](adr/0011-energy-float-certification-policy.md) **ACCEPTED**.
@@ -43,8 +47,8 @@
 - [x] **Canonical `v6` evaluated Edges ADR 0012** — **PASS** (ownership **96.02%**, `adr0012_evaluated: true`).
 - [x] **Residual watershed generation moved** — `-Inf` sentinel + queue insertion fixes moved crop first diverge **13,761 → 23,005** and crop candidate generation gap **417 → 0**. Refreshed crop final strict gap is **502**. See [HANDOFF](../.claude/HANDOFF.md) § A.
 - [x] **Canonical `v8` audit run** — full Edges ADR 0012 still **PASS**, but strict full counts regressed vs `v7` (Edges 66,057 vs 66,224; Network 45,254 vs 45,417). Keep `v7` as better full baseline.
-- [x] **Crop-axis finalization parity** — align MATLAB-order voxel spacing to Python `[Z,Y,X]` traces before edge smoothing/crop. Crop final overlap improved to **15,361 / 15,511** with **150** missing and **367** extra pairs; later LUT unit-vector refresh leaves the current overlap at **15,362 / 15,511** with **149** missing and **365** extra pairs.
-- [x] **MATLAB post-watershed finalization parity** — raw MATLAB watershed candidates and Python candidates match exactly (**19,225 / 19,225**). Python now mirrors MATLAB `resample_vectors` → map-resampled energy/size → smoothing/crop unsigned casts → cleanup. Refreshed crop final edges are **15,511** vs MATLAB **15,511**, with **15,510 / 15,511** overlap (**1** missing, **1** extra).
+- [x] **Crop-axis finalization parity** *(historical mid-campaign KPI)* — align MATLAB-order voxel spacing to Python `[Z,Y,X]` traces before edge smoothing/crop. Intermediate crop overlaps (e.g. ~15,361–15,362 / 15,511) were superseded by later closed re-selection (**15,511 / 15,511** — see ONE TRUTH / crop guard).
+- [x] **MATLAB post-watershed finalization parity** *(historical mid-campaign KPI)* — raw MATLAB watershed candidates and Python candidates match (**19,225 / 19,225**). Intermediate one-pair crop swap (**15,510 / 15,511**) closed on re-selection later (**15,511 / 15,511**).
 - [x] **Canonical `v10` audit run** — full Edges ADR 0012 still **PASS** (`70,247` vs MATLAB `69,500`, ownership **99.9867%**), but Network ADR 0012 still **FAIL** and now over-selects (`48,583` vs MATLAB `48,049` strands).
 - [x] **Canonical `v15` audit run** — full Edges ADR 0012 **PASS** evaluated with exact strict count (**69,500 / 69,500**), ownership **99.999863%**, and **0** trace failures. Network ADR 0012 still **FAILS** by one strand (**48,048 / 48,049**).
 - [x] **Python claim-state trace hardening** — `strel_state` now separates pre-claim and post-claim `vertex_index` / `pointer` / `d_over_r` / `size` values; no-writer probes still show crop candidate generation **15,511 / 15,511**.
@@ -123,3 +127,4 @@ Older dashboard text referred to **v10 / 76% match**, **>95% edge match rate**, 
 - [x] **2026-07-12 meta realignment** — HANDOFF, ROADMAP, TODO, AGENTS operating sequence, ADR 0012 post-v6 addendum synced to findings
 - [x] **2026-07-15 docs consolidate** — authority map in docs/README; residual narrative → findings-only KPIs; ROADMAP/AGENTS/ADR0012/PHASE1 residual/figures aligned to join-displacement residual (not crop pair swap)
 - [x] **2026-07-16 ONE TRUTH** — revalidated `canonical_full_v16` edges/network JSON on disk; collapsed findings banners into single validated table + session diary; HANDOFF/README/TODO/phase-1-spec point only at ONE TRUTH for live status
+- [x] **2026-07-16 merge/migrate/deprecate clashes** — findings cold-start + playbook fixed; PI_UPDATE/kiro/honesty-audit deprecated; ADR 0012 ops addenda demoted; phase-1→2 root unfrozen; CHANGELOG crop/isolation qualifiers; authority map deprecated table

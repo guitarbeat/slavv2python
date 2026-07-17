@@ -2,7 +2,12 @@
 
 **Generated:** 2026-06-27 via the deep-research workflow (fan-out web search →
 source fetch → 3-vote adversarial verification → synthesis).
-**Scope:** how to go from a *certified bit-exact* MATLAB→Python baseline (SLAVV
+
+> **Gate:** Phase 2 optimization assumes Phase 1 Network ADR 0012 multiset is green.  
+> **Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)
+> (Phase 1 still OPEN as of last revalidation). This note is research input, not a claim that the baseline is fully certified.
+
+**Scope:** how to go from a *certified* MATLAB→Python baseline (SLAVV
 3D vessel extraction: FFT/Hessian energy → vertices → edges → network) to an
 *optimized, publishable* Python pipeline — mapped onto roadmap
 [Phase 2 (performance & scale)](../ROADMAP.md) and Phase 3 (productization).

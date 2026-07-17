@@ -16,7 +16,7 @@ concrete actions from it into [plans/](../plans/) or [TODO.md](../TODO.md).
 - [Post-parity optimization & the translation paper](post-parity-optimization-and-paper.md)
   — methodology, performance techniques (bit-preserving vs bit-perturbing), and
   publication guidance for Phase 2/3. Generated via the deep-research workflow,
-  2026-06-27.
+  2026-06-27. **Gated on Phase 1 Network green** — see [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 - [Review: the original SLAVV methodology paper](slavv-original-paper-review.md)
   — Mihelic et al. 2021 (PLOS Comp Biol): the method of record, with transcribed
   equations, validation framework, and what the port adds.

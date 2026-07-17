@@ -1,13 +1,20 @@
 # Investigations
 
-This folder is now archival-only.
+This folder is **archival-only**. Nothing here is live parity status.
 
-Keep investigation docs here only when they explain historical decisions that still help maintain the current Python codebase. The large parity and MATLAB investigation docs were retired with the legacy tooling they supported.
+**Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
+**Tasks:** [TODO.md](../TODO.md) · **Commands:** [HANDOFF](../../.claude/HANDOFF.md)
 
-Current archival bundle:
+Keep investigation docs here only when they explain historical decisions that still help maintain the current Python codebase.
 
-- [v22 Pointer Corruption](v22-pointer-corruption/README.md)
-- [MATLAB to Python Translation Paper](MATLAB_PYTHON_TRANSLATION_PAPER.md) — draft retrospective on exact parity methodology, floating-point alignment, and architectural translation decisions
+## Deprecated / do-not-execute archives
+
+| Entry | Note |
+|-------|------|
+| [kiro-matlab-python-parity/](kiro-matlab-python-parity/README.md) | ⛔ Frozen Kiro specs/tasks — **do not execute** |
+| [2026-07-03-honesty-audit.md](2026-07-03-honesty-audit.md) | ⛔ Session audit; crop-era FAIL narrative |
+| [MATLAB_PYTHON_TRANSLATION_PAPER.md](MATLAB_PYTHON_TRANSLATION_PAPER.md) | Draft methodology; not pass/fail table |
+| [v22 Pointer Corruption](v22-pointer-corruption/README.md) | Historical pointer-corruption investigation |
 
 Retired parity investigations have been collapsed into the maintained parity
 docs:
@@ -25,8 +32,8 @@ docs:
   tie-breaking, first-come-first-served voxel ownership, and static frontier
   priority lessons now reflected in the maintained exact-proof findings.
 
-Live parity status, blockers, and current baselines belong in
-[EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
+Live parity status, blockers, and current baselines belong **only** in
+[ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 
 When adding a new investigation entry:
 

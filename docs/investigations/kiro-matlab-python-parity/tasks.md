@@ -1,8 +1,11 @@
 # Implementation Plan: MATLAB-Python Parity
 
+> ⛔ **DEPRECATED archive — do not execute.**  
+> Live tasks → [TODO.md](../../TODO.md) · status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · index → [README](README.md).
+
 ## Overview
 
-All four stages are certified on the crop harness (`180709_E_crop_M_v2`). The remaining
+*(Historical text.)* All four stages are certified on the crop harness (`180709_E_crop_M_v2`). The remaining
 work is:
 
 1. Writing the 17 property-based tests from the design's Correctness Properties section
