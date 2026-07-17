@@ -1,90 +1,67 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-07-15 (docs consolidate: authority map; residual = full join displacement / ablation; crop = guard; Network FAIL; Phase 1 OPEN)
+**Last synthesized:** 2026-07-16 (ONE TRUTH revalidation from disk; Phase 1 OPEN)
 
-This is the single successor brief for the current exact-route effort. Do not use
+This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
-status. When findings top-banner changes, re-synthesize this file the same day.
+status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) changes, re-synthesize this file the same day.
 
 ## Canonical records
 
 | Need | Source of truth |
 |---|---|
+| **Live pass/fail, residual claim, proof paths** | [EXACT_PROOF_FINDINGS.md — ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 | Active work and checkboxes | [docs/TODO.md](../docs/TODO.md) |
-| Verified run status, proof evidence, and blockers | [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md) |
 | Phase 1 requirements | [phase-1-exact-route-spec.md](../docs/plans/phase-1-exact-route-spec.md) |
 | Edges/Network bar + closure policy | [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md) (post-v6 addendum) |
 | Run commands and evidence format | [PARITY_PRE_GATE.md](../docs/reference/workflow/PARITY_PRE_GATE.md), [PARITY_RUN_EVIDENCE.md](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md) |
+| Doc authority map | [docs/README.md](../docs/README.md#documentation-authority-map-one-concept--one-home) |
 | Repository and parity guardrails | [AGENTS.md](../AGENTS.md) |
 
 ## Current decision point
 
-> **Single canonical status source:** [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
+> **Single status home:** [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Do not invent or restate live counts here.
 
-### Snapshot
+### Snapshot (no frozen KPIs)
 
-**Authoritative stage table + proof paths:** [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md) (executive status + active ops). Synthesize the residual narrative below from that source; do not invent numbers.
+- **Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality on the claim root. See ONE TRUTH for run root and counts.
+- Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ❌ — one-strand residual class.
+- **No independent Network bug:** MATLAB edges → Python Network topology exact.
+- **Crop = regression guard** (generation / frontier / re-selection closed). **Full volume = claim surface.**
+- **Active residual class:** Candidate Set join displacement at degree-excess (extra join outranks oracle pair under equal post-resample max). Ablation documented in ONE TRUTH. Production fix = watershed **join emission**, not cleanup reorder / secondary keys.
+- Prefer current claim root in findings (`v16` at last synthesis); preserve prior audits in place.
 
-**Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality (see findings for claim run root and counts). Do not treat approximate strand-count % as a pass. Network isolation with MATLAB edges reproduces exact topology — there is no independent network bug.
+### Do not
 
-**Crop final residual closed (2026-07-15):** re-selection with current Edge Selection (`select_and_finalize_edge_set` / `scripts/persist_crop_edges_selection.py`) on `crop_M_exact_v3` yields **15,511 / 15,511** undirected pair overlap vs `180709_E_crop_M_v2`. Crop is a regression guard, not the active residual surface.
+- Claim 100% end-to-end parity or Phase 1 closed from Edges-only.
+- Treat approximate strand-count % as Network pass.
+- Re-gate on retired 80% crop overlap or crop one-pair swap as the open loop.
+- Rewrite Network; reopen shared `energy_temp_flat` vertex-origin restore without a new probe.
 
-**Full residual (active):** re-selection → **69,499 / 69,500** pair overlap. Degree-excess drops oracle `(34897,38584)` in favor of earlier equal-metric **extra** `cand 46698` `(26444,38584)` (origin 26444; not in oracle final). Cleanup MATLAB≡Python on that surface. **Ablation:** remove only `46698` → **69,500 / 69,500**. Production next step = watershed **join emission** for that pair, not cleanup reorder.
+## Strategy
 
-**Latest full result:** `canonical_full_v16` Edges ADR 0012 still **PASS** evaluated (exact count / ownership); Network ADR 0012 still **FAIL** by one strand (**48,048 / 48,049**) until residual pair is fixed and Network re-proved. Prefer `v16` as claim surface; keep `v15` as audit.
+### Ship gate
 
-**Prior cleanup note:** on the Python crop candidate surface, MATLAB `clean_edge_pairs` / degree / cycle row indices matched Python (**0** mismatches). Broad endpoint-descending tie-break was rejected (crop regressed to **7 missing / 9 extra**). Revisit only **narrow** ties at full hub **38584**.
+1. **Edges ADR 0012** — met on claim root (see ONE TRUTH). Do not reopen unless regression.
+2. **Network ADR 0012** — open until Edge Set multiset matches. Closing Network = fix residual Edge Set, not rewrite Network.
+3. **Strict-field stretch** — exact connections / order non-blocking for messaging once Network multiset passes.
 
-**Latest rejected hypothesis:** chunk eligibility does **not** explain residual (crop single-chunk, **0** drops). Crop displacement/funnel notes superseded by closed crop pair multiset.
-
-**Latest extra-source result:** candidate extras are diffuse at generation time (top extra-producing origins emit only **2** extras each), while final extras concentrate more around boundary-adjacent / MATLAB-zero-degree vertices. A production-style geometry boundary cutoff is rejected: removing candidates touching vertices within 1 voxel of a boundary worsens overlap to **14,984** and missing pairs to **527**. An oracle-aware zero-degree-boundary upper bound improves only modestly to **15,377** overlap / **134** missing / **238** extras, so boundary-adjacent zero-degree vertices are a symptom, not the root cause.
-
-**Latest bounded trace regression:** two stale `watershed_frontier_diff.py --regenerate-python` processes were writing interleaved JSONL and were stopped. The script now treats `--stop-after-iteration` as a bounded comparison over iteration-bearing rows. A fresh compact replay reports `bounded_match` through iteration **30,000**, well past the retired **13,761** split.
-
-**Latest diagnostic hardening:** Python `strel_state` tracing now records true pre-claim and post-claim `vertex_index`, `pointer`, `d_over_r`, and `size` values separately. MATLAB `get_edges_by_watershed.m` has an opt-in `SLAVV_WATERSHED_TRACE_PATH` state trace hook, and the scratch Edges-only runner wrote `workspace/scratch/matlab_edge_dump/frontier_trace_state_iter23005.jsonl`. Comparison result: iter **13,761** strel state matches Python modulo MATLAB one-based indexing; iter **23,005** is already a different current-location pop (MATLAB `2598494` one-based / Python `2844114` zero-based), so the remaining split is upstream queue/claim history, not same-strel arithmetic.
-
-**Latest localization result:** compact `frontier_action` target tracing records push / join-reset / discard history without dumping full frontier snapshots. The Python bad-pop location (`2844114` zero-based) was pushed by both implementations at iter **19,247**; MATLAB removed it during a join reset at iter **22,421** because the competing `-Inf` vertex-origin neighbor became `NaN` under an exact-zero orthogonal direction factor. A second split at iter **25,495** showed why an epsilon clamp was too broad: MATLAB selects a tiny-positive LUT dot (`2.78e-17`) at scale 29. The LUT-unit-vector fix preserves both cases. A trial patch that restored popped vertex origins in shared `energy_temp_flat` was **rejected**: live crop generation fell to **14,936/15,511** overlap (missing **575**, extras **4,184**) versus the current **15,511/15,511** baseline.
-
-**Prior full result:** `canonical_full_v10` completed Edges→Network from `v8` lineage with `parity_include_debug_maps=true`. Edges ADR 0012 passed evaluated, but strict connection and Network counts over-shot MATLAB (`v10` edges **70,247** vs **69,500**; Network strands **48,583** vs **48,049**). Superseded by `v15` for current residual planning.
-
-**Cleared milestones (do not re-gate on these):**
-
-- Crop candidate overlap **100%** on the refreshed live/checkpoint candidate surface (80% gate cleared 2026-07-07; generation gap now 0).
-- `canonical_full_v6` writer + ownership maps present; Edges evaluated ADR 0012 PASS.
-
-## Strategy (improved post-v6)
-
-### What the ship gate actually requires now
-
-1. **Edges ADR 0012** — met on `canonical_full_v6`. Do not reopen unless a regression appears.
-2. **Network ADR 0012** — still open. Multiset topology equality needs a **nearer** edge-connection set than the ownership bar alone guarantees. Closing Network = improving the residual edge-connection set, not rewriting Network. Latest full result `v10` overshoots: Edges **747** connections over, Network **534** strands over. This is closer in absolute count than `v7`, but still not topology-equal.
-3. **Strict-field stretch** (exact 69,500 connections) remains non-blocking for messaging once Network ADR 0012 passes — but the practical path to Network pass is the same generation work.
-
-### Primary loop KPI (replaces the old 80% crop-overlap gate)
+### Primary loop KPI
 
 | KPI | Surface | Role |
 |-----|---------|------|
-| **Golden-trace first-diverge iteration** | crop, `scripts/watershed_frontier_diff.py` | Latest: **match** through the crop trace; iter 22,421 and 25,495 splits are fixed |
-| **Crop final connection gap** | crop re-selection / pair set | **Closed:** **15,511 / 15,511** overlap on current Edge Selection |
-| **Full edge connection gap** | `canonical_full_v16` re-selection | Count **69,500**; pair overlap **69,499** (swap at hub **38584**) |
-| **Network strand multiset** | full `prove-exact --stage network` on `v16` | **Only** Phase 1 ship remaining (FAIL 48,048 / 48,049) |
+| Crop generation / frontier / re-selection | crop harness | Regression guards (closed) |
+| Full Edge Set residual | claim root re-selection / funnel | Active production residual |
+| Network strand multiset | `prove-exact --stage network` | **Only** Phase 1 ship remaining |
 
-### Do not waste cycles on
-
-- Re-proving Energy/Vertices on full volume without a regression.
-- Re-litigating Edges ownership once evaluated PASS holds.
-- Treating `prove-exact-sequence` strict-field failure as the ship gate.
-- Probe KPIs without the production orientation contract (`mpv` permute) — false 62% signals already burned a day.
-- New one-off scratch scripts when `scripts/watershed_frontier_diff.py`, `scripts/edge_selection_funnel_probe.py`, and `scripts/watershed_candidate_gap_probe.py` already cover the loop.
-- Re-testing shared `energy_temp_flat` vertex-origin restoration unless a new probe explains why it can preserve the **15,511/15,511** crop generation baseline.
-- Softening Network to “close enough” without an ADR — that would reopen ship confidence.
+Live numbers: ONE TRUTH only.
 
 ## Operating sequence
 
-### A. Crop final-selection loop (primary — until Network can pass)
+### A. Full residual (primary)
 
-1. Work the **full** one-pair residual at hub **38584** (Python `(26444, 38584)` vs MATLAB `(34897, 38584)`). Crop final pair multiset is closed — keep crop re-selection as a regression guard. Do not re-open the shared vertex-origin restore patch or broad endpoint-descending cleanup reorder.
-2. After each fix, reinstall the local package and check that no parity writer is already active:
+1. Work the full residual at the hub named in ONE TRUTH (Python extra join vs MATLAB oracle pair). Keep crop re-selection as a regression guard. Do not re-open shared vertex-origin restore or broad endpoint-descending cleanup reorder.
+2. After each fix, reinstall and check no parity writer is active:
    ```powershell
    .\.venv\Scripts\pip.exe install -e .
    .\.venv\Scripts\slavv.exe jobs list
@@ -93,7 +70,7 @@ status. When findings top-banner changes, re-synthesize this file the same day.
      --stage all `
      --no-repair
    ```
-3. Run the **no-writer** probes first. These are the fast loop; they should move before spending time on a checkpoint refresh.
+3. Prefer no-writer probes first (fast loop):
    ```powershell
    .\.venv\Scripts\python.exe scripts/watershed_frontier_diff.py `
      --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
@@ -106,10 +83,18 @@ status. When findings top-banner changes, re-synthesize this file the same day.
      --trace-missing `
      --sample-size 20
    ```
-   Interpretation:
-   - `watershed_frontier_diff.py` is now a regression guard. Current crop baseline is **match**.
-   - `watershed_candidate_gap_probe.py --trace-missing` is now a regression guard for candidate generation. Current crop baseline is **15,511/15,511** with **19,225** candidates and **3,714** extras.
-4. Only when the no-writer probes improve materially, refresh crop Edges with the current code:
+   Interpretation: crop frontier **match** and generation **closed** are regression guards. Full residual lives on the claim root Candidate Set / join emission.
+4. Full-surface funnel / cleanup comparators when diagnosing degree-excess displacement:
+   ```powershell
+   .\.venv\Scripts\python.exe scripts/edge_selection_funnel_probe.py `
+     --run-dir workspace/runs/oracle_180709_E/canonical_full_v16 `
+     --oracle-root workspace/oracles/180709_E_full_v2
+
+   .\.venv\Scripts\python.exe scripts/compare_clean_edge_pairs_matlab.py `
+     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
+     --oracle-root workspace/oracles/180709_E_crop_M_v2
+   ```
+5. Crop Edges refresh only when crop guards regress:
    ```powershell
    .\.venv\Scripts\slavv.exe parity resume-exact-run `
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
@@ -118,37 +103,62 @@ status. When findings top-banner changes, re-synthesize this file the same day.
      --stop-after edges `
      --skip-preflight
    ```
-5. After a crop checkpoint refresh, measure the final funnel and checkpoint candidate gap:
-   ```powershell
 
-   .\.venv\Scripts\python.exe scripts/edge_selection_funnel_probe.py `
-     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2
+### B. Successor full claim run (when residual production fix lands)
 
-   .\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py `
-     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2
-   ```
-   Interpretation:
-   - `edge_selection_funnel_probe.py` locates final MATLAB pair loss through candidates → crop → dedup/choose-best → degree/orphan/cycle. Current guidance after `v10`: generation is solved; crop/finalization is much closer but now admits extras, so diagnose final extra/missing pair balance before another full run.
-   - The final target is not the retired 80% overlap gate. Track crop final missing/extra pair counts, candidate generation gap, and whether the full-volume Network multiset is likely to move.
-6. Log KPI deltas in [EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md) watershed iteration table (and residual gap numbers).
-7. Prefer **claiming-state** hypotheses (Python over-claim, strel neighbor choice) over inventing non-linear-index queue tie-breaks ([UNPRODUCTIVE_LOOPS](../docs/reference/core/UNPRODUCTIVE_LOOPS.md)).
+1. Prefer a **new successor** run root preflighted from the latest claim/audit Energy/Vertices lineage — do **not** destroy `v6`…`v16` audit records.
+2. Rerun **edges → network only** with `--include-debug-maps` / `parity_include_debug_maps=true`.
+3. Example shape (replace run dir with the new root; use current claim lineage as seed):
 
-Current status: this loop moved materially on 2026-07-14. Raw watershed candidates match MATLAB exactly, post-watershed finalization now follows MATLAB's resample/map-resample/smooth/crop path, and cleanup row choices match MATLAB on the resampled post-crop surface. The refreshed crop final set is **15,511** vs MATLAB **15,511**, with **15,510/15,511** overlap. The only local residual is one equal-metric degree-pruning swap (`[4043, 6281]` vs `[4212, 6281]`). `canonical_full_v10` remains the latest full audit and still has Network red, so the next decision is whether to fix the single crop swap before launching a successor full audit root.
+```powershell
+slavv jobs list
 
-### Primary code and test surfaces
+slavv parity launch-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --oracle-root workspace/oracles/180709_E_full_v2 `
+  --force-rerun-from edges `
+  --stop-after network `
+  --skip-foreground-probe `
+  --monitor
+
+# After writer completes:
+slavv parity prove-exact --stage edges `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --oracle-root workspace/oracles/180709_E_full_v2
+
+slavv parity prove-exact --stage network `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --oracle-root workspace/oracles/180709_E_full_v2
+```
+
+4. Phase 1 closes when **both** evaluated proofs pass. Update ONE TRUTH + TODO + this handoff + figure series same session. Record evidence per [PARITY_RUN_EVIDENCE](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md).
+5. If Edges still pass and Network still fails: continue Edge Set residual loop — do not treat Network as a separate porting project.
+
+### C. After Phase 1 closes
+
+- Promote summary to `workspace/reports/` if warranted.
+- Strict-field stretch optional on crop.
+- Phase 2 optimization / paper-profile cert per [phase-2-optimization-spec.md](../docs/plans/phase-2-optimization-spec.md) and roadmap — do not start broad Phase 2 unwinding while Network is red.
+
+### D. Cold start
+
+1. Read [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+2. `slavv jobs list` — no concurrent writer on claim/crop roots.
+3. Open checkboxes in [TODO.md](../docs/TODO.md).
+4. Do not treat [PI_UPDATE.md](../docs/PI_UPDATE.md), investigation archives, or findings **session diary** as live status.
+
+## Primary code and test surfaces
 
 | Area | Files / functions | Planning note |
 |------|-------------------|---------------|
-| Candidate extras | `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`, `scripts/edge_selection_funnel_probe.py`, candidate diagnostics/probes | Active residual loop; candidate generation covers all MATLAB pairs but contributes **3,714** extras that displace MATLAB final pairs in faithful cleanup. Degree/cycle displacement is quantified; chunk eligibility is rejected on crop (**0** candidates dropped). |
-| Finalization crop | `slavv_python/pipeline/edges/finalize.py` | Smaller residual surface; crop currently loses only 14 MATLAB pairs before degree/cycle cleanup. |
-| Selection row order | `slavv_python/pipeline/edges/selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard; Python now matches MATLAB `clean_edge_pairs` row order on crop after double-precision metric sort. |
-| Cleanup pruning | `slavv_python/pipeline/edges/cleanup.py` (`remove_excess_vertex_degrees`, `break_graph_cycles`) | Regression guard; comparator shows zero row-index mismatches for degree and cycle pruning on the Python candidate surface. |
-| Watershed loop | `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py` (`_generate_edge_candidates_matlab_global_watershed`, `_matlab_global_watershed_current_strel`) | Regression guard now that crop frontier trace matches. |
-| Claiming state | `slavv_python/pipeline/edges/matlab_watershed_heap.py` (`VoxelClaimMap.claim_unowned_strel`) | Regression guard for Python over-claim / strel neighbor divergence. |
-| Adjusted energies | `slavv_python/pipeline/edges/matlab_get_edges_v300_geometry.py` (`_matlab_frontier_adjusted_neighbor_energies`) | Latest fix surface; neighbor direction must come from MATLAB LUT `unit_vectors`. |
-| Tie-break guardrail | `slavv_python/pipeline/edges/matlab_indexing.py` (`_matlab_watershed_min_candidate_energies`, `_argmin_with_linear_index_tiebreak`) | Current evidence says frontier tie-breaking is correct. |
+| Join / Candidate Set residual | `matlab_get_edges_by_watershed.py`, funnel / gap probes | Active full residual: extra join displacing oracle pair at degree-excess |
+| Finalization | `pipeline/edges/finalize.py` | Crop guard; resample/map-resample/smooth/crop path |
+| Selection row order | `selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard (double-precision metric sort) |
+| Cleanup pruning | `cleanup.py` | Regression guard; MATLAB comparator green on same surface |
+| Adjusted energies | `matlab_get_edges_v300_geometry.py` | LUT `unit_vectors` direction |
+| Tie-break guardrail | `matlab_indexing.py` | Frontier linear-index tie-break |
 
 Focused unit checks after code changes:
 
@@ -160,75 +170,19 @@ Focused unit checks after code changes:
 .\.venv\Scripts\python.exe -m pytest tests/integration/parity/test_parity_pre_gate_tier1.py
 ```
 
-### B. Canonical closure refresh (after crop residual moves materially)
-
-When crop gap / golden-trace diverge improves enough to justify a full edges rewrite:
-
-**Current:** `canonical_full_v10` completed as an audit attempt and overshot the full edge/network counts. Next full-volume launch should be a successor root only after another crop/funnel residual improvement.
-
-1. Prefer a **new successor** run root (for example `canonical_full_v11`) preflighted from the latest audit lineage — do not destroy `v6`, `v7`, `v8`, or `v10` audit records.
-2. Rerun **edges → network only** with `--include-debug-maps` / `parity_include_debug_maps=true`.
-3. Per-stage evaluated proofs:
-
-```powershell
-slavv jobs list
-
-slavv parity launch-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v11 `
-  --oracle-root workspace/oracles/180709_E_full_v2 `
-  --dataset-root workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 `
-  --force-rerun-from edges `
-  --stop-after network `
-  --skip-foreground-probe `
-  --monitor
-
-# After writer completes:
-slavv parity prove-exact --stage edges `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v11 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v11 `
-  --oracle-root workspace/oracles/180709_E_full_v2
-
-slavv parity prove-exact --stage network `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v11 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v11 `
-  --oracle-root workspace/oracles/180709_E_full_v2
-```
-
-4. Phase 1 closes when **both** evaluated proofs pass. Record evidence per [PARITY_RUN_EVIDENCE.md](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md).
-5. If Edges still pass and Network still fails: continue generation loop — do not treat Network as a separate porting project.
-
-### C. After Phase 1 closes
-
-- Promote summary to `workspace/reports/` if warranted.
-- Strict-field stretch optional on crop.
-- Phase 2 optimization / paper-profile cert per [phase-2-optimization-spec.md](../docs/plans/phase-2-optimization-spec.md) and roadmap — do not start broad Phase 2 unwinding while Network is red.
-
 ## Audit runs (do not overwrite)
 
-| Run | Role |
-|-----|------|
-| `crop_M_exact` | Pre–PR #103 crop audit |
-| `crop_M_exact_v3` | Stretch + residual generation KPI loop |
-| `canonical_full_v4` | Certified Energy/Vertices |
-| `canonical_full_v5` | Fresh edges/network writer; invalid ADR 0012 (maps missing) |
-| `canonical_full_v6` | First evaluated closure attempt: Edges ✅ Network ❌ |
-| `canonical_full_v7` | Post `-Inf` sentinel fix closure attempt: Edges ✅ Network ❌, improved residual |
-| `canonical_full_v8` | Post queue-insertion fix audit: crop generation ✅, full Edges ✅, Network ❌ and strict counts regressed vs `v7` |
-| `canonical_full_v9` | Failed launch stub; no initialized provenance / no checkpoints. Do not use as evidence. |
-| `canonical_full_v10` | Post crop-axis finalization audit: full Edges ✅, Network ❌; strict counts now over-select (Edges +747, Network +534). |
+Historical claim/audit roots (`crop_M_exact*`, `canonical_full_v4`…`v16`) stay on disk. Live claim surface name is only in ONE TRUTH — do not freeze a run ID here as “current” without re-checking findings.
 
-## Meta / process (agent hygiene)
+## Meta / process
 
 | Shortcoming | Fix |
 |-------------|-----|
-| HANDOFF / TODO lag findings by days | Re-synthesize HANDOFF when findings top banner changes; TODO checkboxes only mirror ship tasks |
-| Stale “80% gate” / “57.89% baseline” as current | Historical only; primary KPI is residual generation + Network multiset |
-| Ownership-map missing → false closure narrative | Require `adr0012_evaluated: true` only |
-| Diagnostic script sprawl | Promote probes into `scripts/` + solution notes; delete one-offs after use |
-| Claiming “Network bug” from multiset fail | Always re-check: Network exact under MATLAB edges isolation |
+| HANDOFF / TODO lag findings | Re-synthesize HANDOFF when ONE TRUTH moves; TODO = checkboxes only |
+| Second status tables in prose | Authority map: ONE TRUTH wins |
+| Ownership-map missing → false closure | Require `adr0012_evaluated: true` |
+| Claiming “Network bug” from multiset fail | Re-check MATLAB-edge isolation first |
 
-## Retired coordination material
+## Anti-patterns
 
-The one-off `overnight_phase1_runs`, crop-rerun worker briefs, and
-`TODO_GPT55_PARALLEL_WORK.md` were consolidated here and into the canonical
-records above. Pre-v6 “do not launch canonical until 80%” is **retired**.
+See [UNPRODUCTIVE_LOOPS.md](../docs/reference/core/UNPRODUCTIVE_LOOPS.md). Short list: stale gates, probe orientation (`mpv`), Network rewrite, cleanup secondary keys, inventing KPIs outside findings, reading session diary as current status.

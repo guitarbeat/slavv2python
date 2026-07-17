@@ -1,6 +1,7 @@
-"""Parity campaign series — single edit surface for figure constants.
+"""Parity campaign series — figure paint KPI mirror only.
 
-Update these numbers when docs/reference/core/EXACT_PROOF_FINDINGS.md moves.
+Authoritative live status: docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth
+Update these numbers only when ONE TRUTH moves, then regenerate claim figures.
 Figure drawers in generate_parity_claim_figures.py only paint; they do not invent counts.
 """
 

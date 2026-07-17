@@ -9,17 +9,20 @@
 
 | Concern | Canonical home | Not here |
 |---------|----------------|----------|
-| Live parity status, residual claim, proof paths | [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md) | ROADMAP, PI_UPDATE, residual analysis, figure captions |
-| Operator commands / decision point | [.claude/HANDOFF.md](../.claude/HANDOFF.md) | Scattered chat notes |
+| **Live parity status, residual claim, proof paths** | [EXACT_PROOF_FINDINGS — ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) | ROADMAP, PI_UPDATE, residual analysis, HANDOFF body, figure captions, session diary |
+| Operator commands / decision point | [.claude/HANDOFF.md](../.claude/HANDOFF.md) | Scattered chat notes; frozen KPIs |
 | Task checkboxes | [TODO.md](TODO.md) | Findings (status only) |
 | Domain glossary | [AGENTS.md § Domain Glossary](../AGENTS.md#domain-glossary) | Parallel redefinitions (mirror: [GLOSSARY.md](reference/core/GLOSSARY.md)) |
 | Architecture decisions | [adr/](adr/) | TODO / HANDOFF |
 | Specs (requirements + plan) | [plans/](plans/) | Brainstorms after promotion |
 | Experiment *framing* (hypothesis, method) | [PHASE1 residual](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) + [template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Live KPIs |
 | Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
-| Archival deep dives | [investigations/](investigations/) | Executable specs |
+| Figure paint KPIs (mirror only) | [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py) | Second status tables in prose docs |
+| Archival deep dives / session diary | [investigations/](investigations/) · findings session diary | Executable specs / current status |
 
-Treat `investigations/` as historical context, not as an executable spec.
+**One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
+
+Treat `investigations/` and the findings session diary as historical context, not as an executable spec.
 Other maintained guidance lives under `reference/` (workflow, core, backends).
 
 ---
@@ -75,8 +78,8 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 
 ### Quick Reference
 
-1. **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** ⭐ — Operator decision point + commands (re-synthesize when findings move)
-2. **[Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)** ⭐ — Live run status, blockers, cold-start protocol
+1. **[ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** ⭐ — Live pass/fail, claim root, residual, proof paths
+2. **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** ⭐ — Operator decision point + commands (re-synthesize when ONE TRUTH moves)
 3. **[TODO.md](TODO.md)** — Checkboxes only (ship tasks)
 4. **[Parity Methodology](reference/core/PARITY_METHODOLOGY.md)** — Why the bars are tolerance-based (literature-backed; validates ADR 0011/0012)
 5. **[Phase 1 Residual Experiment Analysis](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md)** — Current hypothesis, methodology, limitations, and next steps for the Network residual

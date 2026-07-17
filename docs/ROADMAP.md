@@ -3,7 +3,7 @@
 **Narrative milestones only.** This is the strategic, phase-level view of where
 the project is headed. It does **not** track live status or tasks:
 
-- **Active status / proofs / blockers** → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
+- **Active status / proofs / blockers** → [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)
 - **Concrete next actions (checkboxes)** → [TODO.md](TODO.md)
 - **Operator brief (commands + decision point)** → [.claude/HANDOFF.md](../.claude/HANDOFF.md)
 - **Requirements & plans** → [plans/](plans/) · **Decisions** → [adr/](adr/)

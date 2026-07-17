@@ -38,13 +38,13 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 **Choose your path based on what you're working on:**
 
 ### I'm working on MATLAB parity
-1. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Current decision point and operating sequence (post-v6: Network residual)
-2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers (status truth)
+1. **Read [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** — Live status, claim root, residual, proof paths (**only** status truth)
+2. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Decision point and operating commands (no frozen KPIs)
 3. Check if a rerun is active: `slavv jobs list` / `slavv status-exact-run --run-dir <dir>` or `99_Metadata/parity_job.pid`.
 4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
 5. Follow the operating sequence in [HANDOFF.md](.claude/HANDOFF.md); do not re-gate on the retired 80% crop-overlap milestone
 6. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
-7. If you change findings top-banner status, re-synthesize HANDOFF + [TODO.md](docs/TODO.md) checkboxes in the same session
+7. If you change ONE TRUTH, re-synthesize HANDOFF + [TODO.md](docs/TODO.md) checkboxes in the same session
 8. See [Parity Experiments](#parity-experiments) workflow below
 
 ### I'm fixing a bug or adding a feature
@@ -202,8 +202,8 @@ _Avoid_: Maintaining separate brainstorm and plan files for the same initiative;
 
 ### Phase 1 Closure
 The moment [Certification](#certification) is claimed for the exact route on full `180709_E`: per-stage `prove-exact --stage edges` **and** `--stage network` both pass [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) on the [Canonical Volume](#canonical-volume) run root against `180709_E_full_v2`, after Energy and Vertices already pass their bars. Exact `connections` equality remains stretch once Network multisets pass.
-**Live whether closed:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) (banner + executive status only—do not freeze run IDs or strand counts here).
-_Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, closing Phase 1 on Edges-only, treating approximate strand-count % as Network ADR 0012 pass, or closing on [Crop Harness Volume](#crop-harness-volume) alone.
+**Live whether closed:** [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only—do not freeze run IDs or strand counts here or in HANDOFF/specs.
+_Avoid_: Using `prove-exact-sequence` strict-field failure as the Phase 1 closure gate, closing Phase 1 on Edges-only, treating approximate strand-count % as Network ADR 0012 pass, claiming “100% parity” while Network is red, or closing on [Crop Harness Volume](#crop-harness-volume) alone.
 
 **Closure checkpoint policy:** Edges and Network checkpoints used for the closure proof must be produced by the **current** `main` code (rerun from edges on a fresh canonical run root after any parity-sensitive merge), not frozen pre-fix artifacts.
 _Avoid_: Claiming Phase 1 closure from stale edge/network checkpoints while residual iteration uses fresher crop outputs.
@@ -215,8 +215,8 @@ _Avoid_: `--force-rerun-from edges` on a historical claim/audit run root when th
 _Avoid_: Opening a Network-stage rewrite project, or re-chasing the retired 80% crop-overlap gate.
 
 ### Exact Proof Findings
-The live status log for exact-parity work: active runs, `prove-exact` results, blockers, champion baselines, and a curated index of parity-related compound solutions under `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
-_Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in TODO, status and parity compound index stay in findings.
+The live status log for exact-parity work under `docs/reference/core/EXACT_PROOF_FINDINGS.md`. **Authoritative section:** [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (pass/fail, claim root, residual). The session diary in that file is historical only. Also holds compound-solution index and audit run tables.
+_Avoid_: Duplicating run status in `TODO.md` / HANDOFF body / ROADMAP; reading the session diary as current status; inventing a second status doc.
 
 ### Random Component Parity Suite
 A seeded white-noise MATLAB R2019a/Python differential loop for fast Energy building-block checks (linspace, `interp3`, padded shape, valid flags). Structural fields gate CI; Hessian float ULP is advisory only. Not a [Certification](#certification) claim.

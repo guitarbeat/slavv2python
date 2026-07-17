@@ -51,7 +51,7 @@ The full cold-start protocol and command list live in one place — do not
 duplicate them here.
 
 **Start here:** [docs/README.md § Parity Closure Fast Path](README.md#-parity-closure-fast-path)
-→ [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) (live status)
+→ [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (live status)
 → [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md) (commands)
 
 ---

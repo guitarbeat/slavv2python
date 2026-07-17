@@ -2,7 +2,7 @@
 
 **Single entry point** for what to do next, where plans live, and where to put new thoughts so they do not scatter across chat, ad-hoc notes, and stale markdown.
 
-> **Rule of thumb:** Checkboxes only here. **Status** → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). **Specs** → [plans/](plans/). **Fixes** → [solutions/](solutions/) (`/ce-compound`). **Operator brief** → [.claude/HANDOFF.md](../.claude/HANDOFF.md) (re-synthesize when findings top banner changes).
+> **Rule of thumb:** Checkboxes only here. **Status** → [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). **Specs** → [plans/](plans/). **Fixes** → [solutions/](solutions/) (`/ce-compound`). **Operator brief** → [.claude/HANDOFF.md](../.claude/HANDOFF.md) (re-synthesize when ONE TRUTH moves).
 
 ---
 
@@ -15,13 +15,13 @@
 | **Ideas (pre-plan)** | [brainstorms/](brainstorms/) | Before a spec exists; promote into `plans/` when scoped |
 | **Solved problems & runbooks** | [solutions/](solutions/) | `/ce-compound` writes here; parity index in [findings](reference/core/EXACT_PROOF_FINDINGS.md#-compound-learnings-parity-related) |
 | **Architecture decisions** | [adr/](adr/) | Load-bearing design choice (do not re-litigate in TODO) |
-| **Live exact-parity status** | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) | **Only place** for active run status, proof results, blockers (not TODO) |
+| **Live exact-parity status** | [ONE TRUTH in EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) | **Only place** for active run status, proof results, blockers (not TODO) |
 | **Operator workflows** | [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](reference/workflow/PARITY_CERTIFICATION_GUIDE.md), [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md) | How to run pre-gate / certification; evidence template after writers/proofs |
 | **Investigation archives** | [investigations/](investigations/) | Deep dives that are context, not the task list |
 
 **Do not duplicate:** Status tables and run state → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). This file = checkboxes + links only.
 
-**Phase 1:** [phase-1-exact-route-spec.md](plans/phase-1-exact-route-spec.md) · **Status:** [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations) · **Handoff:** [.claude/HANDOFF.md](../.claude/HANDOFF.md)
+**Phase 1:** [phase-1-exact-route-spec.md](plans/phase-1-exact-route-spec.md) · **Status:** [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · **Handoff:** [.claude/HANDOFF.md](../.claude/HANDOFF.md)
 
 ---
 
@@ -122,3 +122,4 @@ Older dashboard text referred to **v10 / 76% match**, **>95% edge match rate**, 
 - [x] Planning hub — this file; status + compound index in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)
 - [x] **2026-07-12 meta realignment** — HANDOFF, ROADMAP, TODO, AGENTS operating sequence, ADR 0012 post-v6 addendum synced to findings
 - [x] **2026-07-15 docs consolidate** — authority map in docs/README; residual narrative → findings-only KPIs; ROADMAP/AGENTS/ADR0012/PHASE1 residual/figures aligned to join-displacement residual (not crop pair swap)
+- [x] **2026-07-16 ONE TRUTH** — revalidated `canonical_full_v16` edges/network JSON on disk; collapsed findings banners into single validated table + session diary; HANDOFF/README/TODO/phase-1-spec point only at ONE TRUTH for live status

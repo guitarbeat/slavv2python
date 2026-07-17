@@ -2,11 +2,11 @@
 
 ---
 
-> **Live parity status:** see [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) for the current source of truth on exact-route proof state.
+> **Live parity status (ONE TRUTH):** [EXACT_PROOF_FINDINGS — ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Phase 1 is **OPEN** until Network ADR 0012 multiset passes on the full claim root (not 100% end-to-end yet).
 
 ---
 
-> 🔴 **Active developer work:** [TODO.md](docs/TODO.md) owns tasks. [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) owns live parity status.
+> 🔴 **Active developer work:** [TODO.md](docs/TODO.md) owns tasks. Findings ONE TRUTH owns live parity status. [HANDOFF](.claude/HANDOFF.md) owns operator commands.
 
 Python implementation of SLAVV for 3D vascular network extraction from
 microscopy volumes — a direct port of the MATLAB source in

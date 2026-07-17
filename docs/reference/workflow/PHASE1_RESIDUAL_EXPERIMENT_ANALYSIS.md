@@ -7,7 +7,7 @@ live status log and not the task list.
 
 | Need | Single home |
 |------|-------------|
-| Pass/fail, claim run root, live residual claim | [EXACT_PROOF_FINDINGS](../core/EXACT_PROOF_FINDINGS.md) (banner + blockers) |
+| Pass/fail, claim run root, live residual claim | [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 | Commands / operating sequence | [.claude/HANDOFF.md](../../../.claude/HANDOFF.md) |
 | Checkboxes | [TODO.md](../../TODO.md) |
 | Domain terms (Edge Set, Candidate Set, Edge Selection) | [AGENTS.md § Domain Glossary](../../../AGENTS.md#domain-glossary) |
@@ -48,8 +48,8 @@ only in the findings banner.
 
 ## Results / next steps
 
-Read **findings top banner + active blockers** and **TODO open Phase 1 rows**.
-When the residual moves, update findings + HANDOFF + TODO the same session;
+Read **[ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** and **TODO open Phase 1 rows**.
+When the residual moves, update ONE TRUTH + HANDOFF + TODO the same session;
 refresh [figures/parity_campaign_series.py](../../../figures/parity_campaign_series.py)
 only if publication KPIs change.
 
