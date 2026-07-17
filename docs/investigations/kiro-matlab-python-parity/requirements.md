@@ -1,8 +1,11 @@
 # Requirements Document
 
+> ⛔ **DEPRECATED archive — do not treat as live requirements.**  
+> Active Phase 1 requirements → [phase-1-exact-route-spec.md](../../plans/phase-1-exact-route-spec.md) · status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · index → [README](README.md).
+
 ## Introduction
 
-This feature delivers and certifies 100% MATLAB-to-Python parity for the SLAVV
+*(Historical text.)* This feature delivers and certifies 100% MATLAB-to-Python parity for the SLAVV
 (Segmentation-Less, Automated, Vascular Vectorization) pipeline. The goal is a full Python
 port of the released SLAVV MATLAB source (`external/Vectorization-Public/source/`) whose
 output is proven equivalent to preserved MATLAB truth vectors across all four pipeline

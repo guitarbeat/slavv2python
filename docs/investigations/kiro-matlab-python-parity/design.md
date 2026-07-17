@@ -1,8 +1,11 @@
 # Design Document: MATLAB-Python Parity
 
+> ⛔ **DEPRECATED archive — do not treat as live design.**  
+> Bars → [ADR 0011](../../adr/0011-energy-float-certification-policy.md) / [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) · status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · index → [README](README.md).
+
 ## Overview
 
-This document describes the technical architecture for certifying 100% MATLAB-to-Python
+*(Historical text.)* This document describes the technical architecture for certifying 100% MATLAB-to-Python
 parity for the SLAVV vascular vectorization pipeline. The goal is a full Python port whose
 outputs are proven equivalent to preserved MATLAB truth vectors across all four pipeline
 stages: Energy → Vertices → Edges → Network.
