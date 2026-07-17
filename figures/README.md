@@ -14,6 +14,11 @@ methods write-ups. Distinct from runtime plotting (`slavv_python/visualization/`
 non-trivial question. Prefer residual / signed delta / absolute counts over
 flat “all green” dashboards.
 
+**Wrap-first layout:** canvases are ~3.3 in wide so type stays legible at
+manuscript wrap width (`0.48\textwidth` / `\figWidthWrap`). Claims and callouts
+are short; long narrative lives in LaTeX captions, not in-figure footnotes.
+They still scale cleanly inside `fullwidthfigure` when needed.
+
 | File | Claim | Why it is interesting |
 |------|-------|------------------------|
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |

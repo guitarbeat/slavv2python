@@ -5,6 +5,10 @@ Each figure answers one non-trivial question from the exact-parity campaign.
 Campaign numbers live only in parity_campaign_series.py — update that file when
 docs/reference/core/EXACT_PROOF_FINDINGS.md moves.
 
+Layout is **wrap-first**: canvas ~3.3 in wide so type stays legible at
+``0.48\\textwidth`` wrapfigure (and still scales cleanly to full-width).
+Long narrative stays in manuscript captions — not in-figure footnotes.
+
 Outputs:
   parity_trajectory.{png,pdf}
   parity_funnel.{png,pdf}
@@ -15,13 +19,18 @@ Outputs:
 from __future__ import annotations
 
 import sys
+import textwrap
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import patheffects as pe
 from matplotlib.patches import FancyBboxPatch
+
+# Halo keeps data labels legible over lines/markers at wrap scale
+_LABEL_HALO = [pe.withStroke(linewidth=2.2, foreground="white")]
 
 # Sibling import when run as `python figures/generate_parity_claim_figures.py`
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -30,18 +39,15 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 from parity_campaign_series import (  # noqa: E402
     AGREEMENT_CLAIM,
-    AGREEMENT_FOOTNOTE,
     CANONICAL_AUDITS,
     CERT_CLAIM,
     CERT_ROWS,
     CERT_TAKEAWAY,
     FUNNEL_CLAIM,
-    FUNNEL_FOOTNOTE,
     FUNNEL_PHASES,
     LOG_FLOOR_COUNT,
     RETIRED_GATE_MISSING,
     TRAJECTORY_CLAIM,
-    TRAJECTORY_FOOTNOTE,
     TRAJECTORY_STEPS,
     Annotation,
     CanonicalAudit,
@@ -52,22 +58,29 @@ from parity_campaign_series import (  # noqa: E402
     TrajectoryStep,
 )
 
+# ---------------------------------------------------------------------------
+# Wrap-first design tokens (physical inches ≈ half-page wrap)
+# ---------------------------------------------------------------------------
+
+# Target print width for in-text wrap (~0.48\textwidth on letter with 1" margins)
+WRAP_WIDTH_IN = 3.30
+
 plt.rcParams.update(
     {
         "font.family": "sans-serif",
         "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
-        "font.size": 9,
-        "axes.labelsize": 9,
-        "axes.titlesize": 10,
-        "xtick.labelsize": 8,
-        "ytick.labelsize": 8,
-        "legend.fontsize": 7.5,
-        "axes.linewidth": 0.55,
+        "font.size": 8.0,
+        "axes.labelsize": 7.5,
+        "axes.titlesize": 8.5,
+        "xtick.labelsize": 6.8,
+        "ytick.labelsize": 6.8,
+        "legend.fontsize": 6.5,
+        "axes.linewidth": 0.6,
         "xtick.major.width": 0.55,
         "ytick.major.width": 0.55,
-        "xtick.major.size": 2.4,
-        "ytick.major.size": 2.4,
-        "lines.linewidth": 1.15,
+        "xtick.major.size": 2.2,
+        "ytick.major.size": 2.2,
+        "lines.linewidth": 1.25,
         "pdf.fonttype": 42,
         "ps.fonttype": 42,
         "axes.spines.top": False,
@@ -76,6 +89,7 @@ plt.rcParams.update(
         "axes.facecolor": "white",
         "savefig.facecolor": "white",
         "savefig.dpi": 600,
+        "text.antialiased": True,
     }
 )
 
@@ -126,22 +140,17 @@ class FigureSpec:
     drawer: Drawer
 
 
-def _claim(ax: plt.Axes, text: str) -> None:
-    ax.set_title(text, loc="left", pad=8, fontweight="bold", fontsize=10, color=INK)
-
-
-def _footnote(ax: plt.Axes, text: str, y: float = -0.14) -> None:
-    ax.text(
-        0.0,
-        y,
-        text,
-        transform=ax.transAxes,
-        fontsize=6.8,
-        color=MUTED,
-        ha="left",
-        va="top",
-        clip_on=False,
-        linespacing=1.35,
+def _claim(ax: plt.Axes, text: str, *, width: int = 38) -> None:
+    """Left-aligned claim title, hard-wrapped for narrow canvas."""
+    wrapped = "\n".join(textwrap.wrap(text, width=width, break_long_words=False))
+    ax.set_title(
+        wrapped,
+        loc="left",
+        pad=5,
+        fontweight="bold",
+        fontsize=8.2,
+        color=INK,
+        linespacing=1.15,
     )
 
 
@@ -151,28 +160,33 @@ def _annotate(ax: plt.Axes, i: int, y: float, ann: Annotation) -> None:
         ann.text,
         xy=(i, y),
         xytext=(ann.text_x, ann.text_y),
-        fontsize=7.0 if ann.bold else 6.6,
+        fontsize=6.2 if ann.bold else 5.9,
         color=color,
         fontweight="bold" if ann.bold else "normal",
         ha="left" if ann.text_x >= i else "center",
         arrowprops={
             "arrowstyle": "->",
             "color": color,
-            "lw": 0.85 if ann.bold else 0.7,
+            "lw": 0.75 if ann.bold else 0.6,
+            "shrinkA": 0,
+            "shrinkB": 2,
         },
         bbox={
-            "boxstyle": "round,pad=0.22",
+            "boxstyle": "round,pad=0.18",
             "fc": "white",
             "ec": color if ann.bold or ann.color_key != "muted" else MID,
-            "lw": 0.5 if ann.bold else 0.4,
+            "lw": 0.45 if ann.bold else 0.35,
         },
+        zorder=6,
     )
 
 
 def _log_count_formatter(v: float, _: object) -> str:
     if v < 1.1:
         return "0"
-    return f"{round(v):,}"
+    if v >= 1000:
+        return f"{round(v):,}"
+    return f"{round(v)}"
 
 
 def _pad_limits(values: np.ndarray, pad_frac: float = 0.12) -> tuple[float, float]:
@@ -191,7 +205,7 @@ def _pad_limits(values: np.ndarray, pad_frac: float = 0.12) -> tuple[float, floa
 def draw_trajectory(ax: plt.Axes) -> None:
     """Only one step recovered ~6k pairs; queue-order cosmetics did nothing."""
     steps: list[TrajectoryStep] = TRAJECTORY_STEPS
-    _claim(ax, TRAJECTORY_CLAIM)
+    _claim(ax, TRAJECTORY_CLAIM, width=36)
 
     missing = np.array([s.missing for s in steps], dtype=float)
     # +1 so zero residual sits above the log floor
@@ -199,20 +213,20 @@ def draw_trajectory(ax: plt.Axes) -> None:
     x = np.arange(len(steps))
 
     ax.set_yscale("log")
-    y_lo, y_hi = _pad_limits(y_plot, pad_frac=0.35)
+    y_lo, y_hi = _pad_limits(y_plot, pad_frac=0.40)
     ax.set_ylim(max(0.7, y_lo * 0.5), max(y_hi, 2.0e4))
-    ax.set_xlim(-0.45, len(steps) - 0.45)
+    ax.set_xlim(-0.40, len(steps) - 0.40)
 
-    ax.axhline(RETIRED_GATE_MISSING, color=MID, ls=(0, (3, 2)), lw=0.9, zorder=1)
+    ax.axhline(RETIRED_GATE_MISSING, color=MID, ls=(0, (3, 2)), lw=0.85, zorder=1)
     ax.text(
-        len(steps) - 0.5,
-        RETIRED_GATE_MISSING * 1.12,
-        f"retired 80% gate\n(~{RETIRED_GATE_MISSING:,} still missing)",
+        len(steps) - 0.45,
+        RETIRED_GATE_MISSING * 1.18,
+        f"80% gate\n(~{RETIRED_GATE_MISSING:,})",
         ha="right",
         va="bottom",
-        fontsize=6.5,
+        fontsize=5.8,
         color=MUTED,
-        linespacing=1.2,
+        linespacing=1.1,
     )
 
     for i in range(len(x) - 1):
@@ -221,7 +235,7 @@ def draw_trajectory(ax: plt.Axes) -> None:
             [x[i], x[i + 1]],
             [y_plot[i], y_plot[i + 1]],
             color=edge,
-            lw=1.6 if steps[i + 1].kind == "leap" else 1.1,
+            lw=1.7 if steps[i + 1].kind == "leap" else 1.15,
             zorder=2,
             solid_capstyle="round",
         )
@@ -231,56 +245,76 @@ def draw_trajectory(ax: plt.Axes) -> None:
             x[i],
             y_plot[i],
             "o",
-            ms=8 if step.kind == "leap" else 6.5,
+            ms=7.0 if step.kind == "leap" else 5.8,
             color=_KIND_COLOR[step.kind],
             markeredgecolor=LINE,
-            markeredgewidth=0.45,
+            markeredgewidth=0.4,
             zorder=4,
         )
 
+    # Point labels: show every count (short); closed gets a compact badge
     for i, step in enumerate(steps):
         if step.kind == "closed":
             ax.text(
                 x[i],
-                max(2.8, y_plot[i] * 2.5),
-                "0 missing\n(gen. closed)",
+                max(3.0, y_plot[i] * 3.2),
+                "0\nclosed",
                 ha="center",
                 va="bottom",
-                fontsize=7.2,
+                fontsize=6.2,
                 color=GREEN,
                 fontweight="bold",
-                linespacing=1.15,
+                linespacing=1.05,
+                path_effects=_LABEL_HALO,
+                zorder=5,
+            )
+        elif step.kind == "leap":
+            ax.text(
+                x[i],
+                y_plot[i] * 1.65,
+                f"{step.missing:,}",
+                ha="center",
+                va="bottom",
+                fontsize=6.5,
+                color=INK,
+                fontweight="bold",
+                path_effects=_LABEL_HALO,
+                zorder=5,
             )
         else:
+            # Skip duplicate baseline label on second flat point to reduce clutter
+            if i > 0 and steps[i - 1].missing == step.missing:
+                continue
             ax.text(
                 x[i],
                 y_plot[i] * 1.55,
-                f"{step.missing:,} missing",
+                f"{step.missing:,}",
                 ha="center",
                 va="bottom",
-                fontsize=7.2,
+                fontsize=6.0,
                 color=INK,
-                fontweight="bold" if step.kind == "leap" else "normal",
+                path_effects=_LABEL_HALO,
+                zorder=5,
             )
         if step.annotation is not None:
             _annotate(ax, i, float(y_plot[i]), step.annotation)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([s.label for s in steps], fontsize=7.2)
-    ax.set_ylabel("MATLAB final pairs still absent\nfrom Python candidates (log)")
+    ax.set_xticklabels([s.label for s in steps], fontsize=6.2, linespacing=1.05)
+    ax.set_ylabel("Missing candidates (log)", labelpad=2)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(_log_count_formatter))
-    _footnote(ax, TRAJECTORY_FOOTNOTE, y=-0.17)
+    ax.tick_params(axis="y", pad=1.5)
 
 
 def draw_funnel(ax: plt.Axes) -> None:
     """Crop final residual: missing and extra tell different stories."""
     phases: list[FunnelPhase] = FUNNEL_PHASES
-    _claim(ax, FUNNEL_CLAIM)
+    _claim(ax, FUNNEL_CLAIM, width=36)
 
     x = np.arange(len(phases))
-    w = 0.36
+    w = 0.34
     ax.set_yscale("log")
-    ax.set_ylim(0.7, 1.2e4)
+    ax.set_ylim(0.7, 1.4e4)
 
     missing_h = np.array([max(p.missing, LOG_FLOOR_COUNT) for p in phases], dtype=float)
     ax.bar(
@@ -289,8 +323,8 @@ def draw_funnel(ax: plt.Axes) -> None:
         width=w,
         color=RED,
         edgecolor=LINE,
-        linewidth=0.4,
-        label="Missing MATLAB pairs",
+        linewidth=0.35,
+        label="Missing",
         zorder=3,
     )
 
@@ -304,8 +338,8 @@ def draw_funnel(ax: plt.Axes) -> None:
         width=w,
         color=AMBER,
         edgecolor=LINE,
-        linewidth=0.4,
-        label="Extra Python pairs",
+        linewidth=0.35,
+        label="Extra",
         zorder=3,
     )
     for i, phase in enumerate(phases):
@@ -315,33 +349,33 @@ def draw_funnel(ax: plt.Axes) -> None:
     for i, phase in enumerate(phases):
         ax.text(
             x[i] - w / 2,
-            max(phase.missing, LOG_FLOOR_COUNT) * 1.18,
+            max(phase.missing, LOG_FLOOR_COUNT) * 1.22,
             f"{phase.missing:,}",
             ha="center",
             va="bottom",
-            fontsize=7.0,
+            fontsize=5.9,
             color=RED,
             fontweight="bold",
         )
         if phase.extra is None:
             ax.text(
                 x[i] + w / 2,
-                2.2,
+                2.0,
                 "n/a",
                 ha="center",
                 va="bottom",
-                fontsize=6.5,
+                fontsize=5.6,
                 color=MID,
                 style="italic",
             )
         else:
             ax.text(
                 x[i] + w / 2,
-                max(phase.extra, LOG_FLOOR_COUNT) * 1.18,
+                max(phase.extra, LOG_FLOOR_COUNT) * 1.22,
                 f"{phase.extra:,}",
                 ha="center",
                 va="bottom",
-                fontsize=7.0,
+                fontsize=5.9,
                 color=AMBER,
                 fontweight="bold",
             )
@@ -355,57 +389,68 @@ def draw_funnel(ax: plt.Axes) -> None:
             _annotate(ax, i, max(anchor_y, LOG_FLOOR_COUNT), phase.annotation)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([p.label for p in phases], fontsize=7.2)
-    ax.set_ylabel("Final residual pair count (log)")
-    ax.legend(frameon=False, loc="upper right", fontsize=7.2)
+    ax.set_xticklabels([p.label for p in phases], fontsize=5.9, linespacing=1.05)
+    ax.set_ylabel("Residual pairs (log)", labelpad=2)
+    ax.legend(
+        frameon=False,
+        loc="upper right",
+        fontsize=6.2,
+        handlelength=1.1,
+        borderaxespad=0.15,
+        labelspacing=0.25,
+    )
     ax.yaxis.set_major_formatter(plt.FuncFormatter(_log_count_formatter))
-    _footnote(ax, FUNNEL_FOOTNOTE, y=-0.16)
+    ax.tick_params(axis="y", pad=1.5)
+    ax.set_xlim(-0.55, len(phases) - 0.35)
 
 
 def draw_agreement(ax: plt.Axes) -> None:
     """Signed edge residual across canonical audits — the non-monotonic story."""
     audits: list[CanonicalAudit] = CANONICAL_AUDITS
-    _claim(ax, AGREEMENT_CLAIM)
+    _claim(ax, AGREEMENT_CLAIM, width=34)
 
     edge_d = np.array([a.edge_delta for a in audits], dtype=float)
     net_d = np.array([a.network_delta for a in audits], dtype=float)
     x = np.arange(len(audits))
-    y_lo, y_hi = _pad_limits(np.concatenate([edge_d, net_d]), pad_frac=0.15)
+    y_lo, y_hi = _pad_limits(np.concatenate([edge_d, net_d]), pad_frac=0.18)
 
-    ax.axhline(0, color=INK, lw=0.85, zorder=1)
+    ax.axhline(0, color=INK, lw=0.8, zorder=1)
     ax.fill_between(
-        [-0.6, len(audits) - 0.4],
+        [-0.55, len(audits) - 0.35],
         0,
         max(y_hi, 500),
         color="#E8F5E9",
-        alpha=0.55,
+        alpha=0.50,
         zorder=0,
     )
     ax.fill_between(
-        [-0.6, len(audits) - 0.4],
+        [-0.55, len(audits) - 0.35],
         min(y_lo, -500),
         0,
         color="#FFEBEE",
-        alpha=0.45,
+        alpha=0.40,
         zorder=0,
     )
+    # Band tags sit on the y-axis side (avoids legend / title collisions)
     ax.text(
-        len(audits) - 0.65,
-        max(y_hi * 0.55, 500),
-        "Python over",
-        ha="right",
-        va="center",
-        fontsize=6.5,
+        0.02,
+        0.97,
+        "over",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=5.5,
         color=GREEN,
         fontweight="bold",
     )
     ax.text(
-        len(audits) - 0.65,
-        min(y_lo * 0.9, -500),
-        "Python under",
-        ha="right",
-        va="center",
-        fontsize=6.5,
+        0.02,
+        0.03,
+        "under",
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=5.5,
         color=RED,
         fontweight="bold",
     )
@@ -415,66 +460,77 @@ def draw_agreement(ax: plt.Axes) -> None:
         edge_d,
         color=ACCENT,
         marker="o",
-        ms=7,
+        ms=5.5,
         markerfacecolor="white",
         markeredgecolor=ACCENT,
-        markeredgewidth=1.2,
-        lw=1.4,
+        markeredgewidth=1.1,
+        lw=1.35,
         zorder=3,
-        label="Edges: Python \u2212 MATLAB connections",
+        label="Edges Δ",
     )
     ax.plot(
         x,
         net_d,
         color=STEEL,
         marker="s",
-        ms=5.5,
+        ms=4.5,
         markerfacecolor="white",
         markeredgecolor=STEEL,
-        markeredgewidth=1.0,
-        lw=1.15,
-        ls=(0, (4, 2)),
+        markeredgewidth=0.95,
+        lw=1.1,
+        ls=(0, (3.5, 1.8)),
         zorder=3,
-        label="Network: Python \u2212 MATLAB strands",
+        label="Network Δ",
     )
 
     for i, audit in enumerate(audits):
         ed = audit.edge_delta
         if audit.near_zero_edge:
             ax.text(
-                x[i] + 0.08,
-                ed + 350,
-                "edges 0" if ed == 0 else f"{ed:+,}",
-                ha="left",
+                x[i],
+                ed + 520,
+                "0" if ed == 0 else f"{ed:+,}",
+                ha="center",
                 va="bottom",
-                fontsize=6.8,
+                fontsize=5.9,
                 color=ACCENT,
                 fontweight="bold",
+                clip_on=False,
+                path_effects=_LABEL_HALO,
+                zorder=5,
             )
             if audit.show_network_label and audit.network_delta != 0:
                 nd = audit.network_delta
-                net_txt = f"net \u2212{abs(nd)}" if nd < 0 else f"net +{nd}"
+                net_txt = f"net {nd:+d}" if abs(nd) < 100 else f"net {nd:+,}"
                 ax.text(
-                    x[i] + 0.08,
-                    nd - 550,
+                    x[i],
+                    nd - 520,
                     net_txt,
-                    ha="left",
+                    ha="center",
                     va="top",
-                    fontsize=6.8,
+                    fontsize=5.8,
                     color=STEEL,
                     fontweight="bold",
+                    clip_on=False,
+                    path_effects=_LABEL_HALO,
+                    zorder=5,
                 )
         else:
+            # Place values just below (under) or above (over) the marker
             sign = f"{ed:+,}" if ed != 0 else "0"
+            below = ed < 0
             ax.text(
                 x[i],
-                ed + (500 if ed >= 0 else -500),
+                ed + (-720 if below else 480),
                 sign,
                 ha="center",
-                va="bottom" if ed >= 0 else "top",
-                fontsize=7.0,
+                va="top" if below else "bottom",
+                fontsize=5.9,
                 color=ACCENT,
                 fontweight="bold",
+                clip_on=False,
+                path_effects=_LABEL_HALO,
+                zorder=5,
             )
         if audit.annotation is not None:
             if audit.annotation.series == "network":
@@ -484,60 +540,68 @@ def draw_agreement(ax: plt.Axes) -> None:
             _annotate(ax, i, anchor_y, audit.annotation)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{a.label}\n{a.note}" for a in audits], fontsize=6.5)
-    ax.set_ylabel("Signed residual count\n(Python \u2212 MATLAB)")
-    ax.set_xlim(-0.55, len(audits) - 0.15)
+    ax.set_xticklabels([f"{a.label}\n{a.note}" for a in audits], fontsize=5.6, linespacing=1.02)
+    ax.set_ylabel("Python − MATLAB", labelpad=2)
+    ax.set_xlim(-0.50, len(audits) - 0.25)
     ax.set_ylim(y_lo, y_hi)
-    ax.legend(frameon=False, loc="center right", fontsize=6.6)
-    _footnote(ax, AGREEMENT_FOOTNOTE, y=-0.18)
+    ax.legend(
+        frameon=False,
+        loc="center right",
+        fontsize=5.9,
+        handlelength=1.4,
+        borderaxespad=0.15,
+        labelspacing=0.2,
+    )
+    ax.tick_params(axis="y", pad=1.2)
+    # Compact y tick labels (k for thousands)
+    ax.yaxis.set_major_formatter(
+        plt.FuncFormatter(lambda v, _: f"{v / 1000:.0f}k" if abs(v) >= 1000 else f"{v:.0f}")
+    )
 
 
 def draw_cert_table(ax: plt.Axes) -> None:
-    """Absolute remaining mismatches — not a wall of PASS."""
+    """Absolute remaining mismatches — compact stack for wrap width."""
     rows: list[CertRow] = CERT_ROWS
-    _claim(ax, CERT_CLAIM)
+    _claim(ax, CERT_CLAIM, width=34)
 
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
 
-    headers = ("Stage / surface", "What is counted", "Residual", "Of", "Reading")
-    col_x = [0.01, 0.28, 0.52, 0.64, 0.76]
-    y_head = 0.92
-    for j, h in enumerate(headers):
-        ax.text(
-            col_x[j],
-            y_head,
-            h,
-            fontsize=7.0,
-            fontweight="bold",
-            color=INK,
-            ha="left",
-            va="center",
-            transform=ax.transAxes,
-        )
-    ax.plot([0.01, 0.99], [0.875, 0.875], color=LINE, lw=0.65, transform=ax.transAxes)
+    # Two-column compact rows: stage + residual | quantity / reading
+    n = len(rows)
+    y_top = 0.88
+    y_bot = 0.22
+    row_h = (y_top - y_bot) / n
 
-    row_h = 0.105
     for i, row in enumerate(rows):
-        yi = 0.80 - i * row_h
-        if i % 2 == 0:
-            ax.axhspan(
-                yi - row_h * 0.42,
-                yi + row_h * 0.42,
-                facecolor=LIGHT,
-                edgecolor="none",
-            )
+        yi = y_top - (i + 0.5) * row_h
+        y0 = yi - row_h * 0.42
+        y1 = yi + row_h * 0.42
+
         if row.tone == "residual":
             ax.add_patch(
                 FancyBboxPatch(
-                    (0.005, yi - row_h * 0.42),
-                    0.99,
-                    row_h * 0.84,
-                    boxstyle="round,pad=0.004,rounding_size=0.008",
+                    (0.01, y0),
+                    0.98,
+                    y1 - y0,
+                    boxstyle="round,pad=0.004,rounding_size=0.01",
                     facecolor="#FFF8E1",
                     edgecolor=AMBER,
-                    linewidth=0.7,
+                    linewidth=0.75,
+                    transform=ax.transAxes,
+                    zorder=0,
+                )
+            )
+        elif i % 2 == 0:
+            ax.add_patch(
+                FancyBboxPatch(
+                    (0.01, y0),
+                    0.98,
+                    y1 - y0,
+                    boxstyle="round,pad=0.002,rounding_size=0.006",
+                    facecolor=LIGHT,
+                    edgecolor="none",
                     transform=ax.transAxes,
                     zorder=0,
                 )
@@ -545,77 +609,81 @@ def draw_cert_table(ax: plt.Axes) -> None:
 
         res_color = _TONE_COLOR[row.tone]
         ax.text(
-            col_x[0],
-            yi,
+            0.04,
+            yi + 0.012,
             row.stage,
-            fontsize=7.0,
+            fontsize=6.4,
             color=INK,
             ha="left",
             va="center",
             transform=ax.transAxes,
             fontweight="bold" if row.tone == "residual" else "normal",
+            zorder=2,
         )
         ax.text(
-            col_x[1],
-            yi,
-            row.quantity,
-            fontsize=6.5,
+            0.04,
+            yi - 0.018,
+            f"{row.quantity}  ·  {row.reading}",
+            fontsize=5.4,
             color=MUTED,
             ha="left",
             va="center",
             transform=ax.transAxes,
+            zorder=2,
         )
+        # Residual as right-aligned badge
         ax.text(
-            col_x[2],
+            0.78,
             yi,
             row.residual_display,
-            fontsize=7.5,
+            fontsize=8.0,
             color=res_color,
-            ha="left",
+            ha="right",
             va="center",
             transform=ax.transAxes,
             fontweight="bold",
+            zorder=2,
+            family="sans-serif",
         )
         ax.text(
-            col_x[3],
+            0.96,
             yi,
-            row.denom,
-            fontsize=6.5,
+            f"/ {row.denom}",
+            fontsize=5.4,
             color=MUTED,
-            ha="left",
+            ha="right",
             va="center",
             transform=ax.transAxes,
-        )
-        ax.text(
-            col_x[4],
-            yi,
-            row.reading,
-            fontsize=6.5,
-            color=MUTED,
-            ha="left",
-            va="center",
-            transform=ax.transAxes,
+            zorder=2,
         )
 
+    # Takeaway: short wrap at bottom
+    takeaway = textwrap.fill(CERT_TAKEAWAY.replace("\n", " "), width=52)
     ax.text(
-        0.01,
-        0.06,
-        CERT_TAKEAWAY,
-        fontsize=6.6,
+        0.02,
+        0.02,
+        takeaway,
+        fontsize=5.5,
         color=INK,
         ha="left",
         va="bottom",
         transform=ax.transAxes,
-        linespacing=1.4,
-        bbox={"boxstyle": "round,pad=0.35", "fc": "#F5F5F5", "ec": MID, "lw": 0.45},
+        linespacing=1.25,
+        bbox={
+            "boxstyle": "round,pad=0.28",
+            "fc": "#F5F5F5",
+            "ec": MID,
+            "lw": 0.4,
+        },
     )
 
 
 def _save(fig: plt.Figure, stem: str, out_dir: Path) -> Path:
     png = out_dir / f"{stem}.png"
     pdf = out_dir / f"{stem}.pdf"
-    fig.savefig(pdf, bbox_inches="tight", pad_inches=0.08)
-    fig.savefig(png, dpi=600, bbox_inches="tight", pad_inches=0.08)
+    # Tight pad keeps wrap boxes from oversized whitespace
+    fig.savefig(pdf, bbox_inches="tight", pad_inches=0.04)
+    fig.savefig(png, dpi=600, bbox_inches="tight", pad_inches=0.04)
     plt.close(fig)
     print(f"Wrote {png}")
     print(f"Wrote {pdf}")
@@ -623,15 +691,17 @@ def _save(fig: plt.Figure, stem: str, out_dir: Path) -> Path:
 
 
 def main() -> list[Path]:
-    """Write four claim-driven standalone figures."""
+    """Write four claim-driven wrap-optimized figures."""
     out_dir = Path(__file__).resolve().parent
     written: list[Path] = []
+    w = WRAP_WIDTH_IN
 
+    # Height tuned so panels are slightly tall (better than wide when wrapped)
     specs = [
-        FigureSpec("parity_trajectory", (7.2, 4.2), 0.12, 0.97, 0.90, 0.18, draw_trajectory),
-        FigureSpec("parity_funnel", (7.2, 4.0), 0.11, 0.97, 0.90, 0.16, draw_funnel),
-        FigureSpec("parity_agreement", (7.4, 4.4), 0.12, 0.97, 0.90, 0.22, draw_agreement),
-        FigureSpec("parity_cert_table", (7.0, 4.0), 0.02, 0.99, 0.92, 0.04, draw_cert_table),
+        FigureSpec("parity_trajectory", (w, 3.15), 0.14, 0.97, 0.86, 0.16, draw_trajectory),
+        FigureSpec("parity_funnel", (w, 3.05), 0.13, 0.97, 0.86, 0.15, draw_funnel),
+        FigureSpec("parity_agreement", (w, 3.25), 0.14, 0.97, 0.84, 0.16, draw_agreement),
+        FigureSpec("parity_cert_table", (w, 3.55), 0.02, 0.99, 0.90, 0.02, draw_cert_table),
     ]
 
     for spec in specs:

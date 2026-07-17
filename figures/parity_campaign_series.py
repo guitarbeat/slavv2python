@@ -72,7 +72,8 @@ class TrajectoryStep:
     annotation: Annotation | None = None
 
 
-TRAJECTORY_CLAIM = "One directional-LUT fix recovered ~6,000 missing MATLAB edges"
+# Claims kept short for wrap-width titles; full narrative lives in captions.
+TRAJECTORY_CLAIM = "One LUT fix recovered ~6k missing edges"
 TRAJECTORY_FOOTNOTE = (
     f"Crop harness n = {CROP_N_MATLAB_FINAL_PAIRS:,} MATLAB final pairs "
     f"(oracle {ORACLE_CROP_ID}). "
@@ -82,32 +83,32 @@ TRAJECTORY_FOOTNOTE = (
 TRAJECTORY_STEPS: list[TrajectoryStep] = [
     TrajectoryStep(
         id="baseline",
-        label="Baseline\nfrontier",
+        label="Base-\nline",
         missing=6_532,
         kind="null",
         annotation=Annotation(
-            text="queue cosmetics:\nno recovery",
-            text_x=0.5,
-            text_y=1_200,
+            text="queue:\nno recovery",
+            text_x=0.55,
+            text_y=900,
             color_key="muted",
             series="point",
         ),
     ),
     TrajectoryStep(
         id="sorted_queue",
-        label="Sorted queue\n(no effect)",
+        label="Sorted\nqueue",
         missing=6_532,
         kind="null",
     ),
     TrajectoryStep(
         id="directional_lut",
-        label="Directional LUT\n+ suppression",
+        label="LUT +\nsuppress",
         missing=417,
         kind="leap",
         annotation=Annotation(
-            text="\u22126,115 pairs\nin one step",
-            text_x=2.85,
-            text_y=2_500,
+            text="\u22126,115\nin one step",
+            text_x=2.75,
+            text_y=2_200,
             color_key="accent",
             bold=True,
             series="point",
@@ -115,13 +116,13 @@ TRAJECTORY_STEPS: list[TrajectoryStep] = [
     ),
     TrajectoryStep(
         id="vertex_inf_sentinel",
-        label="Vertex -Inf\nsentinel",
+        label="Vertex\n-Inf",
         missing=19,
         kind="polish",
     ),
     TrajectoryStep(
         id="trace_match",
-        label="Trace match",
+        label="Trace\nmatch",
         missing=0,
         kind="closed",
     ),
@@ -143,7 +144,7 @@ class FunnelPhase:
     annotation: Annotation | None = None
 
 
-FUNNEL_CLAIM = "Crop residual collapsed from thousands to a closed pair multiset"
+FUNNEL_CLAIM = "Crop residual collapsed to a closed pair multiset"
 FUNNEL_FOOTNOTE = (
     f"Crop residual vs MATLAB oracle pairs ({ORACLE_CROP_ID}). "
     f"Middle columns: generation extras \u2248 candidates \u2212 "
@@ -154,51 +155,51 @@ FUNNEL_FOOTNOTE = (
 FUNNEL_PHASES: list[FunnelPhase] = [
     FunnelPhase(
         id="baseline_generation",
-        label="Baseline\ngeneration",
+        label="Base\ngen.",
         missing=6_532,
         extra=None,
     ),
     FunnelPhase(
         id="lut_unlocked",
-        label="LUT unlocked\ncandidates",
+        label="LUT\nunlock",
         missing=417,
         extra=3_772,  # ~19,283 candidates - 15,511
     ),
     FunnelPhase(
         id="trace_match_overselect",
-        label="Trace match +\nover-select",
+        label="Trace +\nover-sel.",
         missing=149,
         extra=365,
         annotation=Annotation(
-            text="Once generation closed,\nextras displaced MATLAB\npairs in faithful cleanup",
-            text_x=1.15,
-            text_y=40,
+            text="extras displace\noracle pairs",
+            text_x=0.55,
+            text_y=22,
             color_key="muted",
             series="extra",
         ),
     ),
     FunnelPhase(
         id="post_watershed",
-        label="Post-watershed\nfinalization",
+        label="Post-\nWS",
         missing=1,
         extra=1,
         annotation=Annotation(
-            text="brief 1-pair\ncheckpoint",
-            text_x=2.55,
-            text_y=18,
+            text="1-pair\nckpt",
+            text_x=2.45,
+            text_y=14,
             color_key="muted",
             series="extra",
         ),
     ),
     FunnelPhase(
         id="reselection_closed",
-        label="Re-selection\nclosed",
+        label="Re-sel.\nclosed",
         missing=0,
         extra=0,
         annotation=Annotation(
-            text="crop pair multiset\nclosed (guard)",
-            text_x=3.85,
-            text_y=12,
+            text="closed\n(guard)",
+            text_x=3.55,
+            text_y=10,
             color_key="green",
             bold=True,
             series="missing",
@@ -230,8 +231,7 @@ class CanonicalAudit:
 
 
 AGREEMENT_CLAIM = (
-    f"Full-volume Edges under-, over-, then matched - Network still "
-    f"{NETWORK_STRAND_RESIDUAL:+d} strand"
+    f"Edges under → over → match; Network still {NETWORK_STRAND_RESIDUAL:+d}"
 )
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
@@ -246,18 +246,18 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v4",
         edge_delta=-9_287,
         network_delta=-8_426,
-        note="pre-fix\naudit",
+        note="pre-fix",
     ),
     CanonicalAudit(
         id="v6",
         label="v6",
         edge_delta=-4_064,
         network_delta=-3_454,
-        note="Edges ADR\nPASS; Net FAIL",
+        note="own. PASS",
         annotation=Annotation(
-            text="ownership PASS\nwhile still \u22124k edges",
-            text_x=0.05,
-            text_y=-7_000,
+            text="own. PASS\nstill \u22124k",
+            text_x=0.15,
+            text_y=-7_200,
             color_key="muted",
             series="edge",
         ),
@@ -267,11 +267,11 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v7",
         edge_delta=-3_276,
         network_delta=-2_632,
-        note="generation\nimproved",
+        note="gen. up",
         annotation=Annotation(
-            text="Network tracks Edges\n(no independent bug)",
-            text_x=2.55,
-            text_y=-8_200,
+            text="Net tracks\nEdges",
+            text_x=2.45,
+            text_y=-7_800,
             color_key="steel",
             series="network",
         ),
@@ -281,11 +281,11 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v10",
         edge_delta=+747,
         network_delta=+534,
-        note="sign flip\n(over-select)",
+        note="over-sel.",
         annotation=Annotation(
-            text="axis/finalization fix\nflipped the sign",
-            text_x=3.45,
-            text_y=2_400,
+            text="sign flip\n(axis fix)",
+            text_x=4.15,
+            text_y=1_900,
             color_key="amber",
             bold=True,
             series="edge",
@@ -296,7 +296,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v15",
         edge_delta=0,
         network_delta=NETWORK_STRAND_RESIDUAL,
-        note="edges exact;\n1 strand",
+        note="edges 0",
         show_network_label=True,
     ),
     CanonicalAudit(
@@ -304,7 +304,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         label="v16",
         edge_delta=0,
         network_delta=NETWORK_STRAND_RESIDUAL,
-        note="Edges PASS;\nNet FAIL",
+        note="Net FAIL",
         show_network_label=True,
     ),
 ]
@@ -327,16 +327,12 @@ class CertRow:
     tone: CertTone
 
 
-CERT_CLAIM = "On 180M voxels Network still fails ADR 0012 by one strand"
+CERT_CLAIM = "Network still fails ADR 0012 by one strand"
 CERT_TAKEAWAY = (
-    "Takeaway: Energy/Vertices closed; Edges ownership/count evaluated PASS on "
-    f"{CANONICAL_CLAIM_RUN}.\n"
-    "Open ship gate: Network strand multiset FAIL "
-    f"({CANONICAL_PYTHON_STRANDS:,} / {CANONICAL_MATLAB_STRANDS:,}) — "
-    "downstream of one full Edge Set multiset residual\n"
-    f"(MATLAB {list(FULL_RESIDUAL_MATLAB_PAIR)} vs Python {list(FULL_RESIDUAL_PYTHON_PAIR)}; "
-    "join displacement under equal post-resample max). "
-    "Not an independent Network bug."
+    f"Ship gate open: Network multiset FAIL "
+    f"({CANONICAL_PYTHON_STRANDS:,}/{CANONICAL_MATLAB_STRANDS:,}) on {CANONICAL_CLAIM_RUN}; "
+    f"downstream of Edge Set residual "
+    f"(MATLAB {list(FULL_RESIDUAL_MATLAB_PAIR)} vs Python {list(FULL_RESIDUAL_PYTHON_PAIR)})."
 )
 
 CERT_ROWS: list[CertRow] = [
@@ -345,7 +341,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="mismatched voxels",
         residual_display="0",
         denom="16.8M",
-        reading="exact discrete field",
+        reading="exact field",
         tone="closed",
     ),
     CertRow(
@@ -353,7 +349,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="max |\u0394|",
         residual_display="~2e-11",
         denom="allclose",
-        reading="library FP drift only",
+        reading="FP drift only",
         tone="closed",
     ),
     CertRow(
@@ -361,15 +357,15 @@ CERT_ROWS: list[CertRow] = [
         quantity="position / scale",
         residual_display="0",
         denom="exact",
-        reading="bit-identical geometry",
+        reading="bit-identical",
         tone="closed",
     ),
     CertRow(
         stage="Edges ownership",
         quantity="disagreed voxels",
         residual_display="~8",
-        denom="5.84M claimed",
-        reading="99.9999% map agree",
+        denom="5.84M",
+        reading="map ~100%",
         tone="neutral",
     ),
     CertRow(
@@ -377,7 +373,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="pair multiset \u0394",
         residual_display=str(EDGE_PAIR_MULTISET_RESIDUAL),
         denom=f"{CANONICAL_MATLAB_EDGES:,}",
-        reading="join displacement (full)",
+        reading="join displace.",
         tone="residual",
     ),
     CertRow(
@@ -385,7 +381,7 @@ CERT_ROWS: list[CertRow] = [
         quantity="strand multiset \u0394",
         residual_display=str(abs(NETWORK_STRAND_RESIDUAL)),
         denom=f"{CANONICAL_MATLAB_STRANDS:,}",
-        reading="ADR 0012 FAIL (open gate)",
+        reading="ADR 0012 FAIL",
         tone="residual",
     ),
 ]
