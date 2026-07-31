@@ -27,6 +27,9 @@ on:
       - "external/Vectorization-Public"
       - ".github/workflows/matlab-random-component-parity.yml"
 
+permissions:
+  contents: read
+
 concurrency:
   group: matlab-r2019a-random-component-parity
   cancel-in-progress: false
