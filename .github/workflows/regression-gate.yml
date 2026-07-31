@@ -6,10 +6,18 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
