@@ -307,6 +307,22 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         network_delta=NETWORK_STRAND_RESIDUAL,
         note="Net FAIL",
         show_network_label=True,
+        annotation=Annotation(
+            text="tie-scan\nfix applied",
+            text_x=6.35,
+            text_y=350,
+            color_key="green",
+            bold=True,
+            series="edge",
+        ),
+    ),
+    CanonicalAudit(
+        id="v17",
+        label="v17",
+        edge_delta=0,
+        network_delta=0,
+        note="(pending)",
+        show_network_label=True,
     ),
 ]
 

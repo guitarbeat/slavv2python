@@ -12,8 +12,9 @@ Verify MATLAB↔Python parity for a SLAVV pipeline stage and report results hone
 - `$1` = stage: `energy` | `vertices` | `edges` | `network` | `all` (default `all`).
 
 ## Fixed surfaces (crop iteration tier)
-- Run root: `workspace/runs/oracle_180709_E/crop_M_exact`
-- Oracle root: `workspace/oracles/180709_E_crop_M_v2` (batch `batch_260624-105705`)
+- Run root: `workspace/runs/oracle_180709_E/crop_M_exact_v3` (crop guard). Do **not** use pre–PR #103 `crop_M_exact` as the live crop surface.
+- Oracle root: `workspace/oracles/180709_E_crop_M_v2` (batch `batch_260624-105705`). Never `180709_E_crop_M_v2_old`.
+- Full claim numbers: `canonical_full_v16` vs `180709_E_full_v2`. Do **not** claim `canonical_full_v17`.
 - Checkpoints: `<run>/02_Output/python_results/checkpoints/checkpoint_<stage>.pkl`
 - Use the repo `.venv` Python and set `PYTHONPATH` to the repo root.
 
@@ -33,15 +34,19 @@ Verify MATLAB↔Python parity for a SLAVV pipeline stage and report results hone
 3. **Run the proof** (dest = source so checkpoints are read in place):
    ```
    slavv parity prove-exact \
-     --source-run-root workspace/runs/oracle_180709_E/crop_M_exact \
-     --dest-run-root   workspace/runs/oracle_180709_E/crop_M_exact \
+     --source-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 \
+     --dest-run-root   workspace/runs/oracle_180709_E/crop_M_exact_v3 \
      --oracle-root     workspace/oracles/180709_E_crop_M_v2 \
      --stage <stage>
    ```
    Exit 0 = pass; exit 1 = a field failed (the command prints nothing itself).
-4. **Read the report:** `<run>/03_Analysis/exact_proof.json` →
-   `passed` and `stage_summaries[<stage>].first_failure` (field_path,
-   mismatch_type, matlab/python previews). Summarize per-field.
+4. **Cite the report through the pairing seam** (do not trust the path alone):
+   ```
+   slavv parity inspect-proof --path <run>/03_Analysis/exact_proof_<stage>.json --require-evaluated
+   ```
+   or `load_proof_record(...)` from `slavv_python.analytics.parity.experiments`.
+   Unpaired `dest_run_root` or unevaluated Edges/Network citations are refused.
+   Then read `passed` and `stage_summaries[<stage>].first_failure`.
 5. **Interpret with the right bar:**
    - Continuous float fields certify under ADR 0011 `np.allclose(1e-7, 1e-9)`.
    - Edges: topology faithful; residual is watershed order-sensitivity — judge by

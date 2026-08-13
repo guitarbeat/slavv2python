@@ -165,7 +165,7 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 |------|------|--------|
 | **U1** | Extend `prove-exact` energy stage + `prove-exact-sequence` | Done |
 | **U2** | Align certification docs with strict zero bar | Done |
-| **U3** | Certification candidate run through network | See [findings — active operations](../reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations) |
+| **U3** | Certification candidate run through network | See [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) / [audit inventory](../reference/core/EXACT_PROOF_FINDINGS.md#audit-inventory-folders-not-a-second-verdict) |
 | **U4** | Sequential `prove-exact` certification | Status in findings (not here) |
 | **U5** | Close parity gaps on failing stage | Active |
 | **U6** | Record phase 1 milestone in findings | Pending U4 |

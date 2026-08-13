@@ -187,7 +187,7 @@ their generators for the PhD proposal appendix and related methods write-ups.
 **No.** It's in `.gitignore` because it contains large datasets, personal experiment runs, and temporary files that differ for every developer.
 
 ### "Can scripts/ import from slavv_python/?"
-**Not applicable** — `scripts/` no longer exists. All tooling is in `slavv_python/analytics/parity/` and invoked via `slavv parity <subcommand>`.
+**Yes.** `scripts/` contains developer probe scripts (e.g. `watershed_frontier_diff.py`, `edge_selection_funnel_probe.py`) referenced from [HANDOFF](../../../.claude/HANDOFF.md). They import from `slavv_python/` and are not part of the public CLI — use `slavv parity <subcommand>` for product workflows.
 
 ### "Where do MATLAB parity tests go?"
 - **Pre-gate integration tests:** `tests/integration/parity/`

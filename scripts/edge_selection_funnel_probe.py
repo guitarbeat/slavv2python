@@ -16,12 +16,14 @@ from pathlib import Path
 import numpy as np
 
 from slavv_python.analytics.parity.constants import NORMALIZED_DIR
+from slavv_python.analytics.parity.experiments import load_edge_artifact
 from slavv_python.analytics.parity.oracle.surfaces import validate_exact_proof_source_surface
 from slavv_python.analytics.parity.proof.coordinator import (
     load_exact_energy_result,
     load_exact_vertex_set,
 )
 from slavv_python.engine.state import load_json_dict
+from slavv_python.pipeline.edges.candidate_manifest import endpoint_pairs_from_connections
 from slavv_python.pipeline.edges.cleanup import (
     break_graph_cycles,
     prune_orphan_edges,
@@ -42,19 +44,10 @@ from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
 from slavv_python.utils.safe_unpickle import safe_load
 
 
-def _pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
-    pairs: set[tuple[int, int]] = set()
-    arr = np.asarray(connections, dtype=np.int64).reshape(-1, 2)
-    for u, v in arr:
-        if u < 0 or v < 0 or u == v:
-            continue
-        pairs.add((u, v) if u < v else (v, u))
-    return pairs
-
-
 def _load_oracle_pairs(oracle_root: Path) -> set[tuple[int, int]]:
-    payload = safe_load(oracle_root / NORMALIZED_DIR / "oracle" / "edges.pkl")
-    return _pair_set(np.asarray(payload.get("connections", np.zeros((0, 2))), dtype=np.int64))
+    return endpoint_pairs_from_connections(
+        load_edge_artifact(oracle_root / NORMALIZED_DIR / "oracle" / "edges.pkl").connections
+    )
 
 
 def _degree_counts(pairs: set[tuple[int, int]]) -> dict[int, int]:
@@ -228,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
     lumen_radius_microns = np.asarray(energy.lumen_radius_microns, dtype=np.float32)
 
     matlab_pairs = _load_oracle_pairs(args.oracle_root)
-    python_cand_pairs = _pair_set(connections)
+    python_cand_pairs = endpoint_pairs_from_connections(connections)
     matlab_candidate_pairs = matlab_pairs & python_cand_pairs
     pair_to_candidate_indices: dict[tuple[int, int], list[int]] = {}
     for index, (start_vertex, end_vertex) in enumerate(connections):
@@ -245,14 +238,12 @@ def main(argv: list[str] | None = None) -> int:
     selection_traces = traces
     selection_energy_traces = energy_traces
     selection_metrics = metrics
-    resampled_spaces_yxz_one_based, _, resampled_energies = (
-        _matlab_precrop_resample_from_maps(
-            [np.asarray(trace, dtype=np.float64) for trace in traces],
-            [np.asarray(trace, dtype=np.float64) for trace in scale_traces],
-            [np.asarray(trace, dtype=np.float64) for trace in energy_traces],
-            energy_map=energy.energy,
-            scale_indices=energy.scale_indices,
-        )
+    resampled_spaces_yxz_one_based, _, resampled_energies = _matlab_precrop_resample_from_maps(
+        [np.asarray(trace, dtype=np.float64) for trace in traces],
+        [np.asarray(trace, dtype=np.float64) for trace in scale_traces],
+        [np.asarray(trace, dtype=np.float64) for trace in energy_traces],
+        energy_map=energy.energy,
+        scale_indices=energy.scale_indices,
     )
     selection_traces = [
         np.asarray(space_trace[:, [2, 0, 1]] - 1.0, dtype=np.float64)
@@ -348,9 +339,13 @@ def main(argv: list[str] | None = None) -> int:
                 continue
 
             lost_with_incident_extra += 1
-            if lost_rows and any(row_index < min(lost_rows) for _, _, row_index, _ in incident_extras):
+            if lost_rows and any(
+                row_index < min(lost_rows) for _, _, row_index, _ in incident_extras
+            ):
                 lost_with_earlier_incident_extra += 1
-            if lost_metrics and any(metric < min(lost_metrics) for _, _, _, metric in incident_extras):
+            if lost_metrics and any(
+                metric < min(lost_metrics) for _, _, _, metric in incident_extras
+            ):
                 lost_with_better_metric_incident_extra += 1
             if len(sample_pairs) < max(0, args.sample_size):
                 sample_pairs.append(
@@ -377,12 +372,14 @@ def main(argv: list[str] | None = None) -> int:
             "lost_with_earlier_incident_surviving_extra": lost_with_earlier_incident_extra,
             "lost_with_better_metric_incident_extra": lost_with_better_metric_incident_extra,
             "total_incident_surviving_extra_links": int(sum(incident_extra_counts)),
-            "max_incident_surviving_extras_for_lost_pair": int(max(incident_extra_counts, default=0)),
+            "max_incident_surviving_extras_for_lost_pair": int(
+                max(incident_extra_counts, default=0)
+            ),
             "sample": sample_pairs,
         }
 
     def _extra_surface_summary(final_indices: list[int]) -> dict[str, object]:
-        final_pairs = _pair_set(connections[final_indices])
+        final_pairs = endpoint_pairs_from_connections(connections[final_indices])
         candidate_extra_pairs = python_cand_pairs - matlab_pairs
         final_extra_pairs = final_pairs - matlab_pairs
         final_missing_pairs = matlab_pairs - final_pairs
@@ -406,7 +403,9 @@ def main(argv: list[str] | None = None) -> int:
                 return int(origin_indices[index])
             return None
 
-        def top_origins_for_pairs(pairs: set[tuple[int, int]], limit: int = 12) -> list[dict[str, object]]:
+        def top_origins_for_pairs(
+            pairs: set[tuple[int, int]], limit: int = 12
+        ) -> list[dict[str, object]]:
             counts: dict[int, int] = {}
             for pair in pairs:
                 for index in pair_to_indices.get(pair, []):
@@ -453,12 +452,8 @@ def main(argv: list[str] | None = None) -> int:
                 "vertex": int(vertex),
                 "python_final_degree": int(final_degree.get(vertex, 0)),
                 "matlab_final_degree": int(matlab_degree.get(vertex, 0)),
-                "final_extra_incident": int(
-                    sum(1 for pair in final_extra_pairs if vertex in pair)
-                ),
-                "missing_incident": int(
-                    sum(1 for pair in final_missing_pairs if vertex in pair)
-                ),
+                "final_extra_incident": int(sum(1 for pair in final_extra_pairs if vertex in pair)),
+                "missing_incident": int(sum(1 for pair in final_missing_pairs if vertex in pair)),
                 "position_zyx": vertices.positions[vertex].astype(float).tolist()
                 if 0 <= vertex < len(vertices.positions)
                 else None,
@@ -486,7 +481,7 @@ def main(argv: list[str] | None = None) -> int:
     def report(label: str, idx_list: list[int]) -> set[tuple[int, int]]:
         nonlocal previous_indices, previous_pairs
         stage_indices_by_label[label] = list(idx_list)
-        surv = _pair_set(connections[idx_list])
+        surv = endpoint_pairs_from_connections(connections[idx_list])
         ov_all = surv & matlab_pairs
         ov_gen = surv & matlab_candidate_pairs
         print(
@@ -511,8 +506,7 @@ def main(argv: list[str] | None = None) -> int:
                     "6. FINAL",
                 }:
                     previous_row_lookup: dict[int, int] = {
-                        index: row_index
-                        for row_index, index in enumerate(previous_indices or [])
+                        index: row_index for row_index, index in enumerate(previous_indices or [])
                     }
                     displacement_summaries[label] = _displacement_summary(
                         lost_from_previous,

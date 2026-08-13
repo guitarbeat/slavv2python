@@ -16,9 +16,10 @@
 | Architecture decisions | [adr/](adr/) | TODO / HANDOFF |
 | Specs (requirements + plan) | [plans/](plans/) | Brainstorms after promotion |
 | Experiment *framing* (hypothesis, method) | [PHASE1 residual](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) + [template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Live KPIs |
+| Experiment *data / artifact class* | `slavv_python.analytics.parity.experiments` (runbook: [parity-experiment-hygiene.md](solutions/best-practices/parity-experiment-hygiene.md)) | Unlabeled `probe_*.py`; treating finals as raw |
 | Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
 | Figure paint KPIs (mirror only) | [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py) | Second status tables in prose docs |
-| Archival deep dives / session diary | [investigations/](investigations/) · findings session diary | Executable specs / current status |
+| Archival deep dives / session diary | [investigations/](investigations/) · [findings diary](investigations/exact-proof-findings-diary/README.md) | Executable specs / current status |
 
 **One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
 
@@ -31,9 +32,9 @@
 | [2026-07-03-honesty-audit.md](investigations/2026-07-03-honesty-audit.md) | ⛔ Session archive |
 | ADR 0012 addenda naming `v5`/`v6` as current ops | ⛔ Policy history; live ops → ONE TRUTH + HANDOFF |
 | CHANGELOG “Network certified” / “crop sequence certified” | Dated product notes; **not** full-volume Phase 1 closed |
-| Findings session diary + mid-file 2026-07-04 shortfall essay | Historical trail only |
+| Findings session diary + mid-file 2026-07-04 shortfall essay | ⛔ [exact-proof-findings-diary](investigations/exact-proof-findings-diary/README.md) |
 
-Treat `investigations/` and the findings session diary as historical context, not as an executable spec.
+Treat `investigations/` and the [findings diary](investigations/exact-proof-findings-diary/README.md) as historical context, not as an executable spec.
 Other maintained guidance lives under `reference/` (workflow, core, backends).
 
 ---

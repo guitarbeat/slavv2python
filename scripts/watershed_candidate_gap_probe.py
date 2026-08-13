@@ -1,4 +1,4 @@
-"""Offline probe: compare MATLAB oracle edge pairs against Python watershed candidates."""
+"""Offline probe: coverage of oracle Edge Set pairs by raw Candidate Set emission."""
 
 from __future__ import annotations
 
@@ -7,10 +7,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-import joblib
 import numpy as np
 
 from slavv_python.analytics.parity.constants import NORMALIZED_DIR
+from slavv_python.analytics.parity.experiments import (
+    coverage_of_finals_by_raw,
+    load_edge_artifact,
+)
 from slavv_python.analytics.parity.oracle.surfaces import validate_exact_proof_source_surface
 from slavv_python.analytics.parity.proof.coordinator import (
     load_exact_energy_result,
@@ -18,9 +21,9 @@ from slavv_python.analytics.parity.proof.coordinator import (
 )
 from slavv_python.engine.state import load_json_dict
 from slavv_python.pipeline.edges.candidate_generation import generate_watershed_candidates
+from slavv_python.pipeline.edges.candidate_manifest import endpoint_pairs_from_connections
 from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
 from slavv_python.pipeline.vertices.painting import paint_vertex_center_image
-from slavv_python.utils.safe_unpickle import safe_load
 
 
 def _regenerate_watershed_candidates(
@@ -56,53 +59,45 @@ def _regenerate_watershed_candidates(
     )
 
 
-def _endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
-    pairs: set[tuple[int, int]] = set()
-    for start_vertex, end_vertex in np.asarray(connections, dtype=np.int64).reshape(-1, 2):
-        u, v = int(start_vertex), int(end_vertex)
-        if u < 0 or v < 0:
-            continue
-        pairs.add((u, v) if u < v else (v, u))
-    return pairs
-
-
 def _load_oracle_edge_connections(oracle_root: Path) -> np.ndarray:
-    oracle_edges_path = oracle_root / NORMALIZED_DIR / "oracle" / "edges.pkl"
-    if not oracle_edges_path.is_file():
-        raise FileNotFoundError(f"Missing normalized oracle edges artifact: {oracle_edges_path}")
-    payload = joblib.load(oracle_edges_path)
-    return np.asarray(payload.get("connections", np.zeros((0, 2))), dtype=np.int64)
+    return load_edge_artifact(oracle_root / NORMALIZED_DIR / "oracle" / "edges.pkl").connections
 
 
 def _load_python_candidate_connections(run_dir: Path) -> np.ndarray:
-    candidates_path = run_dir / "04_Edges" / "candidates.pkl"
-    if not candidates_path.is_file():
-        raise FileNotFoundError(f"Missing candidate checkpoint: {candidates_path}")
-    payload = safe_load(candidates_path)
-    return np.asarray(payload.get("connections", np.zeros((0, 2))), dtype=np.int64)
+    return load_edge_artifact(run_dir / "04_Edges" / "candidates.pkl").connections
 
 
 def _summarize_gap(
-    matlab_pairs: set[tuple[int, int]],
-    python_pairs: set[tuple[int, int]],
+    matlab_pairs: np.ndarray,
+    python_pairs: np.ndarray,
 ) -> dict[str, Any]:
-    missing = matlab_pairs - python_pairs
-    extra = python_pairs - matlab_pairs
-    overlap = matlab_pairs & python_pairs
+    """Coverage of oracle Edge Set pairs by raw Candidate Set emission.
+
+    Not pair-set equality and not Certification.
+    """
+    coverage = coverage_of_finals_by_raw(python_pairs, matlab_pairs)
+    matlab_set = endpoint_pairs_from_connections(matlab_pairs)
+    python_set = endpoint_pairs_from_connections(python_pairs)
     return {
-        "matlab_pair_count": len(matlab_pairs),
-        "python_candidate_pair_count": len(python_pairs),
-        "overlap_pair_count": len(overlap),
+        "metric": "coverage_of_finals_by_raw",
+        "n_raw": coverage.n_raw,
+        "n_final": coverage.n_final,
+        "n_covered": coverage.n_covered,
+        "n_missing_from_raw": coverage.n_missing_from_raw,
+        "n_extra_raw": coverage.n_extra_raw,
+        "matlab_pair_count": coverage.n_final,
+        "python_candidate_pair_count": coverage.n_raw,
+        "overlap_pair_count": coverage.n_covered,
         "overlap_fraction_of_matlab": (
-            float(len(overlap) / len(matlab_pairs)) if matlab_pairs else 1.0
+            float(coverage.n_covered / coverage.n_final) if coverage.n_final else 1.0
         ),
-        "generation_gap_count": len(missing),
+        "generation_gap_count": coverage.n_missing_from_raw,
         "generation_gap_fraction_of_matlab": (
-            float(len(missing) / len(matlab_pairs)) if matlab_pairs else 0.0
+            float(coverage.n_missing_from_raw / coverage.n_final) if coverage.n_final else 0.0
         ),
-        "extra_candidate_count": len(extra),
-        "sample_missing_pairs": sorted(missing)[:20],
-        "sample_extra_pairs": sorted(extra)[:20],
+        "extra_candidate_count": coverage.n_extra_raw,
+        "sample_missing_pairs": sorted(matlab_set - python_set)[:20],
+        "sample_extra_pairs": sorted(python_set - matlab_set)[:20],
     }
 
 
@@ -127,8 +122,8 @@ def _trace_missing_pairs(
     sample_size: int,
 ) -> dict[str, Any]:
     source_surface = validate_exact_proof_source_surface(run_dir)
-    matlab_pairs = _endpoint_pair_set(_load_oracle_edge_connections(oracle_root))
-    python_pairs = _endpoint_pair_set(_load_python_candidate_connections(run_dir))
+    matlab_pairs = endpoint_pairs_from_connections(_load_oracle_edge_connections(oracle_root))
+    python_pairs = endpoint_pairs_from_connections(_load_python_candidate_connections(run_dir))
     missing_pairs = sorted(matlab_pairs - python_pairs)[:sample_size]
 
     params = load_json_dict(source_surface.validated_params_path) or {}
@@ -139,20 +134,25 @@ def _trace_missing_pairs(
         params=params,
         tracer=tracer,
     )
-    traced_pairs = _endpoint_pair_set(np.asarray(payload["connections"], dtype=np.int64))
+    traced_connections = np.asarray(payload["connections"], dtype=np.int64)
+    traced_pairs = endpoint_pairs_from_connections(traced_connections)
     traced_missing = sorted(matlab_pairs - traced_pairs)[:sample_size]
-    traced_overlap = matlab_pairs & traced_pairs
+    live = coverage_of_finals_by_raw(traced_connections, _load_oracle_edge_connections(oracle_root))
 
     return {
+        "metric": "coverage_of_finals_by_raw",
         "missing_from_run_checkpoint": missing_pairs,
         "missing_after_live_trace": traced_missing,
-        "live_overlap_pair_count": len(traced_overlap),
+        "live_n_covered": live.n_covered,
+        "live_n_missing_from_raw": live.n_missing_from_raw,
+        "live_n_extra_raw": live.n_extra_raw,
+        "live_overlap_pair_count": live.n_covered,
         "live_overlap_fraction_of_matlab": (
-            float(len(traced_overlap) / len(matlab_pairs)) if matlab_pairs else 1.0
+            float(live.n_covered / live.n_final) if live.n_final else 1.0
         ),
-        "live_generation_gap_count": len(matlab_pairs - traced_pairs),
-        "live_extra_candidate_count": len(traced_pairs - matlab_pairs),
-        "live_trace_pair_count": len(traced_pairs),
+        "live_generation_gap_count": live.n_missing_from_raw,
+        "live_extra_candidate_count": live.n_extra_raw,
+        "live_trace_pair_count": live.n_raw,
         "join_events_in_trace": _count_trace_events(trace_path, "join"),
         "join_skipped_events_in_trace": _count_trace_events(trace_path, "join_skipped"),
         "trace_path": str(trace_path),
@@ -176,8 +176,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sample-size", type=int, default=5)
     args = parser.parse_args(argv)
 
-    matlab_pairs = _endpoint_pair_set(_load_oracle_edge_connections(args.oracle_root))
-    python_pairs = _endpoint_pair_set(_load_python_candidate_connections(args.run_dir))
+    matlab_pairs = _load_oracle_edge_connections(args.oracle_root)
+    python_pairs = _load_python_candidate_connections(args.run_dir)
     summary = _summarize_gap(matlab_pairs, python_pairs)
     print(json.dumps(summary, indent=2))
 

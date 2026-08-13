@@ -66,6 +66,10 @@ slavv parity prove-exact `
   --stage <energy|vertices|edges|network|all>
 ```
 
+Before citing any of these, confirm `dest_run_root` / `source_run_root` equal the
+run folder you opened. A JSON can sit under `crop_M_exact_v3` and still describe
+`crop_M_exact`. Edges/Network closure requires `adr0012_evaluated: true`.
+
 ### Proof artifacts (machine truth)
 
 | File | Content |

@@ -88,7 +88,12 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
 
 ### Starting a Monitored Job
 
-Add the `--monitor` flag to any `resume-exact-run` or `launch-exact-run` command:
+On Windows, start the writer with `Start-Process` + `resume-exact-run`, not
+`launch-exact-run` (the child dies on its own lease — see
+[detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md)).
+Add `--monitor` only after the new process owns the lease.
+
+Add the `--monitor` flag to `resume-exact-run`:
 
 ```powershell
 # Start monitored parity job

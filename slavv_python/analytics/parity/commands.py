@@ -12,6 +12,7 @@ from slavv_python.analytics.parity.cli_handlers.cli_diagnostics import (
     handle_diagnose_energy,
     handle_diagnose_gaps,
     handle_inspect_energy_evidence,
+    handle_inspect_proof,
     handle_normalize_recordings,
     handle_record_parity_hypothesis,
     handle_summarize,
@@ -138,6 +139,25 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
         handle_inspect_energy_evidence,
         (arg("--run-root", required=True), arg("--output")),
         help="Report whether Energy proof inputs are current and completed.",
+    ),
+    CommandSpec(
+        "inspect-proof",
+        handle_inspect_proof,
+        (
+            arg("--path", required=True, help="Path to exact_proof_*.json"),
+            arg(
+                "--require-evaluated",
+                action="store_true",
+                help="Refuse Edges/Network citations that did not evaluate ADR 0012.",
+            ),
+            arg(
+                "--stage",
+                choices=(*EXACT_STAGE_ORDER,),
+                default=None,
+                help="Stage for --require-evaluated when the filename does not name it.",
+            ),
+        ),
+        help="Cite a proof JSON only if dest_run_root matches the folder.",
     ),
     CommandSpec(
         "compare-energy-probes",

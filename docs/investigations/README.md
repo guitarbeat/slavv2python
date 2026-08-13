@@ -13,6 +13,7 @@ Keep investigation docs here only when they explain historical decisions that st
 |-------|------|
 | [kiro-matlab-python-parity/](kiro-matlab-python-parity/README.md) | ⛔ Frozen Kiro specs/tasks — **do not execute** |
 | [2026-07-03-honesty-audit.md](2026-07-03-honesty-audit.md) | ⛔ Session audit; crop-era FAIL narrative |
+| [exact-proof-findings-diary/](exact-proof-findings-diary/README.md) | ⛔ Pre-2026-08-13 findings dump (diary, join-emission essays). Not live status. |
 | [MATLAB_PYTHON_TRANSLATION_PAPER.md](MATLAB_PYTHON_TRANSLATION_PAPER.md) | Draft methodology; not pass/fail table |
 | [v22 Pointer Corruption](v22-pointer-corruption/README.md) | Historical pointer-corruption investigation |
 

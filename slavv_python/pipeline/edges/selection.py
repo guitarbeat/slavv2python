@@ -19,6 +19,7 @@ from slavv_python.pipeline.edges.payloads import _empty_edges_result
 from slavv_python.pipeline.edges.selection_payloads import (
     build_selected_edges_result,
     initialize_edge_selection_diagnostics,
+    matlab_sort_edge_indices_by_raw_max,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
@@ -204,6 +205,11 @@ def _choose_edges_matlab_style(
         empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
+
+    if bool(candidates.get("matlab_global_watershed_exact", False)):
+        # MATLAB get_edges_V300 sort_edges before resample; later equal
+        # length+resampled-max keys keep this predecessor order.
+        kept_after_crop = matlab_sort_edge_indices_by_raw_max(energy_traces, kept_after_crop)
 
     # 2. Choose best unique trajectories from in-bounds candidates.
     filtered_indices = prepare_candidate_indices_for_cleanup(

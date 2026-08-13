@@ -43,6 +43,7 @@ from slavv_python.pipeline.edges.selection import (
     _snapshot_endpoint_influences_matlab,
 )
 from slavv_python.pipeline.edges.selection_payloads import (
+    matlab_sort_edge_indices_by_raw_max,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
@@ -662,6 +663,41 @@ def test_prune_orphan_edges_vectorized_parity():
     keep_mask = prune_orphan_edges(traces, volume_shape, vertex_positions)
 
     assert keep_mask.tolist() == [True, True, False, False]
+
+
+@pytest.mark.unit
+def test_matlab_sort_edges_ranks_worse_raw_max_later():
+    """MATLAB sort_edges.m is ascending max(energy); worse extra ranks after oracle."""
+    energy_traces = [
+        np.array([-np.inf, -13.4, 0.0, -np.inf], dtype=np.float64),
+        np.array([-np.inf, -13.6, -0.24, -np.inf], dtype=np.float64),
+    ]
+    assert matlab_sort_edge_indices_by_raw_max(energy_traces, [0, 1]) == [1, 0]
+
+
+@pytest.mark.unit
+def test_resampled_tie_preserves_raw_max_predecessor_order():
+    """Equal resampled max+length must keep sort_edges order (residual-hub shape)."""
+    connections = np.array([[26444, 38584], [34897, 38584]], dtype=np.int32)
+    raw_traces = [
+        np.array([-np.inf, 0.0, -np.inf], dtype=np.float64),
+        np.array([-np.inf, -0.24, -np.inf], dtype=np.float64),
+    ]
+    resampled_traces = [
+        np.array([-4.870152991855598, -4.870152991855598], dtype=np.float64),
+        np.array([-4.870152991855598, -4.870152991855598], dtype=np.float64),
+    ]
+    ranked = matlab_sort_edge_indices_by_raw_max(raw_traces, [0, 1])
+    ordered = prepare_candidate_indices_for_cleanup(
+        connections,
+        np.array([-4.87, -4.87], dtype=np.float64),
+        resampled_traces,
+        {},
+        subset_indices=ranked,
+        reject_nonnegative_energy_edges=False,
+    )
+    assert ranked == [1, 0]
+    assert ordered == [1, 0]
 
 
 # Made with Bob

@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-07-16 (ONE TRUTH revalidation from disk; Phase 1 OPEN)
+**Last synthesized:** 2026-08-13 (residual class = claimed energy_map + sort_edges; v17 not a claim root; Phase 1 OPEN)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -24,19 +24,19 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### Snapshot (no frozen KPIs)
 
-- **Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality on the claim root. See ONE TRUTH for run root and counts.
-- Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ❌ — one-strand residual class.
-- **No independent Network bug:** MATLAB edges → Python Network topology exact.
-- **Crop = regression guard** (generation / frontier / re-selection closed). **Full volume = claim surface.**
-- **Active residual class:** Candidate Set join displacement at degree-excess (extra join outranks oracle pair under equal post-resample max). Ablation documented in ONE TRUTH. Production fix = watershed **join emission**, not cleanup reorder / secondary keys. **2026-07-17: three join-emission fix variants attempted and reverted (crop regressed each time) — localized selection-rule tweaks cannot target the one residual hub without breaking the 19,225 crop balance. Fix requires a faithful MATLAB-semantics watershed rewrite, scoped separately. Blocker OPEN.**
-- Prefer current claim root in findings (`v16` at last synthesis); preserve prior audits in place.
+- **Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality on the claim root. Run root, counts, and residual mechanism: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only.
+- Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ❌. No independent Network bug (MATLAB edges → Python Network topology exact).
+- **Crop = regression guard.** **Full volume = claim surface.** Next closure = new Edges→Network root. **Do not claim `v17`.**
+- Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
+- **Successor writer:** `canonical_full_v18` Edges→Network was started 2026-08-13 via `Start-Process resume-exact-run` (not `launch-exact-run`). Do not start another writer on `v16`/`v18` while that lease PID is alive. Live claim root remains `v16` until evaluated proofs pass.
 
 ### Do not
 
-- Claim 100% end-to-end parity or Phase 1 closed from Edges-only.
+- Claim 100% end-to-end parity or Phase 1 closed until a **new** claim root’s evaluated proofs pass.
+- Treat MATLAB finals (`edges_*.mat`) as raw watershed emission, or `canonical_full_v17` as a healthy writer.
 - Treat approximate strand-count % as Network pass.
 - Re-gate on retired 80% crop overlap or crop one-pair swap as the open loop.
-- Rewrite Network; reopen shared `energy_temp_flat` vertex-origin restore without a new probe.
+- Rewrite Network; reopen join-rule / tie-scan as the ship-gate change; add endpoint tertiary sort keys.
 
 ## Strategy
 
@@ -60,7 +60,7 @@ Live numbers: ONE TRUTH only.
 
 ### A. Full residual (primary)
 
-1. Work the full residual at the hub named in ONE TRUTH (Python extra join vs MATLAB oracle pair). Keep crop re-selection as a regression guard. Do not re-open shared vertex-origin restore or broad endpoint-descending cleanup reorder.
+1. Work the full residual at the hub named in ONE TRUTH. Raw pair sets already match; the discriminator is claimed `energy_map` `sort_edges` vs original-field traces. Keep crop re-selection as a regression guard. Do not re-open join-emission, tie-scan, shared vertex-origin restore, or broad endpoint-descending cleanup reorder.
 2. After each fix, reinstall and check no parity writer is active:
    ```powershell
    .\.venv\Scripts\pip.exe install -e .
@@ -79,9 +79,11 @@ Live numbers: ONE TRUTH only.
 
    .\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py `
      --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-     --trace-missing `
-     --sample-size 20
+     --oracle-root workspace/oracles/180709_E_crop_M_v2
+
+   .\.venv\Scripts\slavv.exe parity inspect-proof `
+     --path workspace/runs/oracle_180709_E/canonical_full_v16/03_Analysis/exact_proof_network.json `
+     --require-evaluated
    ```
    Interpretation: crop frontier **match** and generation **closed** are regression guards. Full residual lives on the claim root Candidate Set / join emission.
 4. Full-surface funnel / cleanup comparators when diagnosing degree-excess displacement:
@@ -110,26 +112,18 @@ Live numbers: ONE TRUTH only.
 2. Rerun **edges → network only** with `--include-debug-maps` / `parity_include_debug_maps=true`.
 3. Example shape (replace run dir with the new root; use current claim lineage as seed):
 
+On Windows do **not** use `slavv parity launch-exact-run` (child dies on its own lease). Do **not** block on `slavv jobs list` (it hangs). Check `writer_lease.json` + process liveness. Full command and seed rules: [detached-exact-run-jobs.md](../docs/solutions/parity/detached-exact-run-jobs.md) addendum.
+
 ```powershell
-slavv jobs list
-
-slavv parity launch-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
-  --oracle-root workspace/oracles/180709_E_full_v2 `
-  --force-rerun-from edges `
-  --stop-after network `
-  --skip-foreground-probe `
-  --monitor
-
 # After writer completes:
 slavv parity prove-exact --stage edges `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
   --oracle-root workspace/oracles/180709_E_full_v2
 
 slavv parity prove-exact --stage network `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v17 `
+  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
+  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
   --oracle-root workspace/oracles/180709_E_full_v2
 ```
 
@@ -145,7 +139,7 @@ slavv parity prove-exact --stage network `
 ### D. Cold start
 
 1. Read [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
-2. `slavv jobs list` — no concurrent writer on claim/crop roots.
+2. No concurrent writer: read `writer_lease.json` and test the PID. Do not block on `slavv jobs list`.
 3. Open checkboxes in [TODO.md](../docs/TODO.md).
 4. Do not treat [PI_UPDATE.md](../docs/PI_UPDATE.md), investigation archives, or findings **session diary** as live status.
 

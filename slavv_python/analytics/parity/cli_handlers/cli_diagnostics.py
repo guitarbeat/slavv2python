@@ -15,6 +15,11 @@ from slavv_python.analytics.parity.constants import (
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
 )
+from slavv_python.analytics.parity.experiments import (
+    ProofRecordError,
+    load_proof_record,
+    require_evaluated_adr0012,
+)
 from slavv_python.analytics.parity.oracle.gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
@@ -225,3 +230,53 @@ def handle_record_parity_hypothesis(args: argparse.Namespace) -> None:
         design_review=bool(args.design_review),
     )
     print(json.dumps(record, indent=2, sort_keys=True))
+
+
+def _stage_from_proof_path(path: Path) -> str | None:
+    stem = path.name.lower()
+    if "network" in stem:
+        return "network"
+    if "edges" in stem:
+        return "edges"
+    if "vertices" in stem:
+        return "vertices"
+    if "energy" in stem:
+        return "energy"
+    return None
+
+
+def handle_inspect_proof(args: argparse.Namespace) -> None:
+    """Cite a proof JSON only when dest_run_root matches the folder."""
+    path = Path(args.path).expanduser().resolve()
+    try:
+        record = load_proof_record(path)
+    except ProofRecordError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
+
+    stage = getattr(args, "stage", None) or _stage_from_proof_path(path)
+    if getattr(args, "require_evaluated", False):
+        if stage is None:
+            print("inspect-proof --require-evaluated needs --stage", file=sys.stderr)
+            sys.exit(1)
+        try:
+            require_evaluated_adr0012(record, stage=stage)
+        except ProofRecordError as exc:
+            print(str(exc), file=sys.stderr)
+            sys.exit(1)
+
+    print(
+        json.dumps(
+            {
+                "path": str(record.path),
+                "run_root": str(record.run_root),
+                "dest_run_root": str(record.dest_run_root),
+                "passed": record.passed,
+                "stages": list(record.stages),
+                "adr0012_evaluated": record.adr0012_evaluated,
+                "paired": True,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )

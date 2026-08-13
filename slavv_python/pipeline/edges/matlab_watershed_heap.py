@@ -160,7 +160,9 @@ class SortedFrontier:
             raise KeyError("peek from an empty sorted frontier")
         return int(self._available[-1])
 
-    def debug_snapshot(self, targets: set[int] | None = None, tail_count: int = 8) -> dict[str, object]:
+    def debug_snapshot(
+        self, targets: set[int] | None = None, tail_count: int = 8
+    ) -> dict[str, object]:
         target_set = targets or set()
         return {
             "length": len(self._available),
@@ -387,6 +389,7 @@ class VoxelClaimMap:
         border_locations = _matlab_global_watershed_border_locations(self.shape)
         v_index_flat = self.vertex_index_map.ravel(order="F")
         temp_flat = self.energy_map_temp.ravel(order="F")
+        energy_dyn_flat = self.energy_map.ravel(order="F")
 
         for linear_index in border_locations:
             v_index_flat[int(linear_index)] = np.uint32(self.number_of_vertices + 1)
@@ -397,6 +400,8 @@ class VoxelClaimMap:
             v_index_flat[idx] = np.uint32(vertex_offset + 1)
             self.vertex_energies[vertex_offset] = self.vertex_energies_raw_flat[idx]
             temp_flat[idx] = np.float64(-np.inf)
+            # MATLAB L108 paints -Inf on energy_map (trace-sample map) too.
+            energy_dyn_flat[idx] = np.float64(-np.inf)
 
         self.initial_locations = [int(loc) for loc in self.vertex_locations[::-1]]
         self.adjacency_matrix = sparse.identity(

@@ -101,7 +101,7 @@ git push origin main
 | **Pipeline** | Energy → Vertices → Edges → Network stages |
 | **Oracle** | Preserved MATLAB truth vectors for comparison |
 | **Parity Run** | Python run compared against MATLAB oracle |
-| **Certification** | Zero missing/extra on discrete/topological fields; `np.allclose` on continuous floats (ADR 0011) |
+| **Certification** | Energy/Vertices: zero missing/extra discrete + `np.allclose` floats (ADR 0011). Edges: ownership-map agreement + trace tolerance (ADR 0012). Network: strand/bifurcation multiset equality (ADR 0012). |
 | **Canonical Volume** | Full `180709_E` volume for Phase 1 cert |
 | **Crop Harness** | `180709_E_crop_M` subvolume for faster testing |
 | **Vertex** | Point of interest with 3D position and radius |

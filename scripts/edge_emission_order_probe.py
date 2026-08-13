@@ -36,50 +36,58 @@ from typing import Any
 
 import numpy as np
 
-from slavv_python.utils.safe_unpickle import safe_load
+from slavv_python.analytics.parity.experiments import (
+    ArtifactClass,
+    compare_same_class_pair_sets,
+    load_edge_artifact,
+)
 
 
-def _undirected(a: int, b: int) -> tuple[int, int]:
-    return (int(min(a, b)), int(max(a, b)))
-
-
-def _python_emission_order(
-    run_dir: Path, target: int
+def _incident_pairs(
+    connections: np.ndarray, target: int
 ) -> tuple[list[int], list[tuple[int, int]]]:
-    candidates = safe_load(run_dir / "04_Edges" / "candidates.pkl")
-    connections = np.asarray(candidates["connections"], dtype=np.int32).reshape(-1, 2)
-    rows = [int(i) for i, (a, b) in enumerate(connections) if a == target or b == target]
-    pairs = [_undirected(int(connections[i, 0]), int(connections[i, 1])) for i in rows]
+    rows: list[int] = []
+    pairs: list[tuple[int, int]] = []
+    for index, (start, end) in enumerate(np.asarray(connections, dtype=np.int64).reshape(-1, 2)):
+        if int(start) != target and int(end) != target:
+            continue
+        rows.append(int(index))
+        left, right = (int(start), int(end)) if int(start) < int(end) else (int(end), int(start))
+        pairs.append((left, right))
     return rows, pairs
+
+
+def _python_emission_order(run_dir: Path, target: int) -> tuple[list[int], list[tuple[int, int]]]:
+    artifact = load_edge_artifact(run_dir / "04_Edges" / "candidates.pkl")
+    return _incident_pairs(artifact.connections, target)
 
 
 def _matlab_emission_order(mat_path: Path, target: int) -> tuple[list[int], list[tuple[int, int]]]:
-    import h5py
-
-    with h5py.File(mat_path, "r") as f:
-        e2v = np.asarray(f["edges2vertices"][:], dtype=np.int64).reshape(-1, 2)
-    v1 = target + 1  # MATLAB is 1-based
-    rows = [int(i) for i in range(e2v.shape[0]) if e2v[i, 0] == v1 or e2v[i, 1] == v1]
-    pairs = [_undirected(int(e2v[i, 0]) - 1, int(e2v[i, 1]) - 1) for i in rows]
-    return rows, pairs
+    artifact = load_edge_artifact(mat_path)
+    return _incident_pairs(artifact.connections, target)
 
 
 def _diff_orders(
     py_pairs: list[tuple[int, int]], mat_pairs: list[tuple[int, int]]
-) -> dict:
+) -> dict[str, Any]:
+    compare = compare_same_class_pair_sets(
+        set(py_pairs),
+        set(mat_pairs),
+        left_class=ArtifactClass.RAW_CANDIDATE_SET,
+        right_class=ArtifactClass.RAW_CANDIDATE_SET,
+    )
     py_set, mat_set = set(py_pairs), set(mat_pairs)
-    common = [p for p in py_pairs if p in mat_set]
-    mat_common_order = [p for p in mat_pairs if p in py_set]
-    # Find first position where the common-pair order diverges.
+    common = [pair for pair in py_pairs if pair in mat_set]
+    mat_common_order = [pair for pair in mat_pairs if pair in py_set]
     first_div = None
-    for idx, (p, mp) in enumerate(zip(common, mat_common_order)):
-        if p != mp:
+    for idx, (python_pair, matlab_pair) in enumerate(zip(common, mat_common_order, strict=False)):
+        if python_pair != matlab_pair:
             first_div = idx
             break
     return {
-        "python_pair_count": len(py_pairs),
-        "matlab_pair_count": len(mat_pairs),
-        "pair_set_equal": bool(py_set == mat_set),
+        "python_pair_count": compare.n_left,
+        "matlab_pair_count": compare.n_right,
+        "pair_set_equal": compare.n_only_left == 0 and compare.n_only_right == 0,
         "python_only_pairs": sorted(py_set - mat_set),
         "matlab_only_pairs": sorted(mat_set - py_set),
         "common_pair_order_python": common,

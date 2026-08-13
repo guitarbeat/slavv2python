@@ -159,6 +159,10 @@ _Avoid_: Calling preflight a proof, or conflating it with `prove-exact`.
 The single orchestration surface that compares Python checkpoints against an [Oracle](#oracle) after they exist: `prove-exact`, candidate capture, LUT proof, and edge replay.
 _Avoid_: Using "coordinator" for [Parity Preflight](#parity-preflight) or run-lifecycle concerns; those belong under `runs/preflight` and `resume-exact-run`.
 
+### Parity Experiment
+A cheap-first measurement that compares one artifact class to the same class on a named surface: raw [Candidate Set](#candidate-set) to raw Candidate Set, or [Edge Set](#edge-set) to Edge Set. Code: `slavv_python.analytics.parity.experiments`. Distinct from the [Exact Proof Coordinator](#exact-proof-coordinator) (Certification compare after checkpoints exist) and [Parity Preflight](#parity-preflight) (safe to launch a writer).
+_Avoid_: Citing proof JSON by path without dest pairing; treating oracle finals as watershed emission; launching a full writer to answer a ranking question.
+
 ### Certification
 The state in which every required [Pipeline](#pipeline) stage passes its defined parity bar on a defined volume and workflow: Energy and Vertices use strict discrete equality plus `np.allclose` on continuous floats ([ADR 0011](docs/adr/0011-energy-float-certification-policy.md)); Edges and Network use the spatial bars in [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) (ownership-map, trace tolerance, strand/bifurcation multisets)—not exact watershed edge-pair or strand-order equality.
 _Avoid_: Treating strict-field `connections` / strand-count equality as the Phase 1 ship gate for Edges/Network; that is a separate [Strict-Field Stretch Goal](#strict-field-stretch-goal).
@@ -177,7 +181,7 @@ _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
 _Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
 
-**Phase 1 operating sequence (current):** (1) Full-volume residual: stop/suppress the displacing watershed join (or match MATLAB emission) so [Edge Selection](#edge-selection) retains the oracle pair—see findings banner for the ablated candidate; (2) keep crop re-selection + cleanup MATLAB comparator as regression guards; (3) re-select or rerun Edges→Network on a **new** canonical root if needed; (4) **evaluated** Network ADR 0012 multiset equality → [Phase 1 Closure](#phase-1-closure). Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). **Live claim surface:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) only.
+**Phase 1 operating sequence (current):** (1) Full-volume residual: sample MATLAB’s claimed/penalized `energy_map` for watershed traces and apply `sort_edges` (raw `max`, ascend) so [Edge Selection](#edge-selection) keeps the oracle pair under the resampled-max tie—see [ONE TRUTH residual](docs/reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red); (2) keep crop re-selection + cleanup MATLAB comparator as regression guards; (3) rerun Edges→Network on a **new** canonical root (do **not** claim `canonical_full_v17`); (4) **evaluated** Network ADR 0012 multiset equality → [Phase 1 Closure](#phase-1-closure). Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). **Live claim surface:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) only.
 _Avoid_: Claiming closure from Edges-only pass; Network rewrite; cleanup endpoint secondary keys; approximate strand-count % as multiset pass; `prove-exact-sequence` as ship gate.
 
 **Closure run root:** Prefer a **new** canonical directory preflighted from the prior attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve historical audits (`v6`…`v16`) in place.
@@ -215,8 +219,8 @@ _Avoid_: `--force-rerun-from edges` on a historical claim/audit run root when th
 _Avoid_: Opening a Network-stage rewrite project, or re-chasing the retired 80% crop-overlap gate.
 
 ### Exact Proof Findings
-The live status log for exact-parity work under `docs/reference/core/EXACT_PROOF_FINDINGS.md`. **Authoritative section:** [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (pass/fail, claim root, residual). The session diary in that file is historical only. Also holds compound-solution index and audit run tables.
-_Avoid_: Duplicating run status in `TODO.md` / HANDOFF body / ROADMAP; reading the session diary as current status; inventing a second status doc.
+The live status log for exact-parity work under `docs/reference/core/EXACT_PROOF_FINDINGS.md`. **Authoritative section:** [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (pass/fail, claim root, residual). Historical diary: [exact-proof-findings-diary](docs/investigations/exact-proof-findings-diary/README.md). Also holds compound-solution index and audit inventory.
+_Avoid_: Duplicating run status in `TODO.md` / HANDOFF body / ROADMAP; reading the diary archive as current status; inventing a second status doc.
 
 ### Random Component Parity Suite
 A seeded white-noise MATLAB R2019a/Python differential loop for fast Energy building-block checks (linspace, `interp3`, padded shape, valid flags). Structural fields gate CI; Hessian float ULP is advisory only. Not a [Certification](#certification) claim.
@@ -310,8 +314,14 @@ slavv2python/
 │   └── scratch/                        # Temporary scratch files
 │       └── matlab/                     # MATLAB driver scripts (local use only)
 │
-└── external/                           # Vendored dependencies
-    └── Vectorization-Public/           # Canonical MATLAB source (submodule)
+├── external/                           # Vendored dependencies
+│   └── Vectorization-Public/           # Canonical MATLAB source (submodule)
+│
+├── scripts/                            # Developer probe scripts (referenced from HANDOFF)
+│   ├── watershed_frontier_diff.py      # Golden-trace comparison
+│   ├── watershed_candidate_gap_probe.py # Crop regression guard probe
+│   ├── edge_selection_funnel_probe.py  # Full-volume funnel diagnostics
+│   └── ...                             # Other diagnostic probes (not public CLI)
 ```
 
 ---
@@ -482,7 +492,15 @@ This section provides common development patterns. See [docs/README.md](docs/REA
 
 **Prerequisites:** Read [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) BEFORE continuing parity work.
 
-**Duplicate writer check:** If a crop rerun PID exists under `workspace/scratch/crop_energy_rerun_latest.pid`, check that process first. Use `slavv jobs list` to see active monitored jobs. Never start another writer on the same `crop_M_exact` run root while a writer is alive.
+**Parity Experiment module:** `slavv_python.analytics.parity.experiments` (`compare_same_class_pair_sets`, `load_proof_record`, `require_cheap_loop`). Cite proofs with `slavv parity inspect-proof --path <json>`.
+
+**Compare the same artifact class.** MATLAB `edges_*.mat` / oracle `edges.pkl` are **finals after cleanup**. Python `candidates.pkl` is **raw watershed emission**. Comparing those two is how the residual was misread as “MATLAB never emits the extra pair.” Compare raw↔raw (`raw_full_candidates.mat` vs `candidates.pkl`) and final↔final (oracle edges vs `checkpoint_edges.pkl`). See [raw-vs-final-candidate-compare.md](docs/solutions/parity/raw-vs-final-candidate-compare.md).
+
+**Cheap loop first.** Synthetic / unit (seconds) → crop pair-set + re-selection (minutes) → full no-writer re-selection on existing candidates → full Edges writer only when the cheap layer cannot falsify the hypothesis. Do not start a 90-minute watershed to answer a ranking question.
+
+**Proof JSON pairing.** Load through `load_proof_record` / `inspect-proof`. A file can sit under `crop_M_exact_v3` and still belong to `crop_M_exact`. Only **evaluated** ADR 0012 (`adr0012_evaluated: true`) counts for Edges/Network.
+
+**Duplicate writer check:** If a crop rerun PID exists under `workspace/scratch/crop_energy_rerun_latest.pid`, check that process first. Use `slavv jobs list` to see active monitored jobs. Never start another writer on the same crop or claim run root while a writer is alive. Do not `--force-rerun-from energy` on a historical claim/closure root.
 
 **Workflow:**
 

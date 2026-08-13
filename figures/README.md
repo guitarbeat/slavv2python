@@ -69,10 +69,10 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 > Absolute residual on the full-volume claim surface (see findings for the live
 > run root). Energy and vertices are closed; Edges ownership/count pass ADR 0012.
-> The open ship gate is Network strand **multiset** FAIL, downstream of a full
-> **Edge Set** residual (generation join displacement after equal post-resample
-> max—crop pair multiset is closed on re-selection). Approximate strand % is not
-> the ADR 0012 bar. Live pair/strand numbers: EXACT_PROOF_FINDINGS only.
+> The open ship gate is Network strand **multiset** FAIL, downstream of the
+> Edge Set residual in [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red)
+> (crop pair multiset closed on re-selection). Approximate strand % is not the
+> ADR 0012 bar. Live pair/strand numbers: EXACT_PROOF_FINDINGS only.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),

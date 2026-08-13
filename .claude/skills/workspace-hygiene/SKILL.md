@@ -21,6 +21,8 @@ Keep the repo root clean, preserve valuable experiment state, and verify the fin
    - **Build/cache output**: cache directories such as `.pytest_cache`, `.ruff_cache`, `.mypy_cache`, egg-info, or tool caches.
 3. Preserve by default:
    - Never delete `workspace/runs`, `workspace/oracles`, `workspace/datasets`, or `workspace/reports` without explicit user approval.
+   - Classify parity experiment data before touching it: **live oracle** (`180709_E_full_v2`, `180709_E_crop_M_v2`), **claim run** (`canonical_full_v16`), **lineage seed** (`v4` Energy/Vertices, `v8` energy `.npy`), **crop guard** (`crop_M_exact_v3` candidates), **audit history** (`v5`–`v15`), **failed shells** (`v9`/`v11`/`v12`/`v13`/`v14` — ignore), **contaminated** (`v17` — do not claim), **duplicate oracle** (`180709_E_crop_M_v2_old` — ignore). Label or quarantine; delete only with an explicit “delete” request.
+   - Scratch MATLAB dumps must stay labeled (`workspace/scratch/matlab_edge_dump/README.md`). `raw_watershed_candidates_canonical.mat` is **crop**, not full.
    - Never revert tracked user edits unless the user asks for a clean worktree or explicitly names the files.
    - Never use `git reset --hard`; prefer `git restore` for tracked paths and targeted `git clean -fd -- <paths>` for known untracked junk.
 4. Route clutter:

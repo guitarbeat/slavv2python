@@ -72,7 +72,7 @@ Do not use `prove-exact-sequence` strict-field failure as the Phase 1 closure ga
 
 ### Historical note (2026-07-06 operating order — do not execute)
 
-Original operating order was: refresh crop `v3` → launch `canonical_full_v5` → proof. Superseded by later full audits; see session diary in findings if needed.
+Original operating order was: refresh crop `v3` → launch `canonical_full_v5` → proof. Superseded by later full audits; historical trail: [findings diary](../investigations/exact-proof-findings-diary/README.md).
 
 ## Addendum (2026-07-06): Post-v5 watershed iteration and v6 closure
 
@@ -113,7 +113,7 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 
 | Priority | Action |
 |----------|--------|
-| 1 | Full **Edge Set** multiset residual (Candidate Set / join emission displacing degree-excess)—not a Network rewrite; not cleanup secondary-key hacks that break MATLAB≡Python cleanup parity |
+| 1 | Full **Edge Set** multiset residual — mechanism only in [ONE TRUTH residual](../reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red); not a Network rewrite; not cleanup secondary-key hacks |
 | 2 | Crop Edge Selection + frontier/generation as **regression guards** (crop pair multiset closed on re-selection) |
 | 3 | Successor/re-selected canonical Edges→Network + **evaluated** Network ADR 0012 multiset proof when the Edge Set moves |
 

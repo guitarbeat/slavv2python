@@ -13,6 +13,7 @@ live status log and not the task list.
 | Domain terms (Edge Set, Candidate Set, Edge Selection) | [AGENTS.md § Domain Glossary](../../../AGENTS.md#domain-glossary) |
 | Ship vs stretch bars | [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) |
 | Reusable analysis skeleton | [EXPERIMENT_ANALYSIS_TEMPLATE](EXPERIMENT_ANALYSIS_TEMPLATE.md) |
+| Experiment data / artifact-class rules | `slavv_python.analytics.parity.experiments` · [parity-experiment-hygiene.md](../../solutions/best-practices/parity-experiment-hygiene.md) |
 
 ---
 
@@ -23,28 +24,35 @@ What remaining **Edge Set** behavior prevents full-volume Network ADR 0012
 
 ## Hypothesis (interpretation frame)
 
-Network is not independently broken. Crop Watershed Discovery / frontier /
-generation and crop Edge Selection pair multiset are regression-closed on
-re-selection. Full-volume residual is a **Candidate Set** join that Edge Selection
-faithfully prunes via degree-excess under equal post-resample max energy: an
-**extra** join displaces the oracle pair. Cleanup Python≡MATLAB on the same
-exported surface—so production work is **join emission / Candidate Set**, not a
-new Edge Selection tie-break policy.
+See **[ONE TRUTH residual](../core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red)**
+for the live mechanism. Network is not independently broken. Crop generation /
+re-selection are regression-closed. Full-volume raw Candidate Sets already match;
+the residual is ranking (`sort_edges` on claimed `energy_map` vs original-field
+traces) under an equal post-resample max, not a new Edge Selection policy and not
+a join-emission rewrite.
 
 **Do not freeze pair IDs, candidate indices, or strand counts here.** Those live
 only in the findings banner.
 
 ## Methodology
 
-- **Iteration surface:** crop harness (regression guards: frontier match, generation
-  coverage, re-selection pair multiset, cleanup comparator).
-- **Claim surface:** full `180709_E` claim run root in findings.
-- **Probes (prefer these):** `scripts/edge_selection_funnel_probe.py`,
+- **Cheap loop first:** unit/synthetic → crop pair-set → no-writer re-selection →
+  full writer only if the cheap layer cannot falsify the hypothesis. Rules:
+  [parity-experiment-hygiene.md](../../solutions/best-practices/parity-experiment-hygiene.md).
+- **Artifact class:** compare raw↔raw and final↔final only
+  ([raw-vs-final-candidate-compare.md](../../solutions/parity/raw-vs-final-candidate-compare.md)).
+- **Iteration surface:** crop harness (`crop_M_exact_v3` candidates; not unevaluated
+  proof JSON).
+- **Claim surface:** full `180709_E` claim run root in findings. Do not claim `v17`.
+- **Probes (prefer these):** `slavv_python.analytics.parity.experiments`,
+  `scripts/edge_selection_funnel_probe.py`,
   `scripts/compare_clean_edge_pairs_matlab.py`,
   `scripts/persist_crop_edges_selection.py` (`select_and_finalize_edge_set`),
-  `scripts/watershed_frontier_diff.py` / `watershed_candidate_gap_probe.py`.
-- **Anti-patterns:** [UNPRODUCTIVE_LOOPS](../core/UNPRODUCTIVE_LOOPS.md); no
-  endpoint-descending cleanup reorder; no Network rewrite.
+  `scripts/watershed_candidate_gap_probe.py` (`coverage_of_finals_by_raw`, not equality),
+  `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`.
+- **Anti-patterns:** [UNPRODUCTIVE_LOOPS](../core/UNPRODUCTIVE_LOOPS.md) §16–17;
+  no join-rule / tie-scan ship-gate change; no endpoint-descending cleanup
+  reorder; no Network rewrite.
 
 ## Results / next steps
 

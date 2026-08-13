@@ -89,7 +89,7 @@ slavv parity promote-oracle `
   --oracle-id 180709_E_full_v2
 ```
 
-The prepared canonical closure run is documented in **[.claude/HANDOFF.md](../../.claude/HANDOFF.md)** (`canonical_full_v5`, preflight from `canonical_full_v4`).
+The prepared canonical closure run is documented in **[.claude/HANDOFF.md](../../.claude/HANDOFF.md)** (see current claim root in ONE TRUTH / HANDOFF snapshot).
 
 ### 2. Verify Preflight
 Ensure the destination is correctly populated with oracle references and parameters.
@@ -111,18 +111,18 @@ Phase 1 closure ([ADR 0012 addendum](../adr/0012-edge-watershed-parity-bar.md#ad
 | Energy, Vertices | Strict discrete + ADR 0011 `np.allclose` on floats |
 | Edges, Network | ADR 0012 spatial bars (ownership-map / strand multisets + trace tolerance) |
 
-**Recommended for Phase 1 closure** — run edges and network individually after fresh checkpoints exist on `canonical_full_v5`:
+**Recommended for Phase 1 closure** — run edges and network individually after fresh checkpoints exist on the current claim root (see [HANDOFF § B](../../../.claude/HANDOFF.md) for the active run):
 
 ```powershell
 slavv parity prove-exact `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --source-run-root workspace/runs/oracle_180709_E/<current_claim_root> `
+  --dest-run-root workspace/runs/oracle_180709_E/<current_claim_root> `
   --oracle-root workspace/oracles/180709_E_full_v2 `
   --stage edges
 
 slavv parity prove-exact `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v5 `
+  --source-run-root workspace/runs/oracle_180709_E/<current_claim_root> `
+  --dest-run-root workspace/runs/oracle_180709_E/<current_claim_root> `
   --oracle-root workspace/oracles/180709_E_full_v2 `
   --stage network
 ```

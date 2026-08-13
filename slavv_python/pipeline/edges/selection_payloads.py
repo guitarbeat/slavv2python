@@ -44,6 +44,26 @@ def initialize_edge_selection_diagnostics(
     return diagnostics
 
 
+def matlab_sort_edge_indices_by_raw_max(
+    energy_traces: list[np.ndarray],
+    indices: list[int] | np.ndarray,
+) -> list[int]:
+    """MATLAB ``sort_edges.m``: ascending ``max(energy)``; NaN → -1000."""
+    index_array = np.asarray(indices, dtype=np.int32)
+    if index_array.size == 0:
+        return []
+
+    raw_max = np.empty(index_array.size, dtype=np.float64)
+    for offset, index in enumerate(index_array.tolist()):
+        trace = np.asarray(energy_traces[int(index)], dtype=np.float64).reshape(-1)
+        if trace.size == 0:
+            raw_max[offset] = -1000.0
+            continue
+        value = float(np.nanmax(trace))
+        raw_max[offset] = -1000.0 if np.isnan(value) else value
+    return [int(i) for i in index_array[np.argsort(raw_max, kind="stable")].tolist()]
+
+
 def prepare_candidate_indices_for_cleanup(
     connections: np.ndarray,
     metrics: np.ndarray,
@@ -89,10 +109,7 @@ def prepare_candidate_indices_for_cleanup(
     # float32 summaries and can collapse near-ties, changing the later cleanup
     # row rank that MATLAB uses as "worst edge" priority.
     sort_metrics = np.asarray(
-        [
-            np.nanmax(np.asarray(energy_traces[index], dtype=np.float64))
-            for index in length_ordered
-        ],
+        [np.nanmax(np.asarray(energy_traces[index], dtype=np.float64)) for index in length_ordered],
         dtype=np.float64,
     )
     sort_metrics[np.isnan(sort_metrics)] = -1000.0
@@ -160,6 +177,7 @@ __all__ = [
     "build_selected_edges_result",
     "empty_edge_diagnostics",
     "initialize_edge_selection_diagnostics",
+    "matlab_sort_edge_indices_by_raw_max",
     "normalize_candidate_connection_sources",
     "prepare_candidate_indices_for_cleanup",
 ]

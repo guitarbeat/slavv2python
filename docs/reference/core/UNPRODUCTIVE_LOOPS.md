@@ -83,15 +83,30 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **The Reality**: Stage isolation with **MATLAB edges** reproduces Network topology exactly. Multiset failure tracks the residual **Edge Set** (connection multiset)—historically a large gap on early claim roots; live residual class is only in [EXACT_PROOF_FINDINGS](EXACT_PROOF_FINDINGS.md).
 *   **Guidance**: Network red + Edges ownership green ⇒ **generation residual**, not a Network port. Keep working watershed claim/strel / golden-trace diverge (crop iter ~13,761).
 
-## 16. The Round-vs-Truncate MATLAB Cast Trap
+## 16. The Final-vs-Raw Artifact Trap
+*   **The Loop**: Treating MATLAB `edges_*.mat` / oracle `edges.pkl` (finals after cleanup) as watershed emission, then rewriting join rules because a pair is “missing.”
+*   **The Reality**: Full-volume raw dumps already matched. Live residual class is only in [ONE TRUTH](EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red).
+*   **Guidance**: Compare through `slavv_python.analytics.parity.experiments.compare_same_class_pair_sets`. Mixed Candidate Set vs Edge Set raises. Coverage of finals by raw is `coverage_of_finals_by_raw`, not equality.
+
+## 17. The Contaminated Closure-Root Trap
+*   **The Loop**: Launching `--force-rerun-from energy` on the intended closure directory, then citing that folder’s proofs as “current code.”
+*   **The Reality**: `canonical_full_v17` mixed a dead Energy writer with leftover Edges/Network. A proof JSON under `crop_M_exact_v3` belonged to `crop_M_exact`.
+*   **Guidance**: New successor root for Edges→Network. Cite proofs with `slavv parity inspect-proof --path <json>`. Do not claim `v17`.
+
+## 18. The Round-vs-Truncate MATLAB Cast Trap
 *   **The Loop**: Porting MATLAB `uint16(x)` as `np.rint(x).astype(np.uint16)` (or similar “nearest int”) because “cast to integer means round.”
 *   **The Reality**: MATLAB `uint16` on a real converts via **truncation toward zero** (floor for positive radii/spaces). Rounding over-cropped edges (`crop_edges_V200`) and cost ~500 crop pairs / ~2k full connections until fixed.
 *   **Guidance**: For every MATLAB integer cast on continuous geometry, check truncation vs round-half-up explicitly; add a unit test against the MATLAB expression.
 
-## 17. The Retired-Gate Zombie Trap
+## 19. The Retired-Gate Zombie Trap
 *   **The Loop**: After the 80% crop-overlap milestone cleared and `v6` evaluated Edges PASS, still treating “≥80% before any canonical work” or “57.89% baseline” as current operating law.
-*   **The Reality**: Historical gates become cargo-cult blockers and hide the real residual KPI (generation gap → Network multiset).
-*   **Guidance**: Mark cleared gates as historical in findings/HANDOFF. Current ship residual: **Network multiset** driven by **generation/claiming** residual.
+*   **The Reality**: Historical gates become cargo-cult blockers and hide the real residual KPI.
+*   **Guidance**: Mark cleared gates as historical. Current ship residual is only in [ONE TRUTH](EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk): Network multiset driven by claimed-map `sort_edges` ranking, not a retired generation-gap %.
+
+## 20. The `launch-exact-run` Lease-Suicide Trap
+*   **The Loop**: Following HANDOFF/`jobs list` + `launch-exact-run --monitor` for a successor Edges→Network root, then debugging “the writer vanished” as a preflight or seed bug.
+*   **The Reality**: On Windows the parent writes `writer_lease.json` for the `Popen` PID; the detached child treats that lease as another live writer and exits. `jobs list` hangs. Windows PID reuse plus a ghost registry `--monitor` job repeats the failure.
+*   **Guidance**: Seed Energy/Vertices only onto a **new** dest. Start with `Start-Process` + `resume-exact-run --force-kill`. Check lease PID liveness, not `jobs list`. See [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md).
 
 ---
-*Last Updated: 2026-07-12*
+*Last Updated: 2026-08-13*
