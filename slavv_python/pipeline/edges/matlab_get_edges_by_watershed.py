@@ -52,6 +52,11 @@ from slavv_python.pipeline.edges.matlab_watershed_heap import (
     _matlab_global_watershed_reset_join_locations,
     build_watershed_frontier,
 )
+from slavv_python.pipeline.edges.matlab_watershed_join_resolution import (
+    _get_tie_redirect_count,
+    _matlab_watershed_resolve_tied_join_partner,
+    _reset_tie_redirect_count,
+)
 from slavv_python.pipeline.edges.payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
@@ -441,6 +446,7 @@ def _matlab_global_watershed_assemble_results(
         str(origin_index): origin_indices.count(origin_index)
         for origin_index in sorted(set(origin_indices))
     }
+    diagnostics["tie_redirect_count"] = _get_tie_redirect_count()
 
     raw_pointer_map = np.asarray(pointer_map)
     scaled_pointer_map = _matlab_global_watershed_scale_pointer_map(
@@ -491,6 +497,10 @@ def _generate_edge_candidates_matlab_global_watershed(
     """Generate candidates with MATLAB's one-pass global shared-state watershed search."""
     del _vertex_center_image
     active_tracer = tracer or NullExecutionTracer()
+    # Reset the tie-redirect diagnostic counter at the start of a fresh watershed run so
+    # repeated runs in the same process (e.g. multiple test cases or CLI invocations) don't
+    # accumulate stale counts from a prior run.
+    _reset_tie_redirect_count()
     if len(vertex_positions) == 0:
         return {
             "traces": [],
@@ -709,6 +719,13 @@ def _generate_edge_candidates_matlab_global_watershed(
             strel_idx = _argmin_with_linear_index_tiebreak(
                 working_adjusted,
                 current_strel_linear,
+            )
+            strel_idx = _matlab_watershed_resolve_tied_join_partner(
+                working_adjusted,
+                vertices_of_current_strel,
+                current_vertex_index,
+                claim_map.adjacency_matrix,
+                strel_idx,
             )
             next_location = int(current_strel_linear[strel_idx])
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
