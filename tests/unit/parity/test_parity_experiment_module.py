@@ -145,6 +145,44 @@ def test_require_evaluated_adr0012_refuses_unevaluated(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "hypothesis_kind",
+    [
+        HypothesisKind.RANKING,
+        HypothesisKind.ARTIFACT_CLASS,
+        HypothesisKind.PAIR_SET,
+    ],
+)
+def test_e10_require_cheap_loop_blocks_full_writer_for_cheap_kinds(
+    hypothesis_kind: HypothesisKind,
+) -> None:
+    """E10: RANKING / ARTIFACT_CLASS / PAIR_SET refuse FULL_WRITER."""
+    with pytest.raises(CheapLoopError, match="full writer"):
+        require_cheap_loop(
+            hypothesis_kind=hypothesis_kind,
+            requested_cost=ExperimentCost.FULL_WRITER,
+        )
+    require_cheap_loop(
+        hypothesis_kind=hypothesis_kind,
+        requested_cost=ExperimentCost.UNIT,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "hypothesis_kind",
+    [HypothesisKind.GENERATION, HypothesisKind.OWNERSHIP],
+)
+def test_e10_generation_and_ownership_may_request_full_writer(
+    hypothesis_kind: HypothesisKind,
+) -> None:
+    require_cheap_loop(
+        hypothesis_kind=hypothesis_kind,
+        requested_cost=ExperimentCost.FULL_WRITER,
+    )
+
+
+@pytest.mark.unit
 def test_require_cheap_loop_blocks_ranking_full_writer() -> None:
     with pytest.raises(CheapLoopError, match="full writer"):
         require_cheap_loop(
