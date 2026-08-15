@@ -52,6 +52,23 @@
 
 ---
 
+## True zero-tolerance stretch (separate from Phase 1)
+
+> **Phase 1 Certification remains CLOSED** on `canonical_full_v18` (see [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)). Stretch greens/reds **never** rewrite that answer or ADR 0011/0012 ship bars.
+
+This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-equal Energy floats + discrete strict fields under `--strict-floats`). Plan: [2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../../plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md). Helpers: `slavv_python.analytics.parity.proof.stretch`.
+
+| Concept | Rule |
+| :--- | :--- |
+| Compare gate | `prove-exact --strict-floats` only; default allclose is **not** stretch success |
+| Crop → full | Hard unlock token (`stretch_crop_unlock.json`) scoped by field set (`energy` vs `energy+discrete`) |
+| Status taxonomy | `blocked_float_path` / `incomplete_discrete` / `incomplete_infra` / `incomplete_at_full` / `stretch_complete` (Energy **and** discrete at full) |
+| Dest roots | New stretch run roots only — never overwrite `canonical_full_v18` |
+
+Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
+
+---
+
 ## Audit inventory (folders, not a second verdict)
 
 Pass/fail is only in [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk). This table says which folders exist and what they are for.
