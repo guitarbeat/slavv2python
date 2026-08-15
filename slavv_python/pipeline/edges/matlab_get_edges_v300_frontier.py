@@ -45,7 +45,6 @@ from slavv_python.pipeline.edges.matlab_indexing import (
 __all__ = [
     "BoolArray",
     "Float64Array",
-    "Float64Array",
     "Int16Array",
     "Int32Array",
     "Int64Array",
