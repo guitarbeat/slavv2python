@@ -17,7 +17,7 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -42,6 +42,12 @@ class MatlabEnginePrerequisites:
     matlab_root: Path
     vectorization_root: Path
     python_version: str
+
+
+def current_python_supports_r2019a_engine() -> bool:
+    """Return True when this interpreter is in the R2019a Engine ABI window."""
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    return any(version.startswith(prefix) for prefix in _SUPPORTED_PYTHON_PREFIXES)
 
 
 def matlab_engine_importable() -> bool:
@@ -83,7 +89,7 @@ def verify_matlab_engine_prerequisites(
 ) -> MatlabEnginePrerequisites:
     """Fail fast when engine stretch path cannot run on this host."""
     version = f"{sys.version_info.major}.{sys.version_info.minor}"
-    if not any(version.startswith(prefix) for prefix in _SUPPORTED_PYTHON_PREFIXES):
+    if not current_python_supports_r2019a_engine():
         raise MatlabEngineInfraError(
             "MATLAB Engine for Python (R2019a) supports Python "
             f"{', '.join(_SUPPORTED_PYTHON_PREFIXES)}, but this interpreter is "
@@ -141,12 +147,12 @@ def matlab_double_to_numpy(matlab_array: Any, shape: tuple[int, ...]) -> np.ndar
     data = getattr(matlab_array, "_data", None)
     if data is not None:
         flat = np.frombuffer(data, dtype=np.float64).copy()
-        return np.ascontiguousarray(np.reshape(flat, shape, order="F"))
+        return cast("np.ndarray", np.ascontiguousarray(np.reshape(flat, shape, order="F")))
     as_array = np.asarray(matlab_array, dtype=np.float64)
     if tuple(as_array.shape) == shape:
-        return np.ascontiguousarray(as_array)
+        return cast("np.ndarray", np.ascontiguousarray(as_array))
     flat = np.ravel(as_array, order="F")
-    return np.ascontiguousarray(np.reshape(flat, shape, order="F"))
+    return cast("np.ndarray", np.ascontiguousarray(np.reshape(flat, shape, order="F")))
 
 
 def refuse_matlab_only_energy_checkpoint_as_stretch_success() -> None:
@@ -169,12 +175,6 @@ def ensure_matlab_engine_float_backend_ready(config: dict[str, Any]) -> None:
     if backend != "matlab_engine":
         return
     if config.get("_stretch_engine_float_body_bound") is True:
-        verify_matlab_engine_prerequisites(
-            matlab_exe=config.get("matlab_exe"),
-            vectorization_root=(
-                Path(config["vectorization_root"]) if config.get("vectorization_root") else None
-            ),
-        )
         return
     # Probe infra first so unsupported Python / missing engine classify correctly.
     verify_matlab_engine_prerequisites(

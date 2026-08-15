@@ -119,6 +119,7 @@ def resume_exact_run(
     force: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
+    energy_float_backend: str | None = None,
 ) -> Path:
     """Resume SlavvPipeline in an init-exact-run directory after preflight checks."""
     dest_run_root = dest_run_root.expanduser().resolve()
@@ -154,6 +155,10 @@ def resume_exact_run(
         raise FileNotFoundError(f"missing validated params: {params_path}")
     if n_jobs is not None:
         params["n_jobs"] = int(n_jobs)
+    if energy_float_backend is not None:
+        params["energy_float_backend"] = str(energy_float_backend).strip().lower()
+        if params["energy_float_backend"] == "matlab_engine":
+            params["n_jobs"] = 1
 
     effective_stop_after = stop_after or str(provenance.get("stop_after") or "network")
 

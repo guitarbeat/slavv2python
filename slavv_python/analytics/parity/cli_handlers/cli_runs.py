@@ -246,6 +246,7 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
             force=bool(args.force),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            energy_float_backend=getattr(args, "energy_float_backend", None),
         )
 
     print(str(dest_run_root))

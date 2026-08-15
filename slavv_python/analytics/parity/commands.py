@@ -259,6 +259,11 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--force", action="store_true"),
             arg("--skip-preflight", action="store_true"),
             arg("--n-jobs", type=int),
+            arg(
+                "--energy-float-backend",
+                choices=("numpy", "matlab_engine"),
+                help="Stretch Energy float path (matlab_engine binds energy_filter_V200).",
+            ),
             arg("--monitor", action="store_true", help="Monitor job and send notifications"),
             arg("--force-kill", action="store_true", help="Kill active writer if exists"),
         ),

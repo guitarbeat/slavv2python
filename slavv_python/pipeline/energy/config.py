@@ -110,7 +110,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         logger.warning("Frangi filter unavailable. Falling back to Hessian.")
         energy_method = "hessian"
 
-    return {
+    result = {
         "image_shape": tuple(image.shape),
         "image_dtype": str(image.dtype),
         "microns_per_voxel": microns_per_voxel,
@@ -135,7 +135,18 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "microns_per_sigma_PSF": microns_per_sigma_psf,
         "n_jobs": int(params.get("n_jobs", 1)),
         "comparison_exact_network": bool(params.get("comparison_exact_network", False)),
+        "scales_per_octave": float(scales_per_octave),
+        "matching_kernel_string": str(
+            params.get("matching_kernel_string", "3D gaussian conv annular pulse")
+        ),
+        "vessel_wall_thickness_in_microns": float(
+            params.get("vessel_wall_thickness_in_microns", 0.0)
+        ),
     }
+    if params.get("_stretch_engine_float_body_bound") is True:
+        result["_stretch_engine_float_body_bound"] = True
+        result["_stretch_engine_session"] = params.get("_stretch_engine_session")
+    return result
 
 
 __all__ = ["_prepare_energy_config"]

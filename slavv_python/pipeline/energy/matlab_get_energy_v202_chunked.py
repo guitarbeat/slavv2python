@@ -29,6 +29,10 @@ except ImportError:
     prange = range
 
 from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
+from slavv_python.pipeline.energy.matlab_engine_backend import (
+    ensure_matlab_engine_float_backend_ready,
+)
+from slavv_python.pipeline.energy.matlab_engine_host import energy_filter_v200_from_spatial
 from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
 if TYPE_CHECKING:
@@ -353,7 +357,10 @@ def compute_exact_parity_energy_chunked(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """Compute exact-route energy using MATLAB octave chunk and mesh rules."""
 
+    ensure_matlab_engine_float_backend_ready(config)
     n_jobs = max(1, int(config.get("n_jobs", 2)))
+    if str(config.get("energy_float_backend", "numpy")).strip().lower() == "matlab_engine":
+        n_jobs = 1
     image_shape = np.asarray(image.shape, dtype=float)
 
     energy_3d = np.zeros(image.shape, dtype=np.float64)
@@ -413,6 +420,9 @@ def compute_exact_parity_energy_single_octave(
 ) -> int:
     """Run exact-route energy computation for a single octave and merge in-place."""
 
+    ensure_matlab_engine_float_backend_ready(config)
+    if str(config.get("energy_float_backend", "numpy")).strip().lower() == "matlab_engine":
+        n_jobs = 1
     image_shape = np.asarray(image.shape, dtype=float)
     octave_at_scales = config["octave_at_scales"]
     microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
@@ -512,10 +522,12 @@ def compute_exact_parity_energy_single_octave(
 
         padded_chunk = native_hessian._fourier_transform_input(original_chunk)
         padded_shape = padded_chunk.shape
-        chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
-
-        # Pre-compute pixel frequency meshes for the padded chunk once
-        pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
+        session = config.get("_stretch_engine_session")
+        chunk_dft: np.ndarray | None = None
+        pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+        if session is None:
+            chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
+            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
 
         w_count_z = int(z_write_counts[z_idx])
         w_count_y = int(y_write_counts[y_idx])
@@ -556,82 +568,103 @@ def compute_exact_parity_energy_single_octave(
         for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
             radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
             pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
-
-            matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
-                pixel_freq_meshes,
-                radius_of_lumen_in_microns=radius_of_lumen_in_microns,
-                microns_per_pixel=microns_per_pixel_matlab,
-                pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
-                gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
-                spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
-            )
-
-            filtered_chunk_dft = matching_kernel_dft * chunk_dft
-            del matching_kernel_dft
-
             coarse_shape = (
                 y_local.stop - y_local.start,
                 x_local.stop - x_local.start,
                 z_local.stop - z_local.start,
             )
 
-            # All intermediates are [Y, X, Z] with Fortran order
-            # Compute derivative kernels one-by-one to minimize peak memory
-            curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
-            for k_idx in range(6):
-                k_dft = native_hessian._derivative_kernel_dft_single(
-                    pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
+            if session is not None:
+                coarse_energy = energy_filter_v200_from_spatial(
+                    session,
+                    original_chunk,
+                    matching_kernel_string=str(
+                        config.get("matching_kernel_string", "3D gaussian conv annular pulse")
+                    ),
+                    radius=float(radius_of_lumen_in_microns),
+                    vessel_wall=float(config.get("vessel_wall_thickness_in_microns", 0.0)),
+                    microns_per_pixel=microns_per_pixel_matlab,
+                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
+                    y0=int(y_local.start or 0) + 1,
+                    y1=int(y_local.stop),
+                    x0=int(x_local.start or 0) + 1,
+                    x1=int(x_local.stop),
+                    z0=int(z_local.start or 0) + 1,
+                    z1=int(z_local.stop),
+                    gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
+                    spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+                    scales_per_octave=float(config.get("scales_per_octave", 1.5)),
                 )
-                full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
-                curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
-                del k_dft, full_ifft
-
-            gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
-            for k_idx in range(3):
-                k_dft = native_hessian._derivative_kernel_dft_single(
-                    pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
+            else:
+                assert chunk_dft is not None
+                assert pixel_freq_meshes is not None
+                matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
+                    pixel_freq_meshes,
+                    radius_of_lumen_in_microns=radius_of_lumen_in_microns,
+                    microns_per_pixel=microns_per_pixel_matlab,
+                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
+                    gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
+                    spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
                 )
-                full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
-                gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
-                del k_dft, full_ifft
 
-            # Explicitly delete DFT products
-            del filtered_chunk_dft
+                filtered_chunk_dft = matching_kernel_dft * chunk_dft
+                del matching_kernel_dft
 
-            laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
-            valid_voxels = laplacian_chunk < 0
-            coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
+                # All intermediates are [Y, X, Z] with Fortran order
+                # Compute derivative kernels one-by-one to minimize peak memory
+                curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
+                for k_idx in range(6):
+                    k_dft = native_hessian._derivative_kernel_dft_single(
+                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
+                    )
+                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                    curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                    del k_dft, full_ifft
 
-            if np.any(valid_voxels):
-                grad_valid = np.stack(
-                    [
-                        gradient_local[0][valid_voxels],
-                        gradient_local[1][valid_voxels],
-                        gradient_local[2][valid_voxels],
-                    ],
-                    axis=1,
-                )
-                curvatures_valid = np.stack(
-                    [
-                        curvatures_local[0][valid_voxels],
-                        curvatures_local[1][valid_voxels],
-                        curvatures_local[2][valid_voxels],
-                        curvatures_local[3][valid_voxels],
-                        curvatures_local[4][valid_voxels],
-                        curvatures_local[5][valid_voxels],
-                    ],
-                    axis=1,
-                )
-                energy_valid = compute_principal_energy(
-                    grad_valid,
-                    curvatures_valid,
-                    energy_sign=float(config.get("energy_sign", -1.0)),
-                )
-                coarse_energy[valid_voxels] = energy_valid
+                gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
+                for k_idx in range(3):
+                    k_dft = native_hessian._derivative_kernel_dft_single(
+                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
+                    )
+                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                    gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                    del k_dft, full_ifft
 
-                del grad_valid, curvatures_valid, energy_valid
-            # Free local cropped arrays
-            del curvatures_local, gradient_local
+                del filtered_chunk_dft
+
+                laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
+                valid_voxels = laplacian_chunk < 0
+                coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
+
+                if np.any(valid_voxels):
+                    grad_valid = np.stack(
+                        [
+                            gradient_local[0][valid_voxels],
+                            gradient_local[1][valid_voxels],
+                            gradient_local[2][valid_voxels],
+                        ],
+                        axis=1,
+                    )
+                    curvatures_valid = np.stack(
+                        [
+                            curvatures_local[0][valid_voxels],
+                            curvatures_local[1][valid_voxels],
+                            curvatures_local[2][valid_voxels],
+                            curvatures_local[3][valid_voxels],
+                            curvatures_local[4][valid_voxels],
+                            curvatures_local[5][valid_voxels],
+                        ],
+                        axis=1,
+                    )
+                    energy_valid = compute_principal_energy(
+                        grad_valid,
+                        curvatures_valid,
+                        energy_sign=float(config.get("energy_sign", -1.0)),
+                    )
+                    coarse_energy[valid_voxels] = energy_valid
+
+                    del grad_valid, curvatures_valid, energy_valid
+                del curvatures_local, gradient_local
 
             coarse_energy[~np.isfinite(coarse_energy)] = np.inf
             coarse_energy[coarse_energy >= 0] = np.inf

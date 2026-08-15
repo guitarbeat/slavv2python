@@ -7,6 +7,8 @@ MATLAB source: ``external/Vectorization-Public/source/energy_filter_V200.m``
 Pair with: ``matlab_get_energy_v202_chunked.py`` (multi-scale mesh orchestration)
 """
 
+from __future__ import annotations
+
 import gc
 import logging
 from typing import Any, cast
@@ -18,6 +20,7 @@ from scipy.special import jv
 from slavv_python.pipeline.energy.matlab_engine_backend import (
     ensure_matlab_engine_float_backend_ready,
 )
+from slavv_python.pipeline.energy.matlab_engine_host import energy_filter_v200_from_spatial
 from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
@@ -138,9 +141,54 @@ def compute_native_hessian_energy(
     """Compute one scale of the MATLAB-style matched-filter Hessian energy."""
     # Stretch backend must not silently execute the NumPy float body.
     ensure_matlab_engine_float_backend_ready(config)
+    session = config.get("_stretch_engine_session")
+    if session is not None:
+        return _compute_native_hessian_energy_via_engine(image, config, scale_idx, session)
     policy = EnergyPolicy.from_params(config)
     debug_outputs = _compute_native_hessian_scale_debug(image, config, scale_idx, policy=policy)
     return debug_outputs["energy"]
+
+
+def _compute_native_hessian_energy_via_engine(
+    image: np.ndarray,
+    config: dict[str, Any],
+    scale_idx: int,
+    session: Any,
+) -> np.ndarray:
+    """Bind ``energy_filter_V200`` for one downsampled scale, then upsample."""
+    policy = EnergyPolicy.from_params(config)
+    resolution_factor = np.asarray(config["scale_resolution_factors"][scale_idx], dtype=np.int16)
+    radius_microns = float(config["lumen_radius_microns"][scale_idx])
+    microns_per_pixel: np.ndarray = (
+        np.asarray(config["microns_per_voxel"], dtype=float) * resolution_factor
+    )
+    pixels_per_sigma_psf = (
+        np.asarray(config["pixels_per_sigma_PSF"], dtype=float) / resolution_factor
+    )
+    working_image = _downsample_volume(image, resolution_factor, policy=policy)
+    working = np.asfortranarray(working_image.astype(np.float64, copy=False))
+    ny, nx, nz = (int(working.shape[0]), int(working.shape[1]), int(working.shape[2]))
+    energy = energy_filter_v200_from_spatial(
+        session,
+        working,
+        matching_kernel_string=str(
+            config.get("matching_kernel_string", "3D gaussian conv annular pulse")
+        ),
+        radius=radius_microns,
+        vessel_wall=float(config.get("vessel_wall_thickness_in_microns", 0.0)),
+        microns_per_pixel=microns_per_pixel,
+        pixels_per_sigma_psf=pixels_per_sigma_psf,
+        y0=1,
+        y1=ny,
+        x0=1,
+        x1=nx,
+        z0=1,
+        z1=nz,
+        gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
+        spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+        scales_per_octave=float(config.get("scales_per_octave", 1.5)),
+    )
+    return _upsample_volume(energy, image.shape, resolution_factor)
 
 
 def _compute_native_hessian_scale_debug(

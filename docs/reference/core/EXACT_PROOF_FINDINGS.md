@@ -67,7 +67,7 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-14):** Foundation landed (unlock/status, engine adapter, origin dispatch, gates). Crop Energy bit-equal is **`incomplete_infra`** on the repo Python 3.12 venv — MATLAB R2019a Engine for Python supports 2.7/3.5/3.6/3.7 only. Not redefined as ADR 0011 allclose success.
+**Session status (2026-08-14):** `energy_filter_V200` is bound behind `energy_float_backend=matlab_engine` (Python owns chunking/resume; MATLAB owns FFT+filter). Crop Energy `--strict-floats` still needs an isolated Python 3.7 interpreter with `matlab.engine` (R2019a ABI). Repo `.venv` is 3.12 and cannot host the engine in-process. Set `STRETCH_PY37_PYTHON` to the isolated 3.7 prefix and run `resume-exact-run --energy-float-backend matlab_engine`. Not redefined as ADR 0011 allclose success. Phase 1 remains CLOSED on `canonical_full_v18`.
 
 ---
 

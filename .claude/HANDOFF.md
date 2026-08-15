@@ -52,6 +52,15 @@ Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH.
 
 - Compare with `slavv parity prove-exact … --strict-floats` (default allclose ≠ stretch success).
 - Crop Energy unlock first (`crop_M_exact_v3` lineage / `180709_E_crop_M_v2`); full `180709_E` only after a matching unlock field set.
+- Engine float path: isolated Python 3.7 + `matlab.engine` (R2019a). Repo `.venv` is 3.12. Set `STRETCH_PY37_PYTHON`, then:
+  ```powershell
+  slavv parity resume-exact-run `
+    --dest-run-root workspace\runs\oracle_180709_E\<new_crop_stretch_root> `
+    --oracle-root workspace\oracles\180709_E_crop_M_v2 `
+    --force-rerun-from energy --stop-after energy --n-jobs 1 `
+    --energy-float-backend matlab_engine
+  slavv parity prove-exact --stage energy --strict-floats ...
+  ```
 - Never overwrite `canonical_full_v18`; use a new stretch dest root.
 - Status helpers: `slavv_python.analytics.parity.proof.stretch` (`gate_full_stretch_entry`, unlock + taxonomy).
 - Plan: [docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
