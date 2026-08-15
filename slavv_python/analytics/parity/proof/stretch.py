@@ -186,8 +186,7 @@ def gate_full_stretch_entry(
             allowed=False,
             status=StretchStatus.FULL_REFUSED,
             reason=(
-                f"refusing stretch dest that overwrites Phase 1 claim root "
-                f"{PHASE1_CLAIM_RUN_NAME}"
+                f"refusing stretch dest that overwrites Phase 1 claim root {PHASE1_CLAIM_RUN_NAME}"
             ),
         )
 
@@ -277,3 +276,88 @@ def mkl_spike_cannot_complete_stretch(*, mkl_bit_equal: bool) -> bool:
     """Policy: an MKL falsifier pass alone never means Approach A / stretch complete."""
     del mkl_bit_equal
     return True
+
+
+def emit_stretch_energy_unlock_if_eligible(
+    *,
+    dest_run_root: Path,
+    oracle_root: Path,
+    proof_path: Path,
+    report: dict[str, Any],
+    strict_floats: bool,
+    unlock_path: Path | None = None,
+) -> Path | None:
+    """Write Energy unlock only when ``--strict-floats`` Energy proof is green.
+
+    Allclose-only greens must not emit an unlock (AE1/AE2).
+    """
+    if not strict_floats:
+        return None
+    if not bool(report.get("passed")):
+        return None
+    energy_gate = report.get("energy_float_gate")
+    if isinstance(energy_gate, dict) and not bool(energy_gate.get("passed", True)):
+        return None
+    # Require Energy among selected stages when summaries exist.
+    summaries = report.get("stage_summaries")
+    if (
+        isinstance(summaries, dict)
+        and "energy" in summaries
+        and not bool(summaries["energy"].get("passed", False))
+    ):
+        return None
+    path = Path(unlock_path) if unlock_path else Path(dest_run_root) / UNLOCK_FILENAME
+    write_stretch_unlock(
+        path,
+        field_set=StretchFieldSet.ENERGY,
+        dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
+        proof_path=proof_path,
+        strict_floats=True,
+    )
+    write_stretch_status(
+        Path(dest_run_root) / STATUS_FILENAME,
+        status=StretchStatus.CROP_ENERGY_PASSED,
+        note="crop Energy --strict-floats green; Energy unlock emitted",
+    )
+    return path
+
+
+def evaluate_stretch_discrete_connections(
+    *,
+    matlab_connections: Any,
+    python_connections: Any,
+    energy_unlock_present: bool,
+) -> ClassifiedStretchFailure | StretchStatus:
+    """Classify crop discrete strict-field result (does not change ADR 0012)."""
+    if not energy_unlock_present:
+        return classify_stretch_failure(
+            StretchFailureClass.DISCRETE,
+            detail="discrete stretch requires Energy unlock first",
+        )
+    matlab_arr = list(matlab_connections) if matlab_connections is not None else []
+    python_arr = list(python_connections) if python_connections is not None else []
+    if matlab_arr == python_arr:
+        return StretchStatus.STRETCH_COMPLETE  # local crop discrete green signal
+    return classify_stretch_failure(
+        StretchFailureClass.DISCRETE,
+        detail="connections / order mismatch under stretch discrete mode",
+    )
+
+
+def expand_unlock_with_discrete(
+    unlock_path: Path,
+    *,
+    dest_run_root: Path,
+    oracle_root: Path,
+    proof_path: Path,
+) -> StretchUnlockToken:
+    """Expand an Energy unlock to Energy+discrete after crop discrete green."""
+    return write_stretch_unlock(
+        unlock_path,
+        field_set=StretchFieldSet.ENERGY_AND_DISCRETE,
+        dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
+        proof_path=proof_path,
+        strict_floats=True,
+    )

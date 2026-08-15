@@ -67,6 +67,8 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
+**Session status (2026-08-14):** Foundation landed (unlock/status, engine adapter, origin dispatch, gates). Crop Energy bit-equal is **`incomplete_infra`** on the repo Python 3.12 venv — MATLAB R2019a Engine for Python supports 2.7/3.5/3.6/3.7 only. Not redefined as ADR 0011 allclose success.
+
 ---
 
 ## Audit inventory (folders, not a second verdict)

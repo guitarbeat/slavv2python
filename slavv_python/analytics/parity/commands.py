@@ -284,6 +284,21 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--n-jobs", type=int),
             arg("--monitor", action="store_true", help="Monitor job and send notifications"),
             arg("--force-kill", action="store_true", help="Kill active writer if exists"),
+            arg(
+                "--stretch-zero-tolerance",
+                action="store_true",
+                help="Stretch full launch: require crop unlock (does not reopen Phase 1).",
+            ),
+            arg(
+                "--stretch-field-set",
+                choices=("energy", "energy+discrete"),
+                default="energy",
+                help="Field set the crop unlock must authorize for stretch full.",
+            ),
+            arg(
+                "--stretch-crop-unlock",
+                help="Path to stretch_crop_unlock.json from a green crop --strict-floats proof.",
+            ),
         ),
         help="Launch resume-exact-run in a detached OS-owned process.",
     ),

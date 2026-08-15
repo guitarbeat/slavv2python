@@ -15,6 +15,9 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.special import jv
 
+from slavv_python.pipeline.energy.matlab_engine_backend import (
+    ensure_matlab_engine_float_backend_ready,
+)
 from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
@@ -133,6 +136,8 @@ def compute_native_hessian_energy(
     scale_idx: int,
 ) -> np.ndarray:
     """Compute one scale of the MATLAB-style matched-filter Hessian energy."""
+    # Stretch backend must not silently execute the NumPy float body.
+    ensure_matlab_engine_float_backend_ready(config)
     policy = EnergyPolicy.from_params(config)
     debug_outputs = _compute_native_hessian_scale_debug(image, config, scale_idx, policy=policy)
     return debug_outputs["energy"]

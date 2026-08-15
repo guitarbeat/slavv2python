@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 
 import pytest
 
@@ -108,7 +108,5 @@ def test_energy_unlock_authorizes_matching_energy_full(tmp_path: Path) -> None:
         (StretchFailureClass.AT_FULL, StretchStatus.INCOMPLETE_AT_FULL),
     ],
 )
-def test_failure_class_taxonomy(
-    failure: StretchFailureClass, expected: StretchStatus
-) -> None:
+def test_failure_class_taxonomy(failure: StretchFailureClass, expected: StretchStatus) -> None:
     assert classify_stretch_failure(failure, detail="x").status == expected

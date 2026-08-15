@@ -424,7 +424,10 @@ def calculate_energy_field_resumable(
         pixels_per_sigma_PSF=config["pixels_per_sigma_PSF"],
         microns_per_sigma_PSF=config["microns_per_sigma_PSF"],
         energy_sign=config["energy_sign"],
-        energy_origin=energy_origin_for_method(str(config["energy_method"])),
+        energy_origin=energy_origin_for_method(
+            str(config["energy_method"]),
+            energy_float_backend=str(config.get("energy_float_backend", "numpy")),
+        ),
     )
     if returned_energy_4d is not None:
         result.extra["energy_4d"] = returned_energy_4d
