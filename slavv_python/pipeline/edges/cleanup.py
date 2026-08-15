@@ -261,7 +261,7 @@ def _find_orphan_indices(
     # Vectorized endpoint check
     endpoints = np.array(
         [[voxels[0], voxels[-1]] if voxels.size > 0 else [-1, -1] for voxels in active_edge_voxels],
-        dtype=np.int64
+        dtype=np.int64,
     )
 
     # Check which endpoints are in anchor_set.

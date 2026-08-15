@@ -20,7 +20,11 @@ if TYPE_CHECKING:
 
 def validate_stage_control(stage_name: str | None, option_name: str) -> None:
     """Validate stop-after and force-rerun stage selectors."""
-    allowed = PIPELINE_STAGES if option_name == "force_rerun_from" else [*PIPELINE_STAGES, PREPROCESS_STAGE]
+    allowed = (
+        PIPELINE_STAGES
+        if option_name == "force_rerun_from"
+        else [*PIPELINE_STAGES, PREPROCESS_STAGE]
+    )
     if stage_name is not None and stage_name not in allowed:
         valid = ", ".join(allowed)
         raise ValueError(f"{option_name} must be one of: {valid}")

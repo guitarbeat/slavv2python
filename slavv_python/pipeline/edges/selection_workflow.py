@@ -99,9 +99,7 @@ def select_and_finalize_edge_set(
         size_of_image=size_of_image,
     )
     chosen_dict = cast("dict[str, Any]", chosen_payload)
-    chosen_dict["lumen_radius_microns"] = np.asarray(
-        lumen_radius_microns, dtype=np.float64
-    ).copy()
+    chosen_dict["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float64).copy()
     return EdgeSet.from_dict(chosen_dict)
 
 

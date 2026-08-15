@@ -209,6 +209,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         "slavv_python.pipeline.edges.discovery.sort_candidates_by_quality",
         fake_finalize,
     )
+
     def fake_select_frontier(*_args, **_kwargs):
         payload = chosen.to_dict()
         payload["lumen_radius_microns"] = np.array([1.0], dtype=np.float64)

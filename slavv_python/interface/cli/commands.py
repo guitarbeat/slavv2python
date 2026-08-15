@@ -170,7 +170,9 @@ def _handle_monitor_command(args) -> None:
     from .tui import is_tui_available, run_monitor_if_supported
 
     if not interactive:
-        print("Non-interactive terminal — printing monitor snapshot (use --once to skip this note).")
+        print(
+            "Non-interactive terminal — printing monitor snapshot (use --once to skip this note)."
+        )
         _print_snapshot()
         if view.snapshot is None:
             sys.exit(1)
