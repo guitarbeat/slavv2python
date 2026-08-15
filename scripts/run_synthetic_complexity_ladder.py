@@ -12,6 +12,7 @@ Usage (repo root):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -116,7 +117,8 @@ def resolve_matlab_exe() -> Path | None:
 def write_rung_tiff(rung_id: str) -> dict[str, Any]:
     dirs = _rung_dirs(rung_id)
     dirs["input"].mkdir(parents=True, exist_ok=True)
-    rng = np.random.default_rng(SEED + abs(hash(rung_id)) % 10_000)
+    rung_salt = int(hashlib.sha256(rung_id.encode("utf-8")).hexdigest()[:8], 16) % 10_000
+    rng = np.random.default_rng(SEED + rung_salt)
     volume = generate_ladder_rung_volume(rung_id)
     noise = rng.normal(0.0, 0.02, size=volume.shape).astype(np.float32)
     volume = np.clip(volume + noise, 0.0, 1.0)
