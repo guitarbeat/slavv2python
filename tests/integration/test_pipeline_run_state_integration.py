@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from slavv_python.engine import SlavvPipeline
-from slavv_python.engine.state import load_run_snapshot
 from slavv_python.engine.constants import STATUS_BLOCKED, STATUS_FAILED
+from slavv_python.engine.state import load_run_snapshot
 
 
 def test_process_image_blocks_reuse_when_parameters_change(tmp_path):
