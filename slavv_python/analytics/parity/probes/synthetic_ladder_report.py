@@ -11,7 +11,7 @@ from typing import Any, Literal
 from slavv_python.utils.synthetic import LADDER_RUNG_IDS, LADDER_RUNG_MAX_DIM
 
 NON_CERTIFICATION_NOTE = (
-    "Synthetic complexity ladder — NOT Certification / NOT Phase 1. "
+    "Synthetic complexity ladder - NOT Certification / NOT Phase 1. "
     "Do not update ONE TRUTH or claim-run roots from this report."
 )
 
