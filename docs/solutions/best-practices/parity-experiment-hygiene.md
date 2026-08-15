@@ -46,7 +46,7 @@ only if the cheap layer cannot falsify the hypothesis.
 | Class | Examples | Use |
 |---|---|---|
 | Live oracle | `180709_E_full_v2`, `180709_E_crop_M_v2` | Proofs only |
-| Claim run | `canonical_full_v16` | Status numbers |
+| Claim run | `canonical_full_v18` | Live claim (Phase 1 closed); historical residual record `v16` |
 | Lineage seed | `canonical_full_v4` Energy/Vertices, `v8` energy `.npy` | Seed successors |
 | Crop guard | `crop_M_exact_v3` candidates | Regression, not unevaluated proof JSON |
 | Audit history | `v5`–`v15` completed writers | Keep |

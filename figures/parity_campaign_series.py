@@ -18,15 +18,15 @@ CROP_N_MATLAB_FINAL_PAIRS = 15_511
 CANONICAL_MATLAB_EDGES = 69_500
 CANONICAL_MATLAB_STRANDS = 48_049
 # Network ADR 0012 residual on claim surface (Python - MATLAB strand multiset)
-NETWORK_STRAND_RESIDUAL = -1
+NETWORK_STRAND_RESIDUAL = 0
 CANONICAL_PYTHON_STRANDS = CANONICAL_MATLAB_STRANDS + NETWORK_STRAND_RESIDUAL
-# Edge multiset residual count (connection multiset Δ = 1; strict count can still match)
-EDGE_PAIR_MULTISET_RESIDUAL = 1
+# Edge multiset residual count (connection multiset Δ; strict count can still match)
+EDGE_PAIR_MULTISET_RESIDUAL = 0
 
 ORACLE_CROP_ID = "180709_E_crop_M_v2"
 ORACLE_FULL_VOLUME = "180709_E"
-# Latest full-volume claim/audit surface (Phase 1 still open — Network multiset FAIL)
-CANONICAL_CLAIM_RUN = "canonical_full_v16"
+# Latest full-volume claim surface (Phase 1 CLOSED — Edges + Network evaluated PASS)
+CANONICAL_CLAIM_RUN = "canonical_full_v18"
 
 # Log-scale floor so zero residual remains visible as a bar/point
 LOG_FLOOR_COUNT = 0.85
@@ -231,14 +231,12 @@ class CanonicalAudit:
         return self.edge_delta == 0
 
 
-AGREEMENT_CLAIM = (
-    f"Edges under → over → match; Network still {NETWORK_STRAND_RESIDUAL:+d}"
-)
+AGREEMENT_CLAIM = "Edges match; Network multiset PASS (Phase 1 closed)"
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
     f"(MATLAB edges = {CANONICAL_MATLAB_EDGES:,}; strands = {CANONICAL_MATLAB_STRANDS:,}). "
-    f"v15/v16 edge residual 0; Network still {NETWORK_STRAND_RESIDUAL:+d} strand — "
-    "ADR 0012 multiset FAIL (open ship gate)."
+    "v15/v16 edge residual 0 with Network −1 strand (historical); "
+    "v18 Claimed Trace Energy bake closes Network ADR 0012."
 )
 
 CANONICAL_AUDITS: list[CanonicalAudit] = [
@@ -296,7 +294,7 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         id="v15",
         label="v15",
         edge_delta=0,
-        network_delta=NETWORK_STRAND_RESIDUAL,
+        network_delta=-1,
         note="edges 0",
         show_network_label=True,
     ),
@@ -304,25 +302,33 @@ CANONICAL_AUDITS: list[CanonicalAudit] = [
         id="v16",
         label="v16",
         edge_delta=0,
-        network_delta=NETWORK_STRAND_RESIDUAL,
+        network_delta=-1,
         note="Net FAIL",
         show_network_label=True,
         annotation=Annotation(
-            text="tie-scan\nfix applied",
+            text="ranking\nresidual",
             text_x=6.35,
             text_y=350,
-            color_key="green",
+            color_key="amber",
             bold=True,
-            series="edge",
+            series="network",
         ),
     ),
     CanonicalAudit(
-        id="v17",
-        label="v17",
+        id="v18",
+        label="v18",
         edge_delta=0,
         network_delta=0,
-        note="(pending)",
+        note="Phase 1",
         show_network_label=True,
+        annotation=Annotation(
+            text="claimed\ntraces",
+            text_x=7.35,
+            text_y=350,
+            color_key="green",
+            bold=True,
+            series="network",
+        ),
     ),
 ]
 
@@ -390,15 +396,15 @@ CERT_ROWS: list[CertRow] = [
         quantity="pair multiset \u0394",
         residual_display=str(EDGE_PAIR_MULTISET_RESIDUAL),
         denom=f"{CANONICAL_MATLAB_EDGES:,}",
-        reading="join displace.",
-        tone="residual",
+        reading="claimed ranks",
+        tone="closed",
     ),
     CertRow(
         stage="Network strands",
         quantity="strand multiset \u0394",
         residual_display=str(abs(NETWORK_STRAND_RESIDUAL)),
         denom=f"{CANONICAL_MATLAB_STRANDS:,}",
-        reading="ADR 0012 FAIL",
-        tone="residual",
+        reading="ADR 0012 PASS",
+        tone="closed",
     ),
 ]

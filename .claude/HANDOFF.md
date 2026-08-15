@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-13 (residual class = claimed energy_map + sort_edges; v17 not a claim root; Phase 1 OPEN)
+**Last synthesized:** 2026-08-14 (Phase 1 CLOSED on `canonical_full_v18`; ADR 0013 ranking fix verified)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -14,6 +14,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 | Active work and checkboxes | [docs/TODO.md](../docs/TODO.md) |
 | Phase 1 requirements | [phase-1-exact-route-spec.md](../docs/plans/phase-1-exact-route-spec.md) |
 | Edges/Network bar + closure policy | [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md) (post-v6 addendum) |
+| Claimed Trace Energy provenance | [ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md) |
 | Run commands and evidence format | [PARITY_PRE_GATE.md](../docs/reference/workflow/PARITY_PRE_GATE.md), [PARITY_RUN_EVIDENCE.md](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md) |
 | Doc authority map | [docs/README.md](../docs/README.md#documentation-authority-map-one-concept--one-home) |
 | Repository and parity guardrails | [AGENTS.md](../AGENTS.md) |
@@ -24,17 +25,16 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### Snapshot (no frozen KPIs)
 
-- **Phase 1 is OPEN** solely because Network fails ADR 0012 multiset equality on the claim root. Run root, counts, and residual mechanism: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only.
-- Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ❌. No independent Network bug (MATLAB edges → Python Network topology exact).
-- **Crop = regression guard.** **Full volume = claim surface.** Next closure = new Edges→Network root. **Do not claim `v17`.**
+- **Phase 1 is CLOSED** on the claim root named in ONE TRUTH. Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ADR 0012 evaluated ✅.
+- Former Network one-strand fail was Edge Selection Ranking Residual; Claimed Trace Energy bake ([ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md)) fixed Edge Set ranking and Network followed.
+- **Crop = regression guard.** Preserve historical `v16` in place; do not overwrite. **Do not claim `v17`.**
 - Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
-- **Successor writer:** `canonical_full_v18` Edges→Network was started 2026-08-13 via `Start-Process resume-exact-run` (not `launch-exact-run`). Do not start another writer on `v16`/`v18` while that lease PID is alive. Live claim root remains `v16` until evaluated proofs pass.
 
 ### Do not
 
-- Claim 100% end-to-end parity or Phase 1 closed until a **new** claim root’s evaluated proofs pass.
+- Re-open Phase 1 on historical `v16` Network FAIL (residual record only).
 - Treat MATLAB finals (`edges_*.mat`) as raw watershed emission, or `canonical_full_v17` as a healthy writer.
-- Treat approximate strand-count % as Network pass.
+- Treat approximate strand-count % as Network pass without evaluated multiset proof.
 - Re-gate on retired 80% crop overlap or crop one-pair swap as the open loop.
 - Rewrite Network; reopen join-rule / tie-scan as the ship-gate change; add endpoint tertiary sort keys.
 
@@ -42,17 +42,16 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### Ship gate
 
-1. **Edges ADR 0012** — met on claim root (see ONE TRUTH). Do not reopen unless regression.
-2. **Network ADR 0012** — open until Edge Set multiset matches. Closing Network = fix residual Edge Set, not rewrite Network.
-3. **Strict-field stretch** — exact connections / order non-blocking for messaging once Network multiset passes.
+1. **Edges ADR 0012** — met on claim root (see ONE TRUTH).
+2. **Network ADR 0012** — met on the same claim root (see ONE TRUTH).
+3. **Strict-field stretch** — exact connections / order remain optional non-blocking follow-up on crop.
 
 ### Primary loop KPI
 
 | KPI | Surface | Role |
 |-----|---------|------|
 | Crop generation / frontier / re-selection | crop harness | Regression guards (closed) |
-| Full Edge Set residual | claim root re-selection / funnel | Active production residual |
-| Network strand multiset | `prove-exact --stage network` | **Only** Phase 1 ship remaining |
+| Full Edge Set / Network | claim root evaluated proofs | Phase 1 closed — regression only |
 
 Live numbers: ONE TRUTH only.
 
@@ -130,11 +129,16 @@ slavv parity prove-exact --stage network `
 4. Phase 1 closes when **both** evaluated proofs pass. Update ONE TRUTH + TODO + this handoff + figure series same session. Record evidence per [PARITY_RUN_EVIDENCE](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md).
 5. If Edges still pass and Network still fails: continue Edge Set residual loop — do not treat Network as a separate porting project.
 
-### C. After Phase 1 closes
+### C. After Phase 1 closes (current)
 
 - Promote summary to `workspace/reports/` if warranted.
 - Strict-field stretch optional on crop.
-- Phase 2 optimization / paper-profile cert per [phase-2-optimization-spec.md](../docs/plans/phase-2-optimization-spec.md) and roadmap — do not start broad Phase 2 unwinding while Network is red.
+- Phase 2 optimization / paper-profile cert per [phase-2-optimization-spec.md](../docs/plans/phase-2-optimization-spec.md) and roadmap.
+- Cite claim proofs:
+  ```powershell
+  slavv parity inspect-proof --path workspace/runs/oracle_180709_E/canonical_full_v18/03_Analysis/exact_proof_edges.json --require-evaluated
+  slavv parity inspect-proof --path workspace/runs/oracle_180709_E/canonical_full_v18/03_Analysis/exact_proof_network.json --require-evaluated
+  ```
 
 ### D. Cold start
 
@@ -147,7 +151,7 @@ slavv parity prove-exact --stage network `
 
 | Area | Files / functions | Planning note |
 |------|-------------------|---------------|
-| Join / Candidate Set residual | `matlab_get_edges_by_watershed.py`, funnel / gap probes | Active full residual: extra join displacing oracle pair at degree-excess |
+| Claimed Trace Energy bake | `matlab_get_edges_by_watershed.py` assemble (`claim_map.energy_map`) | ADR 0013 — regression guard |
 | Finalization | `pipeline/edges/finalize.py` | Crop guard; resample/map-resample/smooth/crop path |
 | Selection row order | `selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard (double-precision metric sort) |
 | Cleanup pruning | `cleanup.py` | Regression guard; MATLAB comparator green on same surface |

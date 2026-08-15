@@ -16,22 +16,17 @@
 
 ## Do now — Phase 1 ship
 
-**Open gate:** Network ADR 0012 multiset on full claim root (downstream of residual Edge Set).  
-**Not a Network rewrite.** Crop = regression guard. Details: [ONE TRUTH residual](reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red) · [HANDOFF § A](../.claude/HANDOFF.md).
+**Phase 1 CLOSED** on claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (`canonical_full_v18`).  
+Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed-energy-trace-provenance.md)). Crop remains a regression guard. Operator brief: [HANDOFF](../.claude/HANDOFF.md).
 
-### Ship tasks (open)
+### Ship tasks
 
-- [ ] **1. Production fix — claimed `energy_map` traces + `sort_edges`** — **IN TREE, NOT FULL-REGEN VERIFIED (2026-08-13)**  
-  Residual class: raw pair sets already match; MATLAB ranks claimed/penalized `energy_map` max, Python stored original-field max. Code samples `claim_map.energy_map` and applies `sort_edges` before resampled cleanup. Cheap experiments green (`test_watershed_energy_map_sort_experiments.py`). Do **not** treat tie-scan as the ship-gate fix.  
-  **See:** [ONE TRUTH residual](reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red) · [raw-vs-final-candidate-compare.md](solutions/parity/raw-vs-final-candidate-compare.md).
-
-- [ ] **2. Successor full Edges → Network + evaluated proofs** — **NEW ROOT (not `v17`)**  
-  Seed Energy/Vertices from certified lineage (`v4`/`v8`/`v16` checkpoints). Rerun edges→network only. `v17` is contaminated (stale energy writer, missing local E/V checkpoints).  
-  `prove-exact --stage edges` then `--stage network` (both **evaluated** ADR 0012).  
-  Commands: [HANDOFF § B](../.claude/HANDOFF.md). Evidence: [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
-
-- [ ] **3. Phase 1 closure**  
-  When Edges ✅ and Network ✅ on the same fresh claim root: update ONE TRUTH + HANDOFF + figure series same session; tick freeze-baseline below.
+- [x] **1. Production fix — claimed `energy_map` traces + `sort_edges`** — verified on `canonical_full_v18` (2026-08-14)  
+  Bake Claimed Trace Energy at watershed finalize; Selection keeps raw-max `sort_edges`. Cheap experiments + full Edge Set pair fix green.
+- [x] **2. Successor full Edges → Network + evaluated proofs** — `canonical_full_v18`  
+  Edges + Network both `adr0012_evaluated: true` and `passed: true`.
+- [x] **3. Phase 1 closure**  
+  ONE TRUTH + HANDOFF + figure KPI mirror updated same session (2026-08-14).
 
 ### Standing process (always)
 

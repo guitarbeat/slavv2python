@@ -16,3 +16,4 @@ Index of ADRs for the SLAVV Python port. Each record captures the context, decis
 | [0010](0010-random-component-parity-suite.md) | Random Component Parity Suite | Accepted |
 | [0011](0011-energy-float-certification-policy.md) | Energy Float Certification Policy | Accepted (2026-06-24) |
 | [0012](0012-edge-watershed-parity-bar.md) | Edge Watershed Parity Bar (ownership-map + trace tolerance) | Accepted (2026-06-25) |
+| [0013](0013-claimed-energy-trace-provenance.md) | Claimed Energy Trace Provenance (bake at Watershed finalize) | Accepted (2026-08-14) |
