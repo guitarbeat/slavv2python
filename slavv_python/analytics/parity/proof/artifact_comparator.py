@@ -51,6 +51,7 @@ def compare_exact_artifacts(
 
     energy_float_gate: dict[str, Any] | None = None
     edges_adr0012_gate: dict[str, Any] | None = None
+    network_adr0012_gate: dict[str, Any] | None = None
     for stage in stages:
         matlab_payload = matlab_artifacts[stage]
         python_payload = python_artifacts[stage]
@@ -62,7 +63,7 @@ def compare_exact_artifacts(
                 float_tol=float_tol,
             )
         elif stage == "network":
-            mismatch = _compare_network_stage(
+            mismatch, network_adr0012_gate = _compare_network_stage(
                 matlab_payload,
                 python_payload,
                 float_tol=float_tol,
@@ -105,6 +106,8 @@ def compare_exact_artifacts(
         result["energy_float_gate"] = energy_float_gate
     if edges_adr0012_gate is not None:
         result["edges_adr0012_gate"] = edges_adr0012_gate
+    if network_adr0012_gate is not None:
+        result["network_adr0012_gate"] = network_adr0012_gate
     return result
 
 
@@ -466,7 +469,7 @@ def _compare_network_stage(
     python_payload: dict[str, Any],
     *,
     float_tol: tuple[float, float] | None = None,
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """Compare the Network stage order-independently (ADR 0012 philosophy).
 
     The certification bar is **topology only**:
@@ -482,15 +485,20 @@ def _compare_network_stage(
     (inherited from edge order), and MATLAB stores strands as end-vertex pairs while
     Python stores full chains. Both reduce to the same bounding pair (chain ends),
     which is the topology-defining quantity.
+
+    Always returns an evaluated ``network_adr0012_gate`` so Network citations can
+    require ``adr0012_evaluated: true`` the same way Edges ownership proofs do.
     """
+    del float_tol
     matlab_strands = list(matlab_payload.get("strands", []))
     python_strands = list(python_payload.get("strands", []))
 
     # 1. Topology: strand endpoint-pair multiset (order-independent).
     matlab_pairs = _strand_endpoint_pairs(matlab_strands)
     python_pairs = _strand_endpoint_pairs(python_strands)
+    mismatch: dict[str, Any] | None = None
     if Counter(matlab_pairs) != Counter(python_pairs):
-        return _mismatch(
+        mismatch = _mismatch(
             "network",
             "network.strands",
             "strand endpoint-pair multiset mismatch",
@@ -501,8 +509,8 @@ def _compare_network_stage(
     # 2. Topology: bifurcation-vertex multiset (order-independent).
     matlab_bif = np.asarray(matlab_payload.get("bifurcations", [])).ravel()
     python_bif = np.asarray(python_payload.get("bifurcations", [])).ravel()
-    if Counter(matlab_bif.tolist()) != Counter(python_bif.tolist()):
-        return _mismatch(
+    if mismatch is None and Counter(matlab_bif.tolist()) != Counter(python_bif.tolist()):
+        mismatch = _mismatch(
             "network",
             "network.bifurcations",
             "bifurcation multiset mismatch",
@@ -514,7 +522,16 @@ def _compare_network_stage(
     # fields after canonical (endpoint-keyed) reorder. Failures are NOT propagated
     # as a mismatch — topology certification does not gate on geometry.
     # Callers who need geometry validation should inspect the individual fields.
-    return None
+    gate = {
+        "adr0012_evaluated": True,
+        "adr_bar": ("ADR 0012 network topology (strand endpoint-pair + bifurcation multisets)"),
+        "n_matlab_strand_pairs": len(matlab_pairs),
+        "n_python_strand_pairs": len(python_pairs),
+        "n_matlab_bifurcations": int(matlab_bif.size),
+        "n_python_bifurcations": int(python_bif.size),
+        "passed": mismatch is None,
+    }
+    return mismatch, gate
 
 
 def _compare_dict(

@@ -72,6 +72,8 @@ def load_proof_record(
         else None
     )
     gate = payload.get("edges_adr0012_gate")
+    if not isinstance(gate, dict) or "adr0012_evaluated" not in gate:
+        gate = payload.get("network_adr0012_gate")
     evaluated: bool | None = None
     if isinstance(gate, dict) and "adr0012_evaluated" in gate:
         evaluated = bool(gate.get("adr0012_evaluated"))

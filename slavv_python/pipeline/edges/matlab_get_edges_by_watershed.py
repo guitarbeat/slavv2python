@@ -859,6 +859,8 @@ def _generate_edge_candidates_matlab_global_watershed(
         edge_pairs=edge_pairs,
         edge_halves=edge_halves,
         shape=shape,
+        # ADR 0013: bake Claimed Trace Energy from the claim/penalty map (L846),
+        # never the original Energy-stage field (`energy_matlab`).
         energy_map_matlab=claim_map.energy_map,
         original_scale_image_matlab=original_scale_image,
         vertex_positions=vertex_positions,

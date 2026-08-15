@@ -26,6 +26,7 @@ from slavv_python.analytics.parity.experiments import (
 )
 from slavv_python.pipeline.edges.cleanup import remove_excess_vertex_degrees
 from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+    _matlab_global_watershed_assemble_results,
     _matlab_global_watershed_finalize_edge_trace,
 )
 from slavv_python.pipeline.edges.matlab_watershed_heap import VoxelClaimMap
@@ -164,6 +165,69 @@ def test_experiment_crop_raw_pair_sets_already_match() -> None:
     assert report.n_intersection == 19225
     assert report.n_only_left == 0
     assert report.n_only_right == 0
+
+
+@pytest.mark.unit
+def test_production_watershed_bakes_claimed_not_original_field_energy() -> None:
+    """ADR 0013: assembled energy_traces must match claim_map, not original field.
+
+    Paint a penalized claim write on an interior voxel, then ensure a production
+    finalize sample of that path carries the claimed value (0.0) rather than the
+    original-field deep negative.
+    """
+    shape = (3, 3, 3)
+    original = np.full(shape, -9.24, dtype=np.float64, order="F")
+    claim_map = VoxelClaimMap(
+        shape,
+        np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 2.0]], dtype=np.float32),
+        original,
+    )
+    start = int(claim_map.vertex_locations[0])
+    end = int(claim_map.vertex_locations[1])
+    claimed_linear = 13  # interior between seeds in 3x3x3 F-order
+    claim_map.energy_flat[claimed_linear] = 0.0
+
+    assembled = _matlab_global_watershed_assemble_results(
+        edge_pairs=[(1, 2)],
+        edge_halves=[([start], [claimed_linear, end])],
+        shape=shape,
+        energy_map_matlab=claim_map.energy_map,
+        original_scale_image_matlab=None,
+        vertex_positions=np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 2.0]], dtype=np.float32),
+        vertex_index_map=claim_map.vertex_index_map,
+        pointer_map=claim_map.pointer_map,
+        size_map=np.ones(shape, dtype=np.int16, order="F"),
+        d_over_r_map=claim_map.d_over_r_map,
+        branch_order_map=claim_map.branch_order_map,
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        step_size_per_origin_radius=1.0,
+    )
+    energy_trace = np.asarray(assembled["energy_traces"][0], dtype=np.float64)
+    assert float(np.nanmax(energy_trace)) == 0.0
+    assert 0.0 in energy_trace.tolist()
+    finite = energy_trace[np.isfinite(energy_trace)]
+    assert -9.24 not in finite.tolist()
+
+
+@pytest.mark.unit
+def test_experiment_claimed_raw_max_ranks_oracle_ahead_of_extra() -> None:
+    """E1: claimed maxes (MATLAB L846) put oracle before residual extra."""
+    extra, oracle, hub = 1, 2, 3
+    connections = np.array([[extra, hub], [oracle, hub]], dtype=np.int32)
+    claimed_traces = [
+        np.array([-np.inf, 0.0, -np.inf], dtype=np.float64),
+        np.array([-np.inf, -0.239, -np.inf], dtype=np.float64),
+    ]
+    ranked = matlab_sort_edge_indices_by_raw_max(claimed_traces, [0, 1])
+    assert ranked == [1, 0], "oracle (claimed -0.239) before extra (claimed 0.0)"
+    keep = remove_excess_vertex_degrees(connections[ranked], np.zeros(2), max_degree=1)
+    kept = [
+        tuple(sorted((int(connections[i, 0]), int(connections[i, 1]))))
+        for i, flag in zip(ranked, keep.tolist(), strict=True)
+        if flag
+    ]
+    assert kept == [(oracle, hub)]
 
 
 @pytest.mark.unit
