@@ -67,7 +67,7 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-15):** Isolated Python 3.7.16 + `matlab.engine` (R2019a) is available at `workspace/scratch/conda_py37_stretch` (`STRETCH_PY37_PYTHON`). Engine smoke on a 6³ chunk succeeded. Crop Energy writer dest is `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v1` (new root; not `crop_M_exact_v3` / `canonical_full_v18`). Crop `--strict-floats` has **not** passed yet — status is `crop_energy_running` / not `crop_energy_passed`. Default allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`.
+**Session status (2026-08-15):** Crop Energy on `crop_M_stretch_engine_v1` finished via Python 3.7 + R2019a `matlab.engine` (`energy_float_backend=matlab_engine`). `prove-exact --stage energy --strict-floats` **FAIL**: 2,623,250 / 4,194,304 voxels bit-identical (62.5%); 1,571,054 not bit-identical; scale indices match; max abs delta `1e-10`; mismatch ULP p50=1, p90=4. Status is **`blocked_float_path`** (engine path ran; floats are not bit-equal). Not allclose success; no unlock token. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v1/03_Analysis/exact_proof_energy.json`.
 
 ---
 
