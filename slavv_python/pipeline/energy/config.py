@@ -120,9 +120,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "approximating_PSF": approximating_psf,
         "energy_sign": energy_sign,
         "energy_method": energy_method,
-        "energy_float_backend": str(
-            params.get("energy_float_backend", "numpy")
-        ).strip().lower(),
+        "energy_float_backend": str(params.get("energy_float_backend", "numpy")).strip().lower(),
         "energy_projection_mode": energy_projection_mode,
         "return_all_scales": return_all_scales,
         "max_voxels": max_voxels,

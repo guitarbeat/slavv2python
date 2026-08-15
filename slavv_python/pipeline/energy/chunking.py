@@ -100,9 +100,7 @@ def _energy_result_payload(
         energy_sign=config["energy_sign"],
         energy_origin=energy_origin_for_method(
             str(config["energy_method"]),
-            energy_float_backend=str(
-                config.get("energy_float_backend", "numpy")
-            ),
+            energy_float_backend=str(config.get("energy_float_backend", "numpy")),
         ),
     )
     if energy_4d is not None:
