@@ -210,6 +210,7 @@ def launch_writer_session(
     skip_preflight: bool = False,
     skip_foreground_probe: bool = False,
     n_jobs: int | None = None,
+    energy_float_backend: str | None = None,
     monitor: bool = False,
     python_executable: Path | None = None,
 ) -> dict[str, Any]:
@@ -237,6 +238,7 @@ def launch_writer_session(
         skip_preflight=skip_preflight,
         skip_foreground_probe=skip_foreground_probe,
         n_jobs=n_jobs,
+        energy_float_backend=energy_float_backend,
         python_executable=python_executable,
     )
 
@@ -255,6 +257,7 @@ def launch_writer_session(
         force=force,
         skip_preflight=True,
         n_jobs=n_jobs,
+        energy_float_backend=energy_float_backend,
         command_override=detached_command,
         python_executable=python_executable,
     )

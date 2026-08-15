@@ -15,6 +15,7 @@ from slavv_python.pipeline.energy.matlab_engine_host import (
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     compute_exact_parity_energy_chunked,
 )
+from slavv_python.pipeline.energy.resumable import _config_hash
 from slavv_python.utils.validation import validate_parameters
 
 
@@ -41,6 +42,9 @@ def test_prepare_config_copies_bound_engine_session() -> None:
     assert config["_stretch_engine_session"] == "sentinel-session"
     assert config["energy_float_backend"] == "matlab_engine"
     assert "scales_per_octave" in config
+    hashed = _config_hash(config)
+    config["_stretch_engine_session"] = object()
+    assert _config_hash(config) == hashed
 
 
 def test_exact_chunked_refuses_unbound_engine_numpy_body() -> None:

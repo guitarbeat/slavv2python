@@ -67,7 +67,7 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-14):** `energy_filter_V200` is bound behind `energy_float_backend=matlab_engine` (Python owns chunking/resume; MATLAB owns FFT+filter). Crop Energy `--strict-floats` still needs an isolated Python 3.7 interpreter with `matlab.engine` (R2019a ABI). Repo `.venv` is 3.12 and cannot host the engine in-process. Set `STRETCH_PY37_PYTHON` to the isolated 3.7 prefix and run `resume-exact-run --energy-float-backend matlab_engine`. Not redefined as ADR 0011 allclose success. Phase 1 remains CLOSED on `canonical_full_v18`.
+**Session status (2026-08-15):** Isolated Python 3.7.16 + `matlab.engine` (R2019a) is available at `workspace/scratch/conda_py37_stretch` (`STRETCH_PY37_PYTHON`). Engine smoke on a 6³ chunk succeeded. Crop Energy writer dest is `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v1` (new root; not `crop_M_exact_v3` / `canonical_full_v18`). Crop `--strict-floats` has **not** passed yet — status is `crop_energy_running` / not `crop_energy_passed`. Default allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`.
 
 ---
 

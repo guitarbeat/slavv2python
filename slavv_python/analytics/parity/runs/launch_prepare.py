@@ -107,6 +107,7 @@ def prepare_detached_exact_run_launch(
     skip_preflight: bool,
     skip_foreground_probe: bool,
     n_jobs: int | None,
+    energy_float_backend: str | None = None,
     python_executable: Path | None = None,
 ) -> tuple[list[str], list[str]]:
     """Reconcile stale state, preflight, and foreground probe before detach."""
@@ -154,6 +155,7 @@ def prepare_detached_exact_run_launch(
         force_kill=force_kill,
         skip_preflight=True,
         n_jobs=n_jobs,
+        energy_float_backend=energy_float_backend,
         python_executable=python_executable,
     )
     return detached_command, foreground_command

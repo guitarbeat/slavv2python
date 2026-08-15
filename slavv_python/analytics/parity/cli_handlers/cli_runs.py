@@ -269,6 +269,7 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            energy_float_backend=getattr(args, "energy_float_backend", None),
             monitor=bool(getattr(args, "monitor", False)),
         )
     except LaunchPreparationError as exc:

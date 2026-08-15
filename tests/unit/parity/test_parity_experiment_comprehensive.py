@@ -224,10 +224,13 @@ def test_build_parser_commands():
             "energy",
             "--n-jobs",
             "4",
+            "--energy-float-backend",
+            "matlab_engine",
         ]
     )
     assert args.command == "launch-exact-run"
     assert args.n_jobs == 4
+    assert args.energy_float_backend == "matlab_engine"
 
     args = parser.parse_args(["status-exact-run", "--run-dir", "dst"])
     assert args.command == "status-exact-run"

@@ -38,6 +38,7 @@ def build_resume_exact_run_command(
     force_kill: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
+    energy_float_backend: str | None = None,
     python_executable: Path | None = None,
 ) -> list[str]:
     """Build the command used by detached exact-route resume jobs."""
@@ -63,6 +64,8 @@ def build_resume_exact_run_command(
         command.extend(["--memory-safety-fraction", str(memory_safety_fraction)])
     if n_jobs is not None:
         command.extend(["--n-jobs", str(n_jobs)])
+    if energy_float_backend is not None:
+        command.extend(["--energy-float-backend", str(energy_float_backend)])
     if force:
         command.append("--force")
     if force_kill:
@@ -84,6 +87,7 @@ def launch_exact_run_job(
     force_kill: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
+    energy_float_backend: str | None = None,
     python_executable: Path | None = None,
     command_override: list[str] | None = None,
 ) -> dict[str, Any]:
@@ -108,6 +112,7 @@ def launch_exact_run_job(
         force_kill=force_kill,
         skip_preflight=skip_preflight,
         n_jobs=n_jobs,
+        energy_float_backend=energy_float_backend,
         python_executable=python_executable,
     )
 

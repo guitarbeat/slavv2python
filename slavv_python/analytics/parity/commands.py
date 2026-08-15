@@ -287,6 +287,11 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
                 help="Skip the preprocess-only foreground launch probe before detaching.",
             ),
             arg("--n-jobs", type=int),
+            arg(
+                "--energy-float-backend",
+                choices=("numpy", "matlab_engine"),
+                help="Stretch Energy float path (matlab_engine binds energy_filter_V200).",
+            ),
             arg("--monitor", action="store_true", help="Monitor job and send notifications"),
             arg("--force-kill", action="store_true", help="Kill active writer if exists"),
             arg(
