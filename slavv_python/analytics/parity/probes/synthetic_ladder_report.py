@@ -122,7 +122,7 @@ def orchestrate_from_rung_results(
         if status in {"inconclusive", "failed"}:
             return assemble_ladder_report(
                 rung_results=rung_results,
-                outcome=status,  # type: ignore[arg-type]
+                outcome=status,
                 created_utc=created_utc,
                 soft_time_sec=soft_time_sec,
                 soft_size_max_dim=soft_size_max_dim,

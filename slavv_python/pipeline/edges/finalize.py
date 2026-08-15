@@ -31,7 +31,7 @@ def _matlab_resample_vectors_linf(
     """Mirror the active default ``resample_vectors`` L-infinity interpolation."""
     values = np.asarray(edge_subscripts, dtype=np.float64)
     if values.size == 0 or values.shape[0] <= 1:
-        return values.copy()
+        return cast("np.ndarray", values.copy())
 
     cumulative_lengths = np.concatenate(
         (
@@ -41,7 +41,7 @@ def _matlab_resample_vectors_linf(
     )
     total_length = float(cumulative_lengths[-1])
     if total_length == 0.0:
-        return values[:1].copy()
+        return cast("np.ndarray", values[:1].copy())
 
     sample_lengths = np.linspace(
         0.0,
@@ -107,7 +107,7 @@ def _matlab_precrop_resample_from_maps(
         resampled = _matlab_resample_vectors_linf(edge_quantities)
 
         lookup_subscripts_one_based = _matlab_uint_cast_positive(resampled[:, :3])
-        lookup_subscripts = lookup_subscripts_one_based - 1
+        lookup_subscripts: np.ndarray = lookup_subscripts_one_based - 1
         for axis, axis_size in enumerate(image_shape_yxz.tolist()):
             lookup_subscripts[:, axis] = np.clip(
                 lookup_subscripts[:, axis],
@@ -211,7 +211,7 @@ def _matlab_crop_edges_v200(
 
         # Scale traces are stored zero-based in Python; MATLAB casts the
         # corresponding one-based labels with ``uint8`` before radius lookup.
-        scale_trace_vector = _matlab_uint_cast_positive(scale_trace_arr + 1.0) - 1
+        scale_trace_vector: np.ndarray = _matlab_uint_cast_positive(scale_trace_arr + 1.0) - 1
         scale_trace_vector = np.clip(scale_trace_vector, 0, max(len(lumen_radii) - 1, 0))
         radii_in_pixels = _matlab_uint_cast_positive(
             lumen_radii[scale_trace_vector][:, None] / voxel_size,

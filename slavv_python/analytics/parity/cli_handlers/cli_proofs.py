@@ -149,7 +149,7 @@ def handle_prove_luts(args: argparse.Namespace) -> None:
     report, _, _ = ExactProofCoordinator.run_lut_proof(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
-        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+        _oracle_root=Path(args.oracle_root) if args.oracle_root else None,
     )
     if not report.get("passed"):
         sys.exit(1)

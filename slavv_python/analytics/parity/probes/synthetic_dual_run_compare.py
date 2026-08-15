@@ -7,8 +7,9 @@ Graded ``first_big_break`` labels from the tiny script are not used as the stop 
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar, cast
 
 import numpy as np
 
@@ -44,7 +45,10 @@ def undirected_pairs(connections: np.ndarray) -> set[tuple[int, int]]:
     return out
 
 
-def pair_stats(left: set[tuple[int, int]], right: set[tuple[int, int]]) -> PairStats:
+TPair = TypeVar("TPair", bound=Hashable)
+
+
+def pair_stats(left: set[TPair], right: set[TPair]) -> PairStats:
     inter = left & right
     only_l = left - right
     only_r = right - left
@@ -68,7 +72,7 @@ def quantize_positions(positions: np.ndarray) -> np.ndarray:
     if pos.size == 0:
         return np.zeros((0, 3), dtype=np.int64)
     pos = pos.reshape(-1, 3)
-    return np.rint(pos).astype(np.int64)
+    return cast("np.ndarray", np.rint(pos).astype(np.int64))
 
 
 def position_keys_one_based(

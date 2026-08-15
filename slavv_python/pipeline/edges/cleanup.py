@@ -119,7 +119,7 @@ def prune_orphan_edges(
             break
 
         # Remove found orphans from the active pool and the global keep mask
-        keep_indices = np.ones(len(active_pool), dtype=bool)
+        keep_indices: np.ndarray = np.ones(len(active_pool), dtype=bool)
         keep_indices[orphans] = False
 
         for pool_idx in orphans:
