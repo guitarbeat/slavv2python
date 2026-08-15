@@ -76,10 +76,7 @@ def stage_payload(value: StageLike | None) -> dict[str, Any]:
         raise TypeError(f"to_dict() returned non-mapping: {type(payload)!r}")
     if isinstance(value, Mapping):
         return dict(value)
-    raise TypeError(
-        "Expected a Stage Result with to_dict() or a Mapping; "
-        f"got {type(value)!r}"
-    )
+    raise TypeError(f"Expected a Stage Result with to_dict() or a Mapping; got {type(value)!r}")
 
 
 def processing_payload(value: StageLike | None) -> dict[str, Any]:

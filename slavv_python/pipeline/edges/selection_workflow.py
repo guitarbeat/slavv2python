@@ -60,7 +60,10 @@ def select_and_finalize_edge_set(
         microns_per_voxel,
         policy=policy,
     )
-    size_of_image = tuple(int(v) for v in energy_data.energy.shape)
+    size_of_image = cast(
+        "tuple[int, int, int]",
+        tuple(int(v) for v in energy_data.energy.shape),
+    )
     if apply_bridge_vertices is None:
         apply_bridge_vertices = _use_watershed_discovery(energy_data.to_dict(), params)
 
@@ -99,9 +102,7 @@ def select_and_finalize_edge_set(
         size_of_image=size_of_image,
     )
     chosen_dict = cast("dict[str, Any]", chosen_payload)
-    chosen_dict["lumen_radius_microns"] = np.asarray(
-        lumen_radius_microns, dtype=np.float64
-    ).copy()
+    chosen_dict["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float64).copy()
     return EdgeSet.from_dict(chosen_dict)
 
 

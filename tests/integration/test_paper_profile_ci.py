@@ -87,9 +87,9 @@ def test_paper_profile_ci_pipeline_on_y_junction_synthetic(tmp_path: Path):
     """Run paper profile on a non-trivial synthetic topology (parity pre-gate tier 1)."""
     volume_path = tmp_path / "synthetic_y_junction.tif"
     synthetic_image = generate_synthetic_y_junction_volume(
-        shape=(32, 64, 64),
-        trunk_radius=3.0,
-        branch_radius=3.0,
+        shape=(48, 96, 96),
+        trunk_radius=4.0,
+        branch_radius=3.5,
     )
     tifffile.imwrite(str(volume_path), synthetic_image)
 

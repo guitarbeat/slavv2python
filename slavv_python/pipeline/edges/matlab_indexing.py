@@ -32,7 +32,7 @@ def _matlab_watershed_min_candidate_energies(energies: np.ndarray) -> np.ndarray
     working = np.asarray(energies, dtype=np.float64).copy()
     working[np.isnan(working)] = np.inf
     working[np.isposinf(working)] = np.inf
-    return working
+    return cast("np.ndarray", working)
 
 
 def _argmin_with_linear_index_tiebreak(

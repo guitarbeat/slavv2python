@@ -119,7 +119,7 @@ def prune_orphan_edges(
             break
 
         # Remove found orphans from the active pool and the global keep mask
-        keep_indices = np.ones(len(active_pool), dtype=bool)
+        keep_indices: np.ndarray = np.ones(len(active_pool), dtype=bool)
         keep_indices[orphans] = False
 
         for pool_idx in orphans:
@@ -261,7 +261,7 @@ def _find_orphan_indices(
     # Vectorized endpoint check
     endpoints = np.array(
         [[voxels[0], voxels[-1]] if voxels.size > 0 else [-1, -1] for voxels in active_edge_voxels],
-        dtype=np.int64
+        dtype=np.int64,
     )
 
     # Check which endpoints are in anchor_set.

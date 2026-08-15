@@ -130,7 +130,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
                     np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
                 )
                 neighbor_norms = np.linalg.norm(neighbor_vectors, axis=1)
-                directional_alignment = np.zeros(
+                directional_alignment: np.ndarray = np.zeros(
                     (len(neighbor_vectors),),
                     dtype=np.float64,
                 )

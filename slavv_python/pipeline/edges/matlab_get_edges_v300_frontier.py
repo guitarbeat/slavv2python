@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from slavv_python.pipeline.edges.candidate_manifest import (
     endpoint_pairs_from_connections as _candidate_endpoint_pair_set,
+)
+from slavv_python.pipeline.edges.candidate_manifest import (
     incident_pair_counts as _candidate_incident_pair_counts,
 )
 from slavv_python.pipeline.edges.discovery import (
@@ -42,7 +44,6 @@ from slavv_python.pipeline.edges.matlab_indexing import (
 
 __all__ = [
     "BoolArray",
-    "Float64Array",
     "Float64Array",
     "Int16Array",
     "Int32Array",
