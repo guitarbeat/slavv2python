@@ -20,15 +20,26 @@ from ..image.tiling import get_chunking_lattice
 from .formatting import format_size, format_time
 from .math import fourier_transform_even, weighted_ks_test
 from .profiling import profile_process_image
-from .synthetic import generate_synthetic_vessel_volume, generate_synthetic_y_junction_volume
+from .synthetic import (
+    LADDER_RUNG_IDS,
+    generate_ladder_rung_volume,
+    generate_synthetic_asymmetric_y_volume,
+    generate_synthetic_double_junction_volume,
+    generate_synthetic_vessel_volume,
+    generate_synthetic_y_junction_volume,
+)
 from .system_info import get_system_info
 from .validation import validate_parameters
 
 __all__ = [
+    "LADDER_RUNG_IDS",
     "calculate_path_length",
     "format_size",
     "format_time",
     "fourier_transform_even",
+    "generate_ladder_rung_volume",
+    "generate_synthetic_asymmetric_y_volume",
+    "generate_synthetic_double_junction_volume",
     "generate_synthetic_vessel_volume",
     "generate_synthetic_y_junction_volume",
     "get_chunking_lattice",
