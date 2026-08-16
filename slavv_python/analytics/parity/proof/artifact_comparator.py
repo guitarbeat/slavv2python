@@ -14,6 +14,7 @@ from slavv_python.analytics.parity.proof.energy_ulp_proof import (
     evaluate_energy_float_gate,
 )
 from slavv_python.analytics.parity.proof.exact_proof_contract import EXACT_STAGE_FIELDS
+from slavv_python.analytics.parity.proof.stretch import classify_stretch_energy_orientation
 
 # ADR 0012: minimum ownership-map agreement fraction for edges parity bar
 _ADR0012_OWNERSHIP_THRESHOLD = 0.60
@@ -373,9 +374,35 @@ def _compare_energy_stage(
     float_tol: tuple[float, float] | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """Compare Energy stage with ADR 0011 float policy on energy.energy only."""
+    matlab_energy = np.asarray(matlab_payload["energy"])
+    python_energy = np.asarray(python_payload["energy"])
+    orientation = classify_stretch_energy_orientation(
+        energy_shape=tuple(python_energy.shape),
+        oracle_shape=tuple(matlab_energy.shape),
+    )
+    if orientation is not None:
+        gate_summary = {
+            "passed": False,
+            "strict_floats": energy_float_options.strict_floats,
+            "use_allclose": energy_float_options.use_allclose,
+            "incomplete_infra": True,
+            "orientation_refuse": True,
+            "status": orientation.status.value,
+            "failures": [orientation.reason],
+        }
+        return (
+            _mismatch(
+                "energy",
+                "energy.energy",
+                "incomplete_infra orientation",
+                matlab_payload["energy"],
+                python_payload["energy"],
+            ),
+            gate_summary,
+        )
     gate_summary = evaluate_energy_float_gate(
-        np.asarray(matlab_payload["energy"]),
-        np.asarray(python_payload["energy"]),
+        matlab_energy,
+        python_energy,
         np.asarray(matlab_payload["scale_indices"]),
         np.asarray(python_payload["scale_indices"]),
         options=energy_float_options,

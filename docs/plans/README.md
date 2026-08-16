@@ -13,6 +13,8 @@ Scoped initiatives: **requirements and implementation in one spec file** when wo
 | [phase-2-optimization-spec.md](phase-2-optimization-spec.md) | **Ideation / Draft** — blocked on Phase 1 Network green; do not unwind emulation early |
 | [random-component-parity-hardening-spec.md](../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) | **Complete (archived)** — random-component suite hardening/refactor |
 | [random-component-references-deepening-plan.md](random-component-references-deepening-plan.md) | **Draft** — deepen the References module (follow-up) |
+| [2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md) | **Active stretch** — true zero-tolerance including Energy floats; Phase 1 stays CLOSED |
+| [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md) | **E11–E20 portfolio** — crop Energy recorded `blocked_float_path`; U5/U6 gated |
 
 ## Workflow
 

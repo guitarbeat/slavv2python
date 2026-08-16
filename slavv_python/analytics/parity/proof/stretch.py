@@ -135,6 +135,40 @@ def field_set_covers(have: StretchFieldSet, need: StretchFieldSet) -> bool:
     return have == StretchFieldSet.ENERGY_AND_DISCRETE
 
 
+def classify_stretch_energy_orientation(
+    *,
+    energy_shape: tuple[int, ...],
+    oracle_shape: tuple[int, ...],
+) -> StretchGateDecision | None:
+    """Refuse orientation-swapped Energy before ULP accounting (E19).
+
+    A ``(512, 64, 512)`` checkpoint vs oracle ``(64, 512, 512)`` is
+    ``incomplete_infra``, not a float-bar near-miss.
+    """
+    energy = tuple(int(dim) for dim in energy_shape)
+    oracle = tuple(int(dim) for dim in oracle_shape)
+    if energy == oracle:
+        return None
+    swapped_hw = (
+        len(energy) == 3
+        and len(oracle) == 3
+        and energy[0] == oracle[1]
+        and energy[1] == oracle[0]
+        and energy[2] == oracle[2]
+    )
+    reason = (
+        f"Energy shape {energy} looks like an orientation swap vs oracle {oracle}; "
+        "refuse before ULP accounting (incomplete_infra)"
+        if swapped_hw
+        else f"Energy shape {energy} != oracle {oracle}; refuse before ULP (incomplete_infra)"
+    )
+    return StretchGateDecision(
+        allowed=False,
+        status=StretchStatus.INCOMPLETE_INFRA,
+        reason=reason,
+    )
+
+
 def write_stretch_unlock(
     path: Path,
     *,
