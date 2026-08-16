@@ -55,7 +55,7 @@ Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH.
 - Engine float path: isolated Python 3.7 + `matlab.engine` (R2019a). Repo `.venv` is 3.12. Set `STRETCH_PY37_PYTHON`, then:
   ```powershell
   slavv parity resume-exact-run `
-    --dest-run-root workspace\runs\oracle_180709_E\crop_M_stretch_engine_v1 `
+    --dest-run-root workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2 `
     --oracle-root workspace\oracles\180709_E_crop_M_v2 `
     --dataset-root workspace\datasets\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06 `
     --force-rerun-from energy --stop-after energy --n-jobs 1 `

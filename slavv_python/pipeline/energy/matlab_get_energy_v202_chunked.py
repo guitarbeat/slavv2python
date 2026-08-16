@@ -32,7 +32,7 @@ from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hes
 from slavv_python.pipeline.energy.matlab_engine_backend import (
     ensure_matlab_engine_float_backend_ready,
 )
-from slavv_python.pipeline.energy.matlab_engine_host import energy_filter_v200_from_spatial
+from slavv_python.pipeline.energy.matlab_engine_host import energy_chunk_v202_from_spatial
 from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
 if TYPE_CHECKING:
@@ -547,55 +547,66 @@ def compute_exact_parity_energy_single_octave(
         l_start_x = x_local.start or 0
         l_start_z = z_local.start or 0
 
-        mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
-        mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
-        mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
-
-        # [Y, X, Z] mesh for interpolation (sparse to save memory)
-        mesh_coords: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
-            mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True
-        )
-        coords_grid = mesh_coords
-
-        # Accumulators in [Y, X, Z] order with Fortran contiguity
-        chunk_best_energy: np.ndarray = np.full(
-            (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
-        )
-        chunk_best_scale_sub_idx: np.ndarray = np.full(
-            (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
-        )
-
-        for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
-            radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
+        chunk_best_energy: np.ndarray
+        chunk_best_scale_sub_idx: np.ndarray
+        if session is not None:
             pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
-            coarse_shape = (
-                y_local.stop - y_local.start,
-                x_local.stop - x_local.start,
-                z_local.stop - z_local.start,
+            energy_yxz, scale_1based = energy_chunk_v202_from_spatial(
+                session,
+                original_chunk,
+                matching_kernel_string=str(
+                    config.get("matching_kernel_string", "3D gaussian conv annular pulse")
+                ),
+                radii=np.asarray(lumen_radius_microns[scale_indices_at_octave], dtype=np.float64),
+                vessel_wall=float(config.get("vessel_wall_thickness_in_microns", 0.0)),
+                microns_per_pixel=microns_per_pixel_matlab,
+                pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
+                y0=int(y_local.start or 0) + 1,
+                y1=int(y_local.stop),
+                x0=int(x_local.start or 0) + 1,
+                x1=int(x_local.stop),
+                z0=int(z_local.start or 0) + 1,
+                z1=int(z_local.stop),
+                y_offset=off_y,
+                x_offset=off_x,
+                z_offset=off_z,
+                y_write_count=w_count_y,
+                x_write_count=w_count_x,
+                z_write_count=w_count_z,
+                rf_y=stride_y,
+                rf_x=stride_x,
+                rf_z=stride_z,
+                gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
+                spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+                scales_per_octave=float(config.get("scales_per_octave", 1.5)),
+            )
+            chunk_best_energy = np.asfortranarray(np.asarray(energy_yxz, dtype=np.float64))
+            chunk_best_scale_sub_idx = np.asfortranarray(
+                np.asarray(scale_1based, dtype=np.float64).astype(np.int16) - 1
+            )
+        else:
+            mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
+            mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
+            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
+            mesh_coords: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
+                mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True
+            )
+            coords_grid = mesh_coords
+            chunk_best_energy = np.full(
+                (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
+            )
+            chunk_best_scale_sub_idx = np.full(
+                (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
             )
 
-            if session is not None:
-                coarse_energy = energy_filter_v200_from_spatial(
-                    session,
-                    original_chunk,
-                    matching_kernel_string=str(
-                        config.get("matching_kernel_string", "3D gaussian conv annular pulse")
-                    ),
-                    radius=float(radius_of_lumen_in_microns),
-                    vessel_wall=float(config.get("vessel_wall_thickness_in_microns", 0.0)),
-                    microns_per_pixel=microns_per_pixel_matlab,
-                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
-                    y0=int(y_local.start or 0) + 1,
-                    y1=int(y_local.stop),
-                    x0=int(x_local.start or 0) + 1,
-                    x1=int(x_local.stop),
-                    z0=int(z_local.start or 0) + 1,
-                    z1=int(z_local.stop),
-                    gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
-                    spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
-                    scales_per_octave=float(config.get("scales_per_octave", 1.5)),
+            for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
+                radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
+                pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
+                coarse_shape = (
+                    y_local.stop - y_local.start,
+                    x_local.stop - x_local.start,
+                    z_local.stop - z_local.start,
                 )
-            else:
                 assert chunk_dft is not None
                 assert pixel_freq_meshes is not None
                 matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
@@ -666,22 +677,22 @@ def compute_exact_parity_energy_single_octave(
                     del grad_valid, curvatures_valid, energy_valid
                 del curvatures_local, gradient_local
 
-            coarse_energy[~np.isfinite(coarse_energy)] = np.inf
-            coarse_energy[coarse_energy >= 0] = np.inf
+                coarse_energy[~np.isfinite(coarse_energy)] = np.inf
+                coarse_energy[coarse_energy >= 0] = np.inf
 
-            upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
-            del coarse_energy
-            upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
+                upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
+                del coarse_energy
+                upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
 
-            if s_sub_idx == 0:
-                chunk_best_energy = upsampled
-                chunk_best_scale_sub_idx = np.zeros_like(chunk_best_scale_sub_idx)
-            else:
-                is_better = upsampled < chunk_best_energy
-                chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
-                chunk_best_scale_sub_idx[is_better] = s_sub_idx
+                if s_sub_idx == 0:
+                    chunk_best_energy = upsampled
+                    chunk_best_scale_sub_idx = np.zeros_like(chunk_best_scale_sub_idx)
+                else:
+                    is_better = upsampled < chunk_best_energy
+                    chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
+                    chunk_best_scale_sub_idx[is_better] = s_sub_idx
 
-            del upsampled
+                del upsampled
 
         # Energy and scale are accumulated in [Y, X, Z] order internally.
         # We transpose them back to [Z, Y, X] to match the master volume's axis order.

@@ -47,6 +47,48 @@ def test_prepare_config_copies_bound_engine_session() -> None:
     assert _config_hash(config) == hashed
 
 
+def test_engine_chunk_path_calls_interp3_helper_once_per_chunk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def fake_chunk_helper(
+        session: object,
+        chunk: np.ndarray,
+        **kwargs: object,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        del session
+        calls.append(int(np.asarray(chunk).size))
+        y_w = int(kwargs["y_write_count"])
+        x_w = int(kwargs["x_write_count"])
+        z_w = int(kwargs["z_write_count"])
+        energy = np.full((y_w, x_w, z_w), -1.0, dtype=np.float64)
+        scale = np.ones((y_w, x_w, z_w), dtype=np.float64)
+        return energy, scale
+
+    monkeypatch.setattr(
+        "slavv_python.pipeline.energy.matlab_get_energy_v202_chunked.energy_chunk_v202_from_spatial",
+        fake_chunk_helper,
+    )
+    image = np.zeros((8, 8, 8), dtype=np.float64)
+    params = validate_parameters(
+        {
+            "energy_method": "hessian",
+            "energy_float_backend": "matlab_engine",
+            "comparison_exact_network": True,
+            "n_jobs": 1,
+            "max_voxels_per_node_energy": 1e9,
+        }
+    )
+    params["_stretch_engine_float_body_bound"] = True
+    params["_stretch_engine_session"] = object()
+    config = _prepare_energy_config(image, params)
+    energy, scales, _extra = compute_exact_parity_energy_chunked(image, config)
+    assert calls, "engine path must call stretch_energy_chunk_v202 once per chunk"
+    assert energy.shape == image.shape
+    assert scales.shape == image.shape
+
+
 def test_exact_chunked_refuses_unbound_engine_numpy_body() -> None:
     image = np.zeros((8, 8, 8), dtype=np.float64)
     params = validate_parameters(

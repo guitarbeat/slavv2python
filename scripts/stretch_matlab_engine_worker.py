@@ -112,6 +112,73 @@ def main():
                     _fail("energy_filter failed: %s" % exc)
                     continue
                 _ok({"out_npy": out_path})
+            elif op == "energy_chunk":
+                if engine is None:
+                    _fail("engine not started")
+                    continue
+                try:
+                    chunk = np.load(str(msg["chunk_npy"]))
+                    chunk = np.asfortranarray(np.asarray(chunk, dtype=np.float64))
+                    flat = [float(v) for v in np.ravel(chunk, order="F")]
+                    size = [int(d) for d in chunk.shape]
+                    try:
+                        ml_chunk = matlab.double(flat, size=size)
+                    except TypeError:
+                        ml_chunk = matlab.double(flat)
+                    microns = matlab.double(_as_row(msg["microns_per_pixel"]))
+                    psf = matlab.double(_as_row(msg["pixels_per_sigma_psf"]))
+                    radii = matlab.double(_as_row(msg["radii"]))
+                    energy, scale_idx = engine.stretch_energy_chunk_v202(
+                        ml_chunk,
+                        str(msg["matching_kernel_string"]),
+                        radii,
+                        float(msg["vessel_wall"]),
+                        microns,
+                        psf,
+                        float(msg["y0"]),
+                        float(msg["y1"]),
+                        float(msg["x0"]),
+                        float(msg["x1"]),
+                        float(msg["z0"]),
+                        float(msg["z1"]),
+                        float(msg["y_offset"]),
+                        float(msg["x_offset"]),
+                        float(msg["z_offset"]),
+                        float(msg["y_write_count"]),
+                        float(msg["x_write_count"]),
+                        float(msg["z_write_count"]),
+                        float(msg["rf_y"]),
+                        float(msg["rf_x"]),
+                        float(msg["rf_z"]),
+                        float(msg["gaussian_to_ideal_ratio"]),
+                        float(msg["spherical_to_annular_ratio"]),
+                        float(msg["scales_per_octave"]),
+                        nargout=2,
+                    )
+                    y_len = int(msg["y_write_count"])
+                    x_len = int(msg["x_write_count"])
+                    z_len = int(msg["z_write_count"])
+                    out_shape = (y_len, x_len, z_len)
+                    energy_data = getattr(energy, "_data", None)
+                    if energy_data is not None:
+                        energy_out = np.frombuffer(energy_data, dtype=np.float64).copy()
+                        energy_out = np.reshape(energy_out, out_shape, order="F")
+                    else:
+                        energy_out = np.asarray(energy, dtype=np.float64)
+                    scale_data = getattr(scale_idx, "_data", None)
+                    if scale_data is not None:
+                        scale_out = np.frombuffer(scale_data, dtype=np.float64).copy()
+                        scale_out = np.reshape(scale_out, out_shape, order="F")
+                    else:
+                        scale_out = np.asarray(scale_idx, dtype=np.float64)
+                    energy_path = str(msg["energy_npy"])
+                    scale_path = str(msg["scale_npy"])
+                    np.save(energy_path, np.ascontiguousarray(energy_out))
+                    np.save(scale_path, np.ascontiguousarray(scale_out))
+                except Exception as exc:
+                    _fail("energy_chunk failed: %s" % exc)
+                    continue
+                _ok({"energy_npy": energy_path, "scale_npy": scale_path})
             elif op == "quit":
                 if engine is not None:
                     try:

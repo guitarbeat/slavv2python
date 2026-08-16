@@ -2,7 +2,8 @@
 
 Repo slavv runs on Python >=3.11; R2019a ``matlab.engine`` supports <=3.7.
 This module starts one long-lived 3.7 worker (or in-process engine when the
-current interpreter is 3.7) and binds ``energy_filter_V200`` as the float body.
+current interpreter is 3.7) and binds ``energy_filter_V200`` plus the per-chunk
+``interp3`` / scale-min body (``stretch_energy_chunk_v202``).
 """
 
 from __future__ import annotations
@@ -268,6 +269,80 @@ class MatlabEnginePy37Worker:
         energy = np.load(out_path)
         return cast("np.ndarray", np.ascontiguousarray(np.asarray(energy, dtype=np.float64)))
 
+    def energy_chunk_v202_from_spatial(
+        self,
+        chunk: np.ndarray,
+        *,
+        matching_kernel_string: str,
+        radii: np.ndarray,
+        vessel_wall: float,
+        microns_per_pixel: np.ndarray,
+        pixels_per_sigma_psf: np.ndarray,
+        y0: int,
+        y1: int,
+        x0: int,
+        x1: int,
+        z0: int,
+        z1: int,
+        y_offset: int,
+        x_offset: int,
+        z_offset: int,
+        y_write_count: int,
+        x_write_count: int,
+        z_write_count: int,
+        rf_y: int,
+        rf_x: int,
+        rf_z: int,
+        gaussian_to_ideal_ratio: float,
+        spherical_to_annular_ratio: float,
+        scales_per_octave: float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        if self._tmpdir is None:
+            raise MatlabEngineInfraError("Python 3.7 MATLAB worker tempdir missing")
+        work = Path(self._tmpdir.name)
+        chunk_path = work / "chunk.npy"
+        energy_path = work / "chunk_energy.npy"
+        scale_path = work / "chunk_scale.npy"
+        np.save(chunk_path, np.asfortranarray(np.asarray(chunk, dtype=np.float64)))
+        reply = self._request(
+            {
+                "op": "energy_chunk",
+                "chunk_npy": str(chunk_path),
+                "energy_npy": str(energy_path),
+                "scale_npy": str(scale_path),
+                "matching_kernel_string": matching_kernel_string,
+                "radii": np.asarray(radii, dtype=np.float64).reshape(-1).tolist(),
+                "vessel_wall": float(vessel_wall),
+                "microns_per_pixel": np.asarray(microns_per_pixel, dtype=np.float64).tolist(),
+                "pixels_per_sigma_psf": np.asarray(pixels_per_sigma_psf, dtype=np.float64).tolist(),
+                "y0": int(y0),
+                "y1": int(y1),
+                "x0": int(x0),
+                "x1": int(x1),
+                "z0": int(z0),
+                "z1": int(z1),
+                "y_offset": int(y_offset),
+                "x_offset": int(x_offset),
+                "z_offset": int(z_offset),
+                "y_write_count": int(y_write_count),
+                "x_write_count": int(x_write_count),
+                "z_write_count": int(z_write_count),
+                "rf_y": int(rf_y),
+                "rf_x": int(rf_x),
+                "rf_z": int(rf_z),
+                "gaussian_to_ideal_ratio": float(gaussian_to_ideal_ratio),
+                "spherical_to_annular_ratio": float(spherical_to_annular_ratio),
+                "scales_per_octave": float(scales_per_octave),
+            }
+        )
+        if not reply.get("ok"):
+            raise MatlabEngineInfraError(
+                f"stretch_energy_chunk_v202 worker call failed: {reply.get('error')}"
+            )
+        energy = np.ascontiguousarray(np.asarray(np.load(energy_path), dtype=np.float64))
+        scale_idx = np.ascontiguousarray(np.asarray(np.load(scale_path), dtype=np.float64))
+        return energy, scale_idx
+
 
 def energy_filter_v200_from_spatial(
     session: MatlabEngineSession | MatlabEnginePy37Worker,
@@ -330,6 +405,98 @@ def energy_filter_v200_from_spatial(
     )
     shape = (int(y1) - int(y0) + 1, int(x1) - int(x0) + 1, int(z1) - int(z0) + 1)
     return matlab_double_to_numpy(energy, shape)
+
+
+def energy_chunk_v202_from_spatial(
+    session: MatlabEngineSession | MatlabEnginePy37Worker,
+    chunk: np.ndarray,
+    *,
+    matching_kernel_string: str = DEFAULT_MATCHING_KERNEL,
+    radii: np.ndarray,
+    vessel_wall: float = 0.0,
+    microns_per_pixel: np.ndarray,
+    pixels_per_sigma_psf: np.ndarray,
+    y0: int,
+    y1: int,
+    x0: int,
+    x1: int,
+    z0: int,
+    z1: int,
+    y_offset: int,
+    x_offset: int,
+    z_offset: int,
+    y_write_count: int,
+    x_write_count: int,
+    z_write_count: int,
+    rf_y: int,
+    rf_x: int,
+    rf_z: int,
+    gaussian_to_ideal_ratio: float,
+    spherical_to_annular_ratio: float,
+    scales_per_octave: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Call ``stretch_energy_chunk_v202`` (FFT + filter + MATLAB ``interp3`` + min)."""
+    if isinstance(session, MatlabEnginePy37Worker):
+        return session.energy_chunk_v202_from_spatial(
+            chunk,
+            matching_kernel_string=matching_kernel_string,
+            radii=radii,
+            vessel_wall=vessel_wall,
+            microns_per_pixel=microns_per_pixel,
+            pixels_per_sigma_psf=pixels_per_sigma_psf,
+            y0=y0,
+            y1=y1,
+            x0=x0,
+            x1=x1,
+            z0=z0,
+            z1=z1,
+            y_offset=y_offset,
+            x_offset=x_offset,
+            z_offset=z_offset,
+            y_write_count=y_write_count,
+            x_write_count=x_write_count,
+            z_write_count=z_write_count,
+            rf_y=rf_y,
+            rf_x=rf_x,
+            rf_z=rf_z,
+            gaussian_to_ideal_ratio=gaussian_to_ideal_ratio,
+            spherical_to_annular_ratio=spherical_to_annular_ratio,
+            scales_per_octave=scales_per_octave,
+        )
+    ml_chunk = numpy_to_matlab_double(chunk)
+    microns = numpy_to_matlab_double(np.asarray(microns_per_pixel, dtype=np.float64).reshape(-1))
+    psf = numpy_to_matlab_double(np.asarray(pixels_per_sigma_psf, dtype=np.float64).reshape(-1))
+    ml_radii = numpy_to_matlab_double(np.asarray(radii, dtype=np.float64).reshape(-1))
+    energy, scale_idx = session.call(
+        "stretch_energy_chunk_v202",
+        ml_chunk,
+        matching_kernel_string,
+        ml_radii,
+        float(vessel_wall),
+        microns,
+        psf,
+        float(y0),
+        float(y1),
+        float(x0),
+        float(x1),
+        float(z0),
+        float(z1),
+        float(y_offset),
+        float(x_offset),
+        float(z_offset),
+        float(y_write_count),
+        float(x_write_count),
+        float(z_write_count),
+        float(rf_y),
+        float(rf_x),
+        float(rf_z),
+        float(gaussian_to_ideal_ratio),
+        float(spherical_to_annular_ratio),
+        float(scales_per_octave),
+        nargout=2,
+    )
+    shape = (int(y_write_count), int(x_write_count), int(z_write_count))
+    return matlab_double_to_numpy(energy, shape), matlab_double_to_numpy(scale_idx, shape)
 
 
 @contextmanager
