@@ -36,7 +36,7 @@ from slavv_python.pipeline.edges.candidate_manifest import (
     CandidateManifest,
     candidate_as_payload,
 )
-from slavv_python.pipeline.energy.provenance import is_exact_compatible_energy_origin
+from slavv_python.pipeline.energy.provenance import is_watershed_allowed_energy_origin
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.painting import paint_vertex_image
 
@@ -53,11 +53,19 @@ def _use_watershed_discovery(energy_data: dict[str, Any], params: dict[str, Any]
     """Return True when Exact Route Watershed Discovery should run.
 
     Requires MATLAB grid alignment and exact-compatible energy provenance.
+    Stretch mode additionally allows ``matlab_engine_hessian`` without widening
+    Phase 1 ``EXACT_COMPATIBLE_ENERGY_ORIGINS``.
     """
     policy = PipelinePolicy.from_params(params)
     if policy.internal_grid_alignment != "matlab":
         return False
-    return is_exact_compatible_energy_origin(energy_data.get("energy_origin"))
+    stretch_mode = bool(params.get("stretch_zero_tolerance", False)) or (
+        str(params.get("energy_float_backend", "numpy")).strip().lower() == "matlab_engine"
+    )
+    return is_watershed_allowed_energy_origin(
+        energy_data.get("energy_origin"),
+        stretch_mode=stretch_mode,
+    )
 
 
 # Legacy name — same predicate as ``_use_watershed_discovery``.

@@ -13,6 +13,7 @@ from slavv_python.pipeline.energy.chunking import (
     _energy_result_payload,
 )
 from slavv_python.pipeline.energy.config import _prepare_energy_config
+from slavv_python.pipeline.energy.matlab_engine_host import stretch_engine_float_body_session
 from slavv_python.pipeline.energy.resumable import calculate_energy_field_resumable
 
 if TYPE_CHECKING:
@@ -97,35 +98,36 @@ class EnergyManager:
             image = image.astype(np.float64, copy=False)
         else:
             image = image.astype(np.float32, copy=False)
-        if stage_controller is not None:
-            return calculate_energy_field_resumable(
-                image,
-                params,
-                stage_controller,
-                get_chunking_lattice_func=get_chunking_lattice_func,
-            )
-
-        config = _prepare_energy_config(image, params)
-        lattice = _energy_lattice(
-            image.shape,
-            int(config["max_voxels"]),
-            int(config["margin"]),
-            get_chunking_lattice_func,
-        )
-        if len(lattice) > 1:
-            return cast(
-                "EnergyResult",
-                _calculate_energy_field_chunked(
+        with stretch_engine_float_body_session(params) as bound_params:
+            if stage_controller is not None:
+                return calculate_energy_field_resumable(
                     image,
-                    params,
-                    config,
-                    lattice,
-                    get_chunking_lattice_func,
-                    cls.run,
-                ),
+                    bound_params,
+                    stage_controller,
+                    get_chunking_lattice_func=get_chunking_lattice_func,
+                )
+
+            config = _prepare_energy_config(image, bound_params)
+            lattice = _energy_lattice(
+                image.shape,
+                int(config["max_voxels"]),
+                int(config["margin"]),
+                get_chunking_lattice_func,
             )
-        energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
-        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+            if len(lattice) > 1:
+                return cast(
+                    "EnergyResult",
+                    _calculate_energy_field_chunked(
+                        image,
+                        bound_params,
+                        config,
+                        lattice,
+                        get_chunking_lattice_func,
+                        cls.run,
+                    ),
+                )
+            energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
+            return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
 
 
 __all__ = ["EnergyManager"]

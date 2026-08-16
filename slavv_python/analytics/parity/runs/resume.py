@@ -21,7 +21,7 @@ from slavv_python.analytics.parity.oracle.surfaces import (
 )
 from slavv_python.analytics.parity.runs.bootstrap import _reorient_exact_input_volume
 from slavv_python.analytics.parity.runs.preflight import run_exact_preflight_for_surfaces
-from slavv_python.analytics.parity.utils import string_or_none
+from slavv_python.analytics.parity.utils import string_or_none, write_json_with_hash
 from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.constants import STATUS_PENDING
 from slavv_python.engine.state import RunContext, load_json_dict
@@ -119,6 +119,7 @@ def resume_exact_run(
     force: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
+    energy_float_backend: str | None = None,
 ) -> Path:
     """Resume SlavvPipeline in an init-exact-run directory after preflight checks."""
     dest_run_root = dest_run_root.expanduser().resolve()
@@ -154,6 +155,11 @@ def resume_exact_run(
         raise FileNotFoundError(f"missing validated params: {params_path}")
     if n_jobs is not None:
         params["n_jobs"] = int(n_jobs)
+    if energy_float_backend is not None:
+        params["energy_float_backend"] = str(energy_float_backend).strip().lower()
+        if params["energy_float_backend"] == "matlab_engine":
+            params["n_jobs"] = 1
+        write_json_with_hash(params_path, cast("dict[str, Any]", params))
 
     effective_stop_after = stop_after or str(provenance.get("stop_after") or "network")
 

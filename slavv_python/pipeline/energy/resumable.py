@@ -42,17 +42,24 @@ if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
 
 
+def _jsonable_config_value(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
 def _config_hash(config: dict[str, Any]) -> str:
+    """Hash durable Energy config; skip runtime handles such as the engine session."""
+    params = {
+        key: _jsonable_config_value(value)
+        for key, value in config.items()
+        if key not in {"image_shape", "image_dtype"} and not str(key).startswith("_")
+    }
     return hashlib.sha256(
         json.dumps(
-            {
-                "params": {
-                    k: v.tolist() if isinstance(v, np.ndarray) else v
-                    for k, v in config.items()
-                    if k not in {"image_shape", "image_dtype"}
-                },
-                "shape": list(config["image_shape"]),
-            },
+            {"params": params, "shape": list(config["image_shape"])},
             sort_keys=True,
         ).encode("utf-8")
     ).hexdigest()
@@ -424,7 +431,10 @@ def calculate_energy_field_resumable(
         pixels_per_sigma_PSF=config["pixels_per_sigma_PSF"],
         microns_per_sigma_PSF=config["microns_per_sigma_PSF"],
         energy_sign=config["energy_sign"],
-        energy_origin=energy_origin_for_method(str(config["energy_method"])),
+        energy_origin=energy_origin_for_method(
+            str(config["energy_method"]),
+            energy_float_backend=str(config.get("energy_float_backend", "numpy")),
+        ),
     )
     if returned_energy_4d is not None:
         result.extra["energy_4d"] = returned_energy_4d

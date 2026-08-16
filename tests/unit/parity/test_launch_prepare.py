@@ -75,12 +75,15 @@ def test_prepare_detached_exact_run_launch_runs_foreground_probe(tmp_path, monke
         skip_preflight=False,
         skip_foreground_probe=False,
         n_jobs=1,
+        energy_float_backend="matlab_engine",
     )
 
     assert probe_calls
     assert "--stop-after" in foreground
     assert foreground[foreground.index("--stop-after") + 1] == "preprocess"
+    assert "--energy-float-backend" not in foreground
     assert detached[detached.index("--stop-after") + 1] == "energy"
+    assert detached[detached.index("--energy-float-backend") + 1] == "matlab_engine"
 
 
 @pytest.mark.unit

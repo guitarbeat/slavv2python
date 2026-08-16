@@ -150,6 +150,17 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
             "energy_method must be 'hessian', 'frangi', 'sato', "
             "'simpleitk_objectness', or 'cupy_hessian'"
         )
+    validated["energy_float_backend"] = (
+        str(params.get("energy_float_backend", "numpy")).strip().lower()
+    )
+    if validated["energy_float_backend"] not in ("numpy", "matlab_engine"):
+        raise ValueError("energy_float_backend must be 'numpy' or 'matlab_engine'")
+    if (
+        validated["energy_float_backend"] == "matlab_engine"
+        and validated["energy_method"] != "hessian"
+    ):
+        raise ValueError("energy_float_backend=matlab_engine requires energy_method=hessian")
+    validated["stretch_zero_tolerance"] = bool(params.get("stretch_zero_tolerance", False))
     validated["direction_method"] = params.get("direction_method", "hessian")
     if validated["direction_method"] not in ("hessian", "uniform"):
         raise ValueError("direction_method must be 'hessian' or 'uniform'")

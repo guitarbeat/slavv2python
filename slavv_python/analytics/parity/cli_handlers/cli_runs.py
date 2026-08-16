@@ -47,6 +47,11 @@ from slavv_python.analytics.parity.proof.reports import (
     persist_recording_tables,
     render_experiment_summary,
 )
+from slavv_python.analytics.parity.proof.stretch import (
+    UNLOCK_FILENAME,
+    StretchFieldSet,
+    gate_full_stretch_entry,
+)
 from slavv_python.analytics.parity.runs.bootstrap import (
     _copy_exact_bootstrap_refs,
     _finalize_init_exact_run,
@@ -81,6 +86,37 @@ from slavv_python.storage import load_tiff_volume
 
 if TYPE_CHECKING:
     import argparse
+
+
+def _enforce_stretch_full_unlock_gate(args: argparse.Namespace) -> None:
+    """Refuse full-volume stretch launch without a matching crop unlock (AE3)."""
+    if not bool(getattr(args, "stretch_zero_tolerance", False)):
+        return
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    oracle_root = getattr(args, "oracle_root", None)
+    if oracle_root is None:
+        raise SystemExit("stretch full launch requires --oracle-root paired with crop unlock")
+    field_raw = str(getattr(args, "stretch_field_set", "energy"))
+    try:
+        field_set = StretchFieldSet(field_raw)
+    except ValueError as exc:
+        raise SystemExit("stretch_field_set must be 'energy' or 'energy+discrete'") from exc
+    unlock_arg = getattr(args, "stretch_unlock", None)
+    unlock_path = (
+        Path(unlock_arg).expanduser().resolve() if unlock_arg else dest_run_root / UNLOCK_FILENAME
+    )
+    # Prefer unlock beside dest; operators may also point at crop dest unlock.
+    crop_unlock = getattr(args, "stretch_crop_unlock", None)
+    if crop_unlock:
+        unlock_path = Path(crop_unlock).expanduser().resolve()
+    decision = gate_full_stretch_entry(
+        unlock_path=unlock_path,
+        requested_field_set=field_set,
+        dest_run_root=dest_run_root,
+        oracle_root=Path(oracle_root).expanduser().resolve(),
+    )
+    if not decision.allowed:
+        raise SystemExit(f"stretch full refused: {decision.reason}")
 
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
@@ -210,6 +246,7 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
             force=bool(args.force),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            energy_float_backend=getattr(args, "energy_float_backend", None),
         )
 
     print(str(dest_run_root))
@@ -217,6 +254,7 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
 
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
+    _enforce_stretch_full_unlock_gate(args)
     dest_run_root = Path(args.dest_run_root)
     try:
         manifest = launch_writer_session(
@@ -231,6 +269,7 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            energy_float_backend=getattr(args, "energy_float_backend", None),
             monitor=bool(getattr(args, "monitor", False)),
         )
     except LaunchPreparationError as exc:

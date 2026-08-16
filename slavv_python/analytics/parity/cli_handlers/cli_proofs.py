@@ -32,6 +32,7 @@ from slavv_python.analytics.parity.proof.energy_ulp_proof import (
     persist_energy_ulp_proof_report,
 )
 from slavv_python.analytics.parity.proof.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.proof.stretch import emit_stretch_energy_unlock_if_eligible
 from slavv_python.analytics.parity.utils import (
     payload_hash,
     write_json_with_hash,
@@ -93,6 +94,24 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
 
     if report.get("stage_summaries"):
         print(render_exact_proof_report(report))
+
+    strict_floats = bool(getattr(args, "strict_floats", False))
+    if (
+        strict_floats
+        and report.get("passed")
+        and oracle_root is not None
+        and json_path is not None
+        and stage_arg in {"energy", "all"}
+    ):
+        unlock = emit_stretch_energy_unlock_if_eligible(
+            dest_run_root=dest_run_root,
+            oracle_root=oracle_root,
+            proof_path=json_path,
+            report=report,
+            strict_floats=True,
+        )
+        if unlock is not None:
+            print(f"stretch Energy unlock: {unlock}")
 
     if not report.get("passed"):
         sys.exit(1)

@@ -46,6 +46,26 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 2. **Network ADR 0012** — met on the same claim root (see ONE TRUTH).
 3. **Strict-field stretch** — exact connections / order remain optional non-blocking follow-up on crop.
 
+### True zero-tolerance stretch (operator notes)
+
+Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH.
+
+- Compare with `slavv parity prove-exact … --strict-floats` (default allclose ≠ stretch success).
+- Crop Energy unlock first (`crop_M_exact_v3` lineage / `180709_E_crop_M_v2`); full `180709_E` only after a matching unlock field set.
+- Engine float path: isolated Python 3.7 + `matlab.engine` (R2019a). Repo `.venv` is 3.12. Set `STRETCH_PY37_PYTHON`, then:
+  ```powershell
+  slavv parity resume-exact-run `
+    --dest-run-root workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2 `
+    --oracle-root workspace\oracles\180709_E_crop_M_v2 `
+    --dataset-root workspace\datasets\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06 `
+    --force-rerun-from energy --stop-after energy --n-jobs 1 `
+    --energy-float-backend matlab_engine
+  slavv parity prove-exact --stage energy --strict-floats ...
+  ```
+- Never overwrite `canonical_full_v18`; use a new stretch dest root.
+- Status helpers: `slavv_python.analytics.parity.proof.stretch` (`gate_full_stretch_entry`, unlock + taxonomy).
+- Plan: [docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
+
 ### Primary loop KPI
 
 | KPI | Surface | Role |

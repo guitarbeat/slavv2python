@@ -52,6 +52,25 @@
 
 ---
 
+## True zero-tolerance stretch (separate from Phase 1)
+
+> **Phase 1 Certification remains CLOSED** on `canonical_full_v18` (see [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)). Stretch greens/reds **never** rewrite that answer or ADR 0011/0012 ship bars.
+
+This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-equal Energy floats + discrete strict fields under `--strict-floats`). Plan: [2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../../plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md). Helpers: `slavv_python.analytics.parity.proof.stretch`.
+
+| Concept | Rule |
+| :--- | :--- |
+| Compare gate | `prove-exact --strict-floats` only; default allclose is **not** stretch success |
+| Crop → full | Hard unlock token (`stretch_crop_unlock.json`) scoped by field set (`energy` vs `energy+discrete`) |
+| Status taxonomy | `blocked_float_path` / `incomplete_discrete` / `incomplete_infra` / `incomplete_at_full` / `stretch_complete` (Energy **and** discrete at full) |
+| Dest roots | New stretch run roots only — never overwrite `canonical_full_v18` |
+
+Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
+
+**Session status (2026-08-15):** Crop Energy on `crop_M_stretch_engine_v1` finished via Python 3.7 + R2019a `matlab.engine`. `prove-exact --stage energy --strict-floats` **FAIL**: 2,623,250 / 4,194,304 voxels bit-identical (62.5%); scale indices match; max abs delta `1e-10`; mismatch ULP p50=1. Status **`blocked_float_path`** (not allclose success; no unlock). Remaining ULP is Python `interp3` after MATLAB `energy_filter_V200`. Next dest: `crop_M_stretch_engine_v2` with MATLAB `interp3` + scale-min in `stretch_energy_chunk_v202`. Do not start U5/U6 without Energy unlock. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v1/03_Analysis/exact_proof_energy.json`.
+
+---
+
 ## Audit inventory (folders, not a second verdict)
 
 Pass/fail is only in [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk). This table says which folders exist and what they are for.
