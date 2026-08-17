@@ -85,7 +85,7 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 
 ## 16. The Final-vs-Raw Artifact Trap
 *   **The Loop**: Treating MATLAB `edges_*.mat` / oracle `edges.pkl` (finals after cleanup) as watershed emission, then rewriting join rules because a pair is “missing.”
-*   **The Reality**: Full-volume raw dumps already matched. Live residual class is only in [ONE TRUTH](EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red).
+*   **The Reality**: Full-volume raw dumps already matched. Ranking residual is closed; mechanism: [Former residual (closed on v18)](EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18). Live Phase 1 status: [ONE TRUTH](EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 *   **Guidance**: Compare through `slavv_python.analytics.parity.experiments.compare_same_class_pair_sets`. Mixed Candidate Set vs Edge Set raises. Coverage of finals by raw is `coverage_of_finals_by_raw`, not equality.
 
 ## 17. The Contaminated Closure-Root Trap

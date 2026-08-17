@@ -94,7 +94,7 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 
 ## Addendum (2026-07-12): Post-v6 residual — Network is the open ship gate
 
-> **Policy still in force.** **Live counts / claim root:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. The `v6` numbers below are a **historical milestone**, not the current residual.
+> **Policy still in force for the ADR 0012 bars.** **Live pass/fail / claim root:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only — Phase 1 is **CLOSED**. The `v6` numbers below are a **historical milestone**, not the current residual.
 
 **What `v6` first proved (historical evaluated proofs on full `180709_E`):**
 
@@ -113,7 +113,7 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 
 | Priority | Action |
 |----------|--------|
-| 1 | Full **Edge Set** multiset residual — mechanism only in [ONE TRUTH residual](../reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red); not a Network rewrite; not cleanup secondary-key hacks |
+| 1 | Full **Edge Set** multiset residual — mechanism in [Former residual (closed on v18)](../reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18); not a Network rewrite; not cleanup secondary-key hacks |
 | 2 | Crop Edge Selection + frontier/generation as **regression guards** (crop pair multiset closed on re-selection) |
 | 3 | Successor/re-selected canonical Edges→Network + **evaluated** Network ADR 0012 multiset proof when the Edge Set moves |
 

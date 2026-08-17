@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-16 (Phase 1 CLOSED unchanged; stretch operator notes: crop Energy `blocked_float_path`, do not relaunch v2)
+**Last synthesized:** 2026-08-16 (Phase 1 CLOSED; stretch `blocked_float_path`; stale open-ship-gate operator loop removed)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -48,19 +48,13 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### True zero-tolerance stretch (operator notes)
 
-Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH.
+Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Rules and live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/stretch_status.json` (`blocked_float_path`). Do **not** relaunch that dest.
 
-- Compare with `slavv parity prove-exact … --strict-floats` (default allclose ≠ stretch success).
-- Crop Energy dest `crop_M_stretch_engine_v2` already finished; `--strict-floats` **FAIL**. Status **`blocked_float_path`**. **Do not relaunch** `resume-exact-run` / `--force-rerun-from energy` on that dest.
-- Inspect the existing proof only:
-  ```powershell
-  slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
-  ```
-- Live status: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/stretch_status.json`. Stretch session paragraph in findings (not ONE TRUTH).
-- U5/U6 stay gated until an Energy unlock token exists. Never overwrite `canonical_full_v18` or `crop_M_exact_v3`.
-- Parked next isolation (not a writer): one production-sized crop chunk vs MATLAB’s matching chunk. Do not treat whole-crop `get_energy_V202` as a cheap probe.
-- Status helpers: `slavv_python.analytics.parity.proof.stretch` (`gate_full_stretch_entry`, unlock + taxonomy).
-- Plans: [true zero-tolerance stretch](../docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md), [E11–E20 experiments](../docs/plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md). Runbook: [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md).
+```powershell
+slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
+```
+
+U5/U6 stay gated without a stretch unlock token. Never overwrite `canonical_full_v18` or `crop_M_exact_v3`. One production chunk (ZYX `(13, 0, 0)`, scale 43, octave 2, chunk 0) named helper/oracle (re-run == v2, both ≠ oracle; packaging OK). Lattice/params: rf-matched lattices identical (821=821); octave-index 75 vs 726 is `unique()` labeling; residual is helper body vs original MATLAB chunk math. Not unlock. Scratch: `workspace/scratch/stretch_one_production_chunk.json`, `workspace/scratch/stretch_lattice_params_isolation.json`.
 
 ### Primary loop KPI
 
@@ -73,77 +67,31 @@ Live numbers: ONE TRUTH only.
 
 ## Operating sequence
 
-### A. Full residual (primary)
+### A. Stretch Energy isolation (current)
 
-1. Work the full residual at the hub named in ONE TRUTH. Raw pair sets already match; the discriminator is claimed `energy_map` `sort_edges` vs original-field traces. Keep crop re-selection as a regression guard. Do not re-open join-emission, tie-scan, shared vertex-origin restore, or broad endpoint-descending cleanup reorder.
-2. After each fix, reinstall and check no parity writer is active:
-   ```powershell
-   .\.venv\Scripts\pip.exe install -e .
-   .\.venv\Scripts\slavv.exe jobs list
-   .\.venv\Scripts\slavv.exe parity ensure-oracle-artifacts `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-     --stage all `
-     --no-repair
-   ```
-3. Prefer no-writer probes first (fast loop):
-   ```powershell
-   .\.venv\Scripts\python.exe scripts/watershed_frontier_diff.py `
-     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-     --regenerate-python
+Phase 1 ranking residual is **closed** (Claimed Trace Energy / ADR 0013 on the claim root in ONE TRUTH). Do not re-open join-emission, tie-scan, or Network rewrite as the ship loop.
 
-   .\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py `
-     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2
-
-   .\.venv\Scripts\slavv.exe parity inspect-proof `
-     --path workspace/runs/oracle_180709_E/canonical_full_v16/03_Analysis/exact_proof_network.json `
-     --require-evaluated
-   ```
-   Interpretation: crop frontier **match** and generation **closed** are regression guards. Full residual lives on the claim root Candidate Set / join emission.
-4. Full-surface funnel / cleanup comparators when diagnosing degree-excess displacement:
-   ```powershell
-   .\.venv\Scripts\python.exe scripts/edge_selection_funnel_probe.py `
-     --run-dir workspace/runs/oracle_180709_E/canonical_full_v16 `
-     --oracle-root workspace/oracles/180709_E_full_v2
-
-   .\.venv\Scripts\python.exe scripts/compare_clean_edge_pairs_matlab.py `
-     --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2
-   ```
-5. Crop Edges refresh only when crop guards regress:
-   ```powershell
-   .\.venv\Scripts\slavv.exe parity resume-exact-run `
-     --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
-     --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-     --force-rerun-from edges `
-     --stop-after edges `
-     --skip-preflight
-   ```
-
-### B. Successor full claim run (when residual production fix lands)
-
-1. Prefer a **new successor** run root preflighted from the latest claim/audit Energy/Vertices lineage — do **not** destroy `v6`…`v16` audit records.
-2. Rerun **edges → network only** with `--include-debug-maps` / `parity_include_debug_maps=true`.
-3. Example shape (replace run dir with the new root; use current claim lineage as seed):
-
-On Windows do **not** use `slavv parity launch-exact-run` (child dies on its own lease). Do **not** block on `slavv jobs list` (it hangs). Check `writer_lease.json` + process liveness. Full command and seed rules: [detached-exact-run-jobs.md](../docs/solutions/parity/detached-exact-run-jobs.md) addendum.
+Current operator loop is [true zero-tolerance stretch](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1): crop Energy `--strict-floats` is `blocked_float_path`. Inspect the existing v2 proof; do not relaunch v2.
 
 ```powershell
-# After writer completes:
-slavv parity prove-exact --stage edges `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
-  --oracle-root workspace/oracles/180709_E_full_v2
-
-slavv parity prove-exact --stage network `
-  --source-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
-  --dest-run-root workspace/runs/oracle_180709_E/canonical_full_v18 `
-  --oracle-root workspace/oracles/180709_E_full_v2
+.\.venv\Scripts\pip.exe install -e .
+slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
 ```
 
-4. Phase 1 closes when **both** evaluated proofs pass. Update ONE TRUTH + TODO + this handoff + figure series same session. Record evidence per [PARITY_RUN_EVIDENCE](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md).
-5. If Edges still pass and Network still fails: continue Edge Set residual loop — do not treat Network as a separate porting project.
+Crop regression guards (read-only; do not overwrite `crop_M_exact_v3`):
+
+```powershell
+.\.venv\Scripts\python.exe scripts/watershed_frontier_diff.py `
+  --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
+  --oracle-root workspace/oracles/180709_E_crop_M_v2 `
+  --regenerate-python
+```
+
+Closed ranking history: [Former residual (closed on v18)](../docs/reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18). Funnel / cleanup comparators remain available as regression probes, not as a Phase 1 reopen.
+
+### B. Successor full claim run (closed)
+
+Phase 1 already closed on `canonical_full_v18`. Do **not** destroy `v6`…`v16` audit records. Cite evaluated proofs (section C). If a later parity-sensitive fix needs a new claim root, preflight from the certified Energy/Vertices lineage and rerun **edges → network only** — never overwrite `canonical_full_v18`.
 
 ### C. After Phase 1 closes (current)
 

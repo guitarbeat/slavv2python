@@ -38,11 +38,10 @@ faithfulness and memory safety:
 
 ---
 
-## Phase 1 — Exact-route certification (current)
+## Phase 1 — Exact-route certification (closed)
 
-**Goal:** evaluated per-stage `prove-exact` on full `180709_E` under ADR 0011
-(Energy, Vertices) and ADR 0012 (Edges, Network). Crop harness is the fast
-iteration surface; the canonical volume is the claim surface.
+**Goal (met):** evaluated per-stage `prove-exact` on full `180709_E` under ADR 0011
+(Energy, Vertices) and ADR 0012 (Edges, Network). Live pass/fail is [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. Crop harness remains the regression guard.
 
 ### Achieved (definition; live claim surface in findings)
 
@@ -50,18 +49,16 @@ iteration surface; the canonical volume is the claim surface.
 |-------|-----------------|-------|
 | Energy | ✅ CERTIFIED | ADR 0011 |
 | Vertices | ✅ CERTIFIED | ADR 0011 |
-| Edges | ✅ ADR 0012 PASS evaluated | Exact connection count + ownership on current claim root — **numbers in findings** |
-| Network | ❌ OPEN | Multiset equality still red — **downstream of residual Edge Set**, not a Network rewrite |
+| Edges | ✅ ADR 0012 PASS evaluated | Ownership-map bar on the claim root — **numbers in findings** |
+| Network | ✅ ADR 0012 PASS evaluated | Multiset equality on the same claim root — **numbers in findings** |
 
-Also cleared historically: crop generation / 80% gate, post-watershed finalization parity, crop final pair multiset on re-selection (regression guard). **Do not copy live pair/strand counts here.**
+Also cleared historically: crop generation / 80% gate, post-watershed finalization parity, crop final pair multiset on re-selection (regression guard), Edge Selection Ranking Residual (Claimed Trace Energy / ADR 0013). **Do not copy live pair/strand counts here.**
 
-### Path to done
+### After Phase 1
 
-1. **Full Edge Set residual** — production fix for the displacing watershed join (localized; see findings banner + ablation). Crop Edge Selection stays green as guard.
-2. Re-select or successor canonical Edges→Network; evaluated `prove-exact --stage edges` + `--stage network`.
-3. **Phase 1 closed** when Network multiset is green on the claim root.
+Freeze the cert baseline before broad Phase 2 unwind. True zero-tolerance stretch (`--strict-floats`, including Energy floats) is a **separate** program; live stretch status is dest `stretch_status.json`, not ONE TRUTH. Strict-field `connections` / order remains optional and gated on Energy unlock.
 
-Do **not** use `prove-exact-sequence` strict-field failure as the ship gate.
+Do **not** use `prove-exact-sequence` strict-field failure as a Phase 1 reopen.
 Details: [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md), [TODO.md](TODO.md),
 [HANDOFF](../.claude/HANDOFF.md), [Phase 1 spec](plans/phase-1-exact-route-spec.md).
 
@@ -83,13 +80,13 @@ Phase 1 Network is green, optimize *without* silent parity regression:
 
 > **Research input:** [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
 
-**Do not start broad Phase 2 unwinding while Phase 1 Network is red.**
+**Do not start broad Phase 2 unwinding until a frozen cert baseline exists.** Phase 1 Network is green on the claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 
 ---
 
 ## Phase 3 — Breadth & productization (later)
 
-- **More volumes:** `neurovasc-db` import and verify once Phase 1 closes.
+- **More volumes:** `neurovasc-db` import and verify now that Phase 1 is closed.
 - **Innovation path:** improvements beyond strict parity on the maintained
   Python route.
 - **Productization:** packaging and broader CLI / Streamlit UX polish.
@@ -97,4 +94,4 @@ Phase 1 Network is green, optimize *without* silent parity regression:
 ---
 
 *Status lives in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md);
-this roadmap is intentionally narrative. Last realigned: 2026-07-12.*
+this roadmap is intentionally narrative. Last realigned: 2026-08-16.*

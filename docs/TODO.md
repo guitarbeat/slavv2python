@@ -14,7 +14,7 @@
 
 ---
 
-## Do now — Phase 1 ship
+## Closed — Phase 1 ship
 
 **Phase 1 CLOSED** on claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (`canonical_full_v18`).  
 Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed-energy-trace-provenance.md)). Crop remains a regression guard. Operator brief: [HANDOFF](../.claude/HANDOFF.md).
@@ -38,7 +38,7 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 ### Strategy (short)
 
 1. Ship gate = **Network multiset** on full volume, not ownership % and not `prove-exact-sequence`.
-2. Edge Set multiset drives Network; residual class = **claimed-map `sort_edges` vs original-field traces** (see ONE TRUTH).
+2. Edge Set multiset drives Network; former residual class was **claimed-map `sort_edges` vs original-field traces** (closed; see ONE TRUTH).
 3. Prefer funnel / cleanup comparator / `select_and_finalize_edge_set` over selection forks.
 4. Anti-patterns: [UNPRODUCTIVE_LOOPS.md](reference/core/UNPRODUCTIVE_LOOPS.md).
 
@@ -50,7 +50,7 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 - [ ] **Phase 1 → Phase 2 handoff** — only after Network ADR 0012 green; no early Fortran-unwind.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
-- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path` (findings stretch subsection). Optional follow-up: one production-sized chunk isolation. U5/U6 gated. Do not relaunch v2.
+- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path` (findings stretch subsection). One production chunk named helper/oracle (packaging OK). Lattice/params: rf-matched lattices identical (821=821); residual is helper body vs original MATLAB chunk math. Not unlock. U5/U6 gated. Do not relaunch v2.
 - [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after Energy unlock.
 
 ---
@@ -66,7 +66,7 @@ All of the following are **done**. Do not re-open as status; evidence lives in [
 | Crop generation / frontier | Closed (match, gap 0); 80% gate retired |
 | Crop Edge Selection re-selection | Pair multiset closed (regression guard) |
 | Post-watershed finalization / cleanup | MATLAB-style path; cleanup comparator green |
-| Full residual localization | Extra join displaces oracle pair; ablation documented in ONE TRUTH — **fix still open** (ship task 1) |
+| Full residual localization | Extra join displaces oracle pair; Claimed Trace Energy bake landed (#110); closed on `canonical_full_v18` |
 | Infra | Policy, lattice F-order, SortedFrontier, fail-loud maps, energy `n_jobs`, float64, job lifecycle |
 
 **Historical narrative** (superseded messaging): v10/76% match, >95% edge match rate, 57.89% crop overlap, 80% gate, edge 88.7% pair overlap — all non-current.

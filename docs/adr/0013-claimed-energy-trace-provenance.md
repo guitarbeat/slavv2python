@@ -5,7 +5,7 @@ Accepted (2026-08-14)
 
 ## Context
 
-MATLAB ranks watershed candidates during Edge Selection by sampling the **claimed/penalized** watershed energy volume (claim writes, then `sort_edges` on raw `max`, ascending). Python’s Candidate traces historically carried samples from the **original** Energy-stage field. That provenance mismatch is the active Certification residual class ([Edge Selection Ranking Residual](../reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red)): Selection keeps or drops the wrong undirected pairs even when discovery emission and Network isolation are otherwise sound.
+MATLAB ranks watershed candidates during Edge Selection by sampling the **claimed/penalized** watershed energy volume (claim writes, then `sort_edges` on raw `max`, ascending). Python’s Candidate traces historically carried samples from the **original** Energy-stage field. That provenance mismatch **was** the Certification residual class ([Edge Selection Ranking Residual](../reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18)); it is closed on the claim root in [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 
 Three production placements were considered for correcting provenance:
 

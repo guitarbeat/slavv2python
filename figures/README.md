@@ -24,7 +24,7 @@ They still scale cleanly inside `fullwidthfigure` when needed.
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
 | [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a closed pair multiset | Missing vs extra; generation extras → cleanup displacement → re-selection closes crop (guard) |
 | [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched - Network still -1 strand | Signed residual across `v4→v16`; Network tracks Edges; at v16 Edges PASS while Network multiset FAIL |
-| [`parity_cert_table`](parity_cert_table.pdf) | On 180M voxels Network still fails ADR 0012 by one strand | Absolute mismatch budget; Network multiset FAIL is the open ship gate |
+| [`parity_cert_table`](parity_cert_table.pdf) | Historical `v16`: Network failed ADR 0012 by one strand | Absolute mismatch budget; **live** Phase 1 is CLOSED in [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 
 | Script | Role |
 |--------|------|
@@ -63,14 +63,14 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 > finalization fix, then matched at `v15`/`v16`. Network strand residual
 > tracks the edge-set residual throughout — evidence against an independent
 > Network-stage defect. At `v16`, Edges PASS while Network still fails multiset
-> equality by one strand (open ship gate).
+> equality by one strand (historical open ship gate on `v16`). **Live:** [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) CLOSED on `canonical_full_v18`.
 
 **Mismatch budget**
 
 > Absolute residual on the full-volume claim surface (see findings for the live
 > run root). Energy and vertices are closed; Edges ownership/count pass ADR 0012.
-> The open ship gate is Network strand **multiset** FAIL, downstream of the
-> Edge Set residual in [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red)
+> The historical open ship gate on `v16` was Network strand **multiset** FAIL, downstream of the
+> Edge Set residual in [Former residual (closed on v18)](../docs/reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18)
 > (crop pair multiset closed on re-selection). Approximate strand % is not the
 > ADR 0012 bar. Live pair/strand numbers: EXACT_PROOF_FINDINGS only.
 
