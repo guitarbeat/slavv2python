@@ -163,6 +163,29 @@ def refuse_matlab_only_energy_checkpoint_as_stretch_success() -> None:
     )
 
 
+# E14 / stretch writers must never overwrite these dest names (plan R10 / R14).
+PROTECTED_STRETCH_DEST_NAMES = frozenset(
+    {
+        "canonical_full_v18",
+        "crop_M_exact_v3",
+        "crop_M_stretch_engine_v2",
+    }
+)
+
+
+def refuse_protected_stretch_energy_dest(dest_run_root: Path) -> None:
+    """Refuse E14/scratch Energy dests that would overwrite protected run roots."""
+    dest = Path(dest_run_root)
+    hit = next(
+        (part for part in dest.parts if part in PROTECTED_STRETCH_DEST_NAMES),
+        None,
+    )
+    if hit is not None:
+        raise MatlabEnginePolicyError(
+            f"refusing stretch Energy dest that overwrites protected root {hit}"
+        )
+
+
 def ensure_matlab_engine_float_backend_ready(config: dict[str, Any]) -> None:
     """Refuse NumPy float-body execution under ``energy_float_backend=matlab_engine``.
 

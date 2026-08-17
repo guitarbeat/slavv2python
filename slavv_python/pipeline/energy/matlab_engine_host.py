@@ -193,7 +193,6 @@ class MatlabEnginePy37Worker:
         try:
             proc.stdin.write(json.dumps(payload) + "\n")
             proc.stdin.flush()
-            line = proc.stdout.readline()
         except OSError as exc:
             err = ""
             if proc.stderr is not None:
@@ -201,20 +200,38 @@ class MatlabEnginePy37Worker:
             raise MatlabEngineInfraError(
                 f"Python 3.7 MATLAB worker I/O failed: {exc}; stderr={err!r}"
             ) from exc
-        if not line:
-            err = ""
-            if proc.stderr is not None:
-                err = proc.stderr.read()
-            raise MatlabEngineInfraError(f"Python 3.7 MATLAB worker exited; stderr={err!r}")
-        try:
-            reply = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise MatlabEngineInfraError(
-                f"Python 3.7 MATLAB worker returned non-JSON: {line!r}"
-            ) from exc
-        if not isinstance(reply, dict):
-            raise MatlabEngineInfraError("Python 3.7 MATLAB worker reply must be an object")
-        return reply
+        # MATLAB parpool / fprintf may land on the worker stdout. Skip until JSON.
+        skipped: list[str] = []
+        while True:
+            try:
+                line = proc.stdout.readline()
+            except OSError as exc:
+                err = ""
+                if proc.stderr is not None:
+                    err = proc.stderr.read()
+                raise MatlabEngineInfraError(
+                    f"Python 3.7 MATLAB worker I/O failed: {exc}; stderr={err!r}"
+                ) from exc
+            if not line:
+                err = ""
+                if proc.stderr is not None:
+                    err = proc.stderr.read()
+                noise = " | ".join(skipped[-5:])
+                raise MatlabEngineInfraError(
+                    f"Python 3.7 MATLAB worker exited; stderr={err!r}; stdout_noise={noise!r}"
+                )
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                reply = json.loads(stripped)
+            except json.JSONDecodeError:
+                skipped.append(stripped[:200])
+                logger.info("stretch worker stdout (non-JSON): %s", stripped[:200])
+                continue
+            if not isinstance(reply, dict):
+                raise MatlabEngineInfraError("Python 3.7 MATLAB worker reply must be an object")
+            return reply
 
     def energy_filter_v200_from_spatial(
         self,
@@ -342,6 +359,133 @@ class MatlabEnginePy37Worker:
         energy = np.ascontiguousarray(np.asarray(np.load(energy_path), dtype=np.float64))
         scale_idx = np.ascontiguousarray(np.asarray(np.load(scale_path), dtype=np.float64))
         return energy, scale_idx
+
+    def roundtrip_float64(self, array: np.ndarray) -> np.ndarray:
+        """Identity through production worker ``matlab.double`` marshalling (E12)."""
+        if self._tmpdir is None:
+            raise MatlabEngineInfraError("Python 3.7 MATLAB worker tempdir missing")
+        work = Path(self._tmpdir.name)
+        in_path = work / "roundtrip_in.npy"
+        out_path = work / "roundtrip_out.npy"
+        np.save(in_path, np.asfortranarray(np.asarray(array, dtype=np.float64)))
+        reply = self._request(
+            {
+                "op": "roundtrip",
+                "in_npy": str(in_path),
+                "out_npy": str(out_path),
+            }
+        )
+        if not reply.get("ok"):
+            raise MatlabEngineInfraError(f"roundtrip worker call failed: {reply.get('error')}")
+        restored = np.load(out_path)
+        return cast("np.ndarray", np.ascontiguousarray(np.asarray(restored, dtype=np.float64)))
+
+    def linspace_1based(self, offset: int, rf: int, count: int) -> np.ndarray:
+        """MATLAB ``linspace`` mesh from stretch_energy_chunk_v202 / get_energy_V202."""
+        if self._tmpdir is None:
+            raise MatlabEngineInfraError("Python 3.7 MATLAB worker tempdir missing")
+        work = Path(self._tmpdir.name)
+        out_path = work / "linspace_mesh.npy"
+        reply = self._request(
+            {
+                "op": "linspace_mesh",
+                "offset": int(offset),
+                "rf": int(rf),
+                "count": int(count),
+                "out_npy": str(out_path),
+            }
+        )
+        if not reply.get("ok"):
+            raise MatlabEngineInfraError(f"linspace_mesh worker call failed: {reply.get('error')}")
+        mesh = np.load(out_path)
+        return cast(
+            "np.ndarray", np.ascontiguousarray(np.asarray(mesh, dtype=np.float64).reshape(-1))
+        )
+
+    def interp3_probe(
+        self,
+        volume: np.ndarray,
+        mesh_x: np.ndarray,
+        mesh_y: np.ndarray,
+        mesh_z: np.ndarray,
+    ) -> np.ndarray:
+        """MATLAB ``interp3(volume, mesh_X, mesh_Y, mesh_Z)`` via worker marshalling."""
+        if self._tmpdir is None:
+            raise MatlabEngineInfraError("Python 3.7 MATLAB worker tempdir missing")
+        work = Path(self._tmpdir.name)
+        volume_path = work / "interp3_volume.npy"
+        mesh_x_path = work / "interp3_mesh_x.npy"
+        mesh_y_path = work / "interp3_mesh_y.npy"
+        mesh_z_path = work / "interp3_mesh_z.npy"
+        out_path = work / "interp3_out.npy"
+        np.save(volume_path, np.asfortranarray(np.asarray(volume, dtype=np.float64)))
+        np.save(mesh_x_path, np.asfortranarray(np.asarray(mesh_x, dtype=np.float64)))
+        np.save(mesh_y_path, np.asfortranarray(np.asarray(mesh_y, dtype=np.float64)))
+        np.save(mesh_z_path, np.asfortranarray(np.asarray(mesh_z, dtype=np.float64)))
+        reply = self._request(
+            {
+                "op": "interp3",
+                "volume_npy": str(volume_path),
+                "mesh_x_npy": str(mesh_x_path),
+                "mesh_y_npy": str(mesh_y_path),
+                "mesh_z_npy": str(mesh_z_path),
+                "out_npy": str(out_path),
+            }
+        )
+        if not reply.get("ok"):
+            raise MatlabEngineInfraError(f"interp3 worker call failed: {reply.get('error')}")
+        sampled = np.load(out_path)
+        return cast("np.ndarray", np.ascontiguousarray(np.asarray(sampled, dtype=np.float64)))
+
+    def get_energy_v202(
+        self,
+        *,
+        matching_kernel_string: str,
+        lumen_radius_in_microns_range: np.ndarray,
+        vessel_wall: float,
+        microns_per_voxel: np.ndarray,
+        pixels_per_sigma_psf: np.ndarray,
+        max_voxels_per_node: float,
+        data_directory: Path,
+        original_handle: str,
+        energy_handle: str,
+        gaussian_to_ideal_ratio: float,
+        spherical_to_annular_ratio: float,
+    ) -> float:
+        """Call MATLAB ``get_energy_V202`` on HDF5 files already on disk (E14)."""
+        data_dir = Path(data_directory)
+        directory = str(data_dir)
+        if not directory.endswith(("\\", "/")):
+            directory = directory + os.sep
+        reply = self._request(
+            {
+                "op": "get_energy_v202",
+                "matching_kernel_string": str(matching_kernel_string),
+                "lumen_radius_in_microns_range": np.asarray(
+                    lumen_radius_in_microns_range, dtype=np.float64
+                )
+                .reshape(-1)
+                .tolist(),
+                "vessel_wall": float(vessel_wall),
+                "microns_per_voxel": np.asarray(microns_per_voxel, dtype=np.float64)
+                .reshape(-1)
+                .tolist(),
+                "pixels_per_sigma_psf": np.asarray(pixels_per_sigma_psf, dtype=np.float64)
+                .reshape(-1)
+                .tolist(),
+                "max_voxels_per_node": float(max_voxels_per_node),
+                "data_directory": directory,
+                "original_handle": str(original_handle),
+                "energy_handle": str(energy_handle),
+                "gaussian_to_ideal_ratio": float(gaussian_to_ideal_ratio),
+                "spherical_to_annular_ratio": float(spherical_to_annular_ratio),
+            }
+        )
+        if not reply.get("ok"):
+            raise MatlabEngineInfraError(
+                f"get_energy_V202 worker call failed: {reply.get('error')}"
+            )
+        return float(reply.get("elapsed_sec", 0.0))
 
 
 def energy_filter_v200_from_spatial(

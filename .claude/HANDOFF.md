@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-14 (Phase 1 CLOSED on `canonical_full_v18`; ADR 0013 ranking fix verified)
+**Last synthesized:** 2026-08-16 (Phase 1 CLOSED unchanged; stretch operator notes: crop Energy `blocked_float_path`, do not relaunch v2)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -51,20 +51,16 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH.
 
 - Compare with `slavv parity prove-exact … --strict-floats` (default allclose ≠ stretch success).
-- Crop Energy unlock first (`crop_M_exact_v3` lineage / `180709_E_crop_M_v2`); full `180709_E` only after a matching unlock field set.
-- Engine float path: isolated Python 3.7 + `matlab.engine` (R2019a). Repo `.venv` is 3.12. Set `STRETCH_PY37_PYTHON`, then:
+- Crop Energy dest `crop_M_stretch_engine_v2` already finished; `--strict-floats` **FAIL**. Status **`blocked_float_path`**. **Do not relaunch** `resume-exact-run` / `--force-rerun-from energy` on that dest.
+- Inspect the existing proof only:
   ```powershell
-  slavv parity resume-exact-run `
-    --dest-run-root workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2 `
-    --oracle-root workspace\oracles\180709_E_crop_M_v2 `
-    --dataset-root workspace\datasets\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06 `
-    --force-rerun-from energy --stop-after energy --n-jobs 1 `
-    --energy-float-backend matlab_engine
-  slavv parity prove-exact --stage energy --strict-floats ...
+  slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
   ```
-- Never overwrite `canonical_full_v18`; use a new stretch dest root.
+- Live status: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/stretch_status.json`. Stretch session paragraph in findings (not ONE TRUTH).
+- U5/U6 stay gated until an Energy unlock token exists. Never overwrite `canonical_full_v18` or `crop_M_exact_v3`.
+- Parked next isolation (not a writer): one production-sized crop chunk vs MATLAB’s matching chunk. Do not treat whole-crop `get_energy_V202` as a cheap probe.
 - Status helpers: `slavv_python.analytics.parity.proof.stretch` (`gate_full_stretch_entry`, unlock + taxonomy).
-- Plan: [docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
+- Plans: [true zero-tolerance stretch](../docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md), [E11–E20 experiments](../docs/plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md). Runbook: [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md).
 
 ### Primary loop KPI
 

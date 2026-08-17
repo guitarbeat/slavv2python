@@ -50,7 +50,8 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 - [ ] **Phase 1 → Phase 2 handoff** — only after Network ADR 0012 green; no early Fortran-unwind.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
-- [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after ship gate.
+- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path` (findings stretch subsection). Optional follow-up: one production-sized chunk isolation. U5/U6 gated. Do not relaunch v2.
+- [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after Energy unlock.
 
 ---
 

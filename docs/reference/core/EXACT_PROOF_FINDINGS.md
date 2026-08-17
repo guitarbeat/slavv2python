@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
-**Last Updated:** 2026-08-14  
+**Last Updated:** 2026-08-16  
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
 
@@ -67,7 +67,7 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-15):** Crop Energy on `crop_M_stretch_engine_v1` finished via Python 3.7 + R2019a `matlab.engine`. `prove-exact --stage energy --strict-floats` **FAIL**: 2,623,250 / 4,194,304 voxels bit-identical (62.5%); scale indices match; max abs delta `1e-10`; mismatch ULP p50=1. Status **`blocked_float_path`** (not allclose success; no unlock). Remaining ULP is Python `interp3` after MATLAB `energy_filter_V200`. Next dest: `crop_M_stretch_engine_v2` with MATLAB `interp3` + scale-min in `stretch_energy_chunk_v202`. Do not start U5/U6 without Energy unlock. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v1/03_Analysis/exact_proof_energy.json`.
+**Session status (2026-08-16):** Crop Energy `--strict-floats` remains **`blocked_float_path`**. Dest `crop_M_stretch_engine_v2` (MATLAB `stretch_energy_chunk_v202`: FFT + `energy_filter_V200` + `interp3` + scale-min) **FAIL**: 3,786,847 / 4,194,304 voxels bit-identical (90.3%); 407,457 mismatches; 0 scale mismatches; max abs delta `1e-10`; ULP p50=3, p90=9. Contrast v1 (filter-only, Python `interp3`): 62.5% bit-identical. E12 marshalling **PASS**. E13 named sources (linspace / Inf interp3 / tiny chunk-vs-full) bit-matched — isolation hypothesis **FAIL**. E14 whole-crop MATLAB `get_energy_V202` **deferred** (`incomplete_infra`: octave-chunked, aborted). E17–E19 unit guards **PASS**. E15/E16/E20 gated on Energy unlock. Do not relaunch v2. Do not start U5/U6. Allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/03_Analysis/exact_proof_energy.json`. Parked next isolation: one production-sized crop chunk vs MATLAB’s matching chunk. Runbook: [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md). Portfolio: [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](../../plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md).
 
 ---
 
@@ -129,5 +129,6 @@ Curated index of solved problems under `docs/solutions/`. Search via YAML frontm
 | Claimed energy trace provenance (ADR 0013) | [0013-claimed-energy-trace-provenance.md](../../adr/0013-claimed-energy-trace-provenance.md) |
 | Parity experiment hygiene | [parity-experiment-hygiene.md](../../solutions/best-practices/parity-experiment-hygiene.md) |
 | Curated vertices rank-ramp energies | [curated-vertices-rank-ramp-energies.md](../../solutions/integration-issues/curated-vertices-rank-ramp-energies.md) |
+| Crop Energy stretch float isolation (E11–E20; `blocked_float_path`) | [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._
