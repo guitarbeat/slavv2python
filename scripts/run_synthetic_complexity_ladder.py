@@ -6,6 +6,8 @@ Results are informative only — NOT Certification / NOT Phase 1.
 Usage (repo root):
   .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py
   .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --rung y_junction_32
+  .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --localize
+  .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --localize --rung double_junction_32
   .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --skip-matlab --reuse-python
 """
 
@@ -29,7 +31,10 @@ import scipy.io as sio
 import tifffile
 
 from slavv_python.analytics.parity.probes.synthetic_dual_run_compare import (
+    LOCALIZATION_NON_CERTIFICATION_NOTE,
+    count_matlab_strands2vertices,
     first_break_surface,
+    localize_stage_compare,
     strict_compare_summary,
 )
 from slavv_python.analytics.parity.probes.synthetic_ladder_report import (
@@ -51,6 +56,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXP_DIR = REPO_ROOT / "workspace" / "experiments" / "synthetic_complexity_ladder"
 MATLAB_DRIVER = Path(__file__).resolve().parent / "vectorize_ladder_rung.m"
 REPORT_PATH = EXP_DIR / "ladder_report.json"
+# Historical published stop before the strand-count loader fix (measurement bug).
+HISTORICAL_STRAND_BREAK_RUNG = "double_junction_32"
 
 SEED = 20260814
 BG_UINT16 = 40
@@ -210,6 +217,7 @@ def _load_python_artifacts(run_dir: Path) -> dict[str, Any]:
         "ok": True,
         "positions": positions,
         "connections": connections,
+        "strands": strands,
         "n_vertices": int(positions.reshape(-1, 3).shape[0]),
         "n_edges": int(connections.reshape(-1, 2).shape[0]),
         "n_strands": len(strands) if strands is not None else None,
@@ -252,6 +260,7 @@ def run_python_for_rung(rung_id: str, *, reuse: bool = False) -> dict[str, Any]:
             "ok": True,
             "positions": positions,
             "connections": connections,
+            "strands": strands,
             "n_vertices": int(positions.reshape(-1, 3).shape[0]),
             "n_edges": int(connections.reshape(-1, 2).shape[0]),
             "n_strands": len(strands) if strands is not None else None,
@@ -298,19 +307,19 @@ def load_matlab_artifacts(batch_dir: Path) -> dict[str, Any]:
     if network_mat is not None:
         n = sio.loadmat(str(network_mat), squeeze_me=True, struct_as_record=False)
         strands = n.get("strands2vertices")
-        if strands is None:
-            out["n_strands"] = None
-        elif isinstance(strands, np.ndarray) and strands.dtype == object:
-            out["n_strands"] = int(strands.size)
-        elif isinstance(strands, (list, tuple)):
-            out["n_strands"] = len(strands)
-        else:
-            out["n_strands"] = 1
+        out["strands2vertices"] = strands
+        out["n_strands"] = count_matlab_strands2vertices(strands)
     return out
 
 
 def _safe_side(d: dict[str, Any]) -> dict[str, Any]:
-    skip = {"positions", "connections", "candidate_connections"}
+    skip = {
+        "positions",
+        "connections",
+        "candidate_connections",
+        "strands",
+        "strands2vertices",
+    }
     return {k: v for k, v in d.items() if k not in skip}
 
 
@@ -445,6 +454,90 @@ def run_ladder(
     )
 
 
+def run_localize(
+    rung_id: str,
+    *,
+    skip_matlab: bool,
+    reuse_python: bool,
+) -> dict[str, Any]:
+    """Live dual-run one rung and emit a stage-localization report.
+
+    Primary localization claims require live MATLAB (skip_matlab=False). Reuse /
+    skip-matlab is allowed only for iterate-on-compare, not as the claim of record.
+    """
+    EXP_DIR.mkdir(parents=True, exist_ok=True)
+    if MATLAB_DRIVER.is_file():
+        shutil.copy2(MATLAB_DRIVER, EXP_DIR / MATLAB_DRIVER.name)
+
+    result = run_one_rung(rung_id, skip_matlab=skip_matlab, reuse_python=reuse_python)
+    matlab_art = {}
+    python_art = {}
+    # Re-load full artifact dicts (including strand payloads) for localization.
+    matlab_run = result.get("matlab_run") or {}
+    if matlab_run.get("ok") and matlab_run.get("batch_dir"):
+        matlab_art = load_matlab_artifacts(Path(matlab_run["batch_dir"]))
+    python_run_meta = result.get("python_run") or {}
+    run_dir = python_run_meta.get("run_dir")
+    if run_dir:
+        try:
+            python_art = _load_python_artifacts(Path(run_dir))
+        except Exception as exc:
+            python_art = {"ok": False, "error": repr(exc)}
+    # Prefer in-memory arts from the rung result when loaders already attached strands.
+    # run_one_rung strips arrays via _safe_side; reload from disk above.
+
+    claim_of_record = not skip_matlab
+    if not matlab_run.get("available", True) and not skip_matlab:
+        localization = {
+            "comparable": False,
+            "outcome": "inconclusive",
+            "reason": matlab_run.get("error", "MATLAB unavailable"),
+            "first_diff_stage": None,
+            "note": LOCALIZATION_NON_CERTIFICATION_NOTE,
+        }
+    elif not matlab_art.get("ok") or not python_art.get("ok"):
+        localization = {
+            "comparable": False,
+            "outcome": "inconclusive",
+            "reason": "one side failed or non-comparable",
+            "first_diff_stage": None,
+            "note": LOCALIZATION_NON_CERTIFICATION_NOTE,
+        }
+    else:
+        localization = localize_stage_compare(
+            matlab_art,
+            python_art,
+            previously_reported_strand_break=(rung_id == HISTORICAL_STRAND_BREAK_RUNG),
+        )
+
+    report = {
+        "created_utc": _utc_now(),
+        "mode": "localize",
+        "rung_id": rung_id,
+        "note": LOCALIZATION_NON_CERTIFICATION_NOTE,
+        "claim_of_record": claim_of_record,
+        "skip_matlab": skip_matlab,
+        "reuse_python": reuse_python,
+        "rung_status": result.get("status"),
+        "ladder_first_break_surface": result.get("first_break_surface"),
+        "localization": localization,
+        "matlab_artifacts": _safe_side(matlab_art),
+        "python_artifacts": _safe_side(python_art),
+        "matlab_wall_sec": result.get("matlab_wall_sec"),
+        "python_wall_sec": result.get("python_wall_sec"),
+        "working_hypothesis": (
+            "Historical 1-vs-3 strands stop was a loader measurement bug on numeric "
+            "(N,2) strands2vertices; after recount, outcome is match / "
+            "measurement_fixed_match or a true first_diff_stage."
+        ),
+    }
+    out_path = EXP_DIR / rung_id / "localization_report.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+    report["report_path"] = str(out_path)
+    return report
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -453,9 +546,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Run only this named rung (smoke / single-step).",
     )
     parser.add_argument(
+        "--localize",
+        action="store_true",
+        help=(
+            "Stage-localize one rung (default double_junction_32) with live MATLAB "
+            "dual-run; writes localization_report.json under the rung dir."
+        ),
+    )
+    parser.add_argument(
         "--skip-matlab",
         action="store_true",
-        help="Reuse latest per-rung matlab_batches/batch_* instead of launching MATLAB.",
+        help=(
+            "Reuse latest per-rung matlab_batches/batch_* instead of launching MATLAB. "
+            "For localization, this is iterate-on-compare only — not the claim of record."
+        ),
     )
     parser.add_argument(
         "--reuse-python",
@@ -475,6 +579,29 @@ def main(argv: list[str] | None = None) -> int:
         help="Refuse starting a rung whose max dim exceeds this (default 64).",
     )
     args = parser.parse_args(argv)
+
+    if args.localize:
+        rung_id = args.rung or HISTORICAL_STRAND_BREAK_RUNG
+        print(f"[{_utc_now()}] Synthetic rung localization")
+        print(f"  note: {LOCALIZATION_NON_CERTIFICATION_NOTE}")
+        print(f"  rung: {rung_id}")
+        print(f"  claim_of_record: {not args.skip_matlab}")
+        print(f"  MATLAB: {resolve_matlab_exe()}")
+        report = run_localize(
+            rung_id,
+            skip_matlab=bool(args.skip_matlab),
+            reuse_python=bool(args.reuse_python),
+        )
+        loc = report.get("localization") or {}
+        print(f"\nOUTCOME: {loc.get('outcome')}")
+        print(f"  first_diff_stage={loc.get('first_diff_stage')}")
+        print(f"  matlab_strands={(loc.get('counts') or {}).get('matlab_strands')}")
+        print(f"  python_strands={(loc.get('counts') or {}).get('python_strands')}")
+        print(f"Report: {report.get('report_path')}")
+        ok_outcomes = {"match", "measurement_fixed_match", "first_diff"}
+        if loc.get("outcome") in ok_outcomes and loc.get("comparable"):
+            return 0
+        return 1
 
     rung_ids: tuple[str, ...] = (args.rung,) if args.rung else LADDER_RUNG_IDS
     print(f"[{_utc_now()}] Synthetic complexity ladder")
