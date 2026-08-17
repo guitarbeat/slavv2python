@@ -12,9 +12,25 @@ topic: pythonic-optimization-scalability
 **Prerequisite**: Phase 1 exact-route certification under ADR 0011/0012, with the
 canonical baseline frozen per
 [phase-1-to-phase-2-transition-spec.md](phase-1-to-phase-2-transition-spec.md)
+(complete 2026-08-17; hash bridge
+[phase1-baseline-freeze.json](../reference/core/phase1-baseline-freeze.json)).
 **Research input**: [Post-parity optimization & the translation paper](../research/post-parity-optimization-and-paper.md)
 — cited methodology, a bit-preserving vs bit-perturbing technique matrix, and
 publication guidance.
+
+---
+
+## Current standing (2026-08-17)
+
+Phase 1 is CLOSED and the canonical dest is frozen. Read-only **profiling
+baseline** is recorded in
+[phase2-profiling-baseline.json](../reference/core/phase2-profiling-baseline.json).
+Measured wall-clock on that dest is Edges then Network; Energy/Vertices elapsed
+0 means carried lineage, not instant compute. Do **not** implement the Great
+Transpose, C-order unwind, paper-profile writer, or neurovasc-db writers from
+this spec until an explicit Phase 2 ADR names the regression gate.
+Paper-profile volume and oracle remain TBD. Stretch Energy `blocked_float_path`
+is a separate program and is not this handoff.
 
 ---
 

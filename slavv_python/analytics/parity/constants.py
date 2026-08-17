@@ -70,6 +70,22 @@ HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
 EDGE_CANDIDATE_AUDIT_PATH = Path("04_Edges") / "candidate_audit.json"
 
+# Protected dest names (union): never overwrite as stretch/Energy writers or freeze dests.
+PHASE1_CLAIM_RUN_NAME = "canonical_full_v18"
+HISTORICAL_CLAIM_RUN_NAME = "canonical_full_v16"
+CROP_GUARD_RUN_NAME = "crop_M_exact_v3"
+STRETCH_CROP_DEST_NAME = "crop_M_stretch_engine_v2"
+PROTECTED_DEST_NAMES: tuple[str, ...] = (
+    PHASE1_CLAIM_RUN_NAME,
+    HISTORICAL_CLAIM_RUN_NAME,
+    CROP_GUARD_RUN_NAME,
+    STRETCH_CROP_DEST_NAME,
+)
+PROTECTED_DEST_NAME_SET = frozenset(PROTECTED_DEST_NAMES)
+STRETCH_CROP_ORACLE_ID = "180709_E_crop_M_v2"
+CROP_ORIGINAL_HANDLE = "original_180709_E_crop_M"
+CROP_TIF_NAME = "180709_E_crop_M.tif"
+
 # Parameter validation keys
 EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
     {

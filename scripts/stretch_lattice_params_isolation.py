@@ -18,8 +18,9 @@ import numpy as np
 from scipy.io import loadmat
 
 from slavv_python.analytics.parity.constants import (
-    EXPERIMENT_PARAMS_DIR,
-    VALIDATED_PARAMS_PATH,
+    CROP_ORIGINAL_HANDLE,
+    STRETCH_CROP_DEST_NAME,
+    STRETCH_CROP_ORACLE_ID,
 )
 from slavv_python.analytics.parity.proof.stretch import STATUS_FILENAME, StretchStatus
 from slavv_python.pipeline.energy.config import _prepare_energy_config
@@ -33,6 +34,7 @@ from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     get_chunking_lattice_v190,
 )
 from slavv_python.pipeline.energy.stretch_chunk_isolation import patch_stretch_status_extra
+from slavv_python.pipeline.energy.stretch_crop_io import load_dest_params
 from slavv_python.pipeline.energy.stretch_lattice_params_isolation import (
     EXPECTED_MATLAB_OCTAVE2_CHUNKS,
     INTERPRET_INCOMPLETE_INFRA,
@@ -48,26 +50,10 @@ from slavv_python.pipeline.energy.stretch_lattice_params_isolation import (
 from slavv_python.utils.validation import validate_parameters
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / "crop_M_stretch_engine_v2"
-DEFAULT_ORACLE = REPO_ROOT / "workspace" / "oracles" / "180709_E_crop_M_v2"
+DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / STRETCH_CROP_DEST_NAME
+DEFAULT_ORACLE = REPO_ROOT / "workspace" / "oracles" / STRETCH_CROP_ORACLE_ID
 DEFAULT_SCRATCH = REPO_ROOT / "workspace" / "scratch" / "stretch_lattice_params_isolation.json"
-ORIGINAL_HANDLE = "original_180709_E_crop_M"
 SETTINGS_NAME = "energy_260624-105705.mat"
-
-
-def _load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _load_dest_params(dest: Path) -> dict[str, Any]:
-    candidates = (
-        dest / VALIDATED_PARAMS_PATH,
-        dest / EXPERIMENT_PARAMS_DIR / "validated_params.json",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return _load_json(candidate)
-    raise FileNotFoundError(f"validated_params.json missing under {dest}")
 
 
 def _load_energy_settings(settings_path: Path) -> dict[str, Any]:
@@ -144,10 +130,10 @@ def run_lattice_params_isolation(
     refuse_protected_stretch_energy_dest(scratch_out)
     batch = oracle_root / "01_Input" / "matlab_results" / "batch_260624-105705"
     settings_path = batch / "settings" / SETTINGS_NAME
-    original_path = batch / "data" / ORIGINAL_HANDLE
+    original_path = batch / "data" / CROP_ORIGINAL_HANDLE
     energy_npy = dest / "02_Energy" / "best_energy.npy"
     try:
-        params = validate_parameters(_load_dest_params(dest))
+        params = validate_parameters(load_dest_params(dest))
         oracle = _load_energy_settings(settings_path)
         h5py_shape, matlab_size = _h5_matlab_size(original_path)
         if not energy_npy.is_file():

@@ -43,19 +43,27 @@ Ruled out on cheap fixtures (engine skip = `incomplete_infra`, not fail):
   allclose after YXZ align). Residual is helper **body** vs original MATLAB
   chunk math on the same lattice. Scratch:
   `workspace/scratch/stretch_lattice_params_isolation.json`.
+- Helper body (local_ranges / clamp / TIFF vs HDF5 window): `local_ranges`
+  match MATLAB `floor`/`ceil`. Helper `energy>=0` clamp is not the 1e-10
+  class. TIFF vs HDF5 on the production chunk-0 window **matches**. Residual
+  is filter/interp3 args or MATLAB engine helper vs original batch internals.
+  Operator: `scripts/stretch_helper_body_isolation.py`. Scratch:
+  `workspace/scratch/stretch_helper_body_isolation.json`.
 
 ## Root Cause
 
-Named leftover after E13, one-chunk, and lattice/params: crop-scale FFT/filter /
-`interp3` helper **body** vs the original MATLAB batch `get_energy_V202` on the
-**same** rf-matched lattice (not merge/packaging, not a 75-vs-726 lattice bug).
-The exact ULP source is **not** closed. Not an Energy unlock.
+Named leftover after E13, one-chunk, lattice/params, and helper-body probes:
+crop-scale FFT/filter / `interp3` helper **body** vs the original MATLAB batch
+`get_energy_V202` on the **same** rf-matched lattice (not merge/packaging, not
+a 75-vs-726 lattice bug, not `local_ranges`, not TIFF vs HDF5 input). The
+exact ULP source is **not** closed. Not an Energy unlock.
 
 ## Solution
 
 Record **`blocked_float_path`**. Do not emit an Energy unlock. Do not treat
 90.3% or default allclose as stretch success. Do not relaunch v2. Do not
-overwrite `canonical_full_v18` or `crop_M_exact_v3`. U5/U6 stay gated.
+overwrite `canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, or
+`crop_M_stretch_engine_v2`. U5/U6 stay gated.
 
 ```powershell
 slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
@@ -72,11 +80,15 @@ slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_
   Operator: `scripts/stretch_one_production_chunk.py`.
 - Lattice/params: `tests/unit/pipeline/energy/test_stretch_lattice_params_isolation.py`.
   Operator: `scripts/stretch_lattice_params_isolation.py`.
+- Helper body: `tests/unit/pipeline/energy/test_stretch_helper_body_isolation.py`.
+  Operator: `scripts/stretch_helper_body_isolation.py`.
 - E11 prove already ran on v2; do not re-run the writer to “verify” this note.
 
 ## Follow-Up
 
 Helper **body** vs original MATLAB chunk math remains (`blocked_float_path`).
-rf-matched lattices match (821=821); do not treat octave-index 75 vs 726 as a
-production lattice bug. Do not relaunch v2. Do not start U5/U6. Live status
-stays in dest `stretch_status.json`, not ONE TRUTH.
+`local_ranges` match; TIFF vs HDF5 windows match; clamp is not the tiny-ULP
+class. Leftover is filter/interp3 args or engine helper vs original batch
+internals. rf-matched lattices match (821=821); do not treat octave-index 75
+vs 726 as a production lattice bug. Do not relaunch v2. Do not start U5/U6.
+Live status stays in dest `stretch_status.json`, not ONE TRUTH.

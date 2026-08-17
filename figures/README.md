@@ -24,7 +24,7 @@ They still scale cleanly inside `fullwidthfigure` when needed.
 | [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
 | [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a closed pair multiset | Missing vs extra; generation extras → cleanup displacement → re-selection closes crop (guard) |
 | [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched - Network still -1 strand | Signed residual across `v4→v16`; Network tracks Edges; at v16 Edges PASS while Network multiset FAIL |
-| [`parity_cert_table`](parity_cert_table.pdf) | Historical `v16`: Network failed ADR 0012 by one strand | Absolute mismatch budget; **live** Phase 1 is CLOSED in [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
+| [`parity_cert_table`](parity_cert_table.pdf) | Phase 1 CLOSED: Network ADR 0012 multiset matches on `v18` | Absolute mismatch budget; historical `v16` one-strand miss is closed. **Live** status: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 
 | Script | Role |
 |--------|------|

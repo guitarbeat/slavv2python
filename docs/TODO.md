@@ -46,11 +46,15 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 
 ## Next — after Phase 1 green
 
-- [ ] **Freeze Phase 1 baseline** — closure run root, proof hashes, release evidence, figure metrics ([transition spec](plans/phase-1-to-phase-2-transition-spec.md)).
-- [ ] **Phase 1 → Phase 2 handoff** — only after Network ADR 0012 green; no early Fortran-unwind.
+- [x] **Freeze Phase 1 baseline** — `canonical_full_v18` hash bridge [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) (2026-08-17). Do not overwrite that dest.
+- [x] **Phase 1 → Phase 2 handoff** — Network ADR 0012 green; freeze recorded. Fortran-unwind still needs an explicit Phase 2 ADR/gate before code changes.
+- [x] **Phase 2 profiling baseline** — read-only timings from the frozen dest [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json). Energy/Vertices elapsed 0 = carried lineage. Measured bottleneck on dest = Edges. No unwind.
+- [x] **Energy `--n-jobs auto`** — opt-in CPU/RAM guard on `resume-exact-run` / `launch-exact-run`; dest default stays serial `n_jobs=1`. Do not reimplement; do not raise the default; do not forward the token `auto` into a detached job. See [exact-energy-chunk-parallelism.md](solutions/parity/exact-energy-chunk-parallelism.md).
+- [ ] **Phase 2 Edges/Network profiling** — dest measured bottleneck is Edges. Split discovery vs selection only with an authorized writer. No Fortran unwind.
+- [ ] **Phase 2 Fortran-order unwind** — needs an explicit Phase 2 ADR before production code changes.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
-- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path` (findings stretch subsection). One production chunk named helper/oracle (packaging OK). Lattice/params: rf-matched lattices identical (821=821); residual is helper body vs original MATLAB chunk math. Not unlock. U5/U6 gated. Do not relaunch v2.
+- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path`. Live KPIs: [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1). Diagnosis: [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md). U5/U6 gated. Do not relaunch v2.
 - [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after Energy unlock.
 
 ---

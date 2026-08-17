@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
-**Last Updated:** 2026-08-16  
+**Last Updated:** 2026-08-17  
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
 
@@ -35,6 +35,20 @@
 - `v18` candidate traces for residual hub: claimed maxes **0.0** (extra) and **−0.238…** (oracle) — match MATLAB L846 claimed map; `v16` candidates still show original-field **−9.24 / −7.73**.
 - Energy/Vertices stage JSON live under `canonical_full_v4` (lineage seed); carried into `v18`.
 
+### Frozen Phase 1 baseline (2026-08-17)
+
+Tracked hash bridge: [phase1-baseline-freeze.json](phase1-baseline-freeze.json). Dest copy: `canonical_full_v18/03_Analysis/release_evidence.json` (`proof_passed: true`). Do **not** overwrite `canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, or `crop_M_stretch_engine_v2`. Stretch Energy `blocked_float_path` is **not** this freeze.
+
+| Artifact | SHA-256 (prefix) |
+| :--- | :--- |
+| `v18` Edges proof | `46606c274d64…` |
+| `v18` Network proof | `51116b7a37a2…` |
+| `v4` Energy proof | `9d6a0c2a410f…` |
+| `v4` Vertices proof | `843b520697b1…` |
+| Oracle manifest `180709_E_full_v2` | `8cc7b70065a7…` |
+
+Full digests and checkpoint hashes are in the freeze JSON. Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`.
+
 ### Former residual (closed on v18)
 
 - **Crop guard closed:** `crop_M_exact_v3` re-selection undirected pair overlap **15,511 / 15,511** vs `180709_E_crop_M_v2`. On-disk crop `prove-exact --stage edges` may still be unevaluated (missing ownership map). Trust the pair-set / re-selection check.
@@ -63,11 +77,11 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 | Compare gate | `prove-exact --strict-floats` only; default allclose is **not** stretch success |
 | Crop → full | Hard unlock token (`stretch_crop_unlock.json`) scoped by field set (`energy` vs `energy+discrete`) |
 | Status taxonomy | `blocked_float_path` / `incomplete_discrete` / `incomplete_infra` / `incomplete_at_full` / `stretch_complete` (Energy **and** discrete at full) |
-| Dest roots | New stretch run roots only — never overwrite `canonical_full_v18` |
+| Dest roots | New stretch run roots only — never overwrite the four protected dests in [phase1-baseline-freeze.json](phase1-baseline-freeze.json) |
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-16):** Crop Energy `--strict-floats` remains **`blocked_float_path`**. Dest `crop_M_stretch_engine_v2` (MATLAB `stretch_energy_chunk_v202`: FFT + `energy_filter_V200` + `interp3` + scale-min) **FAIL**: 3,786,847 / 4,194,304 voxels bit-identical (90.3%); 407,457 mismatches; 0 scale mismatches; max abs delta `1e-10`; ULP p50=3, p90=9. Contrast v1 (filter-only, Python `interp3`): 62.5% bit-identical. E12 marshalling **PASS**. E13 named sources (linspace / Inf interp3 / tiny chunk-vs-full) bit-matched — isolation hypothesis **FAIL**. E14 whole-crop MATLAB `get_energy_V202` **deferred** (`incomplete_infra`: octave-chunked, aborted). E17–E19 unit guards **PASS**. E15/E16/E20 gated on Energy unlock. One production chunk (ZYX `(13, 0, 0)`, scale 43, octave 2, chunk 0): octave-owned and the mismatch voxel are re-run == v2 and both ≠ oracle (helper/oracle; packaging OK). Lattice/params: octave-index 2 is Python 75 vs MATLAB-formula 726 (`unique()` id labeling); **rf-matched lattices identical (821=821)**; core params match. Residual is helper body vs original MATLAB chunk math on the same lattice. Not unlock. Do not relaunch v2. Do not start U5/U6. Allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/03_Analysis/exact_proof_energy.json`. Scratch: `workspace/scratch/stretch_one_production_chunk.json`, `workspace/scratch/stretch_lattice_params_isolation.json`. Runbook: [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md). Portfolio: [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](../../plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md).
+**Session status (2026-08-17):** Crop Energy `--strict-floats` remains **`blocked_float_path`**. Dest `crop_M_stretch_engine_v2` (MATLAB `stretch_energy_chunk_v202`: FFT + `energy_filter_V200` + `interp3` + scale-min) **FAIL**: 3,786,847 / 4,194,304 voxels bit-identical (90.3%); 407,457 mismatches; 0 scale mismatches; max abs delta `1e-10`; ULP p50=3, p90=9. Contrast v1 (filter-only, Python `interp3`): 62.5% bit-identical. E12 marshalling **PASS**. E13 named sources (linspace / Inf interp3 / tiny chunk-vs-full) bit-matched — isolation hypothesis **FAIL**. E14 whole-crop MATLAB `get_energy_V202` **deferred** (`incomplete_infra`: octave-chunked, aborted). E17–E19 unit guards **PASS**. E15/E16/E20 gated on Energy unlock. One production chunk (ZYX `(13, 0, 0)`, scale 43, octave 2, chunk 0): octave-owned and the mismatch voxel are re-run == v2 and both ≠ oracle (helper/oracle; packaging OK). Lattice/params: octave-index 2 is Python 75 vs MATLAB-formula 726 (`unique()` id labeling); **rf-matched lattices identical (821=821)**; core params match. Helper-body isolation: `local_ranges` match MATLAB floor/ceil; TIFF vs HDF5 input window on chunk 0 **matches**; helper `energy>=0` clamp is **not** the 1e-10 class. Residual is filter/interp3 args or MATLAB engine helper vs original batch internals on the same lattice. Not unlock. Do not relaunch v2. Do not start U5/U6. Allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/03_Analysis/exact_proof_energy.json`. Scratch: `workspace/scratch/stretch_one_production_chunk.json`, `workspace/scratch/stretch_lattice_params_isolation.json`, `workspace/scratch/stretch_helper_body_isolation.json`. Runbook: [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md). Portfolio: [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](../../plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md).
 
 ---
 

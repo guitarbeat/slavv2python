@@ -6,6 +6,7 @@ from pathlib import Path  # noqa: TC003
 
 import pytest
 
+from slavv_python.analytics.parity.constants import PROTECTED_DEST_NAMES
 from slavv_python.pipeline.energy.matlab_engine_backend import (
     MatlabEnginePolicyError,
     refuse_matlab_only_energy_checkpoint_as_stretch_success,
@@ -13,10 +14,7 @@ from slavv_python.pipeline.energy.matlab_engine_backend import (
 )
 
 
-@pytest.mark.parametrize(
-    "dest_name",
-    ["canonical_full_v18", "crop_M_exact_v3", "crop_M_stretch_engine_v2"],
-)
+@pytest.mark.parametrize("dest_name", list(PROTECTED_DEST_NAMES))
 def test_e14_refuses_protected_dest_roots(tmp_path: Path, dest_name: str) -> None:
     dest = tmp_path / "workspace" / "runs" / "oracle_180709_E" / dest_name
     with pytest.raises(MatlabEnginePolicyError, match="protected root"):

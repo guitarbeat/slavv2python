@@ -18,7 +18,10 @@ from typing import Any
 
 import numpy as np
 
-from slavv_python.analytics.parity.proof.stretch import StretchStatus
+from slavv_python.analytics.parity.proof.stretch import (
+    INTERPRET_INCOMPLETE_INFRA,
+    StretchStatus,
+)
 from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.matlab_engine_backend import MatlabEngineInfraError
 from slavv_python.pipeline.energy.matlab_engine_host import energy_chunk_v202_from_spatial
@@ -45,7 +48,6 @@ INTERPRET_WINDOW_MATCHES_ALL = (
     "Re-run == v2 == oracle on this surface; residual is other chunks / merge. "
     "Do not declare unlock."
 )
-INTERPRET_INCOMPLETE_INFRA = "incomplete_infra"
 
 _STATUS_BLOCKED = StretchStatus.BLOCKED_FLOAT_PATH.value
 

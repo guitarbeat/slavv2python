@@ -13,7 +13,10 @@ from typing import Any
 
 import numpy as np
 
-from slavv_python.analytics.parity.proof.stretch import StretchStatus
+from slavv_python.analytics.parity.proof.stretch import (
+    INTERPRET_INCOMPLETE_INFRA,
+    StretchStatus,
+)
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     get_chunking_lattice_v190,
 )
@@ -35,7 +38,6 @@ INTERPRET_BODY = (
     "Lattices and params match → residual is helper body vs original MATLAB "
     "chunk math on the same lattice; still blocked_float_path; do not relaunch E14."
 )
-INTERPRET_INCOMPLETE_INFRA = "incomplete_infra"
 
 _STATUS_BLOCKED = StretchStatus.BLOCKED_FLOAT_PATH.value
 

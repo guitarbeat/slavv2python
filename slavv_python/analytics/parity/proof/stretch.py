@@ -13,6 +13,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from slavv_python.analytics.parity.constants import PHASE1_CLAIM_RUN_NAME
+
 
 class StretchStatus(str, Enum):
     """Authoritative stretch progress / failure taxonomy (KTD5)."""
@@ -50,9 +52,7 @@ UNLOCK_SCHEMA_VERSION = 1
 STATUS_SCHEMA_VERSION = 1
 UNLOCK_FILENAME = "stretch_crop_unlock.json"
 STATUS_FILENAME = "stretch_status.json"
-
-# Claim root must never be overwritten by stretch writers (KTD6).
-PHASE1_CLAIM_RUN_NAME = "canonical_full_v18"
+INTERPRET_INCOMPLETE_INFRA = StretchStatus.INCOMPLETE_INFRA.value
 
 
 @dataclass(frozen=True)

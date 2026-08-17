@@ -20,7 +20,7 @@ Read these first when working on the live implementation:
 |----------|---------|--------------|
 | [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, and implementation phases | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
 | [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md) | MATLAB-to-Python surface map and confirmed structural deviations | [MATLAB_METHOD_IMPLEMENTATION_PLAN.md](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) |
-| [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) ⭐ | Live proof status, current parity blockers, and historical breakthrough context | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) ⭐ | Live proof status, current parity blockers, and historical breakthrough context | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md), [phase1-baseline-freeze.json](core/phase1-baseline-freeze.json), [phase2-profiling-baseline.json](core/phase2-profiling-baseline.json) |
 | [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md) | Technical design, shared state management, and parity details for the discovery algorithm | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
 | [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
 | [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |

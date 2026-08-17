@@ -10,7 +10,6 @@ Never overwrites Energy on protected dests. Never emits stretch_complete.
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import time
 from pathlib import Path
@@ -21,9 +20,8 @@ import numpy as np
 from slavv_python.analytics.parity.constants import (
     ANALYSIS_DIR,
     CHECKPOINTS_DIR,
-    EXPERIMENT_PARAMS_DIR,
-    EXPERIMENT_REFS_DIR,
-    VALIDATED_PARAMS_PATH,
+    STRETCH_CROP_DEST_NAME,
+    STRETCH_CROP_ORACLE_ID,
 )
 from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.oracle.surfaces import load_oracle_surface
@@ -54,15 +52,19 @@ from slavv_python.pipeline.energy.stretch_chunk_isolation import (
     patch_stretch_status_extra,
     run_stretch_chunk_v202,
 )
+from slavv_python.pipeline.energy.stretch_crop_io import (
+    find_crop_tif,
+    load_dest_params,
+    reorient_image_to_energy,
+)
 from slavv_python.schema.results import EnergyResult
 from slavv_python.storage.loaders.tiff import load_tiff_volume
 from slavv_python.utils.validation import validate_parameters
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / "crop_M_stretch_engine_v2"
-DEFAULT_ORACLE = REPO_ROOT / "workspace" / "oracles" / "180709_E_crop_M_v2"
+DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / STRETCH_CROP_DEST_NAME
+DEFAULT_ORACLE = REPO_ROOT / "workspace" / "oracles" / STRETCH_CROP_ORACLE_ID
 DEFAULT_SCRATCH = REPO_ROOT / "workspace" / "scratch" / "stretch_one_production_chunk.json"
-CROP_TIF_NAME = "180709_E_crop_M.tif"
 TIMEBOX_SEC = 600
 
 
@@ -91,41 +93,6 @@ def _voxel_and_scale_from_mismatch(path: Path | None) -> tuple[tuple[int, int, i
     )
     winner = int(scale) if scale is not None else DEFAULT_WINNER_SCALE
     return (int(voxel[0]), int(voxel[1]), int(voxel[2])), winner
-
-
-def _load_dest_params(dest: Path) -> dict[str, Any]:
-    candidates = (
-        dest / VALIDATED_PARAMS_PATH,
-        dest / EXPERIMENT_PARAMS_DIR / "validated_params.json",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return _load_json(candidate)
-    raise FileNotFoundError(f"validated_params.json missing under {dest}")
-
-
-def _find_crop_tif(dest: Path) -> Path:
-    refs = dest / EXPERIMENT_REFS_DIR / CROP_TIF_NAME
-    if refs.is_file():
-        return refs
-    datasets = REPO_ROOT / "workspace" / "datasets"
-    if datasets.is_dir():
-        matches = sorted(datasets.glob(f"*/01_Input/{CROP_TIF_NAME}"))
-        if matches:
-            return matches[0]
-    raise FileNotFoundError(
-        f"crop TIFF missing: expected {refs} (not 01_Input) or workspace/datasets/"
-    )
-
-
-def _reorient_image_to_energy(image: np.ndarray, energy_shape: tuple[int, ...]) -> np.ndarray:
-    if tuple(int(v) for v in image.shape) == tuple(int(v) for v in energy_shape):
-        return image
-    for perm in itertools.permutations((0, 1, 2)):
-        reordered = tuple(int(image.shape[i]) for i in perm)
-        if reordered == tuple(int(v) for v in energy_shape):
-            return np.transpose(image, perm)
-    raise ValueError(f"cannot reorient image {image.shape} to energy {energy_shape}")
 
 
 def _load_dest_energy(dest: Path) -> tuple[np.ndarray, np.ndarray]:
@@ -205,9 +172,9 @@ def run_one_production_chunk(
     try:
         dest_energy, dest_scales = _load_dest_energy(dest)
         oracle_energy, oracle_scales = _load_oracle_energy(oracle_root)
-        params = _load_dest_params(dest)
-        image = load_tiff_volume(_find_crop_tif(dest))
-        image = _reorient_image_to_energy(image, dest_energy.shape)
+        params = load_dest_params(dest)
+        image = load_tiff_volume(find_crop_tif(dest, repo_root=REPO_ROOT))
+        image = reorient_image_to_energy(image, dest_energy.shape)
         params = validate_parameters(params)
         config = _prepare_energy_config(image, params)
     except (FileNotFoundError, ValueError, OSError) as exc:

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "frozen": true,
+  "freeze_date": "2026-08-17",
+  "phase1_status": "CLOSED",
+  "claim_run_root": "workspace/runs/oracle_180709_E/canonical_full_v18",
+  "oracle_id": "180709_E_full_v2",
+  "oracle_batch": "batch_260626-125646",
+  "do_not_overwrite": [
+    "canonical_full_v18",
+    "canonical_full_v16",
+    "crop_M_exact_v3",
+    "crop_M_stretch_engine_v2"
+  ],
+  "proof_file_sha256": {
+    "exact_proof_edges.json": "46606c274d64b47ff87fc8b2a11f2b7377a4191ff25d3bfa90f5a3570dc0f6e7",
+    "exact_proof_network.json": "51116b7a37a210776cc29dd0bbeebbe1141d32b3c333673758871cb961f608f1",
+    "exact_proof_energy.json": "9d6a0c2a410fc074f096d92158e3df2cadf41653b48dbf26f9d96c716da581ae",
+    "exact_proof_vertices.json": "843b520697b14a949655d092f95a7f26f500ee26dffbaa563819bc30c1249940"
+  },
+  "proof_file_roots": {
+    "exact_proof_edges.json": "canonical_full_v18/03_Analysis",
+    "exact_proof_network.json": "canonical_full_v18/03_Analysis",
+    "exact_proof_energy.json": "canonical_full_v4/03_Analysis",
+    "exact_proof_vertices.json": "canonical_full_v4/03_Analysis"
+  },
+  "checkpoint_sha256": {
+    "energy": "c668a847f32d39bc22c2560b30e61f168b58c30c570900243f3b747ea427520f",
+    "vertices": "c5f3bd41ae5ecf6bfe075664ccd0f299d3aebf748534a6c65a2f7003662cf12b",
+    "edges": "36724dfae06a5e594fc9935ff376b57197d04facf999f376e2b4fa9b68666f01",
+    "network": "d3a81ea363ca8719302bc1a5cebd0d0866dee652a674a944b58161d72774575d"
+  },
+  "oracle_manifest_sha256": "8cc7b70065a7ed9eceb453afb4226379c41e69807923932a3562edb9e5a437d6",
+  "run_manifest_sha256": "ba32a8b0c69a99a8bb18cc2b3857f33dd4227b2d9c3531af875ad5728ace3ae6",
+  "dest_release_evidence": "canonical_full_v18/03_Analysis/release_evidence.json",
+  "dest_release_evidence_sha256": "48c2f54ed21e3010912765c7c6fc6a5abad2b3e6c5a18a45be100466044149ef",
+  "cite": "slavv parity inspect-proof --path <json> --require-evaluated",
+  "not_stretch": true,
+  "note": "Phase 1 Certification freeze only. Stretch Energy blocked_float_path is a separate program and is not this baseline."
+}
