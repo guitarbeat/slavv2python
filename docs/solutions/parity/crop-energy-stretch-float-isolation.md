@@ -31,12 +31,25 @@ Ruled out on cheap fixtures (engine skip = `incomplete_infra`, not fail):
 - E13: linspace mesh, Inf `interp3`, and tiny chunk-vs-full bit-match.
 - E14: whole-crop MATLAB `get_energy_V202` is octave-chunked (726 chunks on
   octave 2 of 6). Aborted as `incomplete_infra`. Not a cheap probe.
+- One production chunk (mismatch ZYX `(13, 0, 0)`, winner scale 43, octave 2,
+  chunk 0, write window ZYX `[0:21, 0:51, 0:51]`): octave-owned and the
+  mismatch voxel are **re-run == v2 and both ≠ oracle**. Full write-window
+  re-run ≠ v2 is min-merge from other octaves, not packaging. Scratch:
+  `workspace/scratch/stretch_one_production_chunk.json`.
+- Lattice/params vs original MATLAB `get_energy_V202`: octave-**index** 2 is
+  Python 75 vs MATLAB-formula 726, but that is `unique()` id labeling.
+  **rf-matched lattices are identical** (both 821 chunks). Core params match
+  (`max_voxels=6000`, ratios, `scales_per_octave=6`, microns raw, radii/PSF
+  allclose after YXZ align). Residual is helper **body** vs original MATLAB
+  chunk math on the same lattice. Scratch:
+  `workspace/scratch/stretch_lattice_params_isolation.json`.
 
 ## Root Cause
 
-Named leftover after E13: crop-scale FFT/filter vs the original MATLAB batch
-`get_energy_V202` (821-chunk lattice / oracle params), **not** transfer,
-linspace, or Inf interp3. The exact ULP source is **not** closed.
+Named leftover after E13, one-chunk, and lattice/params: crop-scale FFT/filter /
+`interp3` helper **body** vs the original MATLAB batch `get_energy_V202` on the
+**same** rf-matched lattice (not merge/packaging, not a 75-vs-726 lattice bug).
+The exact ULP source is **not** closed. Not an Energy unlock.
 
 ## Solution
 
@@ -55,10 +68,15 @@ slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_
 
 - E12/E13/E17/E18/E19 unit tests under `tests/unit/pipeline/energy/` and
   `tests/unit/parity/` (engine tests skip without py37 + R2019a).
+- One-chunk mapping/interpret: `tests/unit/pipeline/energy/test_stretch_one_production_chunk.py`.
+  Operator: `scripts/stretch_one_production_chunk.py`.
+- Lattice/params: `tests/unit/pipeline/energy/test_stretch_lattice_params_isolation.py`.
+  Operator: `scripts/stretch_lattice_params_isolation.py`.
 - E11 prove already ran on v2; do not re-run the writer to “verify” this note.
 
 ## Follow-Up
 
-One production-sized crop chunk (`stretch_energy_chunk_v202` vs MATLAB’s
-matching chunk), not another whole-crop Energy job. Live status stays in
-`stretch_status.json`, not ONE TRUTH.
+Helper **body** vs original MATLAB chunk math remains (`blocked_float_path`).
+rf-matched lattices match (821=821); do not treat octave-index 75 vs 726 as a
+production lattice bug. Do not relaunch v2. Do not start U5/U6. Live status
+stays in dest `stretch_status.json`, not ONE TRUTH.

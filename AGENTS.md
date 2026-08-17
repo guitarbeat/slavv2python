@@ -134,8 +134,8 @@ Energy values carried on a [Candidate](#candidate) (or resulting edge) that were
 _Avoid_: Hardcoded per-pair energy overrides as production provenance; Selection-time re-sample of the claim map as the production source of truth (diagnostic-only); conflating Claimed Trace Energy with original Energy-stage field samples.
 
 ### Edge Selection Ranking Residual
-The active [Certification](#certification) residual class when [Edge Discovery](#edge-discovery) emission is otherwise acceptable but [Edge Selection](#edge-selection) keeps or drops the wrong undirected pairs because Candidate energies do not reflect the [Claimed Energy Map](#claimed-energy-map). Live mechanism and pair examples live only in [ONE TRUTH residual](docs/reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red).
-_Avoid_: Calling this a Network rewrite problem by default; citing audit/E-series portfolio greens or matlab2python coverage as the ship hypothesis; freezing residual pair IDs or KPIs in this glossary.
+The [Certification](#certification) residual class when [Edge Discovery](#edge-discovery) emission is otherwise acceptable but [Edge Selection](#edge-selection) keeps or drops the wrong undirected pairs because Candidate energies do not reflect the [Claimed Energy Map](#claimed-energy-map). Closed on the claim root named in [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) by baking [Claimed Trace Energy](#claimed-trace-energy) ([ADR 0013](docs/adr/0013-claimed-energy-trace-provenance.md)). Mechanism and pair examples: [Former residual (closed on v18)](docs/reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18).
+_Avoid_: Calling this a Network rewrite problem by default; citing audit/E-series portfolio greens or matlab2python coverage as the ship hypothesis; freezing residual pair IDs or KPIs in this glossary; treating it as the live Phase 1 ship loop.
 
 ### Tracing Discovery
 An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via directional propagation from individual Seed Vertices (Paper Path). Code: `TracingDiscovery` (legacy alias `MaintainedTracingDiscovery`).
@@ -188,20 +188,32 @@ The state in which every required [Pipeline](#pipeline) stage passes its defined
 _Avoid_: Treating strict-field `connections` / strand-count equality as the Phase 1 ship gate for Edges/Network; that is a separate [Strict-Field Stretch Goal](#strict-field-stretch-goal). Citing audit portfolio, E1–E10 greens, or matlab2python coverage as Certification standing or Phase 1 Closure.
 
 ### Strict-Field Stretch Goal
-An engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—tracked in [Exact Proof Findings](#exact-proof-findings) and iterated on the [Crop Harness Volume](#crop-harness-volume). **Network ADR 0012 multiset equality is the open ship gate**, not stretch: it can fail while Edges ownership passes because Network topology is a function of the emitted connection set (see [ADR 0012 post-v6 addendum](docs/adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)).
-_Avoid_: Calling stretch progress "certified," calling Network multiset failure "stretch only," or conflating ownership-map pass with Phase 1 closure.
+An optional engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—iterated on the [Crop Harness Volume](#crop-harness-volume) after Energy unlock. Distinct from [True Zero-Tolerance Stretch](#true-zero-tolerance-stretch). **Network ADR 0012 multiset equality was the Phase 1 ship gate** (not this stretch); live whether Phase 1 is closed is [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. Historical post-v6 wording: [ADR 0012 addendum](docs/adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate).
+_Avoid_: Calling stretch progress "certified," calling a historical Network multiset miss "stretch only," or conflating ownership-map pass with Phase 1 closure.
 
-**Post-v6 residual KPIs (primary loop):** full [Edge Set](#edge-set) undirected-pair multiset residual after [Edge Selection](#edge-selection), then **evaluated Network** `prove-exact` multiset equality. Crop is a **regression guard** (generation + final pair multiset closed on re-selection). **Live numbers only in** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md). Candidate-generation ≥80% is a **cleared historical gate**.
+**Post-v6 residual KPIs (closed):** full [Edge Set](#edge-set) undirected-pair multiset after [Edge Selection](#edge-selection), then **evaluated Network** `prove-exact` multiset equality. Crop remains a **regression guard**. **Live numbers only in** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md). Candidate-generation ≥80% is a **cleared historical gate**.
 _Avoid_: Freezing residual KPIs in this glossary; re-blocking on 80% crop overlap; treating approximate strand-count % as Network pass; inventing cleanup secondary keys that break MATLAB≡Python cleanup on the same Candidate Set.
 
 **Stretch / regression run root:** Prefer `crop_M_exact_v3` for Edge Selection regression; full claim surface is the current canonical root in findings. Do not treat pre–PR #103 `crop_M_exact` as baseline.
 _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 
+### True Zero-Tolerance Stretch
+Post–Phase 1 program: every compared MATLAB↔Python field bit-equal under `prove-exact --strict-floats`, **including Energy floats**. Default ADR 0011 allclose is **not** stretch success and is **not** 100% parity. Not [Certification](#certification). Live status is the findings stretch subsection plus dest `stretch_status.json`, not ONE TRUTH. Plan: [2026-08-14-004](docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
+_Avoid_: Reopening Phase 1; treating ADR 0012 ownership-map green as stretch complete.
+
+### Stretch Status Taxonomy
+Stretch progress/failure labels from `StretchStatus` in `slavv_python.analytics.parity.proof.stretch`: `blocked_float_path` (Energy not bit-equal), `incomplete_discrete`, `incomplete_infra`, `incomplete_at_full`, `stretch_complete` (Energy **and** discrete at full). Infra failure is never `blocked_float_path`. Allclose green is never `stretch_complete`.
+_Avoid_: Inventing an allclose-complete status; writing stretch pass/fail into ONE TRUTH CLOSED language.
+
+### Stretch Unlock Token
+Crop file `stretch_crop_unlock.json` authorizing full stretch for a named field set (`energy` or `energy+discrete`). U5 crop discrete and U6 full stretch stay gated without a matching token.
+_Avoid_: Unlocking from MKL/NumPy-only Energy; unlocking from MATLAB-only Energy Python never produced.
+
 ### Evaluated ADR 0012 Proof
 A `prove-exact --stage edges` or `--stage network` result where `edges_adr0012_gate.adr0012_evaluated` is **true** and spatial bars were applied. Only evaluated proofs count for [Phase 1 Closure](#phase-1-closure).
 _Avoid_: Treating strict-field fallback proofs (`adr0012_evaluated: false`) as closure verdicts.
 
-**Phase 1 operating sequence (current):** (1) Treat the open ship hypothesis as an [Edge Selection Ranking Residual](#edge-selection-ranking-residual)—bake [Claimed Trace Energy](#claimed-trace-energy) at Watershed Discovery finalize and keep Selection’s raw-max `sort_edges` semantics ([ADR 0013](docs/adr/0013-claimed-energy-trace-provenance.md)); (2) keep the [Cheap Parity Ladder](#cheap-parity-ladder) + crop re-selection + cleanup MATLAB comparator green before production merge; (3) after the fix, rerun Edges→Network on a **new** [Claim Run Root](#claim-run-root) (do not overwrite the historical claim; diagnostic successors stay non-claim); (4) **evaluated** Network ADR 0012 multiset equality → [Phase 1 Closure](#phase-1-closure). Live residual detail: [ONE TRUTH residual](docs/reference/core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red). Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). **Live claim surface:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) only.
+**Phase 1 operating sequence (closed):** (1) The ship hypothesis was an [Edge Selection Ranking Residual](#edge-selection-ranking-residual)—bake [Claimed Trace Energy](#claimed-trace-energy) at Watershed Discovery finalize and keep Selection’s raw-max `sort_edges` semantics ([ADR 0013](docs/adr/0013-claimed-energy-trace-provenance.md)); (2) keep the [Cheap Parity Ladder](#cheap-parity-ladder) + crop re-selection + cleanup MATLAB comparator green before production merge; (3) after the fix, rerun Edges→Network on a **new** [Claim Run Root](#claim-run-root) (do not overwrite the historical claim; diagnostic successors stay non-claim); (4) **evaluated** Network ADR 0012 multiset equality → [Phase 1 Closure](#phase-1-closure). Mechanism: [Former residual (closed on v18)](docs/reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18). Operator detail: [.claude/HANDOFF.md](.claude/HANDOFF.md). **Live claim surface:** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md) only.
 _Avoid_: Claiming closure from Edges-only pass; Network rewrite as default; cleanup endpoint secondary keys; approximate strand-count % as multiset pass; `prove-exact-sequence` as ship gate; citing audit/E-series portfolio as closure.
 
 **Closure run root:** Prefer a **new** canonical directory preflighted from the prior attempt; carry Energy/Vertices, rerun Edges → Network only. Preserve historical claim/audit roots in place (names live in ONE TRUTH).
@@ -367,7 +379,7 @@ Read these first when working on relevant surfaces:
 | Random Component Parity | [docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md](docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) | Fast seeded noise differential ([ADR 0010](docs/adr/0010-random-component-parity-suite.md)) |
 | Parity Certification | [docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md](docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | `prove-exact` / `prove-exact-sequence` on canonical volume |
 | Documented Solutions | [docs/solutions/](docs/solutions/) | Searchable past fixes and workflows (`module`, `tags`, `problem_type` in YAML frontmatter); relevant when debugging parity, oracle promotion, or integration issues |
-| Concepts | [CONCEPTS.md](CONCEPTS.md) | Shared domain vocabulary (entities, named processes, status concepts); relevant when orienting to the codebase or discussing domain concepts |
+| Domain Glossary | [AGENTS.md § Domain Glossary](AGENTS.md#domain-glossary) | Canonical domain vocabulary (entities, named processes, status concepts). Browsable mirror: [GLOSSARY.md](docs/reference/core/GLOSSARY.md) |
 | ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 

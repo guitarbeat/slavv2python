@@ -2,8 +2,8 @@
 
 [Up: Reference Docs](../README.md) · [Live status](../core/EXACT_PROOF_FINDINGS.md) · [Operator handoff](../../../.claude/HANDOFF.md) · [Figures](../../../figures/README.md) · [Tasks](../../TODO.md)
 
-**Role:** maintained *experiment framing* for the open Phase 1 residual—not the
-live status log and not the task list.
+**Role:** maintained *experiment framing* for the closed Phase 1 ranking residual—not the
+live status log and not the task list. Live pass/fail: [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (CLOSED).
 
 | Need | Single home |
 |------|-------------|
@@ -24,12 +24,12 @@ What remaining **Edge Set** behavior prevents full-volume Network ADR 0012
 
 ## Hypothesis (interpretation frame)
 
-See **[ONE TRUTH residual](../core/EXACT_PROOF_FINDINGS.md#active-residual-why-network-is-red)**
-for the live mechanism. Network is not independently broken. Crop generation /
+See **[Former residual (closed on v18)](../core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18)**
+for the mechanism. Network was not independently broken. Crop generation /
 re-selection are regression-closed. Full-volume raw Candidate Sets already match;
-the residual is ranking (`sort_edges` on claimed `energy_map` vs original-field
+the residual was ranking (`sort_edges` on claimed `energy_map` vs original-field
 traces) under an equal post-resample max, not a new Edge Selection policy and not
-a join-emission rewrite.
+a join-emission rewrite. **Live whether Phase 1 is closed:** [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 
 **Do not freeze pair IDs, candidate indices, or strand counts here.** Those live
 only in the findings banner.
