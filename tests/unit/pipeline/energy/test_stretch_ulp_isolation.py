@@ -26,6 +26,10 @@ def _compact_matlab(source: str) -> str:
 
 
 def test_e13_linspace_formula_matches_get_energy_v202() -> None:
+    if not CHUNK_HELPER.is_file():
+        pytest.skip(f"incomplete_infra: missing {CHUNK_HELPER}")
+    if not GET_ENERGY.is_file():
+        pytest.skip("incomplete_infra: Vectorization-Public source missing")
     chunk_src = _compact_matlab(CHUNK_HELPER.read_text(encoding="utf-8"))
     full_src = _compact_matlab(GET_ENERGY.read_text(encoding="utf-8"))
     chunk_token = "linspace(1+mod("
