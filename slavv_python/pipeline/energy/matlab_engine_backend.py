@@ -21,6 +21,8 @@ from typing import Any, cast
 
 import numpy as np
 
+from slavv_python.analytics.parity.constants import PROTECTED_DEST_NAME_SET
+
 logger = logging.getLogger(__name__)
 
 # R2019a-era Engine for Python support window (setup.py on this host).
@@ -164,13 +166,8 @@ def refuse_matlab_only_energy_checkpoint_as_stretch_success() -> None:
 
 
 # E14 / stretch writers must never overwrite these dest names (plan R10 / R14).
-PROTECTED_STRETCH_DEST_NAMES = frozenset(
-    {
-        "canonical_full_v18",
-        "crop_M_exact_v3",
-        "crop_M_stretch_engine_v2",
-    }
-)
+# Public alias; canonical set is analytics.parity.constants.PROTECTED_DEST_NAME_SET.
+PROTECTED_STRETCH_DEST_NAMES = PROTECTED_DEST_NAME_SET
 
 
 def refuse_protected_stretch_energy_dest(dest_run_root: Path) -> None:

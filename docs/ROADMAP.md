@@ -56,7 +56,7 @@ Also cleared historically: crop generation / 80% gate, post-watershed finalizati
 
 ### After Phase 1
 
-Freeze the cert baseline before broad Phase 2 unwind. True zero-tolerance stretch (`--strict-floats`, including Energy floats) is a **separate** program; live stretch status is dest `stretch_status.json`, not ONE TRUTH. Strict-field `connections` / order remains optional and gated on Energy unlock.
+Frozen cert baseline: [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) (`canonical_full_v18`, 2026-08-17). Phase 2 **profiling baseline** is recorded against that dest ([phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)). Broad Fortran-order unwind still needs an explicit Phase 2 ADR/gate before production code changes. True zero-tolerance stretch (`--strict-floats`, including Energy floats) is a **separate** program; live stretch status is dest `stretch_status.json`, not ONE TRUTH. Strict-field `connections` / order remains optional and gated on Energy unlock.
 
 Do **not** use `prove-exact-sequence` strict-field failure as a Phase 1 reopen.
 Details: [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md), [TODO.md](TODO.md),
@@ -71,6 +71,9 @@ Phase 1 Network is green, optimize *without* silent parity regression:
 
 - **Parallelism (started):** bit-exact threaded chunk energy (`n_jobs`). Next:
   auto-size `n_jobs`, vertices/edges/network profiling.
+- **Profiling baseline (2026-08-17):** read-only timings from the frozen dest
+  ([phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)).
+  Measured dest bottleneck is Edges; Energy wall-clock was not re-measured there.
 - **Optional unwind:** after a frozen cert baseline, Phase 2 may relax
   Fortran-order emulation toward idiomatic C-order — only under a new
   topological-tolerance gate (see [phase-2-optimization-spec.md](plans/phase-2-optimization-spec.md)).
@@ -80,7 +83,7 @@ Phase 1 Network is green, optimize *without* silent parity regression:
 
 > **Research input:** [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
 
-**Do not start broad Phase 2 unwinding until a frozen cert baseline exists.** Phase 1 Network is green on the claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+**Do not start broad Phase 2 unwinding until a frozen cert baseline exists.** That freeze is recorded (2026-08-17). Phase 1 Network is green on the claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Profiling against the frozen dest is allowed; C-order unwind is not.
 
 ---
 
@@ -94,4 +97,4 @@ Phase 1 Network is green, optimize *without* silent parity regression:
 ---
 
 *Status lives in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md);
-this roadmap is intentionally narrative. Last realigned: 2026-08-16.*
+this roadmap is intentionally narrative. Last realigned: 2026-08-17.*

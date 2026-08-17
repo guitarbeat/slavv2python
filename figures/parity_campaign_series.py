@@ -10,6 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from slavv_python.analytics.parity.constants import (
+    PHASE1_CLAIM_RUN_NAME,
+    STRETCH_CROP_ORACLE_ID,
+)
+
 # ---------------------------------------------------------------------------
 # Shared campaign constants
 # ---------------------------------------------------------------------------
@@ -23,10 +28,10 @@ CANONICAL_PYTHON_STRANDS = CANONICAL_MATLAB_STRANDS + NETWORK_STRAND_RESIDUAL
 # Edge multiset residual count (connection multiset Δ; strict count can still match)
 EDGE_PAIR_MULTISET_RESIDUAL = 0
 
-ORACLE_CROP_ID = "180709_E_crop_M_v2"
+ORACLE_CROP_ID = STRETCH_CROP_ORACLE_ID
 ORACLE_FULL_VOLUME = "180709_E"
 # Latest full-volume claim surface (Phase 1 CLOSED — Edges + Network evaluated PASS)
-CANONICAL_CLAIM_RUN = "canonical_full_v18"
+CANONICAL_CLAIM_RUN = PHASE1_CLAIM_RUN_NAME
 
 # Log-scale floor so zero residual remains visible as a bar/point
 LOG_FLOOR_COUNT = 0.85
@@ -350,11 +355,11 @@ class CertRow:
     tone: CertTone
 
 
-CERT_CLAIM = "Network still fails ADR 0012 by one strand"
+CERT_CLAIM = "Phase 1 CLOSED: Network ADR 0012 multiset matches"
 CERT_TAKEAWAY = (
-    f"Ship gate open: Network multiset FAIL "
-    f"({CANONICAL_PYTHON_STRANDS:,}/{CANONICAL_MATLAB_STRANDS:,}) on {CANONICAL_CLAIM_RUN}; "
-    f"downstream of Edge Set residual "
+    f"Ship gate closed on {CANONICAL_CLAIM_RUN}: Network multiset "
+    f"{CANONICAL_PYTHON_STRANDS:,}/{CANONICAL_MATLAB_STRANDS:,} PASS. "
+    f"Historical v16 one-strand miss was ranking residual "
     f"(MATLAB {list(FULL_RESIDUAL_MATLAB_PAIR)} vs Python {list(FULL_RESIDUAL_PYTHON_PAIR)})."
 )
 

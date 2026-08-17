@@ -76,6 +76,7 @@ from slavv_python.analytics.parity.utils import (
     now_iso,
     write_json_with_hash,
 )
+from slavv_python.analytics.performance.energy_n_jobs import resolve_cli_n_jobs
 from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.state import load_json_dict
 from slavv_python.interface.cli.monitor_service import (
@@ -245,7 +246,10 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
             memory_safety_fraction=float(args.memory_safety_fraction),
             force=bool(args.force),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
-            n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            n_jobs=resolve_cli_n_jobs(
+                getattr(args, "n_jobs", None),
+                memory_safety_fraction=float(args.memory_safety_fraction),
+            ),
             energy_float_backend=getattr(args, "energy_float_backend", None),
         )
 
@@ -268,7 +272,10 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
             force_kill=bool(getattr(args, "force_kill", False)),
             skip_preflight=bool(getattr(args, "skip_preflight", False)),
             skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
-            n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+            n_jobs=resolve_cli_n_jobs(
+                getattr(args, "n_jobs", None),
+                memory_safety_fraction=float(args.memory_safety_fraction),
+            ),
             energy_float_backend=getattr(args, "energy_float_backend", None),
             monitor=bool(getattr(args, "monitor", False)),
         )

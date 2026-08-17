@@ -5,7 +5,8 @@ source fetch → 3-vote adversarial verification → synthesis).
 
 > **Gate:** Phase 2 optimization assumes Phase 1 Network ADR 0012 multiset is green.  
 > **Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)
-> (Phase 1 still OPEN as of last revalidation). This note is research input, not a claim that the baseline is fully certified.
+> (Phase 1 CLOSED; frozen baseline recorded). This note is research input, not a
+> live pass/fail table.
 
 **Scope:** how to go from a *certified* MATLAB→Python baseline (SLAVV
 3D vessel extraction: FFT/Hessian energy → vertices → edges → network) to an

@@ -38,17 +38,26 @@ speedup.
   no RNG in the energy stage), so concurrent execution cannot change values.
 
 ## Solution
-Pass `--n-jobs <N>` to `slavv parity resume-exact-run` / `launch-exact-run`
-(wired through to `resume_exact_run(n_jobs=...)`, which overrides
-`params["n_jobs"]`). For the canonical machine (8 logical cores, 16 GB RAM),
-`--n-jobs 6` is a good balance (~2.5 GB peak, leaves 2 cores).
+Pass `--n-jobs <N>` or `--n-jobs auto` to `slavv parity resume-exact-run` /
+`launch-exact-run` (wired through to `resume_exact_run(n_jobs=...)`, which
+overrides `params["n_jobs"]`). For the canonical machine (8 logical cores,
+16 GB RAM), `--n-jobs 6` is a good balance (~2.5 GB peak, leaves 2 cores).
+`--n-jobs auto` sizes workers from `os.cpu_count()` minus two reserved cores,
+capped by available RAM / ~512 MiB per worker (`recommend_energy_n_jobs`),
+using the same `--memory-safety-fraction` as preflight.
+
+Do **not** raise the dest default (serial `n_jobs=1`). Do **not** change
+`slavv run --n-jobs` (paper-profile CLI; stays `type=int`, default 1).
+Resolve `auto` to an integer in the parent CLI handler before
+`resume_exact_run` / `launch_writer_session` so a detached job receives
+`--n-jobs N`, not the token `auto` (the child must not re-probe RAM later).
 
 ```powershell
 slavv parity resume-exact-run `
   --dest-run-root workspace\runs\oracle_180709_E\canonical_full_v2 `
   --oracle-root   workspace\oracles\180709_E_full_v2 `
   --force-rerun-from energy --stop-after network --skip-preflight --force `
-  --n-jobs 6
+  --n-jobs auto
 ```
 
 ## Verification
@@ -78,8 +87,10 @@ speedup**, cutting energy from ~37 h to ~9–10 h and the full sequence to
   arrays). Keep `n_jobs * per-chunk-peak` within RAM.
 
 ## Follow-Up
-- Consider raising the default `n_jobs` for the exact route, or auto-sizing it
-  from `os.cpu_count()` with a memory guard.
+- Energy `--n-jobs auto` is implemented. Do not reimplement it. Next Phase 2
+  performance slice is Edges/Network profiling (dest measured bottleneck is
+  Edges); that needs an authorized writer. Fortran-order unwind still needs an
+  explicit Phase 2 ADR.
 - The per-scale `gc.collect()` in `_process_chunk` serializes threads under the
   GIL; removing/reducing it is numerically bit-safe and could improve scaling
   further (raises peak memory) — see TODO.

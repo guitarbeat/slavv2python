@@ -1,7 +1,7 @@
 ---
 title: "Phase 1 to Phase 2 transition"
 type: spec
-status: draft
+status: complete
 date: 2026-07-13
 topic: parity-closure-to-optimization-handoff
 ---
@@ -13,7 +13,7 @@ optimization work. This spec prevents broad Phase 2 refactors from starting
 before the full-volume Network ADR 0012 ship gate is green and the canonical
 baseline is frozen.
 
-**Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
+**Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (Phase 1 CLOSED). Frozen hash bridge: [phase1-baseline-freeze.json](../reference/core/phase1-baseline-freeze.json).  
 **Operator brief:** [HANDOFF](../../.claude/HANDOFF.md)  
 **Phase 1 spec:** [phase-1-exact-route-spec.md](phase-1-exact-route-spec.md)  
 **Phase 2 draft:** [phase-2-optimization-spec.md](phase-2-optimization-spec.md)
@@ -62,7 +62,7 @@ Freeze these surfaces before optimization:
 
 ## Allowed before baseline freeze
 
-The following are allowed while Network remains red:
+The following were allowed while Network remained red (historical; Network is now green):
 
 - Watershed generation / claiming-state fixes tied to crop probes.
 - Diagnostic instrumentation for the first divergent strel.
@@ -71,7 +71,7 @@ The following are allowed while Network remains red:
 
 ## Forbidden before baseline freeze
 
-Do not start these while Network ADR 0012 is red:
+These stay forbidden as *Phase 1 reopen* moves. After this freeze they may proceed only under Phase 2 regression gates (new ADR if bit-perturbing):
 
 - Broad C-order / Fortran-order unwinding.
 - Replacing MATLAB-faithful kernels with idiomatic NumPy/SciPy variants.

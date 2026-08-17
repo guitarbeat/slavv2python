@@ -4,7 +4,7 @@
 Not a cheap probe: MATLAB get_energy_V202 is octave-chunked (726 chunks on
 octave 2 of 6 on crop_M). Abort / time-box rather than wait overnight.
 Isolation only — not a crop Energy unlock, not U5/U6, not stretch_complete.
-Never overwrites canonical_full_v18, crop_M_exact_v3, or crop_M_stretch_engine_v2.
+Never overwrites canonical_full_v18, canonical_full_v16, crop_M_exact_v3, or crop_M_stretch_engine_v2.
 """
 
 from __future__ import annotations
@@ -19,6 +19,10 @@ import h5py
 import numpy as np
 from scipy.io import loadmat
 
+from slavv_python.analytics.parity.constants import (
+    CROP_ORIGINAL_HANDLE,
+    STRETCH_CROP_ORACLE_ID,
+)
 from slavv_python.analytics.parity.proof.energy_ulp_proof import (
     EnergyFloatGateOptions,
     evaluate_energy_float_gate,
@@ -41,12 +45,12 @@ ORACLE_BATCH = (
     REPO_ROOT
     / "workspace"
     / "oracles"
-    / "180709_E_crop_M_v2"
+    / STRETCH_CROP_ORACLE_ID
     / "01_Input"
     / "matlab_results"
     / "batch_260624-105705"
 )
-ORIGINAL_HANDLE = "original_180709_E_crop_M"
+ORIGINAL_HANDLE = CROP_ORIGINAL_HANDLE
 ENERGY_HANDLE = "e14_energy_180709_E_crop_M"
 MATCHING_KERNEL = "3D gaussian conv annular pulse"
 CROP_VOXELS = 64 * 256 * 256

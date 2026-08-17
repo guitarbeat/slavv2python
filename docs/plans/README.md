@@ -9,8 +9,8 @@ Scoped initiatives: **requirements and implementation in one spec file** when wo
 | Spec | Status |
 |------|--------|
 | [phase-1-exact-route-spec.md](phase-1-exact-route-spec.md) | **Active** — requirements only; live pass/fail in [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk); commands in [HANDOFF](../../.claude/HANDOFF.md) |
-| [phase-1-to-phase-2-transition-spec.md](phase-1-to-phase-2-transition-spec.md) | **Draft** — starts only after full-volume Network ADR 0012 is green and the canonical baseline is frozen |
-| [phase-2-optimization-spec.md](phase-2-optimization-spec.md) | **Ideation / Draft** — blocked on Phase 1 Network green; do not unwind emulation early |
+| [phase-1-to-phase-2-transition-spec.md](phase-1-to-phase-2-transition-spec.md) | **Complete** — Phase 1 CLOSED; baseline freeze recorded 2026-08-17 |
+| [phase-2-optimization-spec.md](phase-2-optimization-spec.md) | **Ideation / Draft** — profiling baseline recorded; Fortran unwind still needs an explicit ADR |
 | [random-component-parity-hardening-spec.md](../investigations/random-component-parity-hardening/random-component-parity-hardening-spec.md) | **Complete (archived)** — random-component suite hardening/refactor |
 | [random-component-references-deepening-plan.md](random-component-references-deepening-plan.md) | **Draft** — deepen the References module (follow-up) |
 | [2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md) | **Active stretch** — true zero-tolerance including Energy floats; Phase 1 stays CLOSED |

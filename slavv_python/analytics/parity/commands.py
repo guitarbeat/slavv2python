@@ -48,6 +48,7 @@ from slavv_python.analytics.parity.constants import (
     DEFAULT_MEMORY_SAFETY_FRACTION,
     EXACT_STAGE_ORDER,
 )
+from slavv_python.analytics.performance.energy_n_jobs import parse_n_jobs_cli_value
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,20 @@ def build_parity_parser() -> argparse.ArgumentParser:
 def arg(*flags: str, **kwargs: Any) -> ArgumentSpec:
     """Create an argparse argument declaration."""
     return ArgumentSpec(flags=flags, kwargs=kwargs)
+
+
+def n_jobs_cli_type(value: str) -> int | str:
+    """Accept an integer >= 1 or the token ``auto`` for Energy workers."""
+    try:
+        return parse_n_jobs_cli_value(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+_N_JOBS_HELP = (
+    "Energy chunk workers: integer >= 1, or 'auto' (CPU reserve + RAM guard). "
+    "Omitted keeps the dest default (serial n_jobs=1)."
+)
 
 
 _RUN_ROOT_PAIR = (
@@ -258,7 +273,7 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION),
             arg("--force", action="store_true"),
             arg("--skip-preflight", action="store_true"),
-            arg("--n-jobs", type=int),
+            arg("--n-jobs", type=n_jobs_cli_type, help=_N_JOBS_HELP),
             arg(
                 "--energy-float-backend",
                 choices=("numpy", "matlab_engine"),
@@ -286,7 +301,7 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
                 action="store_true",
                 help="Skip the preprocess-only foreground launch probe before detaching.",
             ),
-            arg("--n-jobs", type=int),
+            arg("--n-jobs", type=n_jobs_cli_type, help=_N_JOBS_HELP),
             arg(
                 "--energy-float-backend",
                 choices=("numpy", "matlab_engine"),

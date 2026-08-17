@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-16 (Phase 1 CLOSED; stretch `blocked_float_path`; stale open-ship-gate operator loop removed)
+**Last synthesized:** 2026-08-17 (Phase 1 CLOSED + frozen baseline; Phase 2 profiling baseline; stretch `blocked_float_path`)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -26,6 +26,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 ### Snapshot (no frozen KPIs)
 
 - **Phase 1 is CLOSED** on the claim root named in ONE TRUTH. Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ADR 0012 evaluated ✅.
+- **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite the four protected dests listed there (`canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`).
 - Former Network one-strand fail was Edge Selection Ranking Residual; Claimed Trace Energy bake ([ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md)) fixed Edge Set ranking and Network followed.
 - **Crop = regression guard.** Preserve historical `v16` in place; do not overwrite. **Do not claim `v17`.**
 - Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
@@ -48,13 +49,9 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### True zero-tolerance stretch (operator notes)
 
-Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Rules and live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/stretch_status.json` (`blocked_float_path`). Do **not** relaunch that dest.
+Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `stretch_status.json`. Diagnosis (helper body leftover): [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md). Do **not** relaunch `crop_M_stretch_engine_v2`. U5/U6 stay gated without a stretch unlock token. Never overwrite the four protected dests in the freeze JSON.
 
-```powershell
-slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
-```
-
-U5/U6 stay gated without a stretch unlock token. Never overwrite `canonical_full_v18` or `crop_M_exact_v3`. One production chunk (ZYX `(13, 0, 0)`, scale 43, octave 2, chunk 0) named helper/oracle (re-run == v2, both ≠ oracle; packaging OK). Lattice/params: rf-matched lattices identical (821=821); octave-index 75 vs 726 is `unique()` labeling; residual is helper body vs original MATLAB chunk math. Not unlock. Scratch: `workspace/scratch/stretch_one_production_chunk.json`, `workspace/scratch/stretch_lattice_params_isolation.json`.
+Inspect command is in [Operating sequence A](#a-stretch-energy-isolation-current).
 
 ### Primary loop KPI
 
@@ -95,9 +92,9 @@ Phase 1 already closed on `canonical_full_v18`. Do **not** destroy `v6`…`v16` 
 
 ### C. After Phase 1 closes (current)
 
-- Promote summary to `workspace/reports/` if warranted.
-- Strict-field stretch optional on crop.
-- Phase 2 optimization / paper-profile cert per [phase-2-optimization-spec.md](../docs/plans/phase-2-optimization-spec.md) and roadmap.
+- Frozen hash bridge: [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json).
+- Phase 2 profiling baseline (read-only): [phase2-profiling-baseline.json](../docs/reference/core/phase2-profiling-baseline.json). Energy/Vertices elapsed 0 = carried lineage; measured dest bottleneck is Edges. Energy `--n-jobs auto` is implemented (opt-in; dest default stays 1) — do not reimplement. Next performance slice: Edges/Network profiling on an authorized writer. **Fortran-order unwind still needs an explicit Phase 2 ADR** before production code changes. Paper-profile volume/oracle TBD.
+- Strict-field stretch optional on crop (gated on Energy unlock).
 - Cite claim proofs:
   ```powershell
   slavv parity inspect-proof --path workspace/runs/oracle_180709_E/canonical_full_v18/03_Analysis/exact_proof_edges.json --require-evaluated
@@ -116,6 +113,8 @@ Phase 1 already closed on `canonical_full_v18`. Do **not** destroy `v6`…`v16` 
 | Area | Files / functions | Planning note |
 |------|-------------------|---------------|
 | Claimed Trace Energy bake | `matlab_get_edges_by_watershed.py` assemble (`claim_map.energy_map`) | ADR 0013 — regression guard |
+| Stretch helper-body isolation | `pipeline/energy/stretch_helper_body_isolation.py` | Crop Energy `blocked_float_path`; not unlock |
+| Phase 2 profiling baseline | `analytics/performance/phase2_baseline.py` | Read-only frozen dest timings; not unwind |
 | Finalization | `pipeline/edges/finalize.py` | Crop guard; resample/map-resample/smooth/crop path |
 | Selection row order | `selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard (double-precision metric sort) |
 | Cleanup pruning | `cleanup.py` | Regression guard; MATLAB comparator green on same surface |

@@ -19,6 +19,9 @@
 | Experiment *data / artifact class* | `slavv_python.analytics.parity.experiments` (runbook: [parity-experiment-hygiene.md](solutions/best-practices/parity-experiment-hygiene.md)) | Unlabeled `probe_*.py`; treating finals as raw |
 | Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
 | Figure paint KPIs (mirror only) | [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py) | Second status tables in prose docs |
+| Frozen Phase 1 hashes | [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) | HANDOFF/TODO restatements of SHA-256 |
+| Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
+| Phase 2 profiling timings | [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json) | ROADMAP live wall-clock tables |
 | Archival deep dives / session diary | [investigations/](investigations/) · [findings diary](investigations/exact-proof-findings-diary/README.md) | Executable specs / current status |
 
 **One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
@@ -96,7 +99,7 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 4. **[Parity Methodology](reference/core/PARITY_METHODOLOGY.md)** — Why the bars are tolerance-based (literature-backed; validates ADR 0011/0012)
 5. **[Phase 1 Residual Experiment Analysis](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md)** — Current hypothesis, methodology, limitations, and next steps for the Network residual
 6. **[Experiment Analysis Template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md)** — Reusable structure for hypothesis-driven parity experiment notes
-7. **[Phase 1 → Phase 2 Transition Spec](plans/phase-1-to-phase-2-transition-spec.md)** — Baseline-freeze and handoff rules after Network ADR 0012 is green
+7. **[Phase 1 → Phase 2 Transition Spec](plans/phase-1-to-phase-2-transition-spec.md)** — Complete; frozen baseline [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json)
 8. **[Unproductive Loops](reference/core/UNPRODUCTIVE_LOOPS.md)** — Anti-patterns (stale gates, probe orientation, Network misattribution)
 9. **[Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md)** — Three-tier testing (synthetic → crop → canonical)
 10. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow

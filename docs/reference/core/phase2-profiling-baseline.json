@@ -1,0 +1,68 @@
+{
+  "bottleneck_full_pipeline_historical": "energy",
+  "bottleneck_measured_on_dest": "edges",
+  "checkpoint_bytes": {
+    "edges": 30259642,
+    "energy": 167776994,
+    "network": 106365859,
+    "vertices": 1545138
+  },
+  "claim_run_root": "workspace/runs/oracle_180709_E/canonical_full_v18",
+  "dest_resolved": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18",
+  "do_not_overwrite": [
+    "canonical_full_v18",
+    "canonical_full_v16",
+    "crop_M_exact_v3",
+    "crop_M_stretch_engine_v2"
+  ],
+  "energy_historical_note": "Energy wall-clock is not measured on the frozen dest. Historical n_jobs=6 throughput lives in docs/solutions/parity/exact-energy-chunk-parallelism.md and is not this dest's stage_metrics.",
+  "freeze_ref": "docs/reference/core/phase1-baseline-freeze.json",
+  "isolation_only": false,
+  "manifest_status": "passed",
+  "n_jobs": 6,
+  "next_allowed": "Energy --n-jobs auto is implemented (opt-in; dest default stays 1). Next: Edges/Network profiling on an authorized writer. Fortran-order unwind still needs an explicit Phase 2 ADR.",
+  "not_stretch": true,
+  "not_unwind": true,
+  "phase": 2,
+  "python_commit": "c6f99619083c31440d9cea8adb45bca733f22025",
+  "recorded_at": "2026-08-17",
+  "result": "ok",
+  "schema_version": 1,
+  "stages": {
+    "edges": {
+      "completed_at": "2026-08-13T21:07:38Z",
+      "elapsed_seconds": 5534.0,
+      "measured": true,
+      "name": "edges",
+      "peak_memory_bytes": 1574629376,
+      "status": "completed"
+    },
+    "energy": {
+      "completed_at": "2026-08-13T19:35:24Z",
+      "elapsed_seconds": 0.0,
+      "measured": false,
+      "name": "energy",
+      "peak_memory_bytes": 538206208,
+      "reason": "elapsed_seconds=0 means cache-resumed / carried lineage, not instant compute",
+      "status": "completed"
+    },
+    "network": {
+      "completed_at": "2026-08-13T21:14:34Z",
+      "elapsed_seconds": 416.0,
+      "measured": true,
+      "name": "network",
+      "peak_memory_bytes": 973574144,
+      "status": "completed"
+    },
+    "vertices": {
+      "completed_at": "2026-08-13T19:35:24Z",
+      "elapsed_seconds": 0.0,
+      "measured": false,
+      "name": "vertices",
+      "peak_memory_bytes": 538918912,
+      "reason": "elapsed_seconds=0 means cache-resumed / carried lineage, not instant compute",
+      "status": "completed"
+    }
+  },
+  "workstream": "profiling_baseline"
+}
