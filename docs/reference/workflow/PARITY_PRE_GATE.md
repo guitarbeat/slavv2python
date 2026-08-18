@@ -126,7 +126,7 @@ Do **not** reuse `180709_E_batch_190910-103039` mats spatially cropped in Python
 slavv parity init-exact-run `
   --dataset-root workspace/datasets/<crop_dataset_id> `
   --oracle-root workspace/oracles/180709_E_crop_M_v2 `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --stop-after network `
   --energy-storage-format npy
 ```
@@ -135,8 +135,8 @@ Sequential certification on that run root:
 
 ```powershell
 slavv parity prove-exact-sequence `
-  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2
 ```
 
@@ -144,25 +144,25 @@ Reports: per-stage `03_Analysis/exact_proof_<stage>.json` and summary `03_Analys
 
 ### Active crop closure workflow
 
-Use this when a crop rerun is already active under `workspace/runs/oracle_180709_E/crop_M_exact`:
+Use this when a crop rerun is already active under `workspace/runs/oracle_180709_E/crop_M_exact_v3`:
 
 ```powershell
 # Watch the crop run from the consolidated operations console
-slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact
+slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3
 
 # Or print one non-interactive snapshot
-slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact --once
+slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 --once
 
 # When it exits, prove energy first
 slavv parity prove-exact `
-  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --stage energy
 
 # If energy passes after an energy-only rerun, refresh downstream checkpoints
 slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --force-rerun-from vertices `
   --stop-after network `
@@ -170,8 +170,8 @@ slavv parity resume-exact-run `
 
 # Then run the sequential crop gate on fresh checkpoints
 slavv parity prove-exact-sequence `
-  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
-  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2
 ```
 

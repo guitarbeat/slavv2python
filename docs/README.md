@@ -1,7 +1,7 @@
 # Documentation
 
 **Quick Navigation:** 
-[🆕 New Users](#-new-to-slavv) · [🤖 AI Agents](#-ai-agents) · [🔬 Parity Work](#-parity-work) · [💻 Contributors](#-contributors) · [📚 All Docs](#-all-documentation) · [⚡ Quick Reference](QUICK_REFERENCE.md)
+[🆕 New Users](#-new-to-slavv) · [🤖 AI Agents](#-ai-agents) · [🔬 Parity Work](#-parity-work--python-slavv-facade) · [💻 Contributors](#-contributors) · [📚 All Docs](#-all-documentation) · [⚡ Quick Reference](QUICK_REFERENCE.md)
 
 ---
 

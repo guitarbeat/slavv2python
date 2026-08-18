@@ -80,7 +80,7 @@ python -m tests.support.parity_harness regression
 
 # Probe top prove-exact mismatch groups
 python -m tests.support.batch_energy_mismatch_probe --mode mismatch-groups `
-  --probe-requests workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis/energy_probe_requests.json
+  --probe-requests workspace/runs/oracle_180709_E/crop_M_exact_v3/03_Analysis/energy_probe_requests.json
 
 # Export probes for MATLAB-side execution, then compare JSONL responses
 python -m tests.support.parity_harness export-jsonl --output workspace/scratch/python_probes.jsonl

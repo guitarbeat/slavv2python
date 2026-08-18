@@ -211,7 +211,7 @@ slavv parity prove-exact --stage edges
 ### Key Parity Rules
 *   **Lowest Linear Index Priority**: When energies are equal, the tie-breaking rule selects the voxel with the lowest Fortran-order linear index.
 *   **Contiguity Protection**: All spatial maps must be kept in Fortran-contiguous memory (`np.asfortranarray`). Standard operations that return C-contiguous arrays (like `np.clip` or copies) must be explicitly cast back.
-*   **Numeric Certification**: Energy and Vertices must achieve strict discrete equality and $np.allclose$ on floats ([ADR 0011](docs/adr/0011-energy-float-certification-policy.md)). Edges and Network must pass the spatial multiset comparison bars defined in [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md).
+*   **Numeric Certification**: Energy and Vertices must achieve strict discrete equality and $np.allclose$ on floats ([ADR 0011](../../adr/0011-energy-float-certification-policy.md)). Edges and Network must pass the spatial multiset comparison bars defined in [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md).
 
 ---
 

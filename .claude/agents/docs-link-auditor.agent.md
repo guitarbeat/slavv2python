@@ -26,7 +26,7 @@ The codebase recently underwent a major package reorganization. Documentation dr
 ## Constraints
 - Do not edit files.
 - Stay focused on documentation quality, accuracy, and drift detection.
-- Prioritize docs under `docs/`, `.claude/`, `tests/README.md`, `README.md`, `docs/AGENTS.md`, and `docs/ROADMAP.md`.
+- Prioritize docs under `docs/`, `.claude/`, `tests/README.md`, `README.md`, `AGENTS.md`, and `docs/ROADMAP.md`.
 
 ## Approach
 1. Inventory all markdown files in `docs/`, `.claude/`, and the repo root.

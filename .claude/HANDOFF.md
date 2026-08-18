@@ -26,7 +26,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 ### Snapshot (no frozen KPIs)
 
 - **Phase 1 is CLOSED** on the claim root named in ONE TRUTH. Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ADR 0012 evaluated ✅.
-- **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite the three protected dests listed there (`canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`).
+- **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite freeze JSON `do_not_overwrite` / `LIVE_DEST_NAMES` (`canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`). Writer blocklist `PROTECTED_DEST_NAMES` also includes historical `canonical_full_v16`.
 - Former Network one-strand fail was Edge Selection Ranking Residual; Claimed Trace Energy bake ([ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md)) fixed Edge Set ranking and Network followed.
 - **Crop = regression guard.** Historical `v16` proofs are archived (volume removed 2026-08-18). **Do not claim `v17`.**
 - Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
@@ -51,7 +51,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 **In short:** Phase 1 already shipped. Stretch is the extra “every Energy number identical bits” goal. The crop is about 90% exact; leftover last-digit diffs are **not** 100%. Tiny photos matching does not solve the crop. Do **not** rerun the crop Energy writer.
 
-Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `stretch_status.json`. Readable diagnosis: [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md). Do **not** relaunch `crop_M_stretch_engine_v2`. U5/U6 stay gated without a stretch unlock token. Never overwrite the three protected dests in the freeze JSON.
+Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `stretch_status.json`. Readable diagnosis: [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md). Do **not** relaunch `crop_M_stretch_engine_v2`. U5/U6 stay gated without a stretch unlock token. Never overwrite freeze JSON `do_not_overwrite` (`LIVE_DEST_NAMES`). Writer blocklist is `PROTECTED_DEST_NAMES` (those three plus `canonical_full_v16`).
 
 Inspect command is in [Operating sequence A](#a-stretch-energy-isolation-current).
 

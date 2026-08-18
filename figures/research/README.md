@@ -20,7 +20,7 @@ claim figures — see [figures/README.md](../README.md).
 
 ```powershell
 python scripts/make_report_figures.py `
-  --ulp-json workspace\runs\oracle_180709_E\crop_M_exact\03_Analysis\exact_proof_energy_ulp.json `
+  --ulp-json workspace\runs\oracle_180709_E\crop_M_exact_v3\03_Analysis\exact_proof_energy_ulp.json `
   --run-log <run-log-with-joblib-progress> `
   --out-dir figures\research
 ```

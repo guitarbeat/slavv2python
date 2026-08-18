@@ -18,8 +18,8 @@ for arguments and detailed steps.
 | [`fix-ci`](fix-ci/SKILL.md) | Find failing PR checks, inspect logs or external check links, and apply focused fixes |
 | [`fix-merge-conflicts`](fix-merge-conflicts/SKILL.md) | Resolve merge conflicts non-interactively, validate build and tests, and finalize conflict resolution |
 | [`get-pr-comments`](get-pr-comments/SKILL.md) | Fetch and summarize review comments from the active pull request |
-| [`grill-with-docs`](grill-with-docs/SKILL.md) | Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (docs/AGENTS.md, ADRs) inline a... |
-| [`improve-codebase-architecture`](improve-codebase-architecture/SKILL.md) | Find deepening opportunities in a codebase, informed by the domain language in docs/AGENTS.md and the decisions in docs/adr/. |
+| [`grill-with-docs`](grill-with-docs/SKILL.md) | Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (AGENTS.md, ADRs) inline a... |
+| [`improve-codebase-architecture`](improve-codebase-architecture/SKILL.md) | Find deepening opportunities in a codebase, informed by the domain language in AGENTS.md and the decisions in docs/adr/. |
 | [`loop-on-ci`](loop-on-ci/SKILL.md) | Monitor PR checks and fix failures until green. |
 | [`make-interfaces-feel-better`](make-interfaces-feel-better/SKILL.md) | Design engineering principles for making interfaces feel polished. |
 | [`make-pr-easy-to-review`](make-pr-easy-to-review/SKILL.md) | Prepare PRs for review by cleaning noisy history, improving PR descriptions, and adding reviewer guidance without changing code behavior. |

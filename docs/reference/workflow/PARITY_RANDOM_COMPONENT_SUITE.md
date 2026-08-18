@@ -155,7 +155,7 @@ Live strict compare on IFFT-derived Hessian samples fails cross-language even wh
 1. **FFT libraries** — NumPy vs MATLAB MKL `ifftn(..., 'symmetric')` differs by ≥1 ULP on identical input.
 2. **Bessel libm** — `scipy.special.jv` vs MATLAB `besselj` in the spherical matching-kernel term drifts without the promoted matching reference on the Python side.
 
-Bit-identical Hessian certification remains on crop/canonical `prove-exact` oracles. See [EXACT_PROOF_FINDINGS.md § Random component parity](../core/EXACT_PROOF_FINDINGS.md#random-component-parity-2026-06-22).
+Bit-identical Hessian certification remains on crop/canonical `prove-exact` oracles. See [ADR 0010](../../adr/0010-random-component-parity-suite.md).
 
 ---
 

@@ -105,13 +105,13 @@ If the CLI needs richer terminal control, use `pty.fork()` or an existing PTY li
 Use this repo-specific loop when controlling long-running `slavv2python` pipeline or parity runs:
 
 1. Read `docs/reference/core/EXACT_PROOF_FINDINGS.md` before touching active parity runs.
-2. If `workspace/scratch/crop_energy_rerun_latest.pid` exists, check whether that process is alive before starting another writer on `workspace/runs/oracle_180709_E/crop_M_exact`.
+2. If `workspace/scratch/crop_energy_rerun_latest.pid` exists, check whether that process is alive before starting another writer on `workspace/runs/oracle_180709_E/crop_M_exact_v3`.
 3. Prefer the repo's monitor surfaces for structured run inspection:
 
 ```powershell
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact --once
-slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3 --once
+slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
 ```
 
 4. If a run is alive, do not start `init-exact-run`, `resume-exact-run`, or another command that writes to the same `--dest-run-root`.

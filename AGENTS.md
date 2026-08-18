@@ -40,7 +40,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 ### I'm working on MATLAB parity
 1. **Read [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** — Live status, claim root, residual, proof paths (**only** status truth)
 2. **Read [HANDOFF.md](.claude/HANDOFF.md)** — Decision point and operating commands (no frozen KPIs)
-3. Check if a rerun is active: `slavv jobs list` / `slavv status-exact-run --run-dir <dir>` or `99_Metadata/parity_job.pid`.
+3. Check if a rerun is active: `99_Metadata/parity_job.pid`, `slavv parity status-exact-run --run-dir <dir>`, or `slavv monitor --once`. Do not block on `slavv jobs list` (it can hang).
 4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
 5. Follow the operating sequence in [HANDOFF.md](.claude/HANDOFF.md); do not re-gate on the retired 80% crop-overlap milestone
 6. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
@@ -467,9 +467,9 @@ slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 
 ### Run Operations Console
 ```powershell
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact --once
-slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3 --once
+slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
 ```
 
 `slavv monitor` is the primary run-watching surface for structured pipeline and
