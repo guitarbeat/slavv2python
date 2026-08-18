@@ -109,8 +109,7 @@ their generators for the PhD proposal appendix and related methods write-ups.
 See [Experiment Root](../../../AGENTS.md#experiment-root).
 
 **Purpose:** On-disk home of Oracles, datasets, the live Claim Run Root, crop
-guard, stretch dest, and archived proofs. GitHub does not carry the binaries
-(not GitHub LFS). Copy by USB/rsync after clone. `scratch/` stays local.
+guard, stretch dest, and archived proofs. `scratch/` stays local.
 
 **Contains:**
 - `oracles/` — Preserved MATLAB truth vectors (local/USB)
@@ -119,7 +118,7 @@ guard, stretch dest, and archived proofs. GitHub does not carry the binaries
 - `datasets/` — Test volumes (local/USB)
 - `scratch/` — Temporary files, logs, one-off scripts (gitignored)
 
-**Key Trait:** Completeness is `slavv parity inspect-experiment-root` on this machine, not a GitHub LFS pull.
+**Key Trait:** Completeness is `slavv parity inspect-experiment-root` on this machine.
 
 **When to Add Here:**
 - Promoted Oracles and dataset TIFFs
@@ -131,8 +130,6 @@ guard, stretch dest, and archived proofs. GitHub does not carry the binaries
 - Documentation (`docs/`)
 - Reusable test fixtures (`tests/support/`)
 - Dual-write `checkpoint_edge_candidates.pkl` (read fallback only; gitignored)
-
-Check completeness: `slavv parity inspect-experiment-root`.
 
 ---
 
@@ -196,11 +193,11 @@ Check completeness: `slavv parity inspect-experiment-root`.
 
 ## Common Confusion Points
 
-### "Should parity_experiment.py be in slavv_python/?"
-**It's already there.** The parity tooling lives in `slavv_python/analytics/parity/` and is invoked via `slavv parity <subcommand>`. Developer probe scripts still live under `scripts/` (not the public CLI).
+### "Should the parity CLI live in slavv_python/?"
+**Yes.** The parity tooling lives in `slavv_python/analytics/parity/` and is invoked via `slavv parity <subcommand>`. Developer probe scripts still live under `scripts/` (not the public CLI).
 
 ### "Should I commit my workspace/ folder?"
-**Binaries, no. Scratch, no.** See [Experiment Root](../../../AGENTS.md#experiment-root). GitHub does not carry Oracle/dest/dataset binaries (not GitHub LFS). `workspace/scratch/` stays gitignored. After clone, copy binaries by USB/rsync and run `slavv parity inspect-experiment-root`.
+**See [Experiment Root](../../../AGENTS.md#experiment-root).** GitHub carries code, not Oracle/dest/dataset binaries. Completeness is `slavv parity inspect-experiment-root` after USB/rsync.
 
 ### "Can scripts/ import from slavv_python/?"
 **Yes.** `scripts/` contains developer probe scripts (e.g. `watershed_frontier_diff.py`, `edge_selection_funnel_probe.py`) referenced from [HANDOFF](../../../.claude/HANDOFF.md). They import from `slavv_python/` and are not part of the public CLI — use `slavv parity <subcommand>` for product workflows.

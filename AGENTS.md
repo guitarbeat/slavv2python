@@ -185,7 +185,7 @@ _Avoid_: Overwriting the live claim dest; promoting a diagnostic successor to cl
 
 ### Experiment Root
 The on-disk home of [Oracles](#oracle), datasets, the live [Claim Run Root](#claim-run-root), crop-guard and stretch dests, and archived proofs under `workspace/`. GitHub carries package code and the Vectorization-Public submodule. Experiment Root binaries stay local or copy by USB/rsync (not GitHub LFS). `workspace/scratch/` is gitignored. Completeness: `slavv parity inspect-experiment-root` (rejects Git LFS pointer stubs).
-_Avoid_: Treating scratch probes as the Experiment Root; pushing Experiment Root binaries to GitHub LFS; dual-writing a second Candidate Set file into git; treating MATLAB Vectorization-Public or neurovasc-db as Experiment Root.
+_Avoid_: Treating scratch probes as the Experiment Root; pushing Experiment Root binaries to GitHub LFS; dual-writing a second Candidate Set file into git; treating MATLAB Vectorization-Public or neurovasc-db as Experiment Root; equating freeze JSON `do_not_overwrite` with `PROTECTED_DEST_NAMES`.
 
 ### Certification
 The state in which every required [Pipeline](#pipeline) stage passes its defined parity bar on a defined volume and workflow: Energy and Vertices use strict discrete equality plus `np.allclose` on continuous floats ([ADR 0011](docs/adr/0011-energy-float-certification-policy.md)); Edges and Network use the spatial bars in [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) (ownership-map, trace tolerance, strand/bifurcation multisets)—not exact watershed edge-pair or strand-order equality. Phase 1 standing is Certification on the [Claim Run Root](#claim-run-root), not the audit/E-series portfolio.

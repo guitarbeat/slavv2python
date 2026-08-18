@@ -8,7 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from slavv_python.analytics.parity.constants import PROTECTED_DEST_NAMES
+from slavv_python.analytics.parity.constants import (
+    HISTORICAL_CLAIM_RUN_NAME,
+    LIVE_DEST_NAMES,
+    PROTECTED_DEST_NAMES,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _FREEZE_PATH = _REPO_ROOT / "docs" / "reference" / "core" / "phase1-baseline-freeze.json"
@@ -46,7 +50,11 @@ def test_freeze_json_schema_and_hashes() -> None:
     assert payload["frozen"] is True
     assert payload["phase1_status"] == "CLOSED"
     assert payload["not_stretch"] is True
-    assert tuple(payload["do_not_overwrite"]) == PROTECTED_DEST_NAMES
+    assert tuple(payload["do_not_overwrite"]) == LIVE_DEST_NAMES
+    assert HISTORICAL_CLAIM_RUN_NAME not in LIVE_DEST_NAMES
+    assert HISTORICAL_CLAIM_RUN_NAME in PROTECTED_DEST_NAMES
+    assert set(LIVE_DEST_NAMES) <= set(PROTECTED_DEST_NAMES)
+    assert LIVE_DEST_NAMES != PROTECTED_DEST_NAMES
     proofs = payload["proof_file_sha256"]
     for name in _PROOF_FILES:
         digest = proofs[name]

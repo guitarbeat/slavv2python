@@ -1,0 +1,300 @@
+diff --git a/source/get_edges_by_watershed.m b/source/get_edges_by_watershed.m
+index a6cb219..a80ec48 100644
+--- a/source/get_edges_by_watershed.m
++++ b/source/get_edges_by_watershed.m
+@@ -130,17 +130,32 @@ vertex_adjacency_matrix( 1 : ( number_of_vertices + 2 )       ...
+                            : ( number_of_vertices + 1 ) ^ 2 ) = 1 ; % mark all vertices as self-adjacent: sparse identity matrix results
+ 
+ %% main WHILE: tracing to lowest available energy location
+-% available_locations = vertex_locations ;
+-available_locations = vertex_locations( end : -1 : 1 ); % switch the order of the vertex locations so the best locations are at the bottom of the list, and we don't have to look far to get to them in the FIND( ___, 'last' ) call later
+-
+-while true
+-    %% choose next index
+-    
+-    % requiring an available move
+-    if isempty( available_locations ), break, end        
+-    
+-    current_location           = available_locations( end ); % pre-sorted % SAM 1/27/22
+-
++% available_locations = vertex_locations ;
++available_locations = vertex_locations( end : -1 : 1 ); % switch the order of the vertex locations so the best locations are at the bottom of the list, and we don't have to look far to get to them in the FIND( ___, 'last' ) call later
++
++trace_iteration = 0 ;
++trace_fid = -1 ;
++trace_path = getenv( 'SLAVV_WATERSHED_TRACE_PATH' );
++trace_iterations = parse_trace_integer_list( getenv( 'SLAVV_WATERSHED_TRACE_ITERATIONS' ));
++trace_targets = parse_trace_integer_list( getenv( 'SLAVV_WATERSHED_TRACE_TARGETS' ));
++trace_sample_limit = parse_trace_scalar( getenv( 'SLAVV_WATERSHED_TRACE_SAMPLE_LIMIT' ), 12 );
++if ~ isempty( trace_path )
++    trace_parent = fileparts( trace_path );
++    if ~ isempty( trace_parent ) && ~ exist( trace_parent, 'dir' ), mkdir( trace_parent ); end
++    trace_fid = fopen( trace_path, 'w' );
++    if trace_fid < 0, error([ 'Could not open watershed trace file: ', trace_path ]); end
++end
++
++while true
++    %% choose next index
++    
++    % requiring an available move
++    if isempty( available_locations ), break, end        
++
++    trace_iteration = trace_iteration + 1 ;
++    
++    current_location           = available_locations( end ); % pre-sorted % SAM 1/27/22
++
+ %     [ min_available_energy, current_available_index ] = min( energy_map( available_locations ));
+ %     [ min_available_energy, current_available_index ] = min( energy_map_backup( available_locations ));
+        min_available_energy  =         energy_map_temp( current_location ); % pre-sorted % SAM 1/27/22
+@@ -157,9 +172,9 @@ while true
+     
+ %     if ~ is_new_trace_from_current_location % only check this if it is not a vertex location to save time
+         % requiring negative edge energy to explore    
+-    if min_available_energy >= 0, break, end
+-%         % requiring edge energy above the tolerance to continue exploring !!!!!! not fair to verticies with worse energy
+-%         if min_available_energy >= energy_map( vertex_locations( current_strel_vertex_index )) ...
++    if min_available_energy >= 0, break, end
++%         % requiring edge energy above the tolerance to continue exploring !!!!!! not fair to verticies with worse energy
++%         if min_available_energy >= energy_map( vertex_locations( current_strel_vertex_index )) ...
+ %                                  * ( 1 - energy_tolerance )                                  , break, end
+ 
+ %     end
+@@ -290,9 +305,9 @@ while true
+ %     distance_energy_adjustment_factor = exp( - distance_map( current_location ) ^ 2 / 2 ); % put the tolerance limit at a z score of 1 SAM 1/11/22
+     distance_energy_adjustment_factor = exp( - ( 3 * d_over_r_map( current_location ) / distance_tolerance ) ^ 2 / 2 ); % put the tolerance limit at a z score of 3 SAM 2/4/22
+ 
+-    current_strel_energies = current_strel_energies * distance_energy_adjustment_factor ;
+-% 
+-%         end % IF distance max constraint (for speed/memory)
++    current_strel_energies = current_strel_energies * distance_energy_adjustment_factor ;
++% 
++%         end % IF distance max constraint (for speed/memory)
+ 
+ 
+ %         end % IF distance max constraint (for speed/memory)    
+@@ -397,17 +412,20 @@ while true
+ % % 
+ % % %                 if is_constrained_by_parent_edge_direction 
+ % % 
+-
+-    %% write the newly revealed neighborhood to the energy, vertex, pointer, distance, and size maps
+-
++
++    %% write the newly revealed neighborhood to the energy, vertex, pointer, distance, and size maps
++
+ %     is_not_self_vertex_in_strel   = vertices_of_current_strel ~= current_vertex_index ;    
+ %     is_not_self_vertex_in_strel = vertices_of_current_strel == 0 ;     % unnassigned to a vertex is not self
+ %     is_not_self_vertex_in_strel(  vertices_of_current_strel ~= 0 ) ... % and where it is nonzero ...
+ %         = ~ vertex_adjacency_matrix( current_vertex_index, nonzeros( vertices_of_current_strel )); % check the (NOT-)adjacency matrix for "(ANTI-)self-ness"
+-    
+-    is_without_vertex_in_strel = vertex_index_map( current_strel ) == 0 ;
+-    
+-% %     is_new_in_strel =         pointer_map( current_strel ) == 0 ...
++    
++    is_without_vertex_in_strel = vertex_index_map( current_strel ) == 0 ;
++    pointer_values_before_claim = pointer_map( current_strel );
++    d_over_r_values_before_claim = d_over_r_map( current_strel );
++    size_values_before_claim = size_map( current_strel );
++    
++% %     is_new_in_strel =         pointer_map( current_strel ) == 0 ...
+ % %                     &    vertex_index_map( current_strel ) == 0 ;...    % locations that have not been explored by any vertex    
+ % %                 ...        & current_strel_energies                   < 0 ;
+ % %             ...            & is_energy_tolerated_in_strel ;
+@@ -423,12 +441,18 @@ while true
+ %         distance_map( current_strel_new ) = current_strel_distance_LUT_range( is_new_in_strel ) ...
+ %                                           + distance_map( current_location  );
+                       current_strel_unclaimed   = current_strel(                    is_without_vertex_in_strel );
+-    vertex_index_map( current_strel_unclaimed ) = current_strel_vertex_index ;
+-          energy_map( current_strel_unclaimed ) = current_strel_energies(           is_without_vertex_in_strel );    
+-         pointer_map( current_strel_unclaimed ) = current_strel_pointers_LUT_range( is_without_vertex_in_strel );
+-        d_over_r_map( current_strel_unclaimed ) = current_strel_r_over_R_LUT_range( is_without_vertex_in_strel ) ...
+-                                                + d_over_r_map( current_location  );
+-            size_map( current_strel_unclaimed ) = size_map(     current_location ); % overwriting size map so that all strels from traces belonging to the same vertex are the same size
++    vertex_index_map( current_strel_unclaimed ) = current_strel_vertex_index ;
++          energy_map( current_strel_unclaimed ) = current_strel_energies(           is_without_vertex_in_strel );    
++         pointer_map( current_strel_unclaimed ) = current_strel_pointers_LUT_range( is_without_vertex_in_strel );
++        d_over_r_map( current_strel_unclaimed ) = current_strel_r_over_R_LUT_range( is_without_vertex_in_strel ) ...
++                                                + d_over_r_map( current_location  );
++            size_map( current_strel_unclaimed ) = size_map(     current_location ); % overwriting size map so that all strels from traces belonging to the same vertex are the same size
++    write_strel_trace_event( trace_fid, trace_iterations, trace_targets, trace_sample_limit, trace_iteration, current_location, current_strel_vertex_index, ...
++                             size_map( current_location ), pointer_map( current_location ), d_over_r_map( current_location ), current_strel, ...
++                             current_strel_pointers_LUT_range, current_strel_r_over_R_LUT_range, energy_map_temp( current_strel ), ...
++                             current_strel_energies, vertices_of_current_strel, is_without_vertex_in_strel, pointer_values_before_claim, ...
++                             d_over_r_values_before_claim, size_values_before_claim, vertex_index_map( current_strel ), pointer_map( current_strel ), ...
++                             d_over_r_map( current_strel ), size_map( current_strel ));
+ %     branch_order_map( current_strel_new ) =     branch_order_map( current_location )...
+ %                                           + uint8( ~ pointer_map( current_location ));        % !!!!!! new definition 11/4/21                            
+ 
+@@ -511,9 +535,13 @@ while true
+         
+ %             % !!!!!!!!!!!!!!!!! % reset the energy for this location % SAM 11/3/21
+ %             energy_map( next_location ) = current_strel_energies( strel_idx );
+-        if ~ is_energy_tolerated_in_strel( strel_idx )
+-%             if ~ is_current_location_clear, available_locations( available_locations == current_location ) = [ ];  is_current_location_clear = true ; end
+-            if ~ is_current_location_clear, is_current_location_clear = true ; available_locations( end ) = [ ]; end
++        if ~ is_energy_tolerated_in_strel( strel_idx )
++%             if ~ is_current_location_clear, available_locations( available_locations == current_location ) = [ ];  is_current_location_clear = true ; end
++            if ~ is_current_location_clear
++                write_frontier_action_event( trace_fid, trace_targets, trace_iteration, 'discard_current', current_location, current_location, seed_idx, current_strel_energies( strel_idx ), branch_order_map( current_location ), next_vertex_index );
++                is_current_location_clear = true ;
++                available_locations( end ) = [ ];
++            end
+         else
+             if next_vertex_index == 0 % IF the next location has not yet been explored by another vertex before
+ 
+@@ -551,13 +579,14 @@ while true
+                                 location_idx =      find(    energy_map_temp( available_locations       )             ...
+                                                           <  energy_map_temp(      next_location        ), 1, 'first' );
+                          end                            
+-                    end
+-%                     if isempty( location_idx )
+-%                         warning('here')
+-%                     end
+-                    if  ~ is_current_location_clear 
+-                          is_current_location_clear = true ;
+-                          available_locations = [ available_locations( 1 : location_idx - 1 ); next_location; available_locations( location_idx : end - 1 )]; % pre-sorted % SAM 1/27/22  
++                    end
++%                     if isempty( location_idx )
++%                         warning('here')
++%                     end
++                    write_frontier_action_event( trace_fid, trace_targets, trace_iteration, 'push', current_location, next_location, seed_idx, energy_map_temp( next_location ), branch_order_map( next_location ), next_vertex_index );
++                    if  ~ is_current_location_clear 
++                          is_current_location_clear = true ;
++                          available_locations = [ available_locations( 1 : location_idx - 1 ); next_location; available_locations( location_idx : end - 1 )]; % pre-sorted % SAM 1/27/22  
+                     else, available_locations = [ available_locations( 1 : location_idx - 1 ); next_location; available_locations( location_idx : end     )]; % pre-sorted % SAM 1/27/22  
+                     end                    
+                 end
+@@ -579,10 +608,11 @@ while true
+ %     %                 available_locations_map( locations_to_reset ) = false ;
+ % 
+ %                 for location = locations_to_reset, available_locations( available_locations == location ) = [ ]; end
+-
+-                locations_to_reset = intersect( available_locations, current_strel( is_next_vertex_in_strel ))' ;
+-
+-%                 if ~ is_current_location_clear,  locations_to_reset = [ locations_to_reset,  current_location ]; is_current_location_clear = true ; end %#ok<AGROW>
++
++                locations_to_reset = intersect( available_locations, current_strel( is_next_vertex_in_strel ))' ;
++                write_frontier_action_event( trace_fid, trace_targets, trace_iteration, 'join_reset_candidates', current_location, locations_to_reset, seed_idx, current_strel_energies( strel_idx ), branch_order_map( current_location ), next_vertex_index );
++
++%                 if ~ is_current_location_clear,  locations_to_reset = [ locations_to_reset,  current_location ]; is_current_location_clear = true ; end %#ok<AGROW>
+                 if ~ is_current_location_clear, is_current_location_clear = true ; ...
+                         locations_to_reset( locations_to_reset == available_locations( end )) = [ ]; ...
+                                                                   available_locations( end )  = [ ]; ...
+@@ -937,8 +967,114 @@ pointer_map( pointer_map > 0 ) ...
+ %         
+ %     end % FUNCTION get_edge_direction
+ 
+-% max( moves_per_vertex )
+-
+-end % FUNCTION get_edges_by_watershed
++% max( moves_per_vertex )
++
++if trace_fid > 0, fclose( trace_fid ); end
++
++function values = parse_trace_integer_list( raw_value )
++    values = [];
++    if isempty( raw_value ), return, end
++    tokens = regexp( raw_value, '[,;\s]+', 'split' );
++    for token_idx = 1 : numel( tokens )
++        token = strtrim( tokens{ token_idx } );
++        if isempty( token ), continue, end
++        value = str2double( token );
++        if ~ isnan( value ), values( end + 1 ) = round( value ); end %#ok<AGROW>
++    end
++end
++
++function value = parse_trace_scalar( raw_value, default_value )
++    value = default_value ;
++    if isempty( raw_value ), return, end
++    parsed = str2double( raw_value );
++    if ~ isnan( parsed ), value = max( 1, round( parsed )); end
++end
++
++function write_strel_trace_event( fid, iterations, targets, sample_limit, iteration, current_location, current_vertex_index, current_scale_label, current_pointer_value, current_d_over_r, ...
++                                  strel_linear, strel_pointer_indices, strel_r_over_R, raw_energies, adjusted_energies, vertices_before_claim, is_without_vertex, ...
++                                  pointer_before_claim, d_over_r_before_claim, size_before_claim, vertices_after_claim, pointer_after_claim, d_over_r_after_claim, size_after_claim )
++    if fid <= 0, return, end
++    if ~ isempty( iterations ) && ~ any( iterations == iteration ), return, end
++
++    [ ~, order ] = sortrows([ adjusted_energies(:), double( strel_linear(:)) ], [ 1, 2 ]);
++    sample_indices = order( 1 : min( sample_limit, numel( order )));
++
++    event = struct();
++    event.event = 'strel_state';
++    event.iteration = double( iteration );
++    event.current_linear = double( current_location );
++    event.current_vertex_index = double( current_vertex_index );
++    event.current_scale_label = double( current_scale_label );
++    event.current_pointer_value = double( current_pointer_value );
++    event.current_d_over_r = double( current_d_over_r );
++    event.top_adjusted = build_strel_trace_rows( sample_indices, strel_linear, strel_pointer_indices, strel_r_over_R, raw_energies, adjusted_energies, ...
++                                                 vertices_before_claim, is_without_vertex, pointer_before_claim, d_over_r_before_claim, size_before_claim, ...
++                                                 vertices_after_claim, pointer_after_claim, d_over_r_after_claim, size_after_claim );
++    target_indices = find( ismember( double( strel_linear(:) ), double( targets(:) )));
++    event.targets = build_strel_trace_rows( target_indices, strel_linear, strel_pointer_indices, strel_r_over_R, raw_energies, adjusted_energies, ...
++                                            vertices_before_claim, is_without_vertex, pointer_before_claim, d_over_r_before_claim, size_before_claim, ...
++                                            vertices_after_claim, pointer_after_claim, d_over_r_after_claim, size_after_claim );
++    fprintf( fid, '%s\n', jsonencode( event ));
++end
++
++function write_frontier_action_event( fid, targets, iteration, action, current_location, locations, seed_idx, energy_value, branch_order, next_vertex_index )
++    if fid <= 0, return, end
++    if isempty( targets ), return, end
++    target_locations = intersect( double( locations(:)' ), double( targets ));
++    if isempty( target_locations ), return, end
++
++    event = struct();
++    event.event = 'frontier_action';
++    event.iteration = double( iteration );
++    event.action = action;
++    event.current_linear = double( current_location );
++    event.target_locations = target_locations;
++    event.details = struct( ...
++        'seed_idx', double( seed_idx ), ...
++        'energy', double( energy_value ), ...
++        'branch_order', double( branch_order ), ...
++        'next_vertex_index', double( next_vertex_index ));
++    fprintf( fid, '%s\n', jsonencode( event ));
++end
++
++function rows = build_strel_trace_rows( indices, strel_linear, strel_pointer_indices, strel_r_over_R, raw_energies, adjusted_energies, vertices_before_claim, is_without_vertex, ...
++                                        pointer_before_claim, d_over_r_before_claim, size_before_claim, vertices_after_claim, pointer_after_claim, d_over_r_after_claim, size_after_claim )
++    rows = repmat( struct( ...
++        'strel_index', [], ...
++        'linear', [], ...
++        'strel_pointer', [], ...
++        'strel_r_over_R', [], ...
++        'raw_energy', [], ...
++        'adjusted_energy', [], ...
++        'vertex_index_before_claim', [], ...
++        'is_without_vertex', [], ...
++        'pointer_before_claim', [], ...
++        'd_over_r_before_claim', [], ...
++        'size_before_claim', [], ...
++        'vertex_index_after_claim', [], ...
++        'pointer_after_claim', [], ...
++        'd_over_r_after_claim', [], ...
++        'size_after_claim', [] ), numel( indices ), 1 );
++    for trace_row_idx = 1 : numel( indices )
++        trace_strel_idx = indices( trace_row_idx );
++        rows( trace_row_idx ).strel_index = double( trace_strel_idx );
++        rows( trace_row_idx ).linear = double( strel_linear( trace_strel_idx ));
++        rows( trace_row_idx ).strel_pointer = double( strel_pointer_indices( trace_strel_idx ));
++        rows( trace_row_idx ).strel_r_over_R = double( strel_r_over_R( trace_strel_idx ));
++        rows( trace_row_idx ).raw_energy = double( raw_energies( trace_strel_idx ));
++        rows( trace_row_idx ).adjusted_energy = double( adjusted_energies( trace_strel_idx ));
++        rows( trace_row_idx ).vertex_index_before_claim = double( vertices_before_claim( trace_strel_idx ));
++        rows( trace_row_idx ).is_without_vertex = logical( is_without_vertex( trace_strel_idx ));
++        rows( trace_row_idx ).pointer_before_claim = double( pointer_before_claim( trace_strel_idx ));
++        rows( trace_row_idx ).d_over_r_before_claim = double( d_over_r_before_claim( trace_strel_idx ));
++        rows( trace_row_idx ).size_before_claim = double( size_before_claim( trace_strel_idx ));
++        rows( trace_row_idx ).vertex_index_after_claim = double( vertices_after_claim( trace_strel_idx ));
++        rows( trace_row_idx ).pointer_after_claim = double( pointer_after_claim( trace_strel_idx ));
++        rows( trace_row_idx ).d_over_r_after_claim = double( d_over_r_after_claim( trace_strel_idx ));
++        rows( trace_row_idx ).size_after_claim = double( size_after_claim( trace_strel_idx ));
++    end
++end
++
++end % FUNCTION get_edges_by_watershed
+ 
+ 

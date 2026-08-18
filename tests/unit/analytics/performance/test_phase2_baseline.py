@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from slavv_python.analytics.parity.constants import PROTECTED_DEST_NAMES
+from slavv_python.analytics.parity.constants import LIVE_DEST_NAMES
 from slavv_python.analytics.performance.phase2_baseline import (
     CARRIED_REASON,
     ENERGY_HISTORICAL_NOTE,
@@ -55,7 +55,7 @@ def test_payload_refuses_unwind_and_stretch_claims() -> None:
     assert payload["not_stretch"] is True
     assert payload["bottleneck_measured_on_dest"] == "edges"
     assert payload["bottleneck_full_pipeline_historical"] == "energy"
-    assert payload["do_not_overwrite"] == list(PROTECTED_DEST_NAMES)
+    assert payload["do_not_overwrite"] == list(LIVE_DEST_NAMES)
     assert ENERGY_HISTORICAL_NOTE in payload["energy_historical_note"]
     assert "auto is implemented" in payload["next_allowed"]
     assert "Edges/Network profiling" in payload["next_allowed"]
@@ -71,6 +71,6 @@ def test_tracked_baseline_schema_if_present() -> None:
     assert payload["stages"]["energy"]["measured"] is False
     assert payload["stages"]["edges"]["measured"] is True
     assert payload["bottleneck_measured_on_dest"] == "edges"
-    assert payload["do_not_overwrite"] == list(PROTECTED_DEST_NAMES)
+    assert payload["do_not_overwrite"] == list(LIVE_DEST_NAMES)
     assert "auto is implemented" in payload["next_allowed"]
     assert "Edges/Network profiling" in payload["next_allowed"]

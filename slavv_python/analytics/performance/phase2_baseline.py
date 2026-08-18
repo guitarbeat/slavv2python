@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from slavv_python.analytics.parity.constants import PROTECTED_DEST_NAMES
+from slavv_python.analytics.parity.constants import LIVE_DEST_NAMES
 
 PIPELINE_STAGES = ("energy", "vertices", "edges", "network")
 CARRIED_REASON = "elapsed_seconds=0 means cache-resumed / carried lineage, not instant compute"
@@ -111,7 +111,7 @@ def baseline_payload(
         "isolation_only": False,
         "not_unwind": True,
         "not_stretch": True,
-        "do_not_overwrite": list(PROTECTED_DEST_NAMES),
+        "do_not_overwrite": list(LIVE_DEST_NAMES),
         "n_jobs": n_jobs,
         "stages": {item.name: item.to_dict() for item in records},
         "bottleneck_measured_on_dest": bottleneck_measured(records),

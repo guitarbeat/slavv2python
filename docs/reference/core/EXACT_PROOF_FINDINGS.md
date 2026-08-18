@@ -163,5 +163,6 @@ Curated index of solved problems under `docs/solutions/`. Search via YAML frontm
 | Parity experiment hygiene | [parity-experiment-hygiene.md](../../solutions/best-practices/parity-experiment-hygiene.md) |
 | Curated vertices rank-ramp energies | [curated-vertices-rank-ramp-energies.md](../../solutions/integration-issues/curated-vertices-rank-ramp-energies.md) |
 | Crop Energy stretch leftover (tiny photos match; crop last digits do not) | [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) |
+| MATLAB watershed env-var trace hooks (re-apply patch; do not commit into Vectorization-Public) | [matlab-watershed-env-trace-hooks.md](../../solutions/parity/matlab-watershed-env-trace-hooks.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._

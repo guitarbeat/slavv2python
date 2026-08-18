@@ -9,161 +9,104 @@ stretch dest, and archived proofs. GitHub does not carry those binaries.
 After clone, copy binaries by USB/rsync, then:
 `slavv parity inspect-experiment-root`
 
+Folder-purpose rules: [FOLDER_PURPOSE_GUIDE.md](../docs/reference/core/FOLDER_PURPOSE_GUIDE.md).
+
 ---
 
 ## Directory Structure
 
 ```
 workspace/
-├── oracles/          # Preserved MATLAB truth vectors for parity testing
-├── runs/             # Trial pipeline runs with checkpoints and outputs
-├── reports/          # Promoted proof summaries
-├── datasets/         # Test datasets and sample volumes
-├── scratch/          # Temporary files, logs, one-off scripts
-└── index.jsonl       # Run index (auto-generated)
+├── oracles/          # Promoted MATLAB oracles (180709_E_full_v2, 180709_E_crop_M_v2)
+├── runs/             # Live dests under oracle_180709_E/
+├── reports/          # Archived proof JSON (phase1_volume_archive/)
+├── datasets/         # Input volumes (content-addressed dirs)
+├── scratch/          # Temporary files, logs, one-off scripts (gitignored)
+└── index.jsonl       # Run index (auto-generated, gitignored)
 ```
-
----
-
-## What Lives Here
 
 ### `oracles/` — MATLAB Truth Vectors
-Preserved MATLAB oracle vectors for exact parity comparison:
 
 ```
-oracles/
-└── 180709_crop_M/
-    ├── energy_oracle.mat
-    ├── vertices_oracle.mat
-    ├── edges_oracle.mat
-    ├── network_oracle.mat
-    └── oracle_metadata.json
+oracles/180709_E_full_v2/
+├── 01_Input/
+├── 03_Analysis/normalized/oracle/*.pkl
+└── 99_Metadata/oracle_manifest.json
 ```
 
-**How to create:** Use `scripts/parity_experiment.py promote-oracle` to convert MATLAB batch output into a reusable oracle.
+**How to create:** `slavv parity promote-oracle`
 
 ### `runs/` — Pipeline Experiment Runs
-Trial pipeline runs with full checkpoints and outputs:
+
+Live dests (freeze JSON `do_not_overwrite`; not the writer blocklist):
+`canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`.
 
 ```
-runs/
-└── crop_M_exact/
-    ├── _slavv_run/           # Run metadata and state
-    ├── checkpoints/          # Stage checkpoints
-    ├── artifacts/            # Diagnostic outputs
-    └── comparison_results/   # Parity diff reports
+runs/oracle_180709_E/canonical_full_v18/
+├── 02_Output/python_results/checkpoints/
+├── 04_Edges/candidates.pkl
+├── 03_Analysis/
+└── 99_Metadata/
 ```
 
-**Created by:** `slavv run --run-dir workspace\runs\my_experiment`
+**Created by:** `slavv parity resume-exact-run` / `launch-exact-run` (or `slavv run --run-dir`).
 
-### `reports/` — Promoted Proof Summaries
-Hand-curated summaries of important parity proof results:
+### `reports/` — Archived Proof Summaries
 
-```
-reports/
-└── crop_M_exact_proof_2024-06-09.md
-```
-
-**When to add:** When a parity run produces noteworthy results worth preserving in narrative form.
+Historical `prove-exact` JSON after multi-GB dests were removed:
+`reports/phase1_volume_archive/`.
 
 ### `datasets/` — Test Volumes
-Test datasets and sample volumes for experiments:
 
-```
-datasets/
-├── crop_M_for_testing.tif
-├── synthetic_small.tif
-└── 180709_E_full.tif  (symlink or copy)
-```
-
-**Note:** Large datasets should be stored elsewhere and symlinked here when possible.
+Content-addressed dataset dirs with `01_Input/` TIFFs and
+`99_Metadata/dataset_manifest.json`.
 
 ### `scratch/` — Temporary Files
-One-off exploration scripts, debug logs, quick checks:
 
-```
-scratch/
-├── debug_edge_issue.py
-├── quick_comparison.log
-└── temp_analysis.ipynb
-```
-
-**Rule:** Anything in `scratch/` is disposable. Don't put production-quality code here.
+One-off scripts, logs, MATLAB driver batches. Disposable. Not committed.
 
 ---
 
 ## When to Add Here
 
 **Add here when:**
-- ✅ It's experiment output
-- ✅ It's large binary data (oracles, volumes, checkpoints)
-- ✅ It's temporary or frequently changing
-- ✅ It's specific to your local development
-- ✅ It's a one-off exploration script
+- ✅ Promoted Oracles, dataset TIFFs, or live dest checkpoints
+- ✅ Archived proof JSON under `reports/`
+- ✅ One-off exploration under `scratch/`
 
 **Don't add here when:**
-- ❌ Other developers need it → Put in `slavv_python/`, `tests/`, or `scripts/`
-- ❌ It's documentation → Put in `docs/`
-- ❌ It's a reusable test fixture → Put in `tests/support/`
-- ❌ It's production code → Put in `slavv_python/`
+- ❌ Production code → `slavv_python/`
+- ❌ Documentation → `docs/`
+- ❌ Reusable test fixtures → `tests/support/`
+- ❌ Dual-write `checkpoint_edge_candidates.pkl` / `chosen_edges.pkl` (gitignored fallbacks)
 
 ---
 
 ## Common Workflows
 
-### Creating an Oracle
 ```powershell
-# 1. Run MATLAB vectorization (outside this repo)
-# 2. Promote output to oracle
-python scripts/parity_experiment.py promote-oracle \
-  --matlab-batch-dir D:\incoming\batch_260421 \
-  --oracle-root workspace\oracles\crop_M \
-  --dataset-file D:\datasets\crop_M.tif \
-  --oracle-id crop_M
-```
+slavv parity promote-oracle `
+  --matlab-batch-dir D:\incoming\batch_260421-151654 `
+  --oracle-root workspace\oracles\<oracle_id> `
+  --dataset-file D:\datasets\volume.tif `
+  --oracle-id <oracle_id>
 
-### Running a Parity Experiment
-```powershell
-# 1. Run preflight check
-python scripts/parity_experiment.py preflight-exact \
-  --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\crop_M \
-  --dest-run-root workspace\runs\my_trial
+slavv parity preflight-exact `
+  --source-run-root workspace\runs\seed_run `
+  --oracle-root workspace\oracles\<oracle_id> `
+  --dest-run-root workspace\runs\my_current_code_trial
 
-# 2. Run full exact proof
-python scripts/parity_experiment.py prove-exact \
-  --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\crop_M \
-  --dest-run-root workspace\runs\my_trial \
+slavv parity prove-exact `
+  --source-run-root workspace\runs\seed_run `
+  --oracle-root workspace\oracles\<oracle_id> `
+  --dest-run-root workspace\runs\my_current_code_trial `
   --stage all
 
-# 3. Monitor progress
-slavv monitor --run-dir workspace\runs\my_trial
+slavv monitor --run-dir workspace\runs\my_current_code_trial
 ```
 
-### Quick Exploration
-```powershell
-# Create a throwaway script in scratch/
-python workspace/scratch/test_new_idea.py
-```
-
----
-
-## .gitignore
-
-`workspace/scratch/` and dual-write leftovers (`checkpoint_edge_candidates.pkl`,
-`chosen_edges.pkl`) stay ignored. Oracle / dest / dataset binaries stay local
-(not GitHub LFS). See [Experiment Root](../AGENTS.md#experiment-root).
-
-## File Size Considerations
-
-Do not add new full-volume writers to git. Copy Experiment Root binaries by
-USB/rsync. Completeness is `slavv parity inspect-experiment-root`.
-
-**Storage recommendations:**
-- Keep `workspace/` on a local SSD for performance
-- New overnight writers stay untracked until promoted
-- Scratch stays local
+Do not overwrite live dests. `PROTECTED_DEST_NAMES` also blocks recreating
+historical `canonical_full_v16`.
 
 ---
 

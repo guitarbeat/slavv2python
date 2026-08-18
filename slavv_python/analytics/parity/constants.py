@@ -70,11 +70,16 @@ HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
 EDGE_CANDIDATE_AUDIT_PATH = Path("04_Edges") / "candidate_audit.json"
 
-# Protected dest names (union): never overwrite as stretch/Energy writers or freeze dests.
+# Live dests (freeze JSON do_not_overwrite) vs writer blocklist. Do not equate.
 PHASE1_CLAIM_RUN_NAME = "canonical_full_v18"
 HISTORICAL_CLAIM_RUN_NAME = "canonical_full_v16"
 CROP_GUARD_RUN_NAME = "crop_M_exact_v3"
 STRETCH_CROP_DEST_NAME = "crop_M_stretch_engine_v2"
+LIVE_DEST_NAMES: tuple[str, ...] = (
+    PHASE1_CLAIM_RUN_NAME,
+    CROP_GUARD_RUN_NAME,
+    STRETCH_CROP_DEST_NAME,
+)
 PROTECTED_DEST_NAMES: tuple[str, ...] = (
     PHASE1_CLAIM_RUN_NAME,
     HISTORICAL_CLAIM_RUN_NAME,
@@ -89,10 +94,9 @@ CROP_TIF_NAME = "180709_E_crop_M.tif"
 ORACLE_180709_RUNS_DIR = Path("workspace") / "runs" / "oracle_180709_E"
 
 # Experiment Root files that must exist on disk for Certification clone
-# (scratch excluded). Dest names must match PHASE1_CLAIM_RUN_NAME /
-# CROP_GUARD_RUN_NAME / STRETCH_CROP_DEST_NAME. MATLAB batch energy HDF5 and
-# vectors/*.mat are checked by inspect_experiment_root via the oracle layout,
-# not this tuple (batch IDs are timestamped).
+# (scratch excluded). Dest names must match LIVE_DEST_NAMES. MATLAB batch
+# energy HDF5 and vectors/*.mat are checked by inspect_experiment_root via
+# the oracle layout, not this tuple (batch IDs are timestamped).
 EXPERIMENT_ROOT_REQUIRED_RELATIVE_PATHS: tuple[str, ...] = (
     f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/energy.pkl",
     f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/vertices.pkl",
