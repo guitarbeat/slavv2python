@@ -1,0 +1,147 @@
+{
+  "artifacts": {
+    "edges.candidate_audit.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\candidate_audit.json",
+    "edges.candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\candidates.pkl",
+    "edges.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+    "edges.chosen_edges.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\chosen_edges.pkl",
+    "energy.best_energy.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_energy.npy",
+    "energy.best_scale.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_scale.npy",
+    "energy.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "energy.stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\stage_manifest.json",
+    "network.adjacency.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\05_Network\\adjacency.pkl",
+    "network.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+    "network.strands.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\05_Network\\strands.pkl",
+    "preprocess_done": "true",
+    "vertices.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\03_Vertices\\stage_manifest.json"
+  },
+  "created_at": "2026-07-07T19:59:40Z",
+  "current_detail": "Run completed",
+  "current_stage": "network",
+  "elapsed_seconds": 536327.4777202606,
+  "errors": [],
+  "eta_seconds": 0.0,
+  "input_fingerprint": "40dd7ea8d6ec3a47e4ffaf3de31e1f38f0f148e52e09e60bc616c2becb456cff",
+  "last_event": "Run completed",
+  "optional_tasks": {},
+  "overall_progress": 1.0,
+  "params_fingerprint": "447bf00aee4b23c6f4ce67de2776d5e038dae7a2e95ed92cd1dd84869a93072c",
+  "provenance": {
+    "image_shape": [
+      64,
+      512,
+      512
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "run_id": "ab6264506b40",
+  "stages": {
+    "edges": {
+      "artifacts": {
+        "candidate_audit.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\candidate_audit.json",
+        "candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\candidates.pkl",
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+        "chosen_edges.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\04_Edges\\chosen_edges.pkl"
+      },
+      "completed_at": "2026-07-14T00:53:06Z",
+      "detail": "Edges ready",
+      "elapsed_seconds": 4999.0,
+      "eta_seconds": 0.0,
+      "name": "edges",
+      "peak_memory_bytes": 1557004288,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-07-13T23:29:47Z",
+      "status": "completed",
+      "substage": "finalize_edges",
+      "units_completed": 3,
+      "units_total": 3,
+      "updated_at": "2026-07-14T00:53:06Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_energy.npy",
+        "best_scale.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_scale.npy",
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+        "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\stage_manifest.json"
+      },
+      "completed_at": "2026-07-13T23:29:47Z",
+      "detail": "Loaded cached Energy Field",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "energy",
+      "peak_memory_bytes": 537636864,
+      "progress": 1.0,
+      "resumed": true,
+      "started_at": null,
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-07-13T23:29:47Z"
+    },
+    "network": {
+      "artifacts": {
+        "adjacency.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\05_Network\\adjacency.pkl",
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+        "strands.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\05_Network\\strands.pkl"
+      },
+      "completed_at": "2026-07-14T00:58:27Z",
+      "detail": "Network ready",
+      "elapsed_seconds": 321.0,
+      "eta_seconds": 0.0,
+      "name": "network",
+      "peak_memory_bytes": 878780416,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-07-14T00:53:06Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 5,
+      "units_total": 5,
+      "updated_at": "2026-07-14T00:58:27Z"
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-07-13T23:29:46Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 530885.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 369819648,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-07-07T20:01:41Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-07-13T23:29:46Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\03_Vertices\\stage_manifest.json"
+      },
+      "completed_at": "2026-07-13T23:29:47Z",
+      "detail": "Loaded cached Vertices",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "vertices",
+      "peak_memory_bytes": 538800128,
+      "progress": 1.0,
+      "resumed": true,
+      "started_at": null,
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-07-13T23:29:47Z"
+    }
+  },
+  "status": "completed",
+  "target_stage": "network",
+  "updated_at": "2026-07-14T00:58:27Z"
+}

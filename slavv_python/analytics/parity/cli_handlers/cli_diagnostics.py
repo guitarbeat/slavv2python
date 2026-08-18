@@ -30,6 +30,7 @@ from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
 from slavv_python.analytics.parity.oracle.python_checkpoint_loader import (
     load_normalized_python_checkpoints,
 )
+from slavv_python.analytics.parity.oracle.surfaces import inspect_experiment_root
 from slavv_python.analytics.parity.probes.adaptive_probes import (
     build_energy_probe_payload,
     compare_probe_jsonl,
@@ -280,3 +281,25 @@ def handle_inspect_proof(args: argparse.Namespace) -> None:
             sort_keys=True,
         )
     )
+
+
+def handle_inspect_experiment_root(args: argparse.Namespace) -> None:
+    """Report whether tracked Experiment Root files exist for a clone."""
+    repo_root = Path(args.repo_root).expanduser().resolve()
+    status = inspect_experiment_root(repo_root)
+    print(
+        json.dumps(
+            {
+                "passed": status.passed,
+                "present": list(status.present),
+                "missing": list(status.missing),
+                "dataset_tifs": list(status.dataset_tifs),
+                "lfs_pointers": list(status.lfs_pointers),
+                "repo_root": str(repo_root),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    if not status.passed:
+        sys.exit(1)

@@ -83,8 +83,37 @@ PROTECTED_DEST_NAMES: tuple[str, ...] = (
 )
 PROTECTED_DEST_NAME_SET = frozenset(PROTECTED_DEST_NAMES)
 STRETCH_CROP_ORACLE_ID = "180709_E_crop_M_v2"
+FULL_ORACLE_ID = "180709_E_full_v2"
 CROP_ORIGINAL_HANDLE = "original_180709_E_crop_M"
 CROP_TIF_NAME = "180709_E_crop_M.tif"
+ORACLE_180709_RUNS_DIR = Path("workspace") / "runs" / "oracle_180709_E"
+
+# Experiment Root files that must exist on disk for Certification clone
+# (scratch excluded). Dest names must match PHASE1_CLAIM_RUN_NAME /
+# CROP_GUARD_RUN_NAME / STRETCH_CROP_DEST_NAME. MATLAB batch energy HDF5 and
+# vectors/*.mat are checked by inspect_experiment_root via the oracle layout,
+# not this tuple (batch IDs are timestamped).
+EXPERIMENT_ROOT_REQUIRED_RELATIVE_PATHS: tuple[str, ...] = (
+    f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/energy.pkl",
+    f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/vertices.pkl",
+    f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/edges.pkl",
+    f"workspace/oracles/{FULL_ORACLE_ID}/03_Analysis/normalized/oracle/network.pkl",
+    f"workspace/oracles/{STRETCH_CROP_ORACLE_ID}/03_Analysis/normalized/oracle/energy.pkl",
+    f"workspace/oracles/{STRETCH_CROP_ORACLE_ID}/03_Analysis/normalized/oracle/vertices.pkl",
+    f"workspace/oracles/{STRETCH_CROP_ORACLE_ID}/03_Analysis/normalized/oracle/edges.pkl",
+    f"workspace/oracles/{STRETCH_CROP_ORACLE_ID}/03_Analysis/normalized/oracle/network.pkl",
+    f"workspace/runs/oracle_180709_E/{PHASE1_CLAIM_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_energy.pkl",
+    f"workspace/runs/oracle_180709_E/{PHASE1_CLAIM_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_vertices.pkl",
+    f"workspace/runs/oracle_180709_E/{PHASE1_CLAIM_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_edges.pkl",
+    f"workspace/runs/oracle_180709_E/{PHASE1_CLAIM_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_network.pkl",
+    f"workspace/runs/oracle_180709_E/{PHASE1_CLAIM_RUN_NAME}/04_Edges/candidates.pkl",
+    f"workspace/runs/oracle_180709_E/{CROP_GUARD_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_energy.pkl",
+    f"workspace/runs/oracle_180709_E/{CROP_GUARD_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_vertices.pkl",
+    f"workspace/runs/oracle_180709_E/{CROP_GUARD_RUN_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_edges.pkl",
+    f"workspace/runs/oracle_180709_E/{CROP_GUARD_RUN_NAME}/04_Edges/candidates.pkl",
+    f"workspace/runs/oracle_180709_E/{STRETCH_CROP_DEST_NAME}/{CHECKPOINTS_DIR.as_posix()}/checkpoint_energy.pkl",
+    f"workspace/runs/oracle_180709_E/{STRETCH_CROP_DEST_NAME}/03_Analysis/exact_proof_energy.json",
+)
 
 # Parameter validation keys
 EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(

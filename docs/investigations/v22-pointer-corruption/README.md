@@ -2,6 +2,13 @@
 
 [Up: Chapters](../README.md)
 
+> **History, not live status.**
+
+## In short
+
+April 2026 notes about a watershed pointer bug. Useful as a trail, not as
+today’s ship gate. Live status: [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md).
+
 This chapter preserves the April 2026 v22 global watershed investigation trail.
 It is archival material, not the maintained claim boundary.
 

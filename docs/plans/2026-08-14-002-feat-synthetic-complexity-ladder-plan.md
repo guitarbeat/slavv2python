@@ -12,6 +12,12 @@ product_contract_preservation: Product Contract unchanged
 
 # Synthetic Complexity Ladder Until First Divergence - Plan
 
+## In short
+
+Grow fake photos step by step until Python and MATLAB first disagree (or they
+still agree at the last step). This is a cheap probe series. It does **not**
+reopen Phase 1 and it does **not** unlock crop Energy identical-bits.
+
 ## Goal Capsule
 
 - **Objective:** Deliver a short, fixed four-step fake-volume ladder that runs MATLAB and Python the same way as the tiny Y-junction experiment, escalating complexity until the first real mismatch on vertices, edges, or strands — or until a soft size/time cap or the last fixed rung (end-of-ladder full match) if they still agree.

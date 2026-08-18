@@ -1,0 +1,14 @@
+{
+  "artifact_hashes": {
+    "energy": "f19aaa2626db90c5d3e59a326fa01b554733a5f114e30ce485fd49c338270233"
+  },
+  "input_fingerprint": null,
+  "oracle_id": "180709_E_crop_M_v2",
+  "oracle_manifest_hash": "ea08e00cc4294346f5869b643aab3db95b59a6727592c4ad700fc6d9adadfdec",
+  "params_fingerprint": "bd24b3feb19b0f2ae52b5c24f8906eedc97e87b0efd447d4d92315e08ffe5d64",
+  "proof_passed": false,
+  "proof_report_hash": "f0e04ea8b27439dd01e6c31104d180cbb20ab90e58ac30bb3d96403ce130701c",
+  "run_manifest_hash": "a98a3be422ef7aaab1a274bda1a8bdd0b776c69e57e1794b1086629fbd9b4354",
+  "schema_version": 1,
+  "source_commit": "e1ece96590c6cd75ad0b63d7d7f2a2211e992d13"
+}

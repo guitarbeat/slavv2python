@@ -1,5 +1,10 @@
 # Changelog
 
+## In short
+
+Dated product notes, **not** live pass/fail. Phase 1 is CLOSED. If an older
+entry says Network is still open, ignore it — see [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+
 This file summarizes notable repository changes for the maintained SLAVV Python
 codebase.
 

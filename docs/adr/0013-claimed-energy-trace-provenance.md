@@ -1,5 +1,12 @@
 # ADR 0013: Claimed Energy Trace Provenance
 
+## In short
+
+When ranking candidate edges, use energies sampled from the **claimed** map
+(after watershed writes), not from the original Energy photo. That ranking
+mismatch was the last Phase 1 leftover; it is closed. Do not “fix” it by
+rewriting Network.
+
 ## Status
 Accepted (2026-08-14)
 

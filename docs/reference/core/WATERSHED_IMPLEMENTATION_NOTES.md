@@ -2,6 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+Watershed is how the exact route finds candidate vessel connections: each seed
+vertex grows a territory until it meets a neighbor. Shared maps and Fortran-order
+tie-breaks exist so Python grows territories in the same order as MATLAB. This
+is design notes, not live pass/fail.
+
 This document provides technical implementation details for the global watershed algorithm in SLAVV Python, with a focus on MATLAB parity and internal architecture.
 
 ---

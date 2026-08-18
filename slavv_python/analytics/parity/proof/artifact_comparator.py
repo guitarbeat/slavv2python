@@ -146,11 +146,17 @@ def _load_python_ownership_map(checkpoints_dir: Path) -> np.ndarray | None:
     if the checkpoint does not contain the debug map.
     """
     from slavv_python.analytics.parity.constants import EDGE_CANDIDATE_CHECKPOINT_PATH
+    from slavv_python.analytics.parity.experiments.artifact_class import (
+        resolve_candidate_set_path,
+    )
     from slavv_python.utils.safe_unpickle import safe_load
 
-    # The candidate checkpoint is one level above checkpoints_dir
-    candidate_path = checkpoints_dir / EDGE_CANDIDATE_CHECKPOINT_PATH.name
-    if not candidate_path.is_file():
+    run_root = checkpoints_dir.parent.parent.parent
+    candidate_path = resolve_candidate_set_path(run_root)
+    if candidate_path is None:
+        fallback = run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+        candidate_path = fallback if fallback.is_file() else None
+    if candidate_path is None:
         return None
     try:
         payload = safe_load(candidate_path)

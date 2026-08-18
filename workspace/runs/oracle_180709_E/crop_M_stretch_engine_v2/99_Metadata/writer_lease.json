@@ -1,0 +1,12 @@
+{
+  "command": "D:\\2P_Data\\Aaron\\slavv2python\\slavv_python\\interface\\cli\\parity.py resume-exact-run --dest-run-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2 --dataset-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06 --oracle-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2 --stop-after energy --force-rerun-from energy --n-jobs 1 --energy-float-backend matlab_engine --force-kill --skip-preflight",
+  "ended_at": "2026-08-16T04:58:26Z",
+  "pid": 4448,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "e1ece96590c6cd75ad0b63d7d7f2a2211e992d13",
+  "stage": "energy",
+  "started_at": "2026-08-16T01:57:50Z",
+  "status": "completed",
+  "updated_at": "2026-08-16T04:58:26Z"
+}

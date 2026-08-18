@@ -2,6 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+A phone-book of MATLAB functions → Python modules for the exact route. Use it to
+find the port. Do not read it as live pass/fail — that is
+[EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md). Saved MATLAB vectors are the
+oracle (answers), not a runtime Energy method.
+
 This document is the maintained slavv_python map for the native-first exact route in
 the live Python tree.
 
@@ -60,8 +67,8 @@ The active MATLAB sources for the native-first exact target are:
 | `get_energy_V202.m` (orchestration) | `slavv_python/pipeline/energy/energy.py`, `slavv_python/pipeline/energy/manager.py`, `slavv_python/pipeline/energy/resumable.py`, `slavv_python/pipeline/energy/provenance.py` | Native exact-compatible surface | Stage facade and resumable writer; not a line-for-line `.m` port. |
 | Parity voxel probes (no `.m`) | `slavv_python/pipeline/energy/parity_energy_voxel_probe.py`, `tests/support/parity_probe_*.py` | Diagnostic | Replay chunk math for oracle comparison; batch drivers under `tests/support/`. |
 | `get_vertices_V200.m` | `slavv_python/pipeline/vertices/manager.py`, `slavv_python/pipeline/vertices/detection.py` | Source-aligned | `VertexManager` facade; MATLAB-shaped scan/choose in `detection.py`. |
-| `get_edges_by_watershed.m` | `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`, `slavv_python/pipeline/edges/matlab_watershed_heap.py`, `slavv_python/pipeline/edges/matlab_calculate_linear_strel_range.py` | Source-aligned; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | Global watershed maps and frontier queue. Strel LUT from `calculate_linear_strel_range.m`. Per-step math (orientation, `r_over_R`, size/direction penalties) matches MATLAB; residual is emergent watershed order-sensitivity → bar is voxel ownership-map (~63.5%) + per-edge trace tolerance, not pair-set equality. |
-| `get_edges_V300.m` | `slavv_python/pipeline/edges/matlab_get_edges_v300_frontier.py`, `slavv_python/pipeline/edges/matlab_get_edges_v300_geometry.py`, `slavv_python/pipeline/edges/discovery.py`, `slavv_python/pipeline/edges/candidate_generation.py` | Source-aligned; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | Frontier tracer selection and neighbor-energy penalties. Double-transpose orientation bug in `candidate_generation.py` fixed (correct grid → 63.5% voxel-ownership agreement vs MATLAB). |
+| `get_edges_by_watershed.m` | `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`, `slavv_python/pipeline/edges/matlab_watershed_heap.py`, `slavv_python/pipeline/edges/matlab_calculate_linear_strel_range.py` | Source-aligned; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | Global watershed maps and frontier queue. Strel LUT from `calculate_linear_strel_range.m`. Per-step math matches MATLAB; residual is emergent order-sensitivity. **Live bars:** [ONE TRUTH](EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (ownership-map + trace tolerance, not pair-set equality). Historical crop ownership ~63.5% was a measurement on the way to that bar. |
+| `get_edges_V300.m` | `slavv_python/pipeline/edges/matlab_get_edges_v300_frontier.py`, `slavv_python/pipeline/edges/matlab_get_edges_v300_geometry.py`, `slavv_python/pipeline/edges/discovery.py`, `slavv_python/pipeline/edges/candidate_generation.py` | Source-aligned; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | Frontier tracer selection and neighbor-energy penalties. Double-transpose orientation bug in `candidate_generation.py` fixed. **Live bars:** ONE TRUTH. Historical “correct grid → 63.5% voxel-ownership” is a measurement, not current remaining work. |
 | `get_edges_V300.m` (facade) | `slavv_python/pipeline/edges/manager.py`, `slavv_python/pipeline/edges/tracing.py`, `slavv_python/pipeline/edges/resumable.py` | Source-aligned | `EdgeManager` and resumable units; watershed-only resumable path. |
 | `get_edge_metric.m` | `slavv_python/pipeline/edges/payloads.py`, `slavv_python/pipeline/network/` | Source-aligned | Trace metric helpers on candidate payloads. |
 | `choose_edges_V200.m` | `slavv_python/pipeline/edges/selection.py` | Source-aligned; bar per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | Pre-paint filtering and chooser structure aligned (conflict painting off on the exact route, matching MATLAB). |
@@ -129,11 +136,12 @@ These are no longer the best first suspects when edge parity remains red:
 
 ## Porting Priority
 
-For native-first exact parity, the highest-value remaining work is:
+Phase 1 ship bars are already met ([ONE TRUTH](EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)). Exact `edges.connections` / emission order is **stretch**, not remaining ship work.
 
-1. close `edges.connections` on the native-first route before spending time on
-   downstream network polish
-2. keep `slavv_python/pipeline/edges/matlab_*.py` ports aligned with the released MATLAB
+For native-first exact parity, keep:
+
+1. `slavv_python/pipeline/edges/matlab_*.py` ports aligned with the released MATLAB
    function boundaries so proof docs have a stable audit surface
+2. stretch leftover diagnosis in [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) — do not reopen Phase 1 for last-digit Energy diffs
 3. use `EXACT_PROOF_FINDINGS.md` for live status and keep this file focused on
    structural mapping and deviations

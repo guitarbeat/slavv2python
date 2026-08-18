@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from slavv_python.analytics.parity.constants import EDGE_CANDIDATE_CHECKPOINT_PATH
 from slavv_python.pipeline.edges.candidate_manifest import endpoint_pairs_from_connections
 
 if TYPE_CHECKING:
@@ -140,3 +141,18 @@ def coverage_of_finals_by_raw(
         n_missing_from_raw=len(finals - raw),
         n_extra_raw=len(raw - finals),
     )
+
+
+def resolve_candidate_set_path(run_root: Path) -> Path | None:
+    """Return the on-disk Candidate Set, preferring the Edges Artifact.
+
+    ``04_Edges/candidates.pkl`` is the production write. The checkpoint name is
+    a read-only fallback for dests that still have the former dual-write.
+    """
+    artifact = run_root / "04_Edges" / "candidates.pkl"
+    if artifact.is_file():
+        return artifact
+    checkpoint = run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+    if checkpoint.is_file():
+        return checkpoint
+    return None

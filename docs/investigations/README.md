@@ -1,6 +1,11 @@
 # Investigations
 
-This folder is **archival-only**. Nothing here is live parity status.
+> **History, not live status.** Nothing in this folder is current pass/fail.
+
+## In short
+
+These are old investigation write-ups. Phase 1 already shipped. If a file still
+says Network is open or Phase 1 is OPEN, that sentence is **out of date**.
 
 **Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
 **Tasks:** [TODO.md](../TODO.md) · **Commands:** [HANDOFF](../../.claude/HANDOFF.md)

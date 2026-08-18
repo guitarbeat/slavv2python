@@ -8,6 +8,11 @@ topic: directory-structure
 
 # Directory Restructure Plan (proposed)
 
+## In short
+
+A proposed folder cleanup (mostly the old flat parity package). **Not executed.**
+Not live pass/fail. Do not treat this as a license to move files without review.
+
 **Status: PROPOSED — no moves executed. Approve the target tree before execution.**
 
 ## Guiding principle

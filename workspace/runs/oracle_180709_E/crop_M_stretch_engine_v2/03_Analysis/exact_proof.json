@@ -1,0 +1,136 @@
+{
+  "adaptive_probe_requests": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\03_Analysis\\energy_probe_requests.json",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+  "energy_float_gate": {
+    "atol": 1e-09,
+    "denorm_threshold": 0.001,
+    "failed_voxels": 407457,
+    "failures": [
+      "energy_not_bit_identical=407457"
+    ],
+    "max_abs_delta": 1e-10,
+    "max_abs_delta_on_scale_agreeing_mismatches": 2.9132252166164108e-12,
+    "max_ulps": 48,
+    "pass_rate": 0.9028546810150146,
+    "passed": false,
+    "passed_voxels": 3786847,
+    "rtol": 1e-07,
+    "scale_agree_abs_delta_over_max_count": 0,
+    "scale_agree_denorm_escape_count": 244,
+    "scale_agree_energy_exact_match_count": 3786847,
+    "scale_agree_energy_ulp_over_max_count": 2658,
+    "scale_agree_tol_over_max_count": 0,
+    "scale_mismatch_count": 0,
+    "strict_floats": true,
+    "total_voxels": 4194304,
+    "ulp_stats_on_mismatches": {
+      "max_ulp": 27243,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 94106,
+        "2": 90476,
+        "3": 55259,
+        "4": 47290,
+        "5": 27328,
+        "6": 23198,
+        "7": 13499,
+        "8": 11418,
+        "9_plus": 44883
+      },
+      "ulp_p50": 3.0,
+      "ulp_p90": 9.0
+    },
+    "use_allclose": true
+  },
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": "energy.energy",
+  "first_failing_stage": "energy",
+  "first_failure": {
+    "field_path": "energy.energy",
+    "matlab_preview": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        256,
+        256
+      ],
+      "values": [
+        -20.37433178324523,
+        -19.911067961434455,
+        -19.447804139623685,
+        -18.984540317812915,
+        -18.52127649600214,
+        -18.058012674191374
+      ]
+    },
+    "mismatch_type": "energy float gate",
+    "python_preview": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        256,
+        256
+      ],
+      "values": [
+        -20.37433178324523,
+        -19.911067961434455,
+        -19.447804139623685,
+        -18.984540317812915,
+        -18.52127649600214,
+        -18.058012674191374
+      ]
+    },
+    "stage": "energy"
+  },
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2\\01_Input\\matlab_results\\batch_260624-105705",
+  "mismatch_diagnosis": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\03_Analysis\\exact_mismatch_energy.json",
+  "passed": false,
+  "report_scope": "exact route",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+  "stage_summaries": {
+    "energy": {
+      "field_count": 4,
+      "first_failure": {
+        "field_path": "energy.energy",
+        "matlab_preview": {
+          "dtype": "float64",
+          "shape": [
+            64,
+            256,
+            256
+          ],
+          "values": [
+            -20.37433178324523,
+            -19.911067961434455,
+            -19.447804139623685,
+            -18.984540317812915,
+            -18.52127649600214,
+            -18.058012674191374
+          ]
+        },
+        "mismatch_type": "energy float gate",
+        "python_preview": {
+          "dtype": "float64",
+          "shape": [
+            64,
+            256,
+            256
+          ],
+          "values": [
+            -20.37433178324523,
+            -19.911067961434455,
+            -19.447804139623685,
+            -18.984540317812915,
+            -18.52127649600214,
+            -18.058012674191374
+          ]
+        },
+        "stage": "energy"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "energy"
+  ]
+}

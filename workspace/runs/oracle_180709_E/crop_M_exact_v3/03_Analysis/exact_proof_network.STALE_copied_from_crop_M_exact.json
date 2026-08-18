@@ -1,0 +1,20 @@
+{
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact",
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": null,
+  "first_failing_stage": null,
+  "first_failure": null,
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2\\01_Input\\matlab_results\\batch_260624-105705",
+  "passed": true,
+  "report_scope": "exact route",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact",
+  "stage_summaries": {
+    "network": {
+      "field_count": 6,
+      "passed": true
+    }
+  },
+  "stages": [
+    "network"
+  ]
+}

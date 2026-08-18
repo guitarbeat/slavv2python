@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-18  
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
 
@@ -13,16 +13,18 @@
 > **Answer:** Phase 1 exact-route **Certification is CLOSED** on full `180709_E`.  
 > Energy, Vertices, Edges, and Network all pass their certification bars on the claim surface. The former Network one-strand gap was an Edge Selection Ranking Residual (original-field traces vs claimed `energy_map`); baking Claimed Trace Energy at watershed finalize ([ADR 0013](../../adr/0013-claimed-energy-trace-provenance.md)) closes it on `canonical_full_v18`.
 
+**In short:** shipped = close enough to MATLAB. That is **not** identical last digits (the extra 100% / stretch bar). Stretch leftover lives in the subsection below, not in this CLOSED answer.
+
 | Stage | Verdict | Claim surface / evidence | Notes |
 | :--- | :--- | :--- | :--- |
-| **Energy** | ✅ **PASS** (ADR 0011) | Full-volume proof lineage: `canonical_full_v4` `03_Analysis/exact_proof_energy.json` (`passed: true`). Seeded into later claim roots. | Discrete scale indices exact; continuous under `np.allclose`. |
-| **Vertices** | ✅ **PASS** (ADR 0011) | `canonical_full_v4` `exact_proof_vertices.json` (`passed: true`). | Positions/scales exact. |
+| **Energy** | ✅ **PASS** (ADR 0011) | Lineage proof (archived): `workspace/reports/phase1_volume_archive/canonical_full_v4/03_Analysis/exact_proof_energy.json` (`passed: true`). Checkpoints live on `canonical_full_v18`. | Discrete scale indices exact; continuous under `np.allclose`. |
+| **Vertices** | ✅ **PASS** (ADR 0011) | Lineage proof (archived): `workspace/reports/phase1_volume_archive/canonical_full_v4/03_Analysis/exact_proof_vertices.json` (`passed: true`). | Positions/scales exact. |
 | **Edges** | ✅ **PASS** (ADR 0012 evaluated) | **`canonical_full_v18`** `03_Analysis/exact_proof_edges.json` | Connections **69,500 / 69,500**; ownership **5,843,205 / 5,843,213** (**99.999863%**); trace failures **0** / 69,500; `adr0012_evaluated: true`. Final Edge Set keeps oracle hub pair `(34897, 38584)` and drops residual extra `(26444, 38584)`. |
 | **Network** | ✅ **PASS** (ADR 0012 evaluated) | **`canonical_full_v18`** `03_Analysis/exact_proof_network.json` | Strand endpoint-pair + bifurcation multisets match (`network_adr0012_gate.adr0012_evaluated: true`, `passed: true`). Strand count **48,049 / 48,049**. |
 
 **Oracle:** `workspace/oracles/180709_E_full_v2` (batch `batch_260626-125646`).  
 **Claim run root:** `workspace/runs/oracle_180709_E/canonical_full_v18`.  
-**Historical claim (open residual record):** `canonical_full_v16` — Edges ✅ Network ❌ (one strand); preserve in place; do not overwrite.  
+**Historical claim (open residual record):** `canonical_full_v16` proofs only — Edges ✅ Network ❌ (one strand) — under `workspace/reports/phase1_volume_archive/canonical_full_v16/`. Multi-GB dest removed 2026-08-18; do not resurrect.  
 **Phase 1 closes when** evaluated Edges **and** Network both pass on a fresh full claim root — **met on `v18`**. Cite those JSON files with `slavv parity inspect-proof --path <json> --require-evaluated`.
 
 ### Disk revalidation stamp
@@ -33,18 +35,18 @@
 - `canonical_full_v18` `exact_proof_network.json`: `passed=true`, `network_adr0012_gate.adr0012_evaluated=true`, strand pairs **48,049 / 48,049**.
 - Final edges on `v18`: has oracle `(34897, 38584)`, lacks extra `(26444, 38584)`. Contrast `v16` finals: had extra, lacked oracle.
 - `v18` candidate traces for residual hub: claimed maxes **0.0** (extra) and **−0.238…** (oracle) — match MATLAB L846 claimed map; `v16` candidates still show original-field **−9.24 / −7.73**.
-- Energy/Vertices stage JSON live under `canonical_full_v4` (lineage seed); carried into `v18`.
+- Energy/Vertices stage JSON archived from `canonical_full_v4` (lineage seed); checkpoints carried into `v18`.
 
 ### Frozen Phase 1 baseline (2026-08-17)
 
-Tracked hash bridge: [phase1-baseline-freeze.json](phase1-baseline-freeze.json). Dest copy: `canonical_full_v18/03_Analysis/release_evidence.json` (`proof_passed: true`). Do **not** overwrite `canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, or `crop_M_stretch_engine_v2`. Stretch Energy `blocked_float_path` is **not** this freeze.
+Tracked hash bridge: [phase1-baseline-freeze.json](phase1-baseline-freeze.json). Dest copy: `canonical_full_v18/03_Analysis/release_evidence.json` (`proof_passed: true`). Do **not** overwrite `canonical_full_v18`, `crop_M_exact_v3`, or `crop_M_stretch_engine_v2`. Stretch Energy `blocked_float_path` is **not** this freeze. Historical `v4`/`v16` volumes were removed 2026-08-18; proofs live under `workspace/reports/phase1_volume_archive/`.
 
 | Artifact | SHA-256 (prefix) |
 | :--- | :--- |
 | `v18` Edges proof | `46606c274d64…` |
 | `v18` Network proof | `51116b7a37a2…` |
-| `v4` Energy proof | `9d6a0c2a410f…` |
-| `v4` Vertices proof | `843b520697b1…` |
+| Archived `v4` Energy proof | `9d6a0c2a410f…` |
+| Archived `v4` Vertices proof | `843b520697b1…` |
 | Oracle manifest `180709_E_full_v2` | `8cc7b70065a7…` |
 
 Full digests and checkpoint hashes are in the freeze JSON. Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`.
@@ -70,6 +72,16 @@ Full digests and checkpoint hashes are in the freeze JSON. Cite proofs with `sla
 
 > **Phase 1 Certification remains CLOSED** on `canonical_full_v18` (see [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)). Stretch greens/reds **never** rewrite that answer or ADR 0011/0012 ship bars.
 
+### In short
+
+Phase 1 already matches MATLAB closely enough to ship. **Stretch** is a harder extra goal: every Energy number should be **identical bits**, not just “close.”
+
+On the real crop, about **90%** of voxels match MATLAB exactly. The rest differ in the last digits (largest gap `1e-10`). That is **not** 100%. Tiny cut-outs that match when treated as their own small photo do **not** solve the crop leftover.
+
+Do **not** rerun the crop Energy writer. Do **not** overwrite the three protected dests (`v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`). Live stretch status is dest `stretch_status.json`, not ONE TRUTH.
+
+Readable diagnosis: [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md).
+
 This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-equal Energy floats + discrete strict fields under `--strict-floats`). Plan: [2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md](../../plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md). Helpers: `slavv_python.analytics.parity.proof.stretch`.
 
 | Concept | Rule |
@@ -77,11 +89,18 @@ This subsection tracks the post–Phase 1 **true zero-tolerance** program (bit-e
 | Compare gate | `prove-exact --strict-floats` only; default allclose is **not** stretch success |
 | Crop → full | Hard unlock token (`stretch_crop_unlock.json`) scoped by field set (`energy` vs `energy+discrete`) |
 | Status taxonomy | `blocked_float_path` / `incomplete_discrete` / `incomplete_infra` / `incomplete_at_full` / `stretch_complete` (Energy **and** discrete at full) |
-| Dest roots | New stretch run roots only — never overwrite the four protected dests in [phase1-baseline-freeze.json](phase1-baseline-freeze.json) |
+| Dest roots | New stretch run roots only — never overwrite the three protected dests in [phase1-baseline-freeze.json](phase1-baseline-freeze.json) |
 
 Live stretch status is written beside stretch run artifacts (`stretch_status.json`), not into ONE TRUTH.
 
-**Session status (2026-08-17):** Crop Energy `--strict-floats` remains **`blocked_float_path`**. Dest `crop_M_stretch_engine_v2` (MATLAB `stretch_energy_chunk_v202`: FFT + `energy_filter_V200` + `interp3` + scale-min) **FAIL**: 3,786,847 / 4,194,304 voxels bit-identical (90.3%); 407,457 mismatches; 0 scale mismatches; max abs delta `1e-10`; ULP p50=3, p90=9. Contrast v1 (filter-only, Python `interp3`): 62.5% bit-identical. E12 marshalling **PASS**. E13 named sources (linspace / Inf interp3 / tiny chunk-vs-full) bit-matched — isolation hypothesis **FAIL**. E14 whole-crop MATLAB `get_energy_V202` **deferred** (`incomplete_infra`: octave-chunked, aborted). E17–E19 unit guards **PASS**. E15/E16/E20 gated on Energy unlock. One production chunk (ZYX `(13, 0, 0)`, scale 43, octave 2, chunk 0): octave-owned and the mismatch voxel are re-run == v2 and both ≠ oracle (helper/oracle; packaging OK). Lattice/params: octave-index 2 is Python 75 vs MATLAB-formula 726 (`unique()` id labeling); **rf-matched lattices identical (821=821)**; core params match. Helper-body isolation: `local_ranges` match MATLAB floor/ceil; TIFF vs HDF5 input window on chunk 0 **matches**; helper `energy>=0` clamp is **not** the 1e-10 class. Residual is filter/interp3 args or MATLAB engine helper vs original batch internals on the same lattice. Not unlock. Do not relaunch v2. Do not start U5/U6. Allclose is not stretch success. Phase 1 remains CLOSED on `canonical_full_v18`. Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/03_Analysis/exact_proof_energy.json`. Scratch: `workspace/scratch/stretch_one_production_chunk.json`, `workspace/scratch/stretch_lattice_params_isolation.json`, `workspace/scratch/stretch_helper_body_isolation.json`. Runbook: [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md). Portfolio: [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](../../plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md).
+**Session status (2026-08-17):** Crop Energy `--strict-floats` remains **`blocked_float_path`** on dest `crop_M_stretch_engine_v2`.
+
+- **Counts:** 3,786,847 / 4,194,304 voxels bit-identical (90.3%); 407,457 mismatches; 0 scale mismatches; max abs delta `1e-10`; ULP p50=3, p90=9. v1 (filter-only) was 62.5%.
+- **Already checked:** data handoff to MATLAB (E12), named tiny-math sources (E13), one production tile vs dest, tile lattice vs MATLAB, TIFF vs HDF5 window, clamp. Standalone tiny photos match live MATLAB; the leftover is full-crop tile math vs the saved MATLAB batch.
+- **Not done / gated:** whole-crop overnight MATLAB (E14), next stretch steps (U5/U6) without an unlock token.
+- **Do not:** relaunch v2; treat 90.3% or allclose as 100%; write stretch pass/fail into ONE TRUTH.
+
+Proof: `workspace/runs/oracle_180709_E/crop_M_stretch_engine_v2/03_Analysis/exact_proof_energy.json`. Portfolio: [2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md](../../plans/2026-08-15-001-feat-zero-tolerance-stretch-experiments-plan.md).
 
 ---
 
@@ -94,11 +113,11 @@ Pass/fail is only in [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)
 | Live oracle (full) | `workspace/oracles/180709_E_full_v2` | Proofs only (`batch_260626-125646`) |
 | Live oracle (crop) | `workspace/oracles/180709_E_crop_M_v2` | Crop proofs (`batch_260624-105705`) |
 | **Claim run (closed)** | `workspace/runs/oracle_180709_E/canonical_full_v18` | Phase 1 claim surface — Edges + Network evaluated PASS |
-| Historical claim | `canonical_full_v16` | Pre-ranking-fix residual record (Network FAIL); preserve |
-| Lineage seed | `canonical_full_v4` Energy/Vertices; `v8` energy `.npy` | Seed successors |
+| Historical claim proofs | `workspace/reports/phase1_volume_archive/canonical_full_v16/` | Pre-ranking-fix residual record (Network FAIL); volume removed 2026-08-18 |
+| Lineage seed proofs | `workspace/reports/phase1_volume_archive/canonical_full_v4/` | Energy/Vertices JSON; checkpoints on `v18`; volume removed 2026-08-18 |
 | Crop guard | `crop_M_exact_v3` candidates | Regression; do not cite unevaluated proof JSON |
-| Audit history | `v5`–`v15` completed writers | Keep |
-| Removed | `canonical_full_v17` | Contaminated; deleted 2026-08-13 |
+| Stretch dest | `crop_M_stretch_engine_v2` | Crop Energy leftover (`blocked_float_path`); do not overwrite |
+| Removed volumes | `v4`–`v16` writers, `crop_M_exact`, `stretch_v1`, `v17` | Proof JSON archived 2026-08-18; `v17` deleted 2026-08-13 |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
@@ -143,6 +162,6 @@ Curated index of solved problems under `docs/solutions/`. Search via YAML frontm
 | Claimed energy trace provenance (ADR 0013) | [0013-claimed-energy-trace-provenance.md](../../adr/0013-claimed-energy-trace-provenance.md) |
 | Parity experiment hygiene | [parity-experiment-hygiene.md](../../solutions/best-practices/parity-experiment-hygiene.md) |
 | Curated vertices rank-ramp energies | [curated-vertices-rank-ramp-energies.md](../../solutions/integration-issues/curated-vertices-rank-ramp-energies.md) |
-| Crop Energy stretch float isolation (E11–E20; `blocked_float_path`) | [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) |
+| Crop Energy stretch leftover (tiny photos match; crop last digits do not) | [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._

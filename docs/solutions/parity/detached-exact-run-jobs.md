@@ -8,6 +8,12 @@ resolution_type: runbook
 
 # Detached Exact-Route Parity Jobs
 
+## In short
+
+Overnight jobs must outlive the chat session. Launch them detached so the run
+folder owns the PID and logs. A leftover PID file is not proof the writer is
+alive.
+
 ## Problem
 Long exact-route parity reruns were launched from an interactive Codex session and tracked by scratch PID files. If the agent session ended or the process was terminated, the run snapshot could remain `running` while no writer was alive and no checkpoint was produced.
 

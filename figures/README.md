@@ -1,5 +1,10 @@
 # Publication figures
 
+## In short
+
+These four pictures tell the **ship** story (Phase 1 closed), not the extra
+“identical last digits” leftover. Live pass/fail is [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+
 All committed **publication-oriented** assets for the PhD proposal appendix and
 methods write-ups. Distinct from runtime plotting (`slavv_python/visualization/`).
 
@@ -21,10 +26,10 @@ They still scale cleanly inside `fullwidthfigure` when needed.
 
 | File | Claim | Why it is interesting |
 |------|-------|------------------------|
-| [`parity_trajectory`](parity_trajectory.pdf) | One directional-LUT fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics flatlined; only the LUT step is a leap |
-| [`parity_funnel`](parity_funnel.pdf) | Crop residual collapsed from thousands to a closed pair multiset | Missing vs extra; generation extras → cleanup displacement → re-selection closes crop (guard) |
-| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched - Network still -1 strand | Signed residual across `v4→v16`; Network tracks Edges; at v16 Edges PASS while Network multiset FAIL |
-| [`parity_cert_table`](parity_cert_table.pdf) | Phase 1 CLOSED: Network ADR 0012 multiset matches on `v18` | Absolute mismatch budget; historical `v16` one-strand miss is closed. **Live** status: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
+| [`parity_trajectory`](parity_trajectory.pdf) | One lookup-table fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics did nothing; only the LUT step jumped |
+| [`parity_funnel`](parity_funnel.pdf) | Crop leftover collapsed from thousands to a closed pair set | Missing vs extra; extras during cleanup → re-selection closes crop (guard) |
+| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched; historical Network miss of one strand | Signed leftover across `v4→v16`; Network tracks Edges. **Live:** Phase 1 CLOSED on `v18` (ONE TRUTH) |
+| [`parity_cert_table`](parity_cert_table.pdf) | Phase 1 CLOSED: Network bags match on `v18` | Absolute leftover budget; historical `v16` one-strand miss is closed. **Live** status: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 
 | Script | Role |
 |--------|------|
@@ -43,36 +48,34 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 **Trajectory**
 
-> Generation residual on the crop harness (*n* = 15,511 MATLAB final pairs):
-> pairs still absent from Python candidates after successive frontier fixes.
-> Queue-order cosmetics recovered zero pairs; a single directional-LUT +
-> suppression change recovered 6,115 pairs and cleared the retired 80% gate.
+> How many MATLAB edges Python was still missing on the small real cut-out
+> (*n* = 15,511 MATLAB final pairs). Reordering the queue recovered zero pairs.
+> One lookup-table + suppression change recovered 6,115 pairs and cleared the
+> old 80% gate.
 
 **Funnel**
 
-> Crop residual collapse. Early work was a generation gap (~6.5k missing).
-> Once candidates covered the oracle set, remaining missing pairs were
-> displaced by extras during faithful cleanup; re-selection closes the crop
-> pair multiset (regression guard). Full-volume residual is a separate join-
-> displacement class on the claim surface.
+> The crop leftover collapsing. Early work was “Python never found ~6.5k
+> edges.” Once candidates covered MATLAB’s set, leftover missing pairs were
+> crowded out by extras during cleanup; re-selection closes the crop pair set
+> (a regression guard). The old full-volume leftover was a different class and
+> is closed on the live claim surface.
 
 **Agreement**
 
-> Signed residual (Python − MATLAB) on full `180709_E` across closure audits.
-> Edges under-selected through `v7`, over-selected at `v10` after the axis /
-> finalization fix, then matched at `v15`/`v16`. Network strand residual
-> tracks the edge-set residual throughout — evidence against an independent
-> Network-stage defect. At `v16`, Edges PASS while Network still fails multiset
-> equality by one strand (historical open ship gate on `v16`). **Live:** [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) CLOSED on `canonical_full_v18`.
+> Python minus MATLAB on the full photo across audits. Edges under-selected
+> through `v7`, over-selected at `v10`, then matched at `v15`/`v16`. Network
+> leftover tracked Edges — not a separate Network bug. At historical `v16`,
+> Edges passed while Network still missed one strand. **Live:** Phase 1 CLOSED
+> on `canonical_full_v18` ([ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)).
 
 **Mismatch budget**
 
-> Absolute residual on the full-volume claim surface (see findings for the live
-> run root). Energy and vertices are closed; Edges ownership/count pass ADR 0012.
-> The historical open ship gate on `v16` was Network strand **multiset** FAIL, downstream of the
-> Edge Set residual in [Former residual (closed on v18)](../docs/reference/core/EXACT_PROOF_FINDINGS.md#former-residual-closed-on-v18)
-> (crop pair multiset closed on re-selection). Approximate strand % is not the
-> ADR 0012 bar. Live pair/strand numbers: EXACT_PROOF_FINDINGS only.
+> Absolute leftover on the full-volume claim surface (live run root in
+> findings). Energy and vertices are closed; Edges pass the who-owns-which-voxel
+> bar. The historical `v16` miss was one Network strand, downstream of ranking —
+> now closed. Approximate strand % is not the ship bar. Live pair/strand
+> numbers: EXACT_PROOF_FINDINGS only. Close enough is not identical last digits.
 
 **Methodology backdrop:** [PARITY_METHODOLOGY.md](../docs/reference/core/PARITY_METHODOLOGY.md),
 [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md),
@@ -91,12 +94,12 @@ the status log and not the methodology paper alone.
 
 | Figure | Story beat | Primary docs |
 |------|------------|--------------|
-| Trajectory | Generation residual: cosmetics flat; LUT leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
-| Funnel | Final residual collapse after gen closed → open Network gate | Findings funnel/cleanup + [PHASE1 residual framing](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
-| Agreement | Full under→over→Edges matched; Network tracks Edges; still open | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set” |
-| Cert table | Absolute residual budget; Network multiset FAIL = ship gate | Findings executive status; ADR 0012 ship vs stretch |
+| Trajectory | Missing edges on the crop: cosmetics flat; lookup-table leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
+| Funnel | Crop leftover collapse after generation closed | Findings funnel/cleanup + [PHASE1 residual framing](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
+| Agreement | Full under→over→Edges matched; Network tracks Edges; historical `v16` miss | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set”. **Live:** CLOSED on the claim root |
+| Cert table | Absolute leftover budget; Phase 1 CLOSED on `v18` | Findings executive status; ADR 0012 ship vs stretch |
 
-**Told by these four:** watershed residual campaign (generation → selection → open Network gate).
+**Told by these four:** watershed leftover campaign (generation → selection → historical Network miss, now closed).
 
 **Not told here (complementary sets):**
 
@@ -109,12 +112,16 @@ the status log and not the methodology paper alone.
 
 ## PhD proposal manuscript (live include)
 
-| Manuscript asset | Source stem | Include |
-|------------------|-------------|---------|
-| `fig-appendix-parity-trajectory` | `parity_trajectory` | `figures/include/appendix-parity-trajectory.tex` |
-| `fig-appendix-parity-funnel` | `parity_funnel` | `figures/include/appendix-parity-funnel.tex` |
-| `fig-appendix-parity-agreement` | `parity_agreement` | `figures/include/appendix-parity-agreement.tex` |
-| `fig-appendix-parity-cert-table` | `parity_cert_table` | `figures/include/appendix-parity-cert-table.tex` |
+Appendix `.tex` includes live under the PhD-Writing manuscript, not in this
+repo (`figures/include/` is not checked in here). Source stems below are the
+PDFs/PNGs generated in `figures/`.
+
+| Manuscript asset | Source stem |
+|------------------|-------------|
+| `fig-appendix-parity-trajectory` | `parity_trajectory` |
+| `fig-appendix-parity-funnel` | `parity_funnel` |
+| `fig-appendix-parity-agreement` | `parity_agreement` |
+| `fig-appendix-parity-cert-table` | `parity_cert_table` |
 
 Macros: `PhD-Writing/manuscript/config/figure-assets.tex`.
 Prose: `sections/30-backmatter/appendix/370-analytical-development.tex`.

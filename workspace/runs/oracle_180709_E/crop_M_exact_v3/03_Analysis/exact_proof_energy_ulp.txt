@@ -1,0 +1,11 @@
+Energy ULP advisory proof
+passed: False
+max_ulps: 48
+pass_rate: 0.991137
+scale_mismatch_count: 0
+energy_ulp_over_max: 37174
+failures: energy_ulp_over_max=37174
+ulp_p50_on_mismatches: 4.0
+ulp_p90_on_mismatches: 13.0
+max_ulp_on_mismatches: 72343
+Advisory gate only; Phase 1 certification still requires strict prove-exact np.equal on energy.energy.

@@ -1,0 +1,35 @@
+{
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10",
+  "edges_adr0012_gate": {
+    "adr0012_evaluated": true,
+    "adr_bar": "ADR 0012 spatial bars (ownership-map \u2265 60% + trace tolerance)",
+    "n_matlab_connections": 69500,
+    "n_python_connections": 70247,
+    "ownership_map_agreement_rate": 0.9998668540749756,
+    "ownership_map_n_agreed": 5842435,
+    "ownership_map_n_matlab_claimed": 5843213,
+    "ownership_map_passed": true,
+    "ownership_map_threshold": 0.6,
+    "passed": true,
+    "trace_n_compared": 68812,
+    "trace_n_failures": 12653,
+    "trace_passed": false
+  },
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": null,
+  "first_failing_stage": null,
+  "first_failure": null,
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2\\01_Input\\matlab_results\\batch_260626-125646",
+  "passed": true,
+  "report_scope": "exact route",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v10",
+  "stage_summaries": {
+    "edges": {
+      "field_count": 9,
+      "passed": true
+    }
+  },
+  "stages": [
+    "edges"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "fields": [
+    {
+      "field": "strands",
+      "kind": "sequence_field",
+      "matlab_len": 10722,
+      "python_len": 10722
+    },
+    {
+      "field": "strand_subscripts",
+      "kind": "sequence_field",
+      "matlab_len": 10722,
+      "python_len": 10722
+    },
+    {
+      "field": "strand_energy_traces",
+      "kind": "sequence_field",
+      "matlab_len": 10722,
+      "python_len": 10722
+    },
+    {
+      "field": "mean_strand_energies",
+      "first_coordinate": [
+        0
+      ],
+      "first_fortran_linear_index": 0,
+      "kind": "numeric_mismatch",
+      "matlab_value": -0.38781782654365554,
+      "max_abs_delta": 0.7659771097470889,
+      "max_ulp": 11938753754097116,
+      "mismatch_count": 10722,
+      "python_value": -0.3780743479728699,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9_plus": 10722
+      },
+      "ulp_p50": 1082972561079593.5,
+      "ulp_p90": 3425844701671334.0
+    },
+    {
+      "field": "vessel_directions",
+      "kind": "sequence_field",
+      "matlab_len": 10722,
+      "python_len": 10722
+    }
+  ],
+  "stage": "network"
+}

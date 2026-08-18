@@ -2,6 +2,22 @@
 
 [Up: Documentation Index](README.md)
 
+## In short (plain English)
+
+Phase 1 already matches MATLAB closely enough to **ship**. Live numbers live only in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+
+**100% / stretch** is a harder extra goal: every Energy number identical bits, not just “close.” On the real crop, about 90% of voxels match exactly; leftover diffs are last digits (`1e-10`). Tiny cut-outs that match as their own photo do **not** solve the crop (full crop uses overlapping tiles with extra border).
+
+Do **not** rerun the crop Energy writer. Readable leftover: [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md).
+
+| Everyday word | What we mean |
+|---------------|----------------|
+| **Oracle** | Saved MATLAB answers for that photo |
+| **Crop** | Small real cut-out of the big photo |
+| **Tile / chunk** | Overlapping piece processed with extra border, then the center is kept |
+| **Close enough (`allclose`)** | Ship bar — not identical last digits |
+| **Stretch / 100%** | Identical last digits under `--strict-floats` |
+
 ---
 
 ## 🚀 Quick Start
@@ -99,9 +115,9 @@ git push origin main
 | Term | Definition |
 |------|------------|
 | **Pipeline** | Energy → Vertices → Edges → Network stages |
-| **Oracle** | Preserved MATLAB truth vectors for comparison |
-| **Parity Run** | Python run compared against MATLAB oracle |
-| **Certification** | Energy/Vertices: zero missing/extra discrete + `np.allclose` floats (ADR 0011). Edges: ownership-map agreement + trace tolerance (ADR 0012). Network: strand/bifurcation multiset equality (ADR 0012). |
+| **Oracle** | Saved MATLAB answers for that photo |
+| **Parity Run** | Python run compared against those saved answers |
+| **Certification** | Close enough to ship: Energy/Vertices exact discrete + `np.allclose` floats (ADR 0011). Edges: who-owns-which-voxel map (ADR 0012). Network: matching strand/junction bags (ADR 0012). Not identical last digits. |
 | **Canonical Volume** | Full `180709_E` volume for Phase 1 cert |
 | **Crop Harness** | `180709_E_crop_M` subvolume for faster testing |
 | **Vertex** | Point of interest with 3D position and radius |
@@ -169,10 +185,10 @@ What are you working on?
 ❌ Don't skip preflight on long runs  
 ✅ Run `preflight-exact` before 4+ hour jobs
 
-❌ Don't use "close enough" for parity  
-✅ Zero missing/extra on discrete/topological fields; `np.allclose` on continuous floats (ADR 0011)
+❌ Don't call Phase 1 “100%” or reopen it for last-digit Energy diffs  
+✅ Ship bar is close enough (`allclose`); identical last digits is stretch, still open on crop Energy
 
 ---
 
-**Last Updated**: 2026-06-24  
+**Last Updated**: 2026-08-17  
 **Related**: [README.md](README.md), [AGENTS.md](../AGENTS.md)

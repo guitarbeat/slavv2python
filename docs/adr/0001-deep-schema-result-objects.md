@@ -1,5 +1,11 @@
 # ADR 0001: Deep Schema Result Objects
 
+## In short
+
+Stage outputs are typed objects (`EnergyResult`, `VertexSet`, …), not loose
+dictionaries. That way each stage has a real contract for what it must produce
+and how it saves to disk.
+
 ## Status
 Accepted
 

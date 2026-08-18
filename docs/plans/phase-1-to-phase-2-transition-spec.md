@@ -8,6 +8,12 @@ topic: parity-closure-to-optimization-handoff
 
 # Phase 1 to Phase 2 transition
 
+## In short
+
+Do not start broad speed rewrites until Phase 1 is closed and the official run
+folder is frozen. That handoff already happened. Stretch (identical last digits)
+is a separate leftover, not a Phase 1 reopen.
+
 **Purpose:** define the controlled handoff from exact-route certification to
 optimization work. This spec prevents broad Phase 2 refactors from starting
 before the full-volume Network ADR 0012 ship gate is green and the canonical

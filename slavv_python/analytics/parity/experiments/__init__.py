@@ -15,6 +15,7 @@ from slavv_python.analytics.parity.experiments.artifact_class import (
     classify_edge_artifact,
     compare_same_class_pair_sets,
     coverage_of_finals_by_raw,
+    resolve_candidate_set_path,
 )
 from slavv_python.analytics.parity.experiments.cost import (
     CheapLoopError,
@@ -48,4 +49,5 @@ __all__ = [
     "load_proof_record",
     "require_cheap_loop",
     "require_evaluated_adr0012",
+    "resolve_candidate_set_path",
 ]

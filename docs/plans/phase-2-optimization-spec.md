@@ -8,6 +8,12 @@ topic: pythonic-optimization-scalability
 
 # Phase 2: Pythonic Optimization & Scalability Spec
 
+## In short
+
+After Phase 1 shipped, make the exact route faster without silently changing
+answers. Do not unwind Fortran-order tie-breaks without a new ADR. Crop Energy
+last-digit leftover is a separate program — not this spec.
+
 **Author**: Engineering Team
 **Prerequisite**: Phase 1 exact-route certification under ADR 0011/0012, with the
 canonical baseline frozen per
@@ -29,8 +35,9 @@ Measured wall-clock on that dest is Edges then Network; Energy/Vertices elapsed
 0 means carried lineage, not instant compute. Do **not** implement the Great
 Transpose, C-order unwind, paper-profile writer, or neurovasc-db writers from
 this spec until an explicit Phase 2 ADR names the regression gate.
-Paper-profile volume and oracle remain TBD. Stretch Energy `blocked_float_path`
-is a separate program and is not this handoff.
+Paper-profile volume and oracle remain TBD. Stretch Energy (extra identical-bits
+bar; crop leftover last-digit diffs) is a separate program and is not this
+handoff.
 
 ---
 

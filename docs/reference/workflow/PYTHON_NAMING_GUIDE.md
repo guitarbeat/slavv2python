@@ -2,6 +2,11 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+Name modules by stage then role (`matlab_get_edges_by_watershed.py`). This is
+style, not pass/fail.
+
 This guide defines naming conventions for Python modules in `slavv_python`.
 
 ## Goal

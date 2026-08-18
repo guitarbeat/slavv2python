@@ -1,0 +1,90 @@
+{
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v4",
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": "network.strands",
+  "first_failing_stage": "network",
+  "first_failure": {
+    "field_path": "network.strands",
+    "matlab_preview": {
+      "dtype": "int64",
+      "shape": [
+        48049,
+        2
+      ],
+      "values": [
+        0,
+        161,
+        0,
+        522,
+        0,
+        603
+      ]
+    },
+    "mismatch_type": "strand endpoint-pair multiset mismatch",
+    "python_preview": {
+      "dtype": "int64",
+      "shape": [
+        39623,
+        2
+      ],
+      "values": [
+        0,
+        1974,
+        3,
+        700,
+        3,
+        21629
+      ]
+    },
+    "stage": "network"
+  },
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2\\01_Input\\matlab_results\\batch_260626-125646",
+  "mismatch_diagnosis": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v4\\03_Analysis\\exact_mismatch_network.json",
+  "passed": false,
+  "report_scope": "exact route",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v4",
+  "stage_summaries": {
+    "network": {
+      "field_count": 6,
+      "first_failure": {
+        "field_path": "network.strands",
+        "matlab_preview": {
+          "dtype": "int64",
+          "shape": [
+            48049,
+            2
+          ],
+          "values": [
+            0,
+            161,
+            0,
+            522,
+            0,
+            603
+          ]
+        },
+        "mismatch_type": "strand endpoint-pair multiset mismatch",
+        "python_preview": {
+          "dtype": "int64",
+          "shape": [
+            39623,
+            2
+          ],
+          "values": [
+            0,
+            1974,
+            3,
+            700,
+            3,
+            21629
+          ]
+        },
+        "stage": "network"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "network"
+  ]
+}

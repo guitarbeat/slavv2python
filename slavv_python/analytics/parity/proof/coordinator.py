@@ -18,6 +18,9 @@ from slavv_python.analytics.parity.constants import (
     EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL,
     LUT_PROOF_JSON_PATH,
 )
+from slavv_python.analytics.parity.experiments.artifact_class import (
+    resolve_candidate_set_path,
+)
 from slavv_python.analytics.parity.oracle import params_audit
 from slavv_python.analytics.parity.oracle.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.oracle.models import ExactProofSourceSurface  # noqa: TC001
@@ -160,8 +163,8 @@ class ExactProofCoordinator:
             python_artifacts = load_normalized_python_checkpoints(checkpoints_dir, selected_stages)
         except ValueError:
             if selected_stages == ("edges",):
-                candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
-                if candidate_path.is_file():
+                candidate_path = resolve_candidate_set_path(dest_run_root)
+                if candidate_path is not None and candidate_path.is_file():
                     candidates = joblib.load(candidate_path)
                     python_artifacts["edges"] = {
                         "connections": _normalize_connection_array(candidates.get("connections")),
@@ -200,7 +203,8 @@ class ExactProofCoordinator:
         if candidate_surface:
             report_payload["candidate_surface"] = candidate_surface
             report_payload["candidate_checkpoint_path"] = str(
-                dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+                resolve_candidate_set_path(dest_run_root)
+                or dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
             )
             report_payload["edge_checkpoint_path"] = str(checkpoints_dir / "checkpoint_edges.pkl")
 
@@ -489,9 +493,11 @@ class ExactProofCoordinator:
         checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
-        if not candidate_path.is_file():
-            raise FileNotFoundError(f"missing candidate checkpoint for replay: {candidate_path}")
+        candidate_path = resolve_candidate_set_path(dest_run_root)
+        if candidate_path is None:
+            raise FileNotFoundError(
+                f"missing Candidate Set for replay under {dest_run_root} (04_Edges/candidates.pkl)"
+            )
 
         candidates = joblib.load(candidate_path)
         edges_payload = {

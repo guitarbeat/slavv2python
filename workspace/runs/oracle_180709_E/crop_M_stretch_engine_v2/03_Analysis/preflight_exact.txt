@@ -1,0 +1,4 @@
+Exact preflight report
+Status: PASS
+Memory gate: required 0.16 GiB <= budget 5.12 GiB (pass)
+Run snapshot status: completed_target

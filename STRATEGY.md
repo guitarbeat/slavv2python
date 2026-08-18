@@ -22,7 +22,7 @@ Certify a MATLAB-faithful exact route against preserved oracles with defined per
 ## Key metrics
 
 - **Exact-route certification** - Per-stage `prove-exact` pass/fail on the claim root; live in ONE TRUTH, not this file.
-- **Stretch status** - Dest `stretch_status.json` (`blocked_float_path` through `stretch_complete`). Allclose is not stretch success.
+- **Stretch status** - Extra “identical last digits” bar after Phase 1. Live in dest `stretch_status.json` (`blocked_float_path` = Energy still not bit-equal). Close-enough (`allclose`) is not stretch success.
 - **Paper-profile certification** - Same sequential bars on the public `paper` profile (phase-1 spec R7). Unmet until a volume/oracle is named and proved.
 - **Stage wall-clock** - Frozen-dest Energy→Network timings in `docs/reference/core/phase2-profiling-baseline.json` (can regress).
 

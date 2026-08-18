@@ -46,6 +46,7 @@ from slavv_python.pipeline.energy.stretch_synthetic_original_compare import (
     seeded_volume_zyx,
     volume_zyx_to_matlab_yxz,
 )
+from slavv_python.storage.loaders.tiff import load_tiff_volume
 from slavv_python.utils.validation import validate_parameters
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -101,6 +102,28 @@ def _load_original_energy_zyx(path: Path) -> np.ndarray:
     return energy_h5py_plane_to_zyx(planes[1])
 
 
+def _window_from_tiff(
+    path: Path,
+    *,
+    origin: tuple[int, int, int],
+    shape_zyx: tuple[int, int, int],
+) -> np.ndarray:
+    """Load a TIFF and cut a ZYX window. If the last axis is smallest, treat as YXZ."""
+    volume = np.asarray(load_tiff_volume(path))
+    if volume.ndim != 3:
+        raise ValueError(f"expected 3D TIFF, got shape {volume.shape} from {path}")
+    if volume.shape[2] < volume.shape[0] and volume.shape[2] < volume.shape[1]:
+        volume = np.transpose(volume, (2, 0, 1))
+    z0, y0, x0 = origin
+    dz, dy, dx = shape_zyx
+    window = volume[z0 : z0 + dz, y0 : y0 + dy, x0 : x0 + dx]
+    if window.shape != shape_zyx:
+        raise ValueError(
+            f"window {shape_zyx} at {origin} does not fit volume {tuple(int(v) for v in volume.shape)}"
+        )
+    return np.ascontiguousarray(window.astype(np.float64, copy=False))
+
+
 def run_synthetic_compare(
     *,
     dest: Path,
@@ -110,6 +133,8 @@ def run_synthetic_compare(
     max_voxels_per_node: float = 1e9,
     extra_params: dict[str, Any] | None = None,
     intensity: str = INTENSITY_UNIT,
+    image_zyx: np.ndarray | None = None,
+    source_label: str = "seeded",
 ) -> dict[str, Any]:
     refuse_protected_stretch_energy_dest(dest)
     python37 = resolve_python37_executable()
@@ -120,7 +145,11 @@ def run_synthetic_compare(
     except MatlabEngineInfraError as exc:
         return _incomplete(str(exc))
 
-    image = seeded_volume_zyx(shape_zyx=shape_zyx, intensity=intensity)
+    image = (
+        np.ascontiguousarray(np.asarray(image_zyx, dtype=np.float64))
+        if image_zyx is not None
+        else seeded_volume_zyx(shape_zyx=shape_zyx, intensity=intensity)
+    )
     dest.mkdir(parents=True, exist_ok=True)
     original_path = dest / ORIGINAL_HANDLE
     energy_path = dest / ENERGY_HANDLE
@@ -185,7 +214,8 @@ def run_synthetic_compare(
     payload["n_scales"] = int(np.asarray(radii).size)
     payload["max_voxels_per_node"] = float(max_voxels_per_node)
     payload["crop_like_optics"] = bool(extra_params)
-    payload["intensity"] = str(intensity)
+    payload["intensity"] = str(intensity) if image_zyx is None else "tiff_window"
+    payload["source"] = str(source_label)
     return payload
 
 
@@ -216,12 +246,35 @@ def main() -> int:
         default=INTENSITY_UNIT,
     )
     parser.add_argument(
+        "--from-tiff",
+        type=Path,
+        default=None,
+        help="Real TIFF window instead of seeded noise (ZYX after optional Z-last transpose).",
+    )
+    parser.add_argument(
+        "--tiff-origin",
+        type=int,
+        nargs=3,
+        metavar=("Z", "Y", "X"),
+        default=(0, 0, 0),
+        help="Window origin in ZYX after transpose.",
+    )
+    parser.add_argument(
         "--status-extra-key",
         default="synthetic_original_compare",
         help="stretch_status.json extra key (keep 2-radius result distinct from multi-scale).",
     )
     args = parser.parse_args()
     extra = dict(CROP_LIKE_OPTICS) if args.crop_like_optics else None
+    image_zyx = None
+    source_label = "seeded"
+    if args.from_tiff is not None:
+        image_zyx = _window_from_tiff(
+            args.from_tiff,
+            origin=(int(args.tiff_origin[0]), int(args.tiff_origin[1]), int(args.tiff_origin[2])),
+            shape_zyx=(int(args.shape[0]), int(args.shape[1]), int(args.shape[2])),
+        )
+        source_label = str(args.from_tiff)
     payload = run_synthetic_compare(
         dest=args.dest,
         radius_smallest=args.radius_smallest,
@@ -230,6 +283,8 @@ def main() -> int:
         max_voxels_per_node=float(args.max_voxels),
         extra_params=extra,
         intensity=str(args.intensity),
+        image_zyx=image_zyx,
+        source_label=source_label,
     )
     args.scratch_json.parent.mkdir(parents=True, exist_ok=True)
     args.scratch_json.write_text(

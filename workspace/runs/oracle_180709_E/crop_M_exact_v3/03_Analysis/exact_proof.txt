@@ -1,0 +1,17 @@
+Exact proof report
+Status: FAIL
+Stages: edges
+Scope: exact route
+
+Stage summary
+edges: FAIL
+
+First failure
+Stage: edges
+Field: edges.adr0012_gate
+Mismatch: adr0012_not_evaluated
+
+ADR 0012 was NOT evaluated — this proof is not a valid Phase 1 closure attempt.
+Reason: Python watershed ownership map unavailable — re-capture edge candidates with --include-debug-maps to persist vertex_index_map
+Action: supply MATLAB watershed_ownership_map.mat and re-capture Python edge candidates with --include-debug-maps, then rerun prove-exact --stage edges.
+Connection counts (informational only): MATLAB=15511 Python=15511

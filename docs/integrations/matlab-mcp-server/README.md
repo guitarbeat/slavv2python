@@ -1,5 +1,10 @@
 # MATLAB MCP Server — Setup Guide
 
+## In short
+
+Notes for a future MATLAB chat-server hookup. **Not installed here on purpose**
+— it cannot safely write this project's saved MATLAB answers (oracle).
+
 Reusable setup notes for wiring the **official MathWorks MATLAB MCP Server**
 into Claude Code (or any MCP-capable agent). Kept git-tracked so it is ready
 for a future MATLAB version, a new machine, or another project.

@@ -8,6 +8,11 @@ resolution_type: code_fix
 
 # Sparse Meshgrid Memory Optimization
 
+## In short
+
+Do not build a dense 4D coordinate grid just to interpolate. Sparse axes plus
+broadcasting cut hundreds of MB per chunk without changing the numbers.
+
 ## Problem
 During the exact-route Energy stage processing, canonical volumes (512x512x64) were experiencing severe memory overhead when computing `_interp3_matlab_linear_inf` (which lives in `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py`). The pipeline was generating fully dense 4D arrays `(3, Y, X, Z)` for the coordinate grid to pass into interpolation, which consumed >400MB of RAM per chunk and risked `ArrayMemoryError` on constrained developer machines.
 

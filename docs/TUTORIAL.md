@@ -1,5 +1,10 @@
 # SLAVV Python Tutorial
 
+## In short
+
+Install, make a fake vessel photo if you need one, run `slavv run`, get a
+network. This is the public product path, not the MATLAB proof track.
+
 Quick walkthrough from setup to a processed vascular network.
 
 ## 1. Setup

@@ -1,0 +1,28 @@
+{
+  "allclose_is_not_stretch_success": true,
+  "clamp_class_mismatches": 0,
+  "dest": "workspace\\scratch\\stretch_synthetic_original_32",
+  "failed_voxels": 0,
+  "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+  "isolation_only": true,
+  "max_abs_delta": 0.0,
+  "max_voxels_per_node": 4096.0,
+  "n_scales": 3,
+  "not_stretch_success": true,
+  "original_elapsed_sec": 34.4555191,
+  "pass_rate": 1.0,
+  "passed_voxels": 32768,
+  "radius_largest": 1.6,
+  "radius_smallest": 1.5,
+  "residual_mismatches": 0,
+  "result": "pass_fixture",
+  "seed": 17,
+  "shape_zyx": [
+    32,
+    32,
+    32
+  ],
+  "status_class": "blocked_float_path",
+  "stretch_complete": false,
+  "total_voxels": 32768
+}

@@ -16,15 +16,17 @@
 | Architecture decisions | [adr/](adr/) | TODO / HANDOFF |
 | Specs (requirements + plan) | [plans/](plans/) | Brainstorms after promotion |
 | Experiment *framing* (hypothesis, method) | [PHASE1 residual](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) + [template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Live KPIs |
-| Experiment *data / artifact class* | `slavv_python.analytics.parity.experiments` (runbook: [parity-experiment-hygiene.md](solutions/best-practices/parity-experiment-hygiene.md)) | Unlabeled `probe_*.py`; treating finals as raw |
+| Experiment Root completeness | `slavv parity inspect-experiment-root` · [Experiment Root](../AGENTS.md#experiment-root) | ONE TRUTH; treating MATLAB source or Git LFS pointers as completeness |
 | Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
 | Figure paint KPIs (mirror only) | [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py) | Second status tables in prose docs |
 | Frozen Phase 1 hashes | [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) | HANDOFF/TODO restatements of SHA-256 |
-| Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
+| Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) (plain-language first) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
 | Phase 2 profiling timings | [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json) | ROADMAP live wall-clock tables |
 | Archival deep dives / session diary | [investigations/](investigations/) · [findings diary](investigations/exact-proof-findings-diary/README.md) | Executable specs / current status |
 
 **One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
+
+**Plain English:** Lead maintained docs with a short **In short** in everyday language, then keep identifiers and evidence. Phase 1 closed = close enough to ship, not identical last digits. Do not invent a second status home.
 
 ### Deprecated / migrated (do not treat as live status)
 
@@ -45,7 +47,7 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 ## 🚀 Quick Start By Use Case
 
 ### 🆕 New to SLAVV
-1. [Repository README](../README.md) — Project overview and installation
+1. [Repository README](../README.md) — Short front door (install + where to go)
 2. [Tutorial](TUTORIAL.md) — Your first vascular extraction
 3. [Reference index](reference/README.md) — Technical documentation
 
@@ -72,7 +74,7 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 ## 📚 All Documentation
 
 ### Core Entry Points
-1. [Repository README](../README.md)
+1. [Repository README](../README.md) — short front door; this index owns the full map
 2. [Roadmap (narrative milestones)](ROADMAP.md)
 3. [Developer dashboard (tasks & planning hub)](TODO.md)
 4. [Tutorial](TUTORIAL.md)
@@ -97,7 +99,7 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 2. **[.claude/HANDOFF.md](../.claude/HANDOFF.md)** ⭐ — Operator decision point + commands (re-synthesize when ONE TRUTH moves)
 3. **[TODO.md](TODO.md)** — Checkboxes only (ship tasks)
 4. **[Parity Methodology](reference/core/PARITY_METHODOLOGY.md)** — Why the bars are tolerance-based (literature-backed; validates ADR 0011/0012)
-5. **[Phase 1 Residual Experiment Analysis](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md)** — Current hypothesis, methodology, limitations, and next steps for the Network residual
+5. **[Phase 1 Residual Experiment Analysis](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md)** — Historical framing of the closed Network leftover (not live status)
 6. **[Experiment Analysis Template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md)** — Reusable structure for hypothesis-driven parity experiment notes
 7. **[Phase 1 → Phase 2 Transition Spec](plans/phase-1-to-phase-2-transition-spec.md)** — Complete; frozen baseline [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json)
 8. **[Unproductive Loops](reference/core/UNPRODUCTIVE_LOOPS.md)** — Anti-patterns (stale gates, probe orientation, Network misattribution)

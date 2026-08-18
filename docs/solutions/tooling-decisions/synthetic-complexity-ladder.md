@@ -28,6 +28,12 @@ tags:
 
 # Synthetic complexity ladder until first MATLAB↔Python divergence
 
+## In short
+
+One tiny fake Y-junction matching does **not** mean the real crop leftover is
+gone. Grow fake photos until the first mismatch (or they still agree). Do not
+promote ladder results into ONE TRUTH. Phase 1 is already closed.
+
 ## Context
 
 A single matching 32³ Y-junction dual-run (`workspace/experiments/tiny_synthetic_matlab_python_diff/`) already showed exact agreement after index alignment. That one toy success can inflate the intuition that “synthetic always matches,” which weakens trust in the full-volume residual story and makes operators reach for expensive crop or canonical writers too early.

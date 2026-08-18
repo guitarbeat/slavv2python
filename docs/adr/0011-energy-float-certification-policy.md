@@ -1,5 +1,11 @@
 # ADR 0011: Energy Float Certification Policy
 
+## In short
+
+For Energy **ship**, scale winners must match exactly, but the Energy numbers
+only need to be close (`allclose`). MATLAB and NumPy math libraries differ in
+the last digits. Identical last digits is a later stretch goal, not this ADR.
+
 ## Status
 Accepted (2026-06-24)
 

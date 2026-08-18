@@ -11,6 +11,13 @@ merged_from:
 
 # Phase 1 exact-route certification on 180709_E
 
+## In short
+
+This spec is the **ship** contract: Python must match MATLAB closely enough on
+the full photo, stage by stage. That bar is already met (ONE TRUTH CLOSED).
+Close enough is not identical last digits. Paper-profile certification on a
+named public volume is still later work.
+
 **Authoritative spec** for program intent, requirements, and implementation. **Tasks:** [TODO.md](../TODO.md) (checkboxes only). **Live status:** [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) (runs, proofs, blockers).
 
 ---

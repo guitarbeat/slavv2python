@@ -1,0 +1,443 @@
+{
+  "extra": {
+    "allclose_is_not_stretch_success": true,
+    "backend": "matlab_engine",
+    "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+    "e12": {
+      "finite_bit_identical": 57,
+      "finite_total": 57,
+      "inf_nan_identity": true,
+      "payload_shape": [
+        5,
+        4,
+        3
+      ],
+      "result": "pass",
+      "tests": [
+        "tests/unit/pipeline/energy/test_stretch_worker_marshalling.py::test_e12_fortran_float_list_roundtrip_without_engine",
+        "tests/unit/pipeline/energy/test_stretch_worker_marshalling.py::test_e12_worker_matlab_double_roundtrip_bit_identical"
+      ]
+    },
+    "e13": {
+      "chunk_vs_full_tiny": "pass_bit_match",
+      "inf_interp3": "pass_bit_match",
+      "linspace": "pass_bit_match",
+      "nan_interp3": "not_tiny_ulp_class",
+      "result": "fail_isolation_hypothesis",
+      "tests": [
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_linspace_formula_matches_get_energy_v202",
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_python_linspace_matches_matlab_engine",
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_inf_nan_interp3_matches_matlab_engine",
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_nan_interp3_divergence_is_not_tiny_ulp",
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_inf_interp3_positive_weight_matches_known_python_fixture",
+        "tests/unit/pipeline/energy/test_stretch_ulp_isolation.py::test_e13_chunk_vs_full_tiny_engine_body"
+      ],
+      "unexplained": "v2 407457 ULP mismatches remain; linspace, Inf interp3, and tiny chunk-vs-full did not reproduce the crop pattern"
+    },
+    "e14": {
+      "chunk_lattice_octave2": 726,
+      "chunks_completed_before_abort": 43,
+      "dest": "workspace/scratch/e14_whole_crop_get_energy_v202",
+      "isolation_only": true,
+      "matlab_killed": true,
+      "not_stretch_success": true,
+      "python_v2_units_total": 821,
+      "reason": "Aborted after ~6.7 min: MATLAB get_energy_V202 is octave-chunked (726 chunks on octave 2 of 6), not an in-memory body. 43/726 chunks at ~7.7/min (parpool 4); octave 2 ETA ~90 min plus octaves 3-6. Same class as the v2 821-chunk writer.",
+      "result": "deferred",
+      "result_json": "workspace/scratch/e14_whole_crop_get_energy_v202/e14_result.json",
+      "status_class": "incomplete_infra",
+      "tests": [
+        "tests/unit/pipeline/energy/test_stretch_whole_crop_get_energy_policy.py"
+      ]
+    },
+    "e17": {
+      "matlab_cleanup_comparator": "not_run",
+      "not_a_100pct_claim": true,
+      "result": "pass",
+      "scope": "unit ranking fixtures; no Edges writer",
+      "tests": [
+        "tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py"
+      ]
+    },
+    "e18": {
+      "cannot_unlock": true,
+      "result": "pass",
+      "tests": [
+        "tests/unit/parity/test_mkl_spike_does_not_replace_engine.py"
+      ]
+    },
+    "e19": {
+      "full_without_crop_unlock": "refused",
+      "orientation_512_64_512": "incomplete_infra",
+      "result": "pass",
+      "tests": [
+        "tests/unit/parity/test_stretch_full_volume_gate.py"
+      ]
+    },
+    "failed_voxels": 407457,
+    "float_body": "stretch_energy_chunk_v202",
+    "helper_body_isolation": {
+      "helper_clamps_nonnegative": true,
+      "input_windows_equal": true,
+      "interpretation": "local_ranges match MATLAB floor/ceil; residual is not the coarse-slice formula. Input windows match. Residual is filter/interp3 args or MATLAB engine vs original batch internals. Helper clamps energy>=0 to 0; MATLAB active path does not. That is not the 1e-10 negative-energy ULP class.",
+      "isolation_only": true,
+      "local_ranges_equal": true,
+      "not_stretch_success": true,
+      "scratch_json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\scratch\\stretch_helper_body_isolation.json",
+      "status_class": "blocked_float_path",
+      "stretch_complete": false
+    },
+    "lattice_params_isolation": {
+      "interpretation": "Lattices and params match \u2192 residual is helper body vs original MATLAB chunk math on the same lattice; still blocked_float_path; do not relaunch E14.",
+      "isolation_only": true,
+      "lattices_match_by_rf": true,
+      "not_stretch_success": true,
+      "octave2": {
+        "expected_matlab_chunks": 726,
+        "expected_python_chunks": 75,
+        "matlab_formula": {
+          "approx_size": [
+            256,
+            256,
+            64
+          ],
+          "frame": "matlab_yxz",
+          "lattice_dimensions": [
+            11,
+            11,
+            6
+          ],
+          "number_of_chunks": 726,
+          "octave": 2,
+          "rf": [
+            1,
+            1,
+            1
+          ]
+        },
+        "matlab_matches_expected_726": true,
+        "python": {
+          "approx_size": [
+            85,
+            85,
+            64
+          ],
+          "frame": "python_yxz",
+          "lattice_dimensions": [
+            5,
+            5,
+            3
+          ],
+          "number_of_chunks": 75,
+          "octave": 2,
+          "rf": [
+            3,
+            3,
+            1
+          ]
+        },
+        "python_matches_expected_75": true
+      },
+      "params_core_equal": true,
+      "params_equal": false,
+      "scratch_json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\scratch\\stretch_lattice_params_isolation.json",
+      "status_class": "blocked_float_path",
+      "stretch_complete": false
+    },
+    "max_abs_delta": 1e-10,
+    "one_production_chunk": {
+      "interpretation": "Re-run == v2 and both \u2260 oracle \u2192 helper/oracle (lattice or filter/interp3 vs original MATLAB batch), packaging OK.",
+      "isolation_only": true,
+      "lattice": {
+        "chunk_index": 0,
+        "dest": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+        "lattice_dimensions_yxz": [
+          5,
+          5,
+          3
+        ],
+        "lattice_indices_yxz": [
+          0,
+          0,
+          0
+        ],
+        "number_of_chunks": 75,
+        "octave": 2,
+        "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2",
+        "prev_scales_count": 36,
+        "rf_zyx": [
+          1,
+          3,
+          3
+        ],
+        "scale_indices_at_octave": [
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53
+        ],
+        "voxel_zyx": [
+          13,
+          0,
+          0
+        ],
+        "winner_scale": 43,
+        "write_count_zyx": [
+          21,
+          51,
+          51
+        ],
+        "write_start_zyx": [
+          0,
+          0,
+          0
+        ],
+        "write_window_zyx": [
+          [
+            0,
+            21
+          ],
+          [
+            0,
+            51
+          ],
+          [
+            0,
+            51
+          ]
+        ]
+      },
+      "not_stretch_success": true,
+      "result": "ok",
+      "scratch_json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\scratch\\stretch_one_production_chunk.json",
+      "status_class": "blocked_float_path",
+      "stretch_complete": false
+    },
+    "pass_rate": 0.9028546810150146,
+    "passed_voxels": 3786847,
+    "prior_blocked_root": "crop_M_stretch_engine_v1",
+    "proof": "03_Analysis/exact_proof_energy.json",
+    "scale_mismatch_count": 0,
+    "strict_floats": true,
+    "synthetic_original_compare": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "dest": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\scratch\\stretch_synthetic_original_8",
+      "failed_voxels": 0,
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 49.4784827,
+      "pass_rate": 1.0,
+      "passed_voxels": 512,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        8,
+        8,
+        8
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 512
+    },
+    "synthetic_original_compare_32": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_32",
+      "failed_voxels": 0,
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "max_voxels_per_node": 4096.0,
+      "n_scales": 3,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 34.4555191,
+      "pass_rate": 1.0,
+      "passed_voxels": 32768,
+      "radius_largest": 1.6,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        32,
+        32,
+        32
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 32768
+    },
+    "synthetic_original_compare_chunkshape": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "crop_like_optics": true,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_chunkshape",
+      "failed_voxels": 0,
+      "intensity": "unit",
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "max_voxels_per_node": 6000.0,
+      "n_scales": 46,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 53.3557856,
+      "pass_rate": 1.0,
+      "passed_voxels": 54621,
+      "radius_largest": 8.0,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        21,
+        51,
+        51
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 54621
+    },
+    "synthetic_original_compare_crop_octaves": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "crop_like_optics": true,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_32_crop_octaves",
+      "failed_voxels": 0,
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "max_voxels_per_node": 6000.0,
+      "n_scales": 46,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 43.094495,
+      "pass_rate": 1.0,
+      "passed_voxels": 32768,
+      "radius_largest": 8.0,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        32,
+        32,
+        32
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 32768
+    },
+    "synthetic_original_compare_crop_optics": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "crop_like_optics": true,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_32_crop_optics",
+      "failed_voxels": 0,
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "max_voxels_per_node": 6000.0,
+      "n_scales": 10,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 37.7233083,
+      "pass_rate": 1.0,
+      "passed_voxels": 32768,
+      "radius_largest": 2.0,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        32,
+        32,
+        32
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 32768
+    },
+    "synthetic_original_compare_lognormal": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "crop_like_optics": true,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_32_lognormal",
+      "failed_voxels": 0,
+      "intensity": "lognormal",
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "max_voxels_per_node": 6000.0,
+      "n_scales": 46,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 42.3571563,
+      "pass_rate": 1.0,
+      "passed_voxels": 32768,
+      "radius_largest": 8.0,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        32,
+        32,
+        32
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 32768
+    },
+    "synthetic_original_compare_multiscale": {
+      "allclose_is_not_stretch_success": true,
+      "clamp_class_mismatches": 0,
+      "dest": "workspace\\scratch\\stretch_synthetic_original_8_r15_8",
+      "failed_voxels": 0,
+      "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+      "isolation_only": true,
+      "max_abs_delta": 0.0,
+      "n_scales": 14,
+      "not_stretch_success": true,
+      "original_elapsed_sec": 37.7262177,
+      "pass_rate": 1.0,
+      "passed_voxels": 512,
+      "radius_largest": 8.0,
+      "radius_smallest": 1.5,
+      "residual_mismatches": 0,
+      "result": "pass_fixture",
+      "seed": 17,
+      "shape_zyx": [
+        8,
+        8,
+        8
+      ],
+      "status_class": "blocked_float_path",
+      "stretch_complete": false,
+      "total_voxels": 512
+    },
+    "total_voxels": 4194304,
+    "ulp_p50": 3.0,
+    "ulp_p90": 9.0,
+    "v1_pass_rate": 0.625
+  },
+  "note": "U4 crop Energy writer completed; prove-exact --strict-floats FAIL. E12 marshalling PASS. E13 isolation hypothesis FAIL. E14 deferred incomplete_infra: scratch MATLAB get_energy_V202 aborted (726-chunk octave 2 of 6, 43/726 in ~6 min; multi-hour, not a cheap in-memory body). E17 ranking units PASS (not 100%). E18 MKL cannot unlock PASS. E19 full-without-unlock refuse + (512,64,512) infra PASS. Status remains blocked_float_path. Do not unlock U5/U6. Do not treat allclose as stretch success. Phase 1 claim canonical_full_v18 untouched.",
+  "phase1_claim_run": "canonical_full_v18",
+  "phase1_claim_untouched": true,
+  "schema_version": 1,
+  "status": "blocked_float_path"
+}

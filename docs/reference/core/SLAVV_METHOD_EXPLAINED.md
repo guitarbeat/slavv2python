@@ -2,10 +2,17 @@
 
 [Up: Reference Docs](../README.md) · [Research paper review](../../research/slavv-original-paper-review.md)
 
+## In short
+
+SLAVV turns a 3D two-photon photo into a vessel graph **without** first making a
+binary mask. It scores every voxel (Energy), finds seed points (Vertices),
+connects them (Edges), then builds strands and junctions (Network). This page
+explains the published method. Live Python-vs-MATLAB status is [ONE TRUTH](EXACT_PROOF_FINDINGS.md).
+
 Original method from Mihelic et al. (2021): how a 3D two-photon volume becomes a network of vessel centerlines.
 
 **Paper:** Mihelic SA, Sikora WA, Hassan AM, Williamson MR, Jones TA, Dunn AK. *Segmentation-Less, Automated, Vascular Vectorization.* PLOS Computational Biology 17(10): e1009451 (2021).  
-**DOI:** [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451) · **PDF:** [journal.pcbi.1009451.pdf](../papers/journal.pcbi.1009451.pdf)
+**DOI:** [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451)
 
 ---
 
@@ -69,8 +76,8 @@ The 4D stack (space × scale) is collapsed into 3D using one of two projection p
 *   **Paper Projection (`paper`)**: Blends annular scale estimates and magnitude-weighted spherical scale estimates using the parameter `spherical_to_annular_ratio` to produce a smoother size estimation.
 
 #### Implementation Architecture
-*   **Facade:** [`EnergyManager`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/energy/manager.py)
-*   **Hessian Filters:** [`energy.py`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/energy/energy.py)
+*   **Facade:** [`EnergyManager`](../../../slavv_python/pipeline/energy/manager.py)
+*   **Hessian Filters:** [`energy.py`](../../../slavv_python/pipeline/energy/energy.py)
 *   **Key Parameters:** `radius_of_smallest_vessel_in_microns`, `radius_of_largest_vessel_in_microns`, `scales_per_octave`, `gaussian_to_ideal_ratio`, `spherical_to_annular_ratio`, `energy_projection_mode`.
 
 > [!TIP]
@@ -103,8 +110,8 @@ graph TD
 This ensures that vertices are placed at high-contrast vessel centers while preventing redundant, overlapping seeds on the same vessel segment.
 
 #### Implementation Architecture
-*   **Facade:** [`VertexManager`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/vertices/manager.py)
-*   **Candidate & Paint Logic:** [`detection.py`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/vertices/detection.py) and [`painting.py`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/vertices/painting.py)
+*   **Facade:** [`VertexManager`](../../../slavv_python/pipeline/vertices/manager.py)
+*   **Candidate & Paint Logic:** [`detection.py`](../../../slavv_python/pipeline/vertices/detection.py) and [`painting.py`](../../../slavv_python/pipeline/vertices/painting.py)
 *   **Key Parameters:** `vertex_energy_threshold`, `seed_spacing_factor`.
 
 ---
@@ -142,9 +149,9 @@ To match the MATLAB global watershed exactly, the algorithm uses:
 *   **Grid Realignment**: Realigns the physical volume from `[Z, Y, X]` to `[Y, X, Z]` with Fortran (`order="F"`) contiguity to match MATLAB's column-major indexing priority.
 
 #### Implementation Architecture
-*   **Facade:** [`EdgeManager`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/edges/manager.py)
-*   **Strategy Selection:** [`discovery.py`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/edges/discovery.py)
-*   **Watershed Port:** [`matlab_get_edges_by_watershed.py`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py)
+*   **Facade:** [`EdgeManager`](../../../slavv_python/pipeline/edges/manager.py)
+*   **Strategy Selection:** [`discovery.py`](../../../slavv_python/pipeline/edges/discovery.py)
+*   **Watershed Port:** [`matlab_get_edges_by_watershed.py`](../../../slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py)
 *   **Key Parameters:** `max_edge_length_per_origin_radius`, `number_of_edges_per_vertex`.
 
 ---
@@ -174,7 +181,7 @@ The final network graph consists of three topological elements based on voxel de
 2.  **Smoothing**: Stair-stepped voxel paths are smoothed using a 1D Gaussian kernel along the strand. Higher-energy voxels (weaker signals) are weighted less than low-energy voxels (stronger centerline signals), aligning the smoothed line with the physical vessel core. True junctions and endpoints are held fixed to preserve connectivity.
 
 #### Implementation Architecture
-*   **Facade:** [`NetworkManager`](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/pipeline/network/manager.py)
+*   **Facade:** [`NetworkManager`](../../../slavv_python/pipeline/network/manager.py)
 *   **Key Parameters:** `sigma_strand_smoothing`, `minimum_strand_length_in_microns`.
 
 ---
@@ -236,10 +243,10 @@ As documented in the original PLOS Computational Biology paper:
 
 ## 🔗 Related Documentation & Links
 
-*   **Quickstart Guide:** [README.md](README.md)
-*   **Tutorial:** [docs/TUTORIAL.md](docs/TUTORIAL.md)
-*   **Domain Glossary:** [docs/reference/core/GLOSSARY.md](docs/reference/core/GLOSSARY.md) and [AGENTS.md](file:///d:/2P_Data/Aaron/slavv2python/AGENTS.md#domain-glossary)
-*   **Technical Architecture:** [docs/reference/core/TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
-*   **Watershed Implementation Details:** [docs/reference/core/WATERSHED_IMPLEMENTATION_NOTES.md](docs/reference/core/WATERSHED_IMPLEMENTATION_NOTES.md)
-*   **Energy Methods Reference:** [docs/reference/core/ENERGY_METHODS.md](docs/reference/core/ENERGY_METHODS.md)
-*   **MATLAB Source Reference:** [external/Vectorization-Public/README.md](external/Vectorization-Public/README.md)
+*   **Quickstart Guide:** [README.md](../../../README.md)
+*   **Tutorial:** [TUTORIAL.md](../../TUTORIAL.md)
+*   **Domain Glossary:** [GLOSSARY.md](GLOSSARY.md) and [AGENTS.md](../../../AGENTS.md#domain-glossary)
+*   **Technical Architecture:** [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md)
+*   **Watershed Implementation Details:** [WATERSHED_IMPLEMENTATION_NOTES.md](WATERSHED_IMPLEMENTATION_NOTES.md)
+*   **Energy Methods Reference:** [ENERGY_METHODS.md](ENERGY_METHODS.md)
+*   **MATLAB Source Reference:** [external/Vectorization-Public/README.md](../../../external/Vectorization-Public/README.md)

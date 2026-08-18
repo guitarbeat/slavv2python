@@ -2,6 +2,11 @@
 
 [Up: Reference Docs](../README.md) · [Parity Pre-Gate](PARITY_PRE_GATE.md)
 
+## In short
+
+This is the how-to for proving Python against **saved MATLAB answers** (the oracle).
+Phase 1 already shipped. These commands are for regression and the extra identical-last-digits bar — not for reopening the ship gate. Live pass/fail is [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+
 This document provides step-by-step instructions for running a full mathematical parity certification between the SLAVV Python engine and a canonical MATLAB oracle.
 
 For faster iteration before (or in parallel with) full-volume certification, see **[Parity Pre-Gate](PARITY_PRE_GATE.md)** (synthetic smoke → `180709_E_crop_M_v2` → canonical `180709_E`).

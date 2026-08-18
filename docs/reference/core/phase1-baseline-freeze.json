@@ -8,7 +8,6 @@
   "oracle_batch": "batch_260626-125646",
   "do_not_overwrite": [
     "canonical_full_v18",
-    "canonical_full_v16",
     "crop_M_exact_v3",
     "crop_M_stretch_engine_v2"
   ],
@@ -21,8 +20,8 @@
   "proof_file_roots": {
     "exact_proof_edges.json": "canonical_full_v18/03_Analysis",
     "exact_proof_network.json": "canonical_full_v18/03_Analysis",
-    "exact_proof_energy.json": "canonical_full_v4/03_Analysis",
-    "exact_proof_vertices.json": "canonical_full_v4/03_Analysis"
+    "exact_proof_energy.json": "workspace/reports/phase1_volume_archive/canonical_full_v4/03_Analysis",
+    "exact_proof_vertices.json": "workspace/reports/phase1_volume_archive/canonical_full_v4/03_Analysis"
   },
   "checkpoint_sha256": {
     "energy": "c668a847f32d39bc22c2560b30e61f168b58c30c570900243f3b747ea427520f",
@@ -36,5 +35,5 @@
   "dest_release_evidence_sha256": "48c2f54ed21e3010912765c7c6fc6a5abad2b3e6c5a18a45be100466044149ef",
   "cite": "slavv parity inspect-proof --path <json> --require-evaluated",
   "not_stretch": true,
-  "note": "Phase 1 Certification freeze only. Stretch Energy blocked_float_path is a separate program and is not this baseline."
+  "note": "Phase 1 Certification freeze only (close enough to ship). Stretch Energy leftover last-digit diffs (blocked_float_path) are a separate program and are not this baseline. 2026-08-18: historical multi-GB dests (v4/v16 and audit writers) were removed; proofs live under workspace/reports/phase1_volume_archive/. do_not_overwrite lists live dests; PROTECTED_DEST_NAMES is the writer blocklist and still includes canonical_full_v16."
 }

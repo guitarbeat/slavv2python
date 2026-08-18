@@ -2,6 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+`slavv run` (default `paper` profile) is the public product: TIFF in, network
+out. That path is **not** the same as the exact MATLAB proof track. Phase 1
+closed the exact route; paper-profile certification on a named volume is still
+later work.
+
 This document describes the maintained public workflow for running SLAVV as a
 native Python implementation of the published method.
 

@@ -11,6 +11,13 @@ related:
 
 # Random Component Parity Suite — Implementation Hardening Spec
 
+> **History / complete spec — not live pass/fail.**
+
+## In short
+
+How the fake-noise test suite was split into smaller files. Green random-component
+runs are still **not** crop or full-volume certification.
+
 > ✅ COMPLETE (2026-06-24) — retained for reference. Live follow-up = random-component-references-deepening-plan.md. Residual: main file is ~866 lines, still above the ~700-line target (R4); extraction tracked by the deepening plan.
 
 **Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite + a high-level Python SLAVV facade over the MATLAB source (`vectorize_V200.m` and core functions). All phases complete (strong separation, public API in `random_component/` package, `slavv_vectorize.py` as a high-level orchestration facade over the exact-parity stage managers, main file at ~866 lines, full verification passed).

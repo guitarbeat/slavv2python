@@ -8,6 +8,12 @@ resolution_type: fixed
 
 # Canonical Energy Divergence at Multi-Chunk Downsampled Octaves
 
+## In short
+
+Full-volume Energy once picked the wrong vessel size at ~0.24% of voxels because
+Python’s upsample grid did not match MATLAB `linspace`. Fixed. That closed
+**ship** Energy — not the later identical-last-digits stretch leftover.
+
 **Status: RESOLVED.** Root cause = the coarse→fine upsample mesh not bit-matching MATLAB
 `linspace` at coarse-cell boundaries. Fixed by a bit-exact `linspace` port (commit
 `ca709a8d`). Canonical `prove-exact --stage energy` now passes with **0 scale mismatches

@@ -2,6 +2,11 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+A skeleton for writing up an experiment. Do not put live KPIs here — those
+belong in [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md).
+
 Use this template for maintained experiment-analysis documents when a current
 engineering question needs hypothesis, methodology, interpretation, and next
 steps. Do not use it for live run status; live exact-parity status belongs in

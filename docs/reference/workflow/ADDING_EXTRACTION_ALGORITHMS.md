@@ -2,6 +2,11 @@
 
 [Up: Documentation Index](../../README.md)
 
+## In short
+
+How to plug in a new Energy/Edges recipe so the CLI and resumable pipeline can
+see it. New algorithms are not automatically MATLAB-certified.
+
 This guide is the maintained contributor note for introducing a new extraction
 algorithm to the Python SLAVV pipeline. It applies to new edge-generation
 methods, new energy backends, and similar algorithmic additions that should be

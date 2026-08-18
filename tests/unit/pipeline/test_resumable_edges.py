@@ -227,11 +227,13 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     assert result.extra["lumen_radius_microns"] == [1.0]
     assert calls == ["generate_frontier", "finalize"]
     assert stage_controller.artifact_path("candidate_lifecycle.json").is_file()
+    candidates_path = stage_controller.artifact_path("candidates.pkl")
+    assert candidates_path.is_file()
     candidate_checkpoint_path = run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
-    assert candidate_checkpoint_path.is_file()
-    candidate_checkpoint = joblib.load(candidate_checkpoint_path)
-    assert candidate_checkpoint["connections"].tolist() == [[0, 1]]
-    assert candidate_checkpoint["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
+    assert not candidate_checkpoint_path.is_file()
+    candidate_artifact = joblib.load(candidates_path)
+    assert candidate_artifact["connections"].tolist() == [[0, 1]]
+    assert candidate_artifact["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
 
 
 def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path, monkeypatch):

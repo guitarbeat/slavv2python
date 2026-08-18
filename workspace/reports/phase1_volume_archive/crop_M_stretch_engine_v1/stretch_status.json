@@ -1,0 +1,24 @@
+{
+  "extra": {
+    "allclose_is_not_stretch_success": true,
+    "backend": "matlab_engine",
+    "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v1",
+    "failed_voxels": 1571054,
+    "max_abs_delta": 1e-10,
+    "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2",
+    "pass_rate": 0.6254315376281738,
+    "passed_voxels": 2623250,
+    "phase1_claim": "canonical_full_v18",
+    "proof_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v1\\03_Analysis\\exact_proof_energy.json",
+    "scale_mismatch_count": 0,
+    "strict_floats_passed": false,
+    "strict_floats_ran": true,
+    "total_voxels": 4194304,
+    "unlock_emitted": false
+  },
+  "note": "Crop Energy engine writer completed; prove-exact --strict-floats FAIL (not bit-equal). allclose is not stretch success.",
+  "phase1_claim_run": "canonical_full_v18",
+  "phase1_claim_untouched": true,
+  "schema_version": 1,
+  "status": "blocked_float_path"
+}

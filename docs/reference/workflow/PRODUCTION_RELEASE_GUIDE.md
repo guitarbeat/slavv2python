@@ -2,6 +2,12 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+Checklist before tagging a research release. Phase 1 exact-route certification
+is already closed; do not block a release on the extra identical-last-digits
+Energy leftover unless the release notes claim 100%.
+
 This guide outlines the mandatory steps for promoting the SLAVV Python engine to a stable research release.
 
 ---

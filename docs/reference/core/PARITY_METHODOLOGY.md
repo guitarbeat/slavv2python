@@ -11,13 +11,12 @@ All claims below were sourced from primary/authoritative references (NumPy, Math
 Intel docs; peer-reviewed IEEE/ACM/BMC papers; original-author preprints) and
 adversarially fact-checked. Sources are listed at the end.
 
-> **TL;DR.** Bit-exact MATLAB↔Python parity is generally *unachievable* (floating-point
-> non-associativity + BLAS/FFT/ISA non-determinism). The established practice is
-> **golden-master/oracle testing with tolerance gates**, and for **order-sensitive
-> algorithms** (region-growing/watershed) **exact output-set equality is the wrong
-> metric** — spatial/topological tolerance bars are required instead. SLAVV's ADR 0011
-> (`np.allclose`) and ADR 0012 (ownership-map / topology multisets + sub-voxel trace
-> tolerance) are direct instances of this practice.
+> **In short / TL;DR.** MATLAB and Python will not match every last digit of every float
+> (different math libraries). The usual scientific practice is: save MATLAB answers,
+> then require Python to match **within a stated bar**. For watershed (order-sensitive
+> flood-fill), counting exact edge pairs is the wrong bar — use who-owns-which-voxel
+> and matching strand/junction bags instead. That is ADR 0011 (`allclose`) and ADR 0012.
+> Identical last digits is an extra stretch goal, not the ship bar. Phase 1 is already closed.
 
 **Figure (proposal appendix):** quantitative summary of the port —
 candidate-pair overlap trajectory, edge-pair recovery waterfall, full-volume

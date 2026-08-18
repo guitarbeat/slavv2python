@@ -2,6 +2,12 @@
 
 [Up: Reference Docs](../README.md) · [Parity Pre-Gate](PARITY_PRE_GATE.md) · [Parity Certification Guide](PARITY_CERTIFICATION_GUIDE.md)
 
+## In short
+
+Long MATLAB-compare jobs can run overnight. This guide is how to watch them,
+get a desktop ping when they finish, and avoid starting a second writer on the
+same folder. It is not live pass/fail.
+
 Comprehensive guide to the automated parity job monitoring system for tracking long-running experiments across terminal sessions.
 
 ---

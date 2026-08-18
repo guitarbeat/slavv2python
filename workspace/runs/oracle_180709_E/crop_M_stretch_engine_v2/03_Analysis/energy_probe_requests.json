@@ -1,0 +1,1000 @@
+{
+  "created_at": "2026-08-16T05:01:29Z",
+  "first_request_id": "g0_first",
+  "group_count": 24,
+  "groups": [
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        27,
+        0,
+        0
+      ],
+      "matlab_scale": 0,
+      "max_abs_delta": 2.8421709430404007e-13,
+      "max_delta_coordinate_zyx": [
+        15,
+        255,
+        219
+      ],
+      "mismatch_count": 6102,
+      "python_scale": 0
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        10,
+        1,
+        1
+      ],
+      "matlab_scale": 0,
+      "max_abs_delta": 9.201528428093297e-13,
+      "max_delta_coordinate_zyx": [
+        50,
+        124,
+        142
+      ],
+      "mismatch_count": 140538,
+      "python_scale": 0
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        17,
+        1,
+        0
+      ],
+      "matlab_scale": 3,
+      "max_abs_delta": 1.4210854715202004e-13,
+      "max_delta_coordinate_zyx": [
+        17,
+        182,
+        255
+      ],
+      "mismatch_count": 994,
+      "python_scale": 3
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        23,
+        2,
+        1
+      ],
+      "matlab_scale": 3,
+      "max_abs_delta": 8.668621376273222e-13,
+      "max_delta_coordinate_zyx": [
+        9,
+        219,
+        103
+      ],
+      "mismatch_count": 19429,
+      "python_scale": 3
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        51,
+        4,
+        0
+      ],
+      "matlab_scale": 6,
+      "max_abs_delta": 1.9895196601282805e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        138,
+        75
+      ],
+      "mismatch_count": 917,
+      "python_scale": 6
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        24,
+        2,
+        1
+      ],
+      "matlab_scale": 6,
+      "max_abs_delta": 7.354117315117037e-13,
+      "max_delta_coordinate_zyx": [
+        54,
+        235,
+        88
+      ],
+      "mismatch_count": 17953,
+      "python_scale": 6
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        61,
+        0,
+        0
+      ],
+      "matlab_scale": 8,
+      "max_abs_delta": 2.9309887850104133e-13,
+      "max_delta_coordinate_zyx": [
+        55,
+        0,
+        165
+      ],
+      "mismatch_count": 854,
+      "python_scale": 8
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        26,
+        2,
+        1
+      ],
+      "matlab_scale": 8,
+      "max_abs_delta": 1.2363443602225743e-12,
+      "max_delta_coordinate_zyx": [
+        30,
+        215,
+        198
+      ],
+      "mismatch_count": 17237,
+      "python_scale": 8
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        48,
+        6,
+        0
+      ],
+      "matlab_scale": 16,
+      "max_abs_delta": 2.984279490192421e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        161,
+        226
+      ],
+      "mismatch_count": 801,
+      "python_scale": 16
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        56,
+        1,
+        1
+      ],
+      "matlab_scale": 16,
+      "max_abs_delta": 2.9132252166164108e-12,
+      "max_delta_coordinate_zyx": [
+        5,
+        181,
+        77
+      ],
+      "mismatch_count": 18260,
+      "python_scale": 16
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        47,
+        10,
+        0
+      ],
+      "matlab_scale": 25,
+      "max_abs_delta": 3.979039320256561e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        176,
+        36
+      ],
+      "mismatch_count": 790,
+      "python_scale": 25
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        54,
+        3,
+        1
+      ],
+      "matlab_scale": 25,
+      "max_abs_delta": 2.8670399387920042e-12,
+      "max_delta_coordinate_zyx": [
+        13,
+        211,
+        65
+      ],
+      "mismatch_count": 16806,
+      "python_scale": 25
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        62,
+        11,
+        0
+      ],
+      "matlab_scale": 28,
+      "max_abs_delta": 4.192202140984591e-13,
+      "max_delta_coordinate_zyx": [
+        30,
+        45,
+        0
+      ],
+      "mismatch_count": 735,
+      "python_scale": 28
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        57,
+        19,
+        1
+      ],
+      "matlab_scale": 28,
+      "max_abs_delta": 1.4281908988778014e-12,
+      "max_delta_coordinate_zyx": [
+        51,
+        251,
+        132
+      ],
+      "mismatch_count": 17099,
+      "python_scale": 28
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        13,
+        0,
+        0
+      ],
+      "matlab_scale": 43,
+      "max_abs_delta": 3.588240815588506e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        99,
+        10
+      ],
+      "mismatch_count": 836,
+      "python_scale": 43
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        49,
+        13,
+        1
+      ],
+      "matlab_scale": 43,
+      "max_abs_delta": 1.2860823517257813e-12,
+      "max_delta_coordinate_zyx": [
+        9,
+        54,
+        45
+      ],
+      "mismatch_count": 21313,
+      "python_scale": 43
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        15,
+        0,
+        0
+      ],
+      "matlab_scale": 46,
+      "max_abs_delta": 3.346212196220222e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        0,
+        24
+      ],
+      "mismatch_count": 1008,
+      "python_scale": 46
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        26,
+        10,
+        1
+      ],
+      "matlab_scale": 46,
+      "max_abs_delta": 7.887024366937112e-13,
+      "max_delta_coordinate_zyx": [
+        3,
+        162,
+        75
+      ],
+      "mismatch_count": 24164,
+      "python_scale": 46
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        19,
+        21,
+        0
+      ],
+      "matlab_scale": 61,
+      "max_abs_delta": 8.526512829121202e-14,
+      "max_delta_coordinate_zyx": [
+        0,
+        239,
+        160
+      ],
+      "mismatch_count": 911,
+      "python_scale": 61
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        19,
+        21,
+        1
+      ],
+      "matlab_scale": 61,
+      "max_abs_delta": 5.044853423896711e-13,
+      "max_delta_coordinate_zyx": [
+        61,
+        45,
+        100
+      ],
+      "mismatch_count": 31326,
+      "python_scale": 61
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        22,
+        22,
+        0
+      ],
+      "matlab_scale": 64,
+      "max_abs_delta": 2.2737367544323206e-13,
+      "max_delta_coordinate_zyx": [
+        63,
+        149,
+        215
+      ],
+      "mismatch_count": 716,
+      "python_scale": 64
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        21,
+        22,
+        1
+      ],
+      "matlab_scale": 64,
+      "max_abs_delta": 4.0678571622265736e-13,
+      "max_delta_coordinate_zyx": [
+        45,
+        100,
+        175
+      ],
+      "mismatch_count": 31312,
+      "python_scale": 64
+    },
+    {
+      "boundary_class": "boundary",
+      "first_coordinate_zyx": [
+        1,
+        2,
+        0
+      ],
+      "matlab_scale": 82,
+      "max_abs_delta": 4.263256414560601e-14,
+      "max_delta_coordinate_zyx": [
+        60,
+        255,
+        236
+      ],
+      "mismatch_count": 2225,
+      "python_scale": 82
+    },
+    {
+      "boundary_class": "interior",
+      "first_coordinate_zyx": [
+        2,
+        3,
+        1
+      ],
+      "matlab_scale": 82,
+      "max_abs_delta": 5.684341886080802e-14,
+      "max_delta_coordinate_zyx": [
+        10,
+        70,
+        251
+      ],
+      "mismatch_count": 35131,
+      "python_scale": 82
+    }
+  ],
+  "mismatch_count": 407457,
+  "probe_requests": [
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        27,
+        0,
+        0
+      ],
+      "matlab_scale": 0,
+      "python_scale": 0,
+      "reason": "first",
+      "request_id": "g0_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        15,
+        255,
+        219
+      ],
+      "matlab_scale": 0,
+      "python_scale": 0,
+      "reason": "max_delta",
+      "request_id": "g0_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        10,
+        1,
+        1
+      ],
+      "matlab_scale": 0,
+      "python_scale": 0,
+      "reason": "first",
+      "request_id": "g1_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        50,
+        124,
+        142
+      ],
+      "matlab_scale": 0,
+      "python_scale": 0,
+      "reason": "max_delta",
+      "request_id": "g1_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        17,
+        1,
+        0
+      ],
+      "matlab_scale": 3,
+      "python_scale": 3,
+      "reason": "first",
+      "request_id": "g2_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        17,
+        182,
+        255
+      ],
+      "matlab_scale": 3,
+      "python_scale": 3,
+      "reason": "max_delta",
+      "request_id": "g2_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        23,
+        2,
+        1
+      ],
+      "matlab_scale": 3,
+      "python_scale": 3,
+      "reason": "first",
+      "request_id": "g3_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        9,
+        219,
+        103
+      ],
+      "matlab_scale": 3,
+      "python_scale": 3,
+      "reason": "max_delta",
+      "request_id": "g3_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        51,
+        4,
+        0
+      ],
+      "matlab_scale": 6,
+      "python_scale": 6,
+      "reason": "first",
+      "request_id": "g4_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        138,
+        75
+      ],
+      "matlab_scale": 6,
+      "python_scale": 6,
+      "reason": "max_delta",
+      "request_id": "g4_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        24,
+        2,
+        1
+      ],
+      "matlab_scale": 6,
+      "python_scale": 6,
+      "reason": "first",
+      "request_id": "g5_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        54,
+        235,
+        88
+      ],
+      "matlab_scale": 6,
+      "python_scale": 6,
+      "reason": "max_delta",
+      "request_id": "g5_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        61,
+        0,
+        0
+      ],
+      "matlab_scale": 8,
+      "python_scale": 8,
+      "reason": "first",
+      "request_id": "g6_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        55,
+        0,
+        165
+      ],
+      "matlab_scale": 8,
+      "python_scale": 8,
+      "reason": "max_delta",
+      "request_id": "g6_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        26,
+        2,
+        1
+      ],
+      "matlab_scale": 8,
+      "python_scale": 8,
+      "reason": "first",
+      "request_id": "g7_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        30,
+        215,
+        198
+      ],
+      "matlab_scale": 8,
+      "python_scale": 8,
+      "reason": "max_delta",
+      "request_id": "g7_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        48,
+        6,
+        0
+      ],
+      "matlab_scale": 16,
+      "python_scale": 16,
+      "reason": "first",
+      "request_id": "g8_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        161,
+        226
+      ],
+      "matlab_scale": 16,
+      "python_scale": 16,
+      "reason": "max_delta",
+      "request_id": "g8_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        56,
+        1,
+        1
+      ],
+      "matlab_scale": 16,
+      "python_scale": 16,
+      "reason": "first",
+      "request_id": "g9_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        5,
+        181,
+        77
+      ],
+      "matlab_scale": 16,
+      "python_scale": 16,
+      "reason": "max_delta",
+      "request_id": "g9_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        47,
+        10,
+        0
+      ],
+      "matlab_scale": 25,
+      "python_scale": 25,
+      "reason": "first",
+      "request_id": "g10_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        176,
+        36
+      ],
+      "matlab_scale": 25,
+      "python_scale": 25,
+      "reason": "max_delta",
+      "request_id": "g10_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        54,
+        3,
+        1
+      ],
+      "matlab_scale": 25,
+      "python_scale": 25,
+      "reason": "first",
+      "request_id": "g11_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        13,
+        211,
+        65
+      ],
+      "matlab_scale": 25,
+      "python_scale": 25,
+      "reason": "max_delta",
+      "request_id": "g11_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        62,
+        11,
+        0
+      ],
+      "matlab_scale": 28,
+      "python_scale": 28,
+      "reason": "first",
+      "request_id": "g12_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        30,
+        45,
+        0
+      ],
+      "matlab_scale": 28,
+      "python_scale": 28,
+      "reason": "max_delta",
+      "request_id": "g12_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        57,
+        19,
+        1
+      ],
+      "matlab_scale": 28,
+      "python_scale": 28,
+      "reason": "first",
+      "request_id": "g13_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        51,
+        251,
+        132
+      ],
+      "matlab_scale": 28,
+      "python_scale": 28,
+      "reason": "max_delta",
+      "request_id": "g13_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        13,
+        0,
+        0
+      ],
+      "matlab_scale": 43,
+      "python_scale": 43,
+      "reason": "first",
+      "request_id": "g14_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        99,
+        10
+      ],
+      "matlab_scale": 43,
+      "python_scale": 43,
+      "reason": "max_delta",
+      "request_id": "g14_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        49,
+        13,
+        1
+      ],
+      "matlab_scale": 43,
+      "python_scale": 43,
+      "reason": "first",
+      "request_id": "g15_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        9,
+        54,
+        45
+      ],
+      "matlab_scale": 43,
+      "python_scale": 43,
+      "reason": "max_delta",
+      "request_id": "g15_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        15,
+        0,
+        0
+      ],
+      "matlab_scale": 46,
+      "python_scale": 46,
+      "reason": "first",
+      "request_id": "g16_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        0,
+        24
+      ],
+      "matlab_scale": 46,
+      "python_scale": 46,
+      "reason": "max_delta",
+      "request_id": "g16_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        26,
+        10,
+        1
+      ],
+      "matlab_scale": 46,
+      "python_scale": 46,
+      "reason": "first",
+      "request_id": "g17_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        3,
+        162,
+        75
+      ],
+      "matlab_scale": 46,
+      "python_scale": 46,
+      "reason": "max_delta",
+      "request_id": "g17_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        19,
+        21,
+        0
+      ],
+      "matlab_scale": 61,
+      "python_scale": 61,
+      "reason": "first",
+      "request_id": "g18_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        0,
+        239,
+        160
+      ],
+      "matlab_scale": 61,
+      "python_scale": 61,
+      "reason": "max_delta",
+      "request_id": "g18_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        19,
+        21,
+        1
+      ],
+      "matlab_scale": 61,
+      "python_scale": 61,
+      "reason": "first",
+      "request_id": "g19_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        61,
+        45,
+        100
+      ],
+      "matlab_scale": 61,
+      "python_scale": 61,
+      "reason": "max_delta",
+      "request_id": "g19_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        22,
+        22,
+        0
+      ],
+      "matlab_scale": 64,
+      "python_scale": 64,
+      "reason": "first",
+      "request_id": "g20_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        63,
+        149,
+        215
+      ],
+      "matlab_scale": 64,
+      "python_scale": 64,
+      "reason": "max_delta",
+      "request_id": "g20_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        21,
+        22,
+        1
+      ],
+      "matlab_scale": 64,
+      "python_scale": 64,
+      "reason": "first",
+      "request_id": "g21_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        45,
+        100,
+        175
+      ],
+      "matlab_scale": 64,
+      "python_scale": 64,
+      "reason": "max_delta",
+      "request_id": "g21_max_delta"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        1,
+        2,
+        0
+      ],
+      "matlab_scale": 82,
+      "python_scale": 82,
+      "reason": "first",
+      "request_id": "g22_first"
+    },
+    {
+      "boundary_class": "boundary",
+      "coordinate_zyx": [
+        60,
+        255,
+        236
+      ],
+      "matlab_scale": 82,
+      "python_scale": 82,
+      "reason": "max_delta",
+      "request_id": "g22_max_delta"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        2,
+        3,
+        1
+      ],
+      "matlab_scale": 82,
+      "python_scale": 82,
+      "reason": "first",
+      "request_id": "g23_first"
+    },
+    {
+      "boundary_class": "interior",
+      "coordinate_zyx": [
+        10,
+        70,
+        251
+      ],
+      "matlab_scale": 82,
+      "python_scale": 82,
+      "reason": "max_delta",
+      "request_id": "g23_max_delta"
+    }
+  ],
+  "provenance": {
+    "oracle_id": "180709_E_crop_M_v2",
+    "params_fingerprint": "bd24b3feb19b0f2ae52b5c24f8906eedc97e87b0efd447d4d92315e08ffe5d64",
+    "proof_report": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\03_Analysis\\exact_proof.json"
+  },
+  "schema_version": 1
+}

@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-17 (Phase 1 CLOSED + frozen baseline; Phase 2 profiling baseline; stretch `blocked_float_path`)
+**Last synthesized:** 2026-08-18 (Phase 1 CLOSED + frozen baseline; workspace volumes lightened; stretch `blocked_float_path`)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -26,14 +26,14 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 ### Snapshot (no frozen KPIs)
 
 - **Phase 1 is CLOSED** on the claim root named in ONE TRUTH. Energy ✅, Vertices ✅, Edges ADR 0012 evaluated ✅, Network ADR 0012 evaluated ✅.
-- **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite the four protected dests listed there (`canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`).
+- **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite the three protected dests listed there (`canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`).
 - Former Network one-strand fail was Edge Selection Ranking Residual; Claimed Trace Energy bake ([ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md)) fixed Edge Set ranking and Network followed.
-- **Crop = regression guard.** Preserve historical `v16` in place; do not overwrite. **Do not claim `v17`.**
+- **Crop = regression guard.** Historical `v16` proofs are archived (volume removed 2026-08-18). **Do not claim `v17`.**
 - Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
 
 ### Do not
 
-- Re-open Phase 1 on historical `v16` Network FAIL (residual record only).
+- Re-open Phase 1 on historical `v16` Network FAIL (residual record only; proofs in `workspace/reports/phase1_volume_archive/canonical_full_v16/`).
 - Treat MATLAB finals (`edges_*.mat`) as raw watershed emission, or `canonical_full_v17` as a healthy writer.
 - Treat approximate strand-count % as Network pass without evaluated multiset proof.
 - Re-gate on retired 80% crop overlap or crop one-pair swap as the open loop.
@@ -49,7 +49,9 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 ### True zero-tolerance stretch (operator notes)
 
-Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `stretch_status.json`. Diagnosis (helper body leftover): [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md). Do **not** relaunch `crop_M_stretch_engine_v2`. U5/U6 stay gated without a stretch unlock token. Never overwrite the four protected dests in the freeze JSON.
+**In short:** Phase 1 already shipped. Stretch is the extra “every Energy number identical bits” goal. The crop is about 90% exact; leftover last-digit diffs are **not** 100%. Tiny photos matching does not solve the crop. Do **not** rerun the crop Energy writer.
+
+Labeled **stretch** — does **not** reopen Phase 1 CLOSED / ONE TRUTH. Live KPIs: [findings stretch subsection](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) and dest `stretch_status.json`. Readable diagnosis: [crop-energy-stretch-float-isolation.md](../docs/solutions/parity/crop-energy-stretch-float-isolation.md). Do **not** relaunch `crop_M_stretch_engine_v2`. U5/U6 stay gated without a stretch unlock token. Never overwrite the three protected dests in the freeze JSON.
 
 Inspect command is in [Operating sequence A](#a-stretch-energy-isolation-current).
 
@@ -68,7 +70,7 @@ Live numbers: ONE TRUTH only.
 
 Phase 1 ranking residual is **closed** (Claimed Trace Energy / ADR 0013 on the claim root in ONE TRUTH). Do not re-open join-emission, tie-scan, or Network rewrite as the ship loop.
 
-Current operator loop is [true zero-tolerance stretch](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1): crop Energy `--strict-floats` is `blocked_float_path`. Inspect the existing v2 proof; do not relaunch v2.
+Current operator loop is [true zero-tolerance stretch](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1): crop Energy last-digit leftover is still open (`blocked_float_path`). Inspect the existing v2 proof; do not relaunch v2. Cheap next probe (not a writer): two tiles on a tiny volume — see the isolation note.
 
 ```powershell
 .\.venv\Scripts\pip.exe install -e .
@@ -88,7 +90,7 @@ Closed ranking history: [Former residual (closed on v18)](../docs/reference/core
 
 ### B. Successor full claim run (closed)
 
-Phase 1 already closed on `canonical_full_v18`. Do **not** destroy `v6`…`v16` audit records. Cite evaluated proofs (section C). If a later parity-sensitive fix needs a new claim root, preflight from the certified Energy/Vertices lineage and rerun **edges → network only** — never overwrite `canonical_full_v18`.
+Phase 1 already closed on `canonical_full_v18`. Do **not** resurrect `v4`…`v16` volumes. Cite evaluated proofs (section C). If a later parity-sensitive fix needs a new claim root, preflight from the certified Energy/Vertices checkpoints on `v18` and rerun **edges → network only** — never overwrite `canonical_full_v18`.
 
 ### C. After Phase 1 closes (current)
 
@@ -113,7 +115,7 @@ Phase 1 already closed on `canonical_full_v18`. Do **not** destroy `v6`…`v16` 
 | Area | Files / functions | Planning note |
 |------|-------------------|---------------|
 | Claimed Trace Energy bake | `matlab_get_edges_by_watershed.py` assemble (`claim_map.energy_map`) | ADR 0013 — regression guard |
-| Stretch helper-body isolation | `pipeline/energy/stretch_helper_body_isolation.py` | Crop Energy `blocked_float_path`; not unlock |
+| Stretch leftover isolation | `pipeline/energy/stretch_helper_body_isolation.py` | Crop last-digit leftover; not unlock |
 | Phase 2 profiling baseline | `analytics/performance/phase2_baseline.py` | Read-only frozen dest timings; not unwind |
 | Finalization | `pipeline/edges/finalize.py` | Crop guard; resample/map-resample/smooth/crop path |
 | Selection row order | `selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard (double-precision metric sort) |
@@ -133,7 +135,7 @@ Focused unit checks after code changes:
 
 ## Audit runs (do not overwrite)
 
-Historical claim/audit roots (`crop_M_exact*`, `canonical_full_v4`…`v16`) stay on disk. Live claim surface name is only in ONE TRUTH — do not freeze a run ID here as “current” without re-checking findings.
+Live dests: `canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`. Historical `v4`…`v16` / `crop_M_exact` / stretch v1 volumes were removed 2026-08-18; proof JSON lives under `workspace/reports/phase1_volume_archive/`. Live claim surface name is only in ONE TRUTH — do not freeze a run ID here as “current” without re-checking findings.
 
 ## Meta / process
 

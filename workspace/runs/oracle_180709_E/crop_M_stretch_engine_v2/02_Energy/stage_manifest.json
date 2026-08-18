@@ -1,0 +1,9 @@
+{
+  "artifacts": {
+    "best_energy.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\02_Energy\\best_energy.npy",
+    "best_scale.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\02_Energy\\best_scale.npy"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+  "completed_at": "2026-08-16T04:58:26Z",
+  "stage": "energy"
+}

@@ -1,0 +1,31 @@
+{
+  "allclose_is_not_stretch_success": true,
+  "clamp_class_mismatches": 0,
+  "crop_like_optics": true,
+  "dest": "workspace\\scratch\\stretch_crop_chunk_window",
+  "failed_voxels": 0,
+  "intensity": "tiff_window",
+  "interpretation": "Tiny synthetic helper vs original get_energy_V202 bit-matched. That does not unlock crop Energy; crop remains blocked_float_path.",
+  "isolation_only": true,
+  "max_abs_delta": 0.0,
+  "max_voxels_per_node": 6000.0,
+  "n_scales": 46,
+  "not_stretch_success": true,
+  "original_elapsed_sec": 55.1161803,
+  "pass_rate": 1.0,
+  "passed_voxels": 54621,
+  "radius_largest": 8.0,
+  "radius_smallest": 1.5,
+  "residual_mismatches": 0,
+  "result": "pass_fixture",
+  "seed": 17,
+  "shape_zyx": [
+    21,
+    51,
+    51
+  ],
+  "source": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06\\01_Input\\180709_E_crop_M.tif",
+  "status_class": "blocked_float_path",
+  "stretch_complete": false,
+  "total_voxels": 54621
+}

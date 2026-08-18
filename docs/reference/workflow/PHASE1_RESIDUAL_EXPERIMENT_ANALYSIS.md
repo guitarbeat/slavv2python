@@ -2,6 +2,12 @@
 
 [Up: Reference Docs](../README.md) · [Live status](../core/EXACT_PROOF_FINDINGS.md) · [Operator handoff](../../../.claude/HANDOFF.md) · [Figures](../../../figures/README.md) · [Tasks](../../TODO.md)
 
+## In short
+
+This is the write-up of a **closed** leftover: Python ranked the wrong extra
+edge because it sampled the original Energy field instead of the claimed map.
+That is history. Live pass/fail is [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (CLOSED). Do not treat this file as an open Network bug.
+
 **Role:** maintained *experiment framing* for the closed Phase 1 ranking residual—not the
 live status log and not the task list. Live pass/fail: [ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) (CLOSED).
 

@@ -1,5 +1,11 @@
 # ADR 0003: Edge Lifecycle Manager
 
+## In short
+
+Finding and choosing vessel connections is one manager (`EdgeManager`), not a
+pile of arguments on the top-level pipeline. Discovery, selection, and
+finalization stay inside Edges.
+
 ## Status
 Accepted
 

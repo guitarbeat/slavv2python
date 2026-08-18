@@ -1,5 +1,13 @@
 # Kiro matlab-python-parity specs (DEPRECATED / archived)
 
+> **History, not live status. Do not execute these tasks.**
+
+## In short
+
+Frozen 2026-06 planning snapshots. They still say “100% parity” and crop-era
+gates. Phase 1 is now closed (close enough to ship, not identical last digits).
+Use ONE TRUTH / the Phase 1 spec / TODO instead.
+
 **Status:** ⛔ **DEPRECATED** — frozen archive. **Do not execute** tasks here.  
 **Origin:** top-level `.kiro/specs/matlab-python-parity/` (Kiro IDE layout; folder removed).  
 **Agent config home:** [`.claude/`](../../../.claude/README.md) (skills, agents, HANDOFF).

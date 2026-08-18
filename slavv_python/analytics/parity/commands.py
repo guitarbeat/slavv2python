@@ -12,6 +12,7 @@ from slavv_python.analytics.parity.cli_handlers.cli_diagnostics import (
     handle_diagnose_energy,
     handle_diagnose_gaps,
     handle_inspect_energy_evidence,
+    handle_inspect_experiment_root,
     handle_inspect_proof,
     handle_normalize_recordings,
     handle_record_parity_hypothesis,
@@ -173,6 +174,19 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             ),
         ),
         help="Cite a proof JSON only if dest_run_root matches the folder.",
+    ),
+    CommandSpec(
+        "inspect-experiment-root",
+        handle_inspect_experiment_root,
+        (
+            arg(
+                "--repo-root",
+                type=Path,
+                default=Path("."),
+                help="Repository root that contains workspace/ (default: cwd).",
+            ),
+        ),
+        help="Check that Experiment Root Oracle, dest, and dataset files exist (not LFS pointers).",
     ),
     CommandSpec(
         "compare-energy-probes",

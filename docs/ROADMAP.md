@@ -1,5 +1,12 @@
 # SLAVV Roadmap
 
+## In short
+
+Python already matches MATLAB closely enough to ship (Phase 1 closed). Next work
+is speed and the extra “identical last digits” bar — not reopening the ship
+gate. About 90% exact on crop Energy is **not** 100%. Do not rerun the crop
+Energy writer.
+
 **Narrative milestones only.** This is the strategic, phase-level view of where
 the project is headed. It does **not** track live status or tasks:
 
@@ -16,9 +23,9 @@ A **certified MATLAB→Python port** of the SLAVV vessel-extraction pipeline
 (Energy → Vertices → Edges → Network) on the canonical volume — and from that
 trusted foundation, a **faster, maintainable production pipeline**.
 
-“Certified” means each stage’s **defined parity bar** (ADR 0011 / ADR 0012), not
-bit-identical watershed queue order or strict-field edge-pair equality as the
-ship metric.
+“Certified” means each stage’s **defined parity bar** (ADR 0011 / ADR 0012):
+close enough to ship, not identical last digits and not bit-identical watershed
+queue order.
 
 ---
 
@@ -56,7 +63,7 @@ Also cleared historically: crop generation / 80% gate, post-watershed finalizati
 
 ### After Phase 1
 
-Frozen cert baseline: [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) (`canonical_full_v18`, 2026-08-17). Phase 2 **profiling baseline** is recorded against that dest ([phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)). Broad Fortran-order unwind still needs an explicit Phase 2 ADR/gate before production code changes. True zero-tolerance stretch (`--strict-floats`, including Energy floats) is a **separate** program; live stretch status is dest `stretch_status.json`, not ONE TRUTH. Strict-field `connections` / order remains optional and gated on Energy unlock.
+Frozen cert baseline: [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) (`canonical_full_v18`, 2026-08-17). Phase 2 **profiling baseline** is recorded against that dest ([phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)). Broad Fortran-order unwind still needs an explicit Phase 2 ADR/gate before production code changes. The extra identical-last-digits program (`--strict-floats`, including Energy) is **separate**; crop leftover last-digit diffs are not 100%. Live stretch status is dest `stretch_status.json`, not ONE TRUTH. Do not relaunch the crop Energy writer. Strict-field `connections` / order remains optional and gated on Energy unlock.
 
 Do **not** use `prove-exact-sequence` strict-field failure as a Phase 1 reopen.
 Details: [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md), [TODO.md](TODO.md),

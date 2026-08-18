@@ -1,5 +1,11 @@
 # ADR 0009: Parity Pre-Gate Tiers
 
+## In short
+
+Cheap tests first: fake photo → small real cut-out → full photo last. Only the
+full photo counts as Phase 1 certification (already closed). A green crop is
+not a full-volume claim.
+
 ## Status
 Accepted
 

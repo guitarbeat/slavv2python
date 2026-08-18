@@ -1,5 +1,10 @@
 # ADR 0007: Vertex Lifecycle Manager
 
+## In short
+
+Finding seed points is one manager (`VertexManager`). Detection code lives under
+Vertices, not under Edges.
+
 ## Status
 Accepted
 

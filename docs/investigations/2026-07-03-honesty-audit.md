@@ -1,5 +1,12 @@
 # Honesty Audit: Spec Task Execution Session (matlab-python-parity)
 
+> **History, not live status** (2026-07-03 session).
+
+## In short
+
+A session audit of old Kiro tasks. Crop-era FAIL talk below is **not** today’s
+standing. Phase 1 is closed. Live: [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
+
 **Status:** ⛔ **DEPRECATED archive** (2026-07-03 session). Not live status.  
 **Live parity:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).  
 **Related archive:** [kiro-matlab-python-parity](kiro-matlab-python-parity/README.md) (do not execute).

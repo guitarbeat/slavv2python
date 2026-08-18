@@ -1,0 +1,12 @@
+{
+  "command": "D:\\2P_Data\\Aaron\\slavv2python\\slavv_python\\interface\\cli\\parity.py resume-exact-run --dest-run-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18 --dataset-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 --oracle-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2 --force-rerun-from edges --stop-after network --skip-preflight --force-kill",
+  "ended_at": "2026-08-13T21:14:36Z",
+  "pid": 20564,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "c6f99619083c31440d9cea8adb45bca733f22025",
+  "stage": "network",
+  "started_at": "2026-08-13T19:35:22Z",
+  "status": "completed",
+  "updated_at": "2026-08-13T21:14:34Z"
+}

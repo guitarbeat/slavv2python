@@ -1,5 +1,11 @@
 # Architecture Decision Records
 
+## In short
+
+These files record **why** we built something a certain way. They are not live
+pass/fail. Phase 1 already shipped. Lead each ADR with a plain-English In short;
+leave the Decision text as the historical record.
+
 Index of ADRs for the SLAVV Python port. Each record captures the context, decision, and consequences of a significant architectural choice.
 
 | # | Title | Status |

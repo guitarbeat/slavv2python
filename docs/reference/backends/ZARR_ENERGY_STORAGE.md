@@ -2,6 +2,11 @@
 
 [Up: Documentation Index](../../README.md)
 
+## In short
+
+Optional on-disk format for huge Energy arrays so a run can resume without
+holding everything in RAM. Storage choice, not a MATLAB-match bar.
+
 This note explains the optional `zarr` storage path for resumable energy
 artifacts in the Python SLAVV pipeline.
 

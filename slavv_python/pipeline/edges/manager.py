@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.pipeline.edges.artifacts import resolve_edge_candidate_persistence
 from slavv_python.pipeline.edges.audit import (
     _build_edge_candidate_audit,
     _normalize_candidate_origin_counts,
@@ -248,17 +247,6 @@ class EdgeManager:
             )
             candidates_payload = candidate_as_payload(manifest)
             atomic_joblib_dump(candidates_payload, handle.artifact_path("candidates.pkl"))
-            if use_watershed and stage_controller is not None:
-                run_context = stage_controller.run_context
-                if run_context is not None:
-                    resolve_edge_candidate_persistence(
-                        params,
-                        use_frontier=True,
-                    ).write_candidate_checkpoint(
-                        run_context.checkpoints_dir,
-                        candidates_payload,
-                        include_debug_maps=bool(params.get("parity_include_debug_maps", False)),
-                    )
             handle.update(
                 units_total=3,
                 units_completed=1,

@@ -1,0 +1,98 @@
+{
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v5",
+  "edges_adr0012_gate": {
+    "adr0012_evaluated": false,
+    "adr0012_unavailable_reason": "both Python and MATLAB watershed ownership maps unavailable",
+    "adr_bar": "ADR 0012 spatial bars (ownership-map \u2265 60% + trace tolerance)",
+    "fallback": "strict field comparison \u2014 NOT a certification bar; strict edges fail on accepted watershed order-sensitivity per ADR 0012",
+    "n_matlab_connections": 69500,
+    "n_python_connections": 60287
+  },
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": "edges.connections",
+  "first_failing_stage": "edges",
+  "first_failure": {
+    "field_path": "edges.connections",
+    "matlab_preview": {
+      "dtype": "int64",
+      "shape": [
+        69500,
+        2
+      ],
+      "values": [
+        2,
+        38,
+        36,
+        105,
+        109,
+        86
+      ]
+    },
+    "mismatch_type": "shape mismatch",
+    "python_preview": {
+      "dtype": "int64",
+      "shape": [
+        60287,
+        2
+      ],
+      "values": [
+        36,
+        105,
+        109,
+        86,
+        118,
+        117
+      ]
+    },
+    "stage": "edges"
+  },
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2\\01_Input\\matlab_results\\batch_260626-125646",
+  "mismatch_diagnosis": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v5\\03_Analysis\\exact_mismatch_edges.json",
+  "passed": false,
+  "report_scope": "exact route",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v5",
+  "stage_summaries": {
+    "edges": {
+      "field_count": 9,
+      "first_failure": {
+        "field_path": "edges.connections",
+        "matlab_preview": {
+          "dtype": "int64",
+          "shape": [
+            69500,
+            2
+          ],
+          "values": [
+            2,
+            38,
+            36,
+            105,
+            109,
+            86
+          ]
+        },
+        "mismatch_type": "shape mismatch",
+        "python_preview": {
+          "dtype": "int64",
+          "shape": [
+            60287,
+            2
+          ],
+          "values": [
+            36,
+            105,
+            109,
+            86,
+            118,
+            117
+          ]
+        },
+        "stage": "edges"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "edges"
+  ]
+}

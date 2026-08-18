@@ -54,7 +54,7 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 - [ ] **Phase 2 Fortran-order unwind** — needs an explicit Phase 2 ADR before production code changes.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
-- [ ] **Stretch Energy `--strict-floats`** — crop dest remains `blocked_float_path`. Live KPIs: [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1). Diagnosis: [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md). U5/U6 gated. Do not relaunch v2.
+- [ ] **Stretch Energy (extra 100% bar)** — crop is ~90% bit-identical; leftover last-digit diffs are not 100%. Tiny photos matching does not unlock crop. Live status: [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1). Readable diagnosis: [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md). Do not relaunch v2.
 - [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after Energy unlock.
 
 ---

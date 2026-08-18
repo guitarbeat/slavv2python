@@ -118,7 +118,7 @@ Bit-parity rules:
 - **Scale indices:** exact integer match everywhere.
 - **Voxel probe vs promoted oracle:** scale exact; energy within 8 ULP (`assert_oracle_energy_parity`).
 - **Python vs live MATLAB probe JSONL:** strict `float64` equality (`assert_bit_parity_energy`).
-- **Full volume `prove-exact`:** strict `np.equal` on stage vectors (certification capstone).
+- **Full volume `prove-exact`:** Energy/Vertices use ADR 0011 (`np.allclose` on continuous floats; discrete fields exact). Edges/Network use ADR 0012 spatial bars. Not `np.equal` on every Energy float.
 
 After lower layers pass, run `prove-exact` per [PARITY_CERTIFICATION_GUIDE.md](../docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md).
 

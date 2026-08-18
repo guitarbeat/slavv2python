@@ -2,6 +2,11 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+How to time the pipeline without silently breaking MATLAB match. Speed work is
+Phase 2. Do not unwind Fortran-order tie-breaks without an explicit Phase 2 ADR.
+
 This guide defines the methodology and tools for measuring and optimizing the performance of the SLAVV Python implementation.
 
 ---

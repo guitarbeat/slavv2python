@@ -1,16 +1,27 @@
 # Folder Purpose Guide
 
+## In short
+
+Code that users run lives in `slavv_python/`. Tests live in `tests/`. Maintained
+docs live in `docs/`. Pictures for papers live in
+`figures/`. The Experiment Root lives in `workspace/` (Oracles, datasets, live
+Parity Runs). See [Experiment Root](../../../AGENTS.md#experiment-root). Scratch
+under `workspace/scratch/` is local and gitignored.
+
 **Why do we have separate top-level folders?** This guide clarifies the distinct purposes of `slavv_python/`, `tests/`, `docs/`, `figures/`, and `workspace/`.
+
+The **repo root** stays a short front door: `README.md`, `AGENTS.md`, `STRATEGY.md`, `LICENSE`, `pyproject.toml`, and tool config (`.gitignore`, `.pre-commit-config.yaml`, …). Durable docs go in `docs/`. One-off reports, agent dumps, and lockfile experiments go in `workspace/scratch/`, not the root.
 
 ## Quick Reference
 
 | Folder | What Lives There | Who Uses It | Committed to Git |
 |:-------|:-----------------|:------------|:-----------------|
+| **repo root** | Short front door: `README.md`, `AGENTS.md`, `STRATEGY.md`, `LICENSE`, `pyproject.toml`, tool config | Everyone | ✅ Yes |
 | **`slavv_python/`** | Production package code | End users + developers | ✅ Yes |
 | **`tests/`** | Automated test suite | Developers + CI | ✅ Yes |
 | **`docs/`** | Maintained reference, ADRs, research notes | Developers + agents | ✅ Yes |
 | **`figures/`** | Proposal / methods standalone figures + generators | Proposal / paper drafts | ✅ Yes |
-| **`workspace/`** | Experiment artifacts | Developer locally | ❌ No (.gitignore) |
+| **`workspace/`** | Experiment Root: Oracles, datasets, live dests; scratch is local | Developers | USB/local binaries / ❌ scratch |
 
 ---
 
@@ -93,30 +104,35 @@ their generators for the PhD proposal appendix and related methods write-ups.
 
 ---
 
-## workspace/ — Experiment Artifacts
+## workspace/ — Experiment Root
 
-**Purpose:** Local developer experiment data that changes constantly and should **never** be committed to Git.
+See [Experiment Root](../../../AGENTS.md#experiment-root).
+
+**Purpose:** On-disk home of Oracles, datasets, the live Claim Run Root, crop
+guard, stretch dest, and archived proofs. GitHub does not carry the binaries
+(not GitHub LFS). Copy by USB/rsync after clone. `scratch/` stays local.
 
 **Contains:**
-- `oracles/` — Preserved MATLAB truth vectors for parity testing
-- `runs/` — Trial pipeline runs with checkpoints and outputs
-- `reports/` — Promoted proof summaries
-- `datasets/` — Test datasets and sample volumes
-- `scratch/` — Temporary files, logs, one-off scripts
+- `oracles/` — Preserved MATLAB truth vectors (local/USB)
+- `runs/` — Live dests `canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2` (local/USB); new writers stay local until promoted
+- `reports/` — Archived proof JSON
+- `datasets/` — Test volumes (local/USB)
+- `scratch/` — Temporary files, logs, one-off scripts (gitignored)
 
-**Key Trait:** This is your **personal lab notebook**. Every developer has their own `workspace/` with different contents. It's in `.gitignore`.
+**Key Trait:** Completeness is `slavv parity inspect-experiment-root` on this machine, not a GitHub LFS pull.
 
 **When to Add Here:**
-- Pipeline run outputs (`workspace/runs/my_experiment/`)
-- MATLAB oracle vectors (`workspace/oracles/180709_crop_M/`)
-- Parity proof reports (`workspace/reports/crop_M_exact_proof.md`)
+- Promoted Oracles and dataset TIFFs
+- The live Claim Run Root / crop guard / stretch dest
 - Temporary exploration scripts (`workspace/scratch/quick_check.py`)
-- Intermediate datasets (`workspace/datasets/crop_for_testing.tif`)
 
 **When NOT to Add Here:**
-- Anything that other developers need (belongs in `slavv_python/` or `tests/`)
-- Documentation (belongs in `docs/`)
-- Reusable test fixtures (belongs in `tests/support/`)
+- Production code (`slavv_python/`)
+- Documentation (`docs/`)
+- Reusable test fixtures (`tests/support/`)
+- Dual-write `checkpoint_edge_candidates.pkl` (read fallback only; gitignored)
+
+Check completeness: `slavv parity inspect-experiment-root`.
 
 ---
 
@@ -169,22 +185,22 @@ their generators for the PhD proposal appendix and related methods write-ups.
 **Why:** Temporary exploration.
 
 ### Example 5: Pipeline Run Output
-**Location:** `workspace/runs/crop_M_exact/`  
-**Why:** Experiment artifact, changes frequently, not committed.
+**Location:** `workspace/runs/oracle_180709_E/crop_M_exact_v3/`  
+**Why:** Live crop-guard dest (Experiment Root). New writers stay local until promoted.
 
 ### Example 6: MATLAB Oracle Vectors
-**Location:** `workspace/oracles/180709_crop_M/`  
-**Why:** Large binary artifacts for local parity testing.
+**Location:** `workspace/oracles/180709_E_full_v2/`  
+**Why:** Oracle binaries for `prove-exact`. Local/USB; see [Experiment Root](../../../AGENTS.md#experiment-root).
 
 ---
 
 ## Common Confusion Points
 
 ### "Should parity_experiment.py be in slavv_python/?"
-**It's already there.** The parity tooling lives in `slavv_python/analytics/parity/` and is invoked via `slavv parity <subcommand>`. There is no longer a separate `scripts/` directory.
+**It's already there.** The parity tooling lives in `slavv_python/analytics/parity/` and is invoked via `slavv parity <subcommand>`. Developer probe scripts still live under `scripts/` (not the public CLI).
 
 ### "Should I commit my workspace/ folder?"
-**No.** It's in `.gitignore` because it contains large datasets, personal experiment runs, and temporary files that differ for every developer.
+**Binaries, no. Scratch, no.** See [Experiment Root](../../../AGENTS.md#experiment-root). GitHub does not carry Oracle/dest/dataset binaries (not GitHub LFS). `workspace/scratch/` stays gitignored. After clone, copy binaries by USB/rsync and run `slavv parity inspect-experiment-root`.
 
 ### "Can scripts/ import from slavv_python/?"
 **Yes.** `scripts/` contains developer probe scripts (e.g. `watershed_frontier_diff.py`, `edge_selection_funnel_probe.py`) referenced from [HANDOFF](../../../.claude/HANDOFF.md). They import from `slavv_python/` and are not part of the public CLI — use `slavv parity <subcommand>` for product workflows.

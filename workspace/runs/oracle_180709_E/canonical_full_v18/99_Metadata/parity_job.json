@@ -1,0 +1,23 @@
+{
+  "command": "D:\\2P_Data\\Aaron\\slavv2python\\slavv_python\\interface\\cli\\parity.py resume-exact-run --dest-run-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18 --dataset-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 --oracle-root D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2 --force-rerun-from edges --stop-after network --skip-preflight --force-kill",
+  "cwd": "D:\\2P_Data\\Aaron\\slavv2python",
+  "dataset_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18",
+  "ended_at": "2026-08-13T21:14:36Z",
+  "exit_code": 0,
+  "force_rerun_from": "edges",
+  "kind": "parity_exact_run_job",
+  "launched_at": "2026-08-13T19:33:37Z",
+  "n_jobs": null,
+  "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2",
+  "pid": 20564,
+  "pid_file": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.pid",
+  "python_commit": "c6f99619083c31440d9cea8adb45bca733f22025",
+  "reason": null,
+  "stage": "edges",
+  "started_at": "2026-08-13T19:33:37Z",
+  "status": "succeeded",
+  "stderr": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.err.log",
+  "stdout": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.out.log",
+  "stop_after": "network"
+}

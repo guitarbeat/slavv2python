@@ -1,20 +1,23 @@
 # SLAVV MATLAB→Python Parity — Project Update
 
+> **History, not live status.** This memo is frozen at **2026-07-01**.
+>
+> **In short:** It describes crop-era work and full-volume Energy. Phase 1 is
+> now **CLOSED** (Python matches MATLAB closely enough to ship). That is not
+> identical last digits. Do not use anything below for pass/fail or “what’s next.”
+>
+> Live status → [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) ·
+> Commands → [HANDOFF](../.claude/HANDOFF.md) · Tasks → [TODO](TODO.md) ·
+> Map → [docs/README authority map](README.md#documentation-authority-map-one-concept--one-home)
+>
+> Body below is a **2026-07-01** snapshot (crop-era + full Energy story). Full-volume
+> Edges evaluated PASS and Network one-strand residual are **not** described here.
+
 **Date:** 2026-07-01  
 **Status:** ⛔ **DEPRECATED as live status** (frozen narrative memo).  
 **Scope (historical):** Bit-exact reproduction of the MATLAB SLAVV vessel-extraction pipeline
 (Energy → Vertices → Edges → Network) in Python, certified against a frozen
 MATLAB R2019a oracle.
-
-> ⛔ **Do not use this file for pass/fail, claim root, residual KPIs, or “what’s next.”**  
-> **Migrated authority:**  
-> - Live status → [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
-> - Commands → [HANDOFF](../.claude/HANDOFF.md)  
-> - Tasks → [TODO](TODO.md)  
-> - Map → [docs/README authority map](README.md#documentation-authority-map-one-concept--one-home)  
->
-> Body below is a **2026-07-01** snapshot (crop-era + full Energy story). Full-volume
-> Edges evaluated PASS and Network one-strand residual are **not** described here.
 
 ---
 

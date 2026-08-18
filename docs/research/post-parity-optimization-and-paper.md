@@ -1,5 +1,11 @@
 # Post-Parity Optimization & the Translation Paper
 
+## In short
+
+Research notes on making a **certified** port faster and writing that up.
+Phase 1 is already closed. This is not live pass/fail. Stretch (identical last
+digits) is extra and separate.
+
 **Generated:** 2026-06-27 via the deep-research workflow (fan-out web search →
 source fetch → 3-vote adversarial verification → synthesis).
 

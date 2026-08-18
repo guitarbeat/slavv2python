@@ -2,6 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+This file says what “Python implements the published SLAVV method” is allowed to
+mean. Live pass/fail is [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md), not
+this plan. Public `slavv run` (paper profile) is separate from the exact MATLAB
+proof track. Phase 1 exact-route certification is already closed.
+
 This document defines what it means to say that Python implements the released
 SLAVV method and records the remaining work to make that statement truthful.
 
@@ -26,7 +33,7 @@ When these sources differ, use this order:
 
 1. Released MATLAB slavv_python under `external/Vectorization-Public/source/`
 2. Preserved MATLAB artifacts validated by `prove-exact`
-3. The paper PDF at `docs/reference/papers/journal.pcbi.1009451.pdf`
+3. The published paper (DOI [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451); explanatory, not a higher-priority spec than the MATLAB source)
 4. Maintained Python docs such as `MATLAB_PARITY_MAPPING.md`
 
 Implications:
@@ -212,4 +219,4 @@ Apply these rules across parity docs:
 - `ENERGY_METHODS.md`: maintained native energy backend surface
 - `../workflow/PAPER_PROFILE.md`: public paper-first CLI/app workflow and JSON
   export contract
-- `../papers/journal.pcbi.1009451.pdf`: paper narrative and published methods
+- [doi:10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451): paper narrative and published methods

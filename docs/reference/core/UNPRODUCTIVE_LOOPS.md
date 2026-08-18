@@ -1,5 +1,11 @@
 # Unproductive Loops & Architectural Anti-Patterns
 
+## In short
+
+A list of traps that burned days during Phase 1. Phase 1 is now closed. Do not
+re-open those loops (chunking-as-cert, Network rewrite as the default fix,
+treating 90% Energy bits as 100%). Live status is ONE TRUTH, not this wall of shame.
+
 This document serves as a "Wall of Shame" and a strategic guide to prevent recurring patterns of wasted effort observed during the Phase 1 Parity Certification mission.
 
 ---

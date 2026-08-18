@@ -24,6 +24,12 @@ related_components:
 
 # MATLAB V200 energy HDF5 bundles for promote-oracle
 
+## In short
+
+MATLAB Energy often lives in a companion HDF5 file, not only in `energy_*.mat`.
+Promotion must load that volume file or the oracle looks empty. Historical v1
+commands below; live crop oracle is `180709_E_crop_M_v2`.
+
 > **Current crop oracle:** The crop oracle of record is now `180709_E_crop_M_v2` (MATLAB batch `batch_260624-105705`); see [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md) and [PARITY_PRE_GATE.md](../../reference/workflow/PARITY_PRE_GATE.md). The commands below document the original **v1** promotion (batch `batch_260527-220010`) and are retained as the historical record of the HDF5-loader fix; the split-HDF5 layout finding applies to any V200 crop batch, including v2.
 
 ## Problem

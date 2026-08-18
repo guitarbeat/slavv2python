@@ -1,5 +1,12 @@
 # Review: the original SLAVV methodology paper
 
+## In short
+
+What the 2021 SLAVV paper actually does: score the photo, find seeds, connect
+them, build a graph — no binary mask first. This is background reading. Live
+Python-vs-MATLAB status is [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md).
+Phase 1 is closed; identical last digits is extra.
+
 **Citation (method of record for this port):**
 
 > Mihelic SA, Sikora WA, Hassan AM, Williamson MR, Jones TA, Dunn AK.

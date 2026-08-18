@@ -8,6 +8,12 @@ resolution_type: configuration
 
 # Exact-Route Energy Chunk Parallelism (n_jobs)
 
+## In short
+
+Full-volume Energy was serial (`n_jobs=1`) and took days. Threads can run chunks
+in parallel **without changing bits** if merge order stays fixed. Dest default
+stays serial; pass `--n-jobs` / `auto` only when you mean to.
+
 ## Problem
 The full-volume (512x512x64) exact-route Energy stage ran for an estimated
 **~37 hours** on octave 1 alone (~54 h for the full energy→network sequence).

@@ -2,6 +2,11 @@
 
 [Up: Documentation Index](../../README.md)
 
+## In short
+
+An experimental 3D viewer for reviewing points and traces. Not the production
+curator, and not a parity proof.
+
 This note documents the experimental `napari`-based curator prototype that now
 exists alongside the maintained Qt/PyVista curator.
 

@@ -1,0 +1,139 @@
+﻿[
+    {
+        "dest":  "canonical_full_v4",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_energy.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "03_Analysis\\exact_proof_vertices.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v4\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v5",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_energy.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "03_Analysis\\exact_proof_vertices.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v5\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v6",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v6\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v7",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v7\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v8",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v8\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v10",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v10\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v15",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v15\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "canonical_full_v16",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\canonical_full_v16\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "crop_M_exact",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_edges.json",
+                       "03_Analysis\\exact_proof_energy.json",
+                       "03_Analysis\\exact_proof_energy_ulp.json",
+                       "03_Analysis\\exact_proof_network.json",
+                       "03_Analysis\\exact_proof_vertices.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+                              "workspace\\runs\\oracle_180709_E\\crop_M_exact\\stretch_status.json"
+                          ]
+    },
+    {
+        "dest":  "crop_M_stretch_engine_v1",
+        "exists":  true,
+        "copied":  [
+                       "03_Analysis\\exact_proof.json",
+                       "03_Analysis\\exact_proof_energy.json",
+                       "stretch_status.json",
+                       "99_Metadata\\run_snapshot.json"
+                   ],
+        "missing_globs":  [
+
+                          ]
+    }
+]

@@ -8,6 +8,29 @@ resolution_type: diagnosis
 
 # Crop Energy stretch float isolation (E11–E20)
 
+## In short
+
+We already match MATLAB closely enough for Phase 1 (the shipped product bar).
+**Stretch** is a harder extra goal: every Energy number should be **identical
+bits**, not just “close.”
+
+On the real crop photo, about **90%** of voxels match MATLAB exactly. The rest
+differ in the last digits (largest gap `1e-10`). That is **not** 100%, and it
+does **not** unlock the next stretch steps.
+
+Tiny cut-outs and fake noise **do** match when Python and live MATLAB both
+treat the cut-out as its own small photo. That does **not** solve the crop:
+the leftover shows up when a **tile of the full photo** is compared to the
+**saved MATLAB answers** from an older batch.
+
+Likely reasons (not proven): extra border pixels around each tile, Python
+choosing settings that are “almost” but not bit-equal, or the saved MATLAB
+file differing from MATLAB as it runs today.
+
+Do **not** rerun the crop Energy writer. Do **not** overwrite the four
+protected run folders. Live status is the dest `stretch_status.json` file,
+not Phase 1 CLOSED.
+
 ## Problem
 
 True zero-tolerance stretch needs crop Energy bit-equal under
@@ -49,20 +72,23 @@ Ruled out on cheap fixtures (engine skip = `incomplete_infra`, not fail):
   is filter/interp3 args or MATLAB engine helper vs original batch internals.
   Operator: `scripts/stretch_helper_body_isolation.py`. Scratch:
   `workspace/scratch/stretch_helper_body_isolation.json`.
+- Standalone windows (seeded noise, `180709_EL` corner, crop 21×51×51 write
+  window as its own volume): helper vs live `get_energy_V202` **bit-matched**.
+  Those tests do not use the full-crop tile halo or the saved oracle.
 
 ## Root Cause
 
-Named leftover after E13, one-chunk, lattice/params, and helper-body probes:
-crop-scale FFT/filter / `interp3` helper **body** vs the original MATLAB batch
-`get_energy_V202` on the **same** rf-matched lattice (not merge/packaging, not
-a 75-vs-726 lattice bug, not `local_ranges`, not TIFF vs HDF5 input). The
-exact ULP source is **not** closed. Not an Energy unlock.
+Named leftover after E13, one-chunk, lattice/params, helper-body, and
+standalone-window probes: full-crop tile math vs the preserved MATLAB batch
+oracle (not merge/packaging, not a 75-vs-726 lattice bug, not `local_ranges`,
+not TIFF vs HDF5 input, not “helper ≠ live MATLAB on a tiny photo”). The
+exact last-digit source is **not** closed. Not an Energy unlock.
 
 ## Solution
 
 Record **`blocked_float_path`**. Do not emit an Energy unlock. Do not treat
 90.3% or default allclose as stretch success. Do not relaunch v2. Do not
-overwrite `canonical_full_v18`, `canonical_full_v16`, `crop_M_exact_v3`, or
+overwrite `canonical_full_v18`, `crop_M_exact_v3`, or
 `crop_M_stretch_engine_v2`. U5/U6 stay gated.
 
 ```powershell
@@ -71,6 +97,10 @@ slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_
 
 `(512, 64, 512)` vs oracle `(64, 512, 512)` is `incomplete_infra` before ULP
 (`classify_stretch_energy_orientation` in Energy compare).
+
+Cheap next probe (not a writer): force **two tiles** on a tiny volume and
+compare helper vs live MATLAB. If they still match, leftover is saved-oracle
+vs MATLAB today.
 
 ## Verification
 
@@ -82,13 +112,10 @@ slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_
   Operator: `scripts/stretch_lattice_params_isolation.py`.
 - Helper body: `tests/unit/pipeline/energy/test_stretch_helper_body_isolation.py`.
   Operator: `scripts/stretch_helper_body_isolation.py`.
+- Standalone TIFF/noise windows: `scripts/stretch_synthetic_original_compare.py`.
 - E11 prove already ran on v2; do not re-run the writer to “verify” this note.
 
 ## Follow-Up
 
-Helper **body** vs original MATLAB chunk math remains (`blocked_float_path`).
-`local_ranges` match; TIFF vs HDF5 windows match; clamp is not the tiny-ULP
-class. Leftover is filter/interp3 args or engine helper vs original batch
-internals. rf-matched lattices match (821=821); do not treat octave-index 75
-vs 726 as a production lattice bug. Do not relaunch v2. Do not start U5/U6.
+Status stays `blocked_float_path`. Do not relaunch v2. Do not start U5/U6.
 Live status stays in dest `stretch_status.json`, not ONE TRUTH.

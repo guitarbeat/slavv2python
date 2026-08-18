@@ -17,6 +17,8 @@ from slavv_python.analytics.parity.constants import (
     DATASET_MANIFEST_PATH,
     EXPERIMENT_PARAMS_DIR,
     EXPERIMENT_REFS_DIR,
+    EXPERIMENT_ROOT_REQUIRED_RELATIVE_PATHS,
+    FULL_ORACLE_ID,
     HASHES_DIR,
     METADATA_DIR,
     NORMALIZED_DIR,
@@ -24,6 +26,7 @@ from slavv_python.analytics.parity.constants import (
     ORACLE_MANIFEST_PATH,
     RUN_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
+    STRETCH_CROP_ORACLE_ID,
     VALIDATED_PARAMS_PATH,
 )
 from slavv_python.analytics.parity.oracle import params_audit
@@ -34,6 +37,7 @@ from slavv_python.analytics.parity.oracle.matlab_vector_loader import (
 from slavv_python.analytics.parity.oracle.models import (
     DatasetSurface,
     ExactProofSourceSurface,
+    ExperimentRootStatus,
     OracleSurface,
     SourceRunSurface,
 )
@@ -306,6 +310,120 @@ def write_run_manifest(
     return manifest
 
 
+_LFS_POINTER_HEADER = "version https://git-lfs.github.com/spec/v1"
+
+
+def is_git_lfs_pointer(path: Path) -> bool:
+    """Return True when ``path`` is a Git LFS pointer stub, not the real object."""
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return False
+    if size > 300 or size < 40:
+        return False
+    try:
+        with path.open("r", encoding="ascii", errors="strict") as handle:
+            first = handle.readline().strip()
+    except (OSError, UnicodeDecodeError):
+        return False
+    return first == _LFS_POINTER_HEADER
+
+
+def _record_required_file(
+    repo_root: Path,
+    relative: str,
+    present: list[str],
+    missing: list[str],
+    lfs_pointers: list[str],
+) -> None:
+    path = repo_root / relative
+    if not path.is_file():
+        missing.append(relative)
+        return
+    if is_git_lfs_pointer(path):
+        lfs_pointers.append(relative)
+        missing.append(relative)
+        return
+    present.append(relative)
+
+
+def _oracle_matlab_markers(repo_root: Path, oracle_id: str) -> tuple[list[str], list[str]]:
+    """Require energy HDF5/mat plus vectors/*.mat without opening HDF5."""
+    oracle_root = repo_root / "workspace" / "oracles" / oracle_id
+    prefix = f"workspace/oracles/{oracle_id}/01_Input/matlab_results"
+    present: list[str] = []
+    missing: list[str] = []
+    try:
+        batch = find_single_matlab_batch_dir(oracle_root)
+    except ValueError:
+        missing.append(f"{prefix}/batch_*")
+        return present, missing
+    rel_batch = batch.relative_to(repo_root).as_posix()
+    data_dir = batch / "data"
+    vectors_dir = batch / "vectors"
+    energy_rel = f"{rel_batch}/data/energy*"
+    energy_ok = False
+    if data_dir.is_dir():
+        energy_ok = any(path.is_file() for path in data_dir.glob("energy*.mat")) or any(
+            path.is_file() and path.name.startswith("energy_") and path.suffix == ""
+            for path in data_dir.iterdir()
+        )
+    if energy_ok:
+        present.append(energy_rel)
+    else:
+        missing.append(energy_rel)
+    for stage, pattern in (
+        ("vertices", "vertices*.mat"),
+        ("edges", "edges*.mat"),
+        ("network", "network*.mat"),
+    ):
+        rel = f"{rel_batch}/vectors/{pattern}"
+        hits: list[Path] = []
+        if vectors_dir.is_dir():
+            if stage == "vertices":
+                hits = [
+                    path for path in vectors_dir.glob("curated_vertices*.mat") if path.is_file()
+                ]
+            if not hits:
+                hits = [path for path in vectors_dir.glob(pattern) if path.is_file()]
+        if hits:
+            present.append(rel)
+        else:
+            missing.append(rel)
+    return present, missing
+
+
+def inspect_experiment_root(repo_root: Path) -> ExperimentRootStatus:
+    """Report whether Experiment Root files exist on disk (not LFS pointers)."""
+    resolved = repo_root.expanduser().resolve()
+    present: list[str] = []
+    missing: list[str] = []
+    lfs_pointers: list[str] = []
+    for relative in EXPERIMENT_ROOT_REQUIRED_RELATIVE_PATHS:
+        _record_required_file(resolved, relative, present, missing, lfs_pointers)
+    for oracle_id in (FULL_ORACLE_ID, STRETCH_CROP_ORACLE_ID):
+        extra_present, extra_missing = _oracle_matlab_markers(resolved, oracle_id)
+        present.extend(extra_present)
+        missing.extend(extra_missing)
+    dataset_root = resolved / "workspace" / "datasets"
+    dataset_tifs: list[str] = []
+    if dataset_root.is_dir():
+        dataset_tifs = sorted(
+            str(path.relative_to(resolved)).replace("\\", "/")
+            for path in dataset_root.glob("*/01_Input/*.tif")
+            if path.is_file() and not is_git_lfs_pointer(path)
+        )
+    if not dataset_tifs:
+        missing.append("workspace/datasets/*/01_Input/*.tif")
+    return ExperimentRootStatus(
+        passed=not missing,
+        present=tuple(present),
+        missing=tuple(missing),
+        dataset_tifs=tuple(dataset_tifs),
+        lfs_pointers=tuple(lfs_pointers),
+    )
+
+
 def oracle_energy_size_of_image(oracle_surface: OracleSurface) -> tuple[int, int, int] | None:
     """Read Z,Y,X dimensions from the oracle energy vector artifact."""
     from slavv_python.analytics.parity.oracle.matlab_vector_loader import is_matlab_energy_hdf5
@@ -351,6 +469,8 @@ __all__ = [
     "_oracle_energy_size_of_image",
     "copy_source_surface",
     "ensure_dest_run_layout",
+    "inspect_experiment_root",
+    "is_git_lfs_pointer",
     "load_dataset_surface",
     "load_oracle_surface",
     "load_params_file",

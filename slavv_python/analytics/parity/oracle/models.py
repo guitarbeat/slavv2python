@@ -65,6 +65,17 @@ class ExactProofSourceSurface:
 
 
 @dataclass(frozen=True)
+class ExperimentRootStatus:
+    """Whether the Experiment Root has the Oracle and Claim Run Root files."""
+
+    passed: bool
+    present: tuple[str, ...]
+    missing: tuple[str, ...]
+    dataset_tifs: tuple[str, ...]
+    lfs_pointers: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ExactPreflightSurface:
     """Surface for an exact-route preflight check."""
 

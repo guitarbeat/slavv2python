@@ -1,0 +1,235 @@
+{
+  "checks": {
+    "dataset_hash": "0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+    "dest_exists": true,
+    "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+    "experiment_provenance": {
+      "dataset_hash": "0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+      "oracle_id": "180709_E_crop_M_v2",
+      "stop_after": "vertices"
+    },
+    "image_shape": [
+      64,
+      256,
+      256
+    ],
+    "oracle_id": "180709_E_crop_M_v2",
+    "params_audit": {
+      "allowed_orchestration_params": {
+        "comparison_exact_network": true,
+        "comparison_exact_network_use_conflict_painting": true,
+        "energy_axis_permutation": [
+          2,
+          0,
+          1
+        ],
+        "energy_storage_format": "npy",
+        "n_jobs": 1,
+        "return_all_scales": false
+      },
+      "disallowed_python_only_keys": [],
+      "passed": true,
+      "required_exact_mismatches": [],
+      "required_exact_values": {
+        "comparison_exact_network": true,
+        "direction_method": "hessian",
+        "discrete_tracing": false,
+        "edge_method": "tracing",
+        "energy_method": "hessian",
+        "energy_projection_mode": "matlab"
+      },
+      "shared_method_param_count": 36,
+      "shared_method_params": {
+        "approximating_PSF": true,
+        "bandpass_window": 0.0,
+        "direction_method": "hessian",
+        "direction_tolerance": 1.0,
+        "discrete_tracing": false,
+        "distance_tolerance": 3.0,
+        "distance_tolerance_per_origin_radius": 3.0,
+        "edge_method": "tracing",
+        "edge_number_tolerance": 4,
+        "energy_method": "hessian",
+        "energy_projection_mode": "matlab",
+        "energy_sign": -1.0,
+        "energy_tolerance": 1.0,
+        "energy_upper_bound": 0,
+        "excitation_wavelength_in_microns": 0.95,
+        "gaussian_to_ideal_ratio": 0.5,
+        "length_dilation_ratio": 1,
+        "max_edge_energy": 0.0,
+        "max_edge_length_per_origin_radius": 30,
+        "max_voxels_per_node": 6000,
+        "max_voxels_per_node_energy": 6000,
+        "microns_per_voxel": [
+          0.916,
+          0.916,
+          1.9968800000000002
+        ],
+        "min_hair_length_in_microns": 0.0,
+        "number_of_edges_per_vertex": 4,
+        "numerical_aperture": 0.95,
+        "radius_of_largest_vessel_in_microns": 60,
+        "radius_of_smallest_vessel_in_microns": 1.5,
+        "radius_tolerance": 0.5,
+        "sample_index_of_refraction": 1.33,
+        "scales_per_octave": 6,
+        "sigma_per_influence_edges": 0.5,
+        "sigma_per_influence_vertices": 1.0,
+        "space_strel_apothem": 1,
+        "space_strel_apothem_edges": 1,
+        "spherical_to_annular_ratio": 0.5,
+        "step_size_per_origin_radius": 1.0
+      },
+      "unclassified_keys": [
+        "energy_float_backend",
+        "pipeline_profile",
+        "stretch_zero_tolerance"
+      ]
+    },
+    "run_snapshot_status": "completed_target"
+  },
+  "errors": [],
+  "forced": false,
+  "generated_at": "2026-08-16T01:52:27Z",
+  "memory_estimate": {
+    "estimated_required_bytes": 173015040,
+    "overhead_bytes": 34603008,
+    "planned_arrays": [
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "energy"
+      },
+      {
+        "bytes_per_voxel": 2,
+        "estimated_bytes": 8388608,
+        "name": "scale_indices"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "vertex_center_image"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "energy_map_temp"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "energy_map"
+      },
+      {
+        "bytes_per_voxel": 1,
+        "estimated_bytes": 4194304,
+        "name": "branch_order_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "d_over_r_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "pointer_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 16777216,
+        "name": "vertex_index_map"
+      },
+      {
+        "bytes_per_voxel": 2,
+        "estimated_bytes": 8388608,
+        "name": "size_map"
+      }
+    ],
+    "subtotal_bytes": 138412032,
+    "voxel_count": 4194304
+  },
+  "memory_gate": {
+    "available_bytes": 6874841088,
+    "budget_bytes": 5499872870,
+    "memory_safety_fraction": 0.8,
+    "passed": true,
+    "required_bytes": 173015040
+  },
+  "params_audit": {
+    "allowed_orchestration_params": {
+      "comparison_exact_network": true,
+      "comparison_exact_network_use_conflict_painting": true,
+      "energy_axis_permutation": [
+        2,
+        0,
+        1
+      ],
+      "energy_storage_format": "npy",
+      "n_jobs": 1,
+      "return_all_scales": false
+    },
+    "disallowed_python_only_keys": [],
+    "passed": true,
+    "required_exact_mismatches": [],
+    "required_exact_values": {
+      "comparison_exact_network": true,
+      "direction_method": "hessian",
+      "discrete_tracing": false,
+      "edge_method": "tracing",
+      "energy_method": "hessian",
+      "energy_projection_mode": "matlab"
+    },
+    "shared_method_param_count": 36,
+    "shared_method_params": {
+      "approximating_PSF": true,
+      "bandpass_window": 0.0,
+      "direction_method": "hessian",
+      "direction_tolerance": 1.0,
+      "discrete_tracing": false,
+      "distance_tolerance": 3.0,
+      "distance_tolerance_per_origin_radius": 3.0,
+      "edge_method": "tracing",
+      "edge_number_tolerance": 4,
+      "energy_method": "hessian",
+      "energy_projection_mode": "matlab",
+      "energy_sign": -1.0,
+      "energy_tolerance": 1.0,
+      "energy_upper_bound": 0,
+      "excitation_wavelength_in_microns": 0.95,
+      "gaussian_to_ideal_ratio": 0.5,
+      "length_dilation_ratio": 1,
+      "max_edge_energy": 0.0,
+      "max_edge_length_per_origin_radius": 30,
+      "max_voxels_per_node": 6000,
+      "max_voxels_per_node_energy": 6000,
+      "microns_per_voxel": [
+        0.916,
+        0.916,
+        1.9968800000000002
+      ],
+      "min_hair_length_in_microns": 0.0,
+      "number_of_edges_per_vertex": 4,
+      "numerical_aperture": 0.95,
+      "radius_of_largest_vessel_in_microns": 60,
+      "radius_of_smallest_vessel_in_microns": 1.5,
+      "radius_tolerance": 0.5,
+      "sample_index_of_refraction": 1.33,
+      "scales_per_octave": 6,
+      "sigma_per_influence_edges": 0.5,
+      "sigma_per_influence_vertices": 1.0,
+      "space_strel_apothem": 1,
+      "space_strel_apothem_edges": 1,
+      "spherical_to_annular_ratio": 0.5,
+      "step_size_per_origin_radius": 1.0
+    },
+    "unclassified_keys": [
+      "energy_float_backend",
+      "pipeline_profile",
+      "stretch_zero_tolerance"
+    ]
+  },
+  "passed": true,
+  "warnings": []
+}

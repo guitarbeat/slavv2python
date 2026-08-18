@@ -2,6 +2,12 @@
 
 [Up: Reference Docs](../README.md) · [Parity Pre-Gate](PARITY_PRE_GATE.md) · [ADR 0010](../../adr/0010-random-component-parity-suite.md)
 
+## In short
+
+A fast check on **fake noise**, not the real crop or full photo. It catches
+building-block drift (linspace, interpolation). A green run here is **not**
+Phase 1 certification and **not** 100% Energy bits.
+
 Fast MATLAB R2019a vs Python differential diagnostics on pinned white-noise inputs. This suite is a **developer loop** and self-hosted CI check; it is **not** a certification claim on crop or canonical volumes (see [ADR 0009](../../adr/0009-parity-pre-gate-tiers.md) and [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md)).
 
 ---

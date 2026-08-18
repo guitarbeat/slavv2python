@@ -8,6 +8,12 @@ resolution_type: code_fix
 
 # Edge watershed parity — seeds=2 and no conflict painting
 
+## In short
+
+MATLAB’s exact route hard-codes two seeds per vertex and does **not** run
+conflict painting. Python was using paper-profile settings (four seeds +
+painting), so the territories grew differently.
+
 ## Problem
 First `prove-exact --stage edges` vs `180709_E_crop_M_v2` showed a large
 divergence: MATLAB 15,511 edges vs Python 9,429 (only 5,109 shared pairs).

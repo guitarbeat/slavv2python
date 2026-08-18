@@ -11,6 +11,12 @@ related:
 
 # Deepen "Random Component References" — Architecture Deepening Plan
 
+## In short
+
+Make the fake-noise MATLAB-reference helper a smaller, clearer module. This is
+test-infra cleanup. Green random-component runs are still **not** crop or
+full-volume certification.
+
 **Goal (per improve-codebase-architecture skill):** Turn the current shallow reference computation into a **deep module** with high **leverage** (callers get rich refs from tiny interface) and high **locality** (bugs, changes, and verification concentrate in one place).
 
 Uses architecture terminology (Module, Interface, Seam, Depth, Leverage, Locality, Deletion test, Adapter) from the improve-codebase-architecture skill's `LANGUAGE.md` (`.claude/skills/improve-codebase-architecture/LANGUAGE.md`).

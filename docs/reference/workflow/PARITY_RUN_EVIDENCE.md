@@ -2,6 +2,12 @@
 
 [Up: Reference Docs](../README.md) · [Exact Proof Findings](../core/EXACT_PROOF_FINDINGS.md) · [Parity Job Monitoring](PARITY_JOB_MONITORING.md)
 
+## In short
+
+Finishing a writer (files on disk) is not the same as passing a proof (Python
+matched the saved MATLAB answers). Use this checklist so those two facts stay
+distinct. Live status still belongs in findings, not TODO.
+
 Copy-paste checklist for reporting **writer completion** and **proof results** without duplicating narrative into [TODO.md](../../TODO.md).
 
 **Rule:** [TODO.md](../../TODO.md) = checkboxes. [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) = one ops-table row + short evidence block per event. This file = the shape of that block.

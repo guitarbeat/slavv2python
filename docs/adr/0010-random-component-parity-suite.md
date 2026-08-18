@@ -1,5 +1,11 @@
 # ADR 0010: Random Component Parity Suite
 
+## In short
+
+A fast fake-noise check for Energy building blocks (linspace, interpolation).
+Green here is **not** crop or full-volume certification and **not** identical
+last digits on real photos.
+
 ## Status
 Accepted
 

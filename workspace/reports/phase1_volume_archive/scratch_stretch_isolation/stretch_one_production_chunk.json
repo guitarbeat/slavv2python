@@ -1,0 +1,144 @@
+{
+  "result": "ok",
+  "status_class": "blocked_float_path",
+  "interpretation": "Re-run == v2 and both \u2260 oracle \u2192 helper/oracle (lattice or filter/interp3 vs original MATLAB batch), packaging OK.",
+  "primary_surface": "octave_owned",
+  "isolation_only": true,
+  "not_stretch_success": true,
+  "stretch_complete": false,
+  "wall_sec": 77.44799590110779,
+  "lattice": {
+    "voxel_zyx": [
+      13,
+      0,
+      0
+    ],
+    "winner_scale": 43,
+    "dest": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_stretch_engine_v2",
+    "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2",
+    "chunk_index": 0,
+    "octave": 2,
+    "lattice_dimensions_yxz": [
+      5,
+      5,
+      3
+    ],
+    "lattice_indices_yxz": [
+      0,
+      0,
+      0
+    ],
+    "number_of_chunks": 75,
+    "write_start_zyx": [
+      0,
+      0,
+      0
+    ],
+    "write_count_zyx": [
+      21,
+      51,
+      51
+    ],
+    "write_window_zyx": [
+      [
+        0,
+        21
+      ],
+      [
+        0,
+        51
+      ],
+      [
+        0,
+        51
+      ]
+    ],
+    "rf_zyx": [
+      1,
+      3,
+      3
+    ],
+    "scale_indices_at_octave": [
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53
+    ],
+    "prev_scales_count": 36
+  },
+  "full_write_window": {
+    "rerun_equals_v2": false,
+    "rerun_equals_oracle": false,
+    "v2_equals_oracle": false,
+    "interpretation": "Re-run \u2260 v2 \u2192 packaging/merge/resume bug (infra), still not unlock.",
+    "n_voxels": 54621,
+    "n_rerun_ne_v2": 44422,
+    "n_rerun_ne_oracle": 44932,
+    "n_v2_ne_oracle": 5287,
+    "not_stretch_success": true
+  },
+  "octave_owned": {
+    "rerun_equals_v2": true,
+    "rerun_equals_oracle": false,
+    "v2_equals_oracle": false,
+    "interpretation": "Re-run == v2 and both \u2260 oracle \u2192 helper/oracle (lattice or filter/interp3 vs original MATLAB batch), packaging OK.",
+    "n_voxels": 9202,
+    "n_rerun_ne_v2": 0,
+    "n_rerun_ne_oracle": 510,
+    "n_v2_ne_oracle": 510,
+    "not_stretch_success": true
+  },
+  "mismatch_voxel": {
+    "rerun_equals_v2": true,
+    "rerun_equals_oracle": false,
+    "v2_equals_oracle": false,
+    "interpretation": "Re-run == v2 and both \u2260 oracle \u2192 helper/oracle (lattice or filter/interp3 vs original MATLAB batch), packaging OK.",
+    "n_voxels": 1,
+    "n_rerun_ne_v2": 0,
+    "n_rerun_ne_oracle": 1,
+    "n_v2_ne_oracle": 1,
+    "not_stretch_success": true,
+    "voxel_zyx": [
+      13,
+      0,
+      0
+    ],
+    "local_zyx": [
+      13,
+      0,
+      0
+    ],
+    "v2_scale": 43,
+    "rerun_scale": 43,
+    "oracle_scale": 43,
+    "v2_energy": -22.298862140284538,
+    "rerun_energy": -22.298862140284538,
+    "oracle_energy": -22.298862140284523
+  },
+  "n_octave_owned": 9202,
+  "v2_vs_oracle_window": {
+    "rerun_equals_v2": true,
+    "rerun_equals_oracle": false,
+    "v2_equals_oracle": false,
+    "interpretation": "Re-run == v2 and both \u2260 oracle \u2192 helper/oracle (lattice or filter/interp3 vs original MATLAB batch), packaging OK.",
+    "n_voxels": 54621,
+    "n_rerun_ne_v2": 0,
+    "n_rerun_ne_oracle": 5287,
+    "n_v2_ne_oracle": 5287,
+    "not_stretch_success": true
+  }
+}

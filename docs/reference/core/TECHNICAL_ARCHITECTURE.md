@@ -2,6 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
+## In short
+
+The product is a four-stage pipeline (Energy → Vertices → Edges → Network) with
+a resumable run folder. Users run `slavv run`. Developers compare against saved
+MATLAB answers with `slavv parity`. Phase 1 already shipped; this file is how
+the engine is put together, not live pass/fail.
+
 ---
 
 ## Core Engine Components

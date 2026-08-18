@@ -1,5 +1,12 @@
 # ADR 0012: Edge Watershed Parity Bar (ownership-map + trace tolerance)
 
+## In short
+
+Do not require Python and MATLAB to emit the exact same edge-pair list in the
+same order (watershed is a chaotic flood-fill). Ship bar: who-owns-which-voxel
+map plus matching strand/junction bags. Phase 1 is closed on that bar. Exact
+`connections` order is optional stretch.
+
 ## Status
 Accepted (2026-06-25)
 

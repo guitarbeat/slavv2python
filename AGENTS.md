@@ -102,7 +102,7 @@ A [Vertex](#vertex) identified directly from the energy field as a local minimum
 A structural [Vertex](#vertex) inserted during [Edge Selection](#edge-selection) to resolve overlaps or connectivity gaps. These are topologically necessary but were not originally identified as energy minima. **Owned by the [Edge Set](#edge-set)** (e.g. bridge position/scale/energy fields on the edge payload), not by rewriting the Vertices-stage [Vertex Set](#vertex-set).
 
 ### Vertex Set
-The authoritative collection of [Vertices](#vertex) for the Vertices stage of a [Run](#run)—the pre-bridge seed set used as input to [Edge Discovery](#edge-discovery) and [Edge Selection](#edge-selection). Network (and similar consumers) may form a working list as Vertex Set ∪ [Bridge Vertices](#bridge-vertex) from the [Edge Set](#edge-set); that composite is not a separate Vertices [Stage Result](#stage-result).
+The authoritative collection of [Vertices](#vertex) for the Vertices stage of a [Run](#run-state)—the pre-bridge seed set used as input to [Edge Discovery](#edge-discovery) and [Edge Selection](#edge-selection). Network (and similar consumers) may form a working list as Vertex Set ∪ [Bridge Vertices](#bridge-vertex) from the [Edge Set](#edge-set); that composite is not a separate Vertices [Stage Result](#stage-result).
 _Avoid_: Assuming the Vertices checkpoint already includes Bridge Vertices; treating seed+bridge as a second Vertices Stage Result.
 
 ### Edge Set
@@ -118,7 +118,7 @@ A single potential edge (trace + connection endpoints and metrics) produced by [
 _Avoid_: Calling a finalized edge in the Edge Set a Candidate.
 
 ### Candidate Set
-The authoritative collection of [Candidates](#candidate) produced by [Edge Discovery](#edge-discovery). Input to [Edge Selection](#edge-selection) that yields the [Edge Set](#edge-set). Code: `CandidateManifest`. Durable mid-stage [Checkpoint](#checkpoint) of Edges (resume / residual Edge Selection)—not a second [Stage Result](#stage-result). Multiple on-disk names (`candidates.pkl`, `checkpoint_edge_candidates.pkl`) are packaging dual-write for one concept, not two domain objects.
+The authoritative collection of [Candidates](#candidate) produced by [Edge Discovery](#edge-discovery). Input to [Edge Selection](#edge-selection) that yields the [Edge Set](#edge-set). Code: `CandidateManifest`. Durable mid-stage [Checkpoint](#checkpoint) of Edges (resume / residual Edge Selection)—not a second [Stage Result](#stage-result). Production write is `04_Edges/candidates.pkl`. The former `checkpoint_edge_candidates.pkl` dual-write is a read-only fallback, not a second domain object.
 _Avoid_: Candidate Manifest as domain language; inventing separate “candidate artifact” vs “candidate checkpoint” terms; treating the Candidate Set as the Edges Stage Result or Network input.
 
 ### Edge Selection
@@ -146,13 +146,13 @@ An [Edge Discovery](#edge-discovery) strategy that partitions the volume into re
 _Avoid_: Conflating with skimage `extract_edges_watershed` / `naive_watershed` (different algorithm, not the ADR 0012 cert surface); calling this strategy only “frontier” without naming Watershed Discovery.
 
 ### Run State
-The complete collection of data persisted during a [Run](#run).
+The complete collection of data persisted during a [Run](#run-state).
 
 ### Stage Result
 The authoritative output of a [Pipeline](#pipeline) stage, serving as the interface for subsequent stages.
 
 ### Checkpoint
-Internal state persisted during a stage's execution to allow a [Run](#run) to recover from interruption or to skip recalculation.
+Internal state persisted during a stage's execution to allow a [Run](#run-state) to recover from interruption or to skip recalculation.
 
 ### Artifact
 Supplemental data produced by a stage for diagnostics, auditing, or visualization that is not strictly required for [Pipeline](#pipeline) progression.
@@ -180,8 +180,12 @@ The ordered cheap-first verification sequence—unit, then crop, then full no-wr
 _Avoid_: Skipping the ladder for a full Edges writer “just to see”; treating ladder green alone as Phase 1 Closure.
 
 ### Claim Run Root
-The canonical full-volume [Parity Run](#parity-run) directory named in [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) as the live Certification claim surface. Historical claim roots stay frozen for audit; after a parity-sensitive fix, open a **new** claim root rather than overwriting. Diagnostic successors (Edges→Network writers used for residual iteration) remain non-claim until evaluated ADR 0012 proofs pass there.
-_Avoid_: Overwriting a historical claim/audit root in place; promoting a diagnostic successor (e.g. a `canonical_full_vN` writer started before the ranking fix) to claim status without evaluated Edges **and** Network proofs; freezing root IDs here—live name is ONE TRUTH only.
+The canonical full-volume [Parity Run](#parity-run) directory named in [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) as the live Certification claim surface. After a parity-sensitive fix, open a **new** claim root rather than overwriting. Diagnostic successors remain non-claim until evaluated ADR 0012 proofs pass there. Historical proof JSON lives under `workspace/reports/phase1_volume_archive/` when the multi-GB dest was removed.
+_Avoid_: Overwriting the live claim dest; promoting a diagnostic successor to claim status without evaluated Edges **and** Network proofs; freezing root IDs here—live name is ONE TRUTH only.
+
+### Experiment Root
+The on-disk home of [Oracles](#oracle), datasets, the live [Claim Run Root](#claim-run-root), crop-guard and stretch dests, and archived proofs under `workspace/`. GitHub carries package code and the Vectorization-Public submodule. Experiment Root binaries stay local or copy by USB/rsync (not GitHub LFS). `workspace/scratch/` is gitignored. Completeness: `slavv parity inspect-experiment-root` (rejects Git LFS pointer stubs).
+_Avoid_: Treating scratch probes as the Experiment Root; pushing Experiment Root binaries to GitHub LFS; dual-writing a second Candidate Set file into git; treating MATLAB Vectorization-Public or neurovasc-db as Experiment Root.
 
 ### Certification
 The state in which every required [Pipeline](#pipeline) stage passes its defined parity bar on a defined volume and workflow: Energy and Vertices use strict discrete equality plus `np.allclose` on continuous floats ([ADR 0011](docs/adr/0011-energy-float-certification-policy.md)); Edges and Network use the spatial bars in [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md) (ownership-map, trace tolerance, strand/bifurcation multisets)—not exact watershed edge-pair or strand-order equality. Phase 1 standing is Certification on the [Claim Run Root](#claim-run-root), not the audit/E-series portfolio.
@@ -198,15 +202,15 @@ _Avoid_: Freezing residual KPIs in this glossary; re-blocking on 80% crop overla
 _Avoid_: Logging residual KPIs against stale pre-fix crop checkpoints.
 
 ### True Zero-Tolerance Stretch
-Post–Phase 1 program: every compared MATLAB↔Python field bit-equal under `prove-exact --strict-floats`, **including Energy floats**. Default ADR 0011 allclose is **not** stretch success and is **not** 100% parity. Not [Certification](#certification). Live status is the findings stretch subsection plus dest `stretch_status.json`, not ONE TRUTH. Plan: [2026-08-14-004](docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
+Extra post–Phase 1 goal: every compared MATLAB↔Python field bit-equal under `prove-exact --strict-floats`, **including Energy floats**. In plain language: not just “close enough to ship,” but identical last digits. Default ADR 0011 allclose is **not** stretch success and is **not** 100% parity. Not [Certification](#certification). Live status is the findings stretch subsection plus dest `stretch_status.json`, not ONE TRUTH. Plan: [2026-08-14-004](docs/plans/2026-08-14-004-feat-true-zero-tolerance-parity-stretch-plan.md).
 _Avoid_: Reopening Phase 1; treating ADR 0012 ownership-map green as stretch complete.
 
 ### Stretch Status Taxonomy
-Stretch progress/failure labels from `StretchStatus` in `slavv_python.analytics.parity.proof.stretch`: `blocked_float_path` (Energy not bit-equal), `incomplete_discrete`, `incomplete_infra`, `incomplete_at_full`, `stretch_complete` (Energy **and** discrete at full). Infra failure is never `blocked_float_path`. Allclose green is never `stretch_complete`.
+Stretch progress/failure labels from `StretchStatus` in `slavv_python.analytics.parity.proof.stretch`: `blocked_float_path` (Energy last digits still differ), `incomplete_discrete`, `incomplete_infra` (could not finish the compare), `incomplete_at_full`, `stretch_complete` (Energy **and** discrete at full). Infra failure is never `blocked_float_path`. Allclose green is never `stretch_complete`.
 _Avoid_: Inventing an allclose-complete status; writing stretch pass/fail into ONE TRUTH CLOSED language.
 
 ### Stretch Unlock Token
-Crop file `stretch_crop_unlock.json` authorizing full stretch for a named field set (`energy` or `energy+discrete`). U5 crop discrete and U6 full stretch stay gated without a matching token.
+Crop file `stretch_crop_unlock.json` authorizing full stretch for a named field set (`energy` or `energy+discrete`). In plain language: a written “crop Energy is bit-equal, so full stretch may start.” U5 crop discrete and U6 full stretch stay gated without a matching token.
 _Avoid_: Unlocking from MKL/NumPy-only Energy; unlocking from MATLAB-only Energy Python never produced.
 
 ### Evaluated ADR 0012 Proof
@@ -267,7 +271,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 **Top-level folders** (plus vendored `external/` third-party source):
 - **`slavv_python/`** — Production package code (installed via pip)
 - **`tests/`** — Automated test suite (runs in CI)
-- **`workspace/`** — Local experiment artifacts (gitignored, personal)
+- **`workspace/`** — Experiment Root (Oracles, live dests, datasets on disk/USB; scratch gitignored)
 - **`docs/`** — Maintained reference docs and archival investigation notes
 - **`figures/`** — Publication figures (claim charts + `figures/research/` ULP/speedup) ([figures/README.md](figures/README.md))
 
@@ -338,7 +342,7 @@ slavv2python/
 │
 ├── figures/                            # Publication figures (claim + research/)
 │
-├── workspace/                          # LOCAL EXPERIMENT DATA (gitignored)
+├── workspace/                          # EXPERIMENT ROOT (binaries local/USB; scratch gitignored)
 │   ├── oracles/                        # Preserved MATLAB oracle vectors
 │   ├── runs/                           # Experiment trial runs
 │   ├── reports/                        # Promoted proof summaries
@@ -347,7 +351,8 @@ slavv2python/
 │       └── matlab/                     # MATLAB driver scripts (local use only)
 │
 ├── external/                           # Vendored dependencies
-│   └── Vectorization-Public/           # Canonical MATLAB source (submodule)
+│   ├── Vectorization-Public/           # Canonical MATLAB source (GitHub submodule)
+│   └── neurovasc-db/                   # Local catalog only (`D:/db`; not clone-required)
 │
 ├── scripts/                            # Developer probe scripts (referenced from HANDOFF)
 │   ├── watershed_frontier_diff.py      # Golden-trace comparison
@@ -392,6 +397,9 @@ Read these first when working on relevant surfaces:
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
+# MATLAB source (clone-required). neurovasc-db stays a local D:/db catalog.
+git submodule update --init -- external/Vectorization-Public
+
 # Install dependency set matching your task
 pip install -e .                       # Core package only
 pip install -e ".[app]"                # With Streamlit app dependencies
@@ -400,6 +408,8 @@ pip install -e ".[app,workspace]"      # Full developer environment (recommended
 # Install pre-commit hooks
 pre-commit install
 ```
+
+After clone, copy Experiment Root binaries (oracles, live dests, datasets) by USB/rsync if they are not already on disk. Then `slavv parity inspect-experiment-root`.
 
 ---
 

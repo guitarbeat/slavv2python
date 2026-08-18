@@ -8,6 +8,12 @@ resolution_type: code_fix
 
 # Curated MATLAB vertices store a rank-ramp energy
 
+## In short
+
+The pretty “curated” MATLAB vertex file rewrites energies into a display ramp.
+Proofs must take true energies from the raw `vertices_*.mat`. Positions/scales
+can still come from the curated file.
+
 ## Problem
 After vertex positions+scales matched MATLAB exactly, `prove-exact --stage
 vertices` still failed on `vertices.energies` — every value differed by a huge

@@ -12,6 +12,17 @@ deepened: 2026-08-14
 
 # True Zero-Tolerance Parity Stretch - Plan
 
+## In short
+
+Phase 1 already matches MATLAB closely enough to ship. This plan is the extra
+goal: every compared number identical bits, including Energy. “Close enough”
+(`allclose`) is not this bar and is not 100%.
+
+Crop Energy is still not bit-equal (~90% exact, leftover last-digit diffs).
+That leftover does **not** reopen Phase 1. Do not overwrite protected dests.
+Live status: findings stretch subsection + dest `stretch_status.json`.
+Readable diagnosis: [crop-energy-stretch-float-isolation.md](../solutions/parity/crop-energy-stretch-float-isolation.md).
+
 ## Goal Capsule
 
 - **Objective:** Build a stretch program that makes every compared MATLAB↔Python field truly zero-tolerance (including Energy floats bit-equal to MATLAB), using a MATLAB-engine Energy float path as needed, proven on the crop harness first and only then on full `180709_E`.

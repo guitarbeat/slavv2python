@@ -1,0 +1,4 @@
+Adaptive Energy probe requests
+Mismatches: 407457
+Groups: 24
+Requests: 48

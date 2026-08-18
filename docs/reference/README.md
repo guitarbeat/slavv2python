@@ -4,6 +4,8 @@
 
 Use this folder for current, maintained technical references. These docs outrank archival chapters and paper prose when they describe the current Python product surface.
 
+**In short:** Phase 1 already shipped (close enough to MATLAB). Live pass/fail is [ONE TRUTH](core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Identical last digits is a separate leftover — [plain-English diagnosis](../solutions/parity/crop-energy-stretch-float-isolation.md).
+
 **⭐ Start Here:**
 - **New to parity work?** [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md) → [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md)
 - **New to repository?** [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) → [GLOSSARY.md](core/GLOSSARY.md)
@@ -20,7 +22,7 @@ Read these first when working on the live implementation:
 |----------|---------|--------------|
 | [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, and implementation phases | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
 | [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md) | MATLAB-to-Python surface map and confirmed structural deviations | [MATLAB_METHOD_IMPLEMENTATION_PLAN.md](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) |
-| [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) ⭐ | Live proof status, current parity blockers, and historical breakthrough context | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md), [phase1-baseline-freeze.json](core/phase1-baseline-freeze.json), [phase2-profiling-baseline.json](core/phase2-profiling-baseline.json) |
+| [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) ⭐ | Live pass/fail (Phase 1 closed = ship, not 100%) plus stretch leftover | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md), [phase1-baseline-freeze.json](core/phase1-baseline-freeze.json), [phase2-profiling-baseline.json](core/phase2-profiling-baseline.json) |
 | [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md) | Technical design, shared state management, and parity details for the discovery algorithm | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
 | [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
 | [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |
@@ -39,7 +41,7 @@ Operator guides and contributor references:
 | [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md) | Automated tracking and notifications for long-running parity experiments | [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
 | [Parity Run Evidence](workflow/PARITY_RUN_EVIDENCE.md) | Copy-paste template after writers and `prove-exact` attempts | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
 | [Experiment Analysis Template](workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Reusable structure for hypothesis-driven experiment docs without duplicating live status | [Phase 1 Residual Experiment Analysis](workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
-| [Phase 1 Residual Experiment Analysis](workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) | Hypothesis, methodology, results, limitations, and next steps for the post-v6 Network residual | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [HANDOFF](../../.claude/HANDOFF.md), [figures](../../figures/README.md) |
+| [Phase 1 Residual Experiment Analysis](workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) | Historical framing of the closed Network leftover (not live status) | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [HANDOFF](../../.claude/HANDOFF.md), [figures](../../figures/README.md) |
 | [Paper Profile](workflow/PAPER_PROFILE.md) | Public paper-first CLI/app workflow and authoritative JSON export contract | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
 | [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md) | Preferred Python names, package groupings, and compatibility policy | [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) |
 | [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md) | Methodology and tools for measuring and optimizing processing speed | — |

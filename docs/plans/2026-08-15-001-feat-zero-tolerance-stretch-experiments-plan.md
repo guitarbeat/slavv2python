@@ -11,6 +11,14 @@ execution: code
 
 # Zero-Tolerance Stretch Experiments E11-E20 - Plan
 
+## In short
+
+These experiments chase the extra 100% bar (identical last digits), not Phase 1.
+Crop Energy is about 90% exact; leftover diffs are tiny (`1e-10`). Tiny photos
+that match when treated as their own volume do **not** close the crop leftover.
+Do not start long writers from this plan. Readable diagnosis:
+[crop-energy-stretch-float-isolation.md](../solutions/parity/crop-energy-stretch-float-isolation.md).
+
 ## Goal Capsule
 
 - **Objective:** Deliver a second ranked portfolio of exactly **10** testable experiments (**E11–E20**) that falsify remaining true zero-tolerance gaps on the way to **100% parity** — bit-equal / strict-equality of every compared MATLAB↔Python field, including Energy floats, under `prove-exact --strict-floats`.
@@ -33,7 +41,7 @@ Live stretch status lives in `stretch_status.json` beside stretch run roots, not
 
 ### Problem Frame
 
-Phase 1 Certification is CLOSED on `canonical_full_v18`. E1–E10 closed the ranking-residual / audit-honesty loop (ADR 0013 claimed-trace bake; matlab2python audit = 0 genuine under production probes). The remaining “100%” gap is **stretch**: Energy floats are not bit-equal (v1 engine path ~62.5% voxels identical, ULP p50=1, status `blocked_float_path`), and discrete strict `connections` / emission order plus Vertices continuous floats are gated on Energy unlock. Without a second experiment series, operators will either reopen Phase 1, treat allclose or ADR 0012 ownership as 100%, or launch a full-volume writer before crop Energy unlocks.
+Phase 1 Certification is CLOSED on `canonical_full_v18`. E1–E10 closed the ranking-residual / audit-honesty loop (ADR 0013 claimed-trace bake; matlab2python audit = 0 genuine under production probes). The remaining “100%” gap is **stretch**: Energy floats are not bit-equal (v2 engine path ~90.3% voxels identical, leftover last-digit diffs, status `blocked_float_path`; v1 filter-only was ~62.5%), and discrete strict `connections` / emission order plus Vertices continuous floats are gated on Energy unlock. Without a second experiment series, operators will either reopen Phase 1, treat allclose or ADR 0012 ownership as 100%, or launch a full-volume writer before crop Energy unlocks.
 
 ### Key Decisions
 

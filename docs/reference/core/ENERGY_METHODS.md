@@ -2,6 +2,13 @@
 
 [Up: Documentation Index](../../README.md)
 
+## In short
+
+Energy is the first pipeline stage: turn the 3D photo into a “how vessel-like is
+this voxel?” field. This note lists which Energy recipes the Python product
+supports. The exact-route ship path uses the native Hessian recipe. Saved MATLAB
+Energy files are proof answers, not a runtime Energy method.
+
 This note explains the supported `energy_method` options in the maintained
 Python SLAVV pipeline, how they interact with the energy parameter surface, and
 where to extend the implementation when a new method is needed.

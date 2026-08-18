@@ -1,0 +1,14 @@
+Exact proof report
+Status: FAIL
+Stages: energy
+Scope: exact route
+
+Stage summary
+energy: FAIL
+
+First failure
+Stage: energy
+Field: energy.energy
+Mismatch: energy float gate
+MATLAB: {'shape': [64, 256, 256], 'dtype': 'float64', 'values': [-20.37433178324523, -19.911067961434455, -19.447804139623685, -18.984540317812915, -18.52127649600214, -18.058012674191374]}
+Python: {'shape': [64, 256, 256], 'dtype': 'float64', 'values': [-20.37433178324523, -19.911067961434455, -19.447804139623685, -18.984540317812915, -18.52127649600214, -18.058012674191374]}

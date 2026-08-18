@@ -1,5 +1,14 @@
 # Requirements: Automated Parity Job Monitoring System
 
+> **History, not live status.** Implemented monitoring lives in
+> [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md).
+> Do not execute this spec as a new project.
+
+## In short
+
+Overnight jobs needed a watcher so nobody starts a second writer on the same
+folder. That system exists now. This folder is the old requirements dump.
+
 ## Problem Statement
 
 Long-running parity experiments (energy reruns, prove-exact-sequence) can take 4+ hours to complete. Currently, developers must:

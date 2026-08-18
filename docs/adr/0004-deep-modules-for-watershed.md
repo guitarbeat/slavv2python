@@ -1,5 +1,11 @@
 # ADR 0004: Deep Modules for Watershed Discovery
 
+## In short
+
+The watershed flood-fill is split into named helpers (maps, neighborhood,
+frontier) instead of one giant loop, so tie-break bugs can be isolated from
+state-mutation bugs.
+
 ## Status
 Accepted
 

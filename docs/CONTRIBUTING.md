@@ -1,5 +1,11 @@
 # Contributing to slavv2python
 
+## In short
+
+Fork, install, test, PR. If you change Energy/Vertices/Edges/Network, check
+MATLAB match on the cheap tests first. Phase 1 already shipped — do not reopen
+it for last-digit Energy diffs.
+
 Setup, workflow, and PR guidelines for contributors.
 
 ## Setup

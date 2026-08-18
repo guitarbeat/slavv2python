@@ -2,10 +2,11 @@
 
 Quick reference catalog of all agents, instructions, rules, skills, and orchestrations
 (unified agent home; former `.agents` / `.kiro` roots removed).
-Includes the fast task-oriented lookups formerly kept in `QUICK_REFERENCE.md`
-(see [Quick Reference](#-quick-reference) at the end).
+This INDEX catalogs **`.claude/` only**. The human cheat sheet is still
+[docs/QUICK_REFERENCE.md](../docs/QUICK_REFERENCE.md). Fast `.claude` lookups
+are in [Quick Reference](#-quick-reference) at the end.
 
-**Last Updated**: 2026-07-03
+**Last Updated**: 2026-08-17
 
 ## 📌 Current Handoff
 
@@ -32,6 +33,7 @@ crop-Energy attempt was consolidated into [HANDOFF.md](HANDOFF.md),
 | Agent | Keywords | Purpose |
 |-------|----------|---------|
 | **MATLAB Parity Specialist** | parity, MATLAB, edges, watershed, exact proof | Preserve and improve MATLAB-Python parity |
+| **MATLAB Parity Review** | parity review, MATLAB parity audit | Audit-style review of MATLAB parity/comparison behavior |
 | **Docs Link Auditor** | docs audit, link check, documentation | Audit markdown docs for broken links and drift |
 | **Python Refactor + Tests** | refactor, tests, code quality | Refactor Python code with test coverage |
 
@@ -177,7 +179,7 @@ Completed project/task specifications are archived under `docs/investigations/`.
 
 ## 📊 Statistics
 
-- **Total Agents**: 5
+- **Total Agents**: 6
 - **Instructions**: 3
 - **Rules**: 4
 - **Prompts**: 3
@@ -230,7 +232,8 @@ Update this file when:
 
 ## ⚡ Quick Reference
 
-Fast task-oriented lookups (merged from the former `QUICK_REFERENCE.md`).
+Fast task-oriented lookups for **this `.claude/` tree**. Human product cheat sheet:
+[docs/QUICK_REFERENCE.md](../docs/QUICK_REFERENCE.md).
 
 ### I want to…
 

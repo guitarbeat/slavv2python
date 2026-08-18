@@ -8,6 +8,13 @@ resolution_type: diagnosis
 
 # Compare raw watershed candidates to raw, finals to finals
 
+## In short
+
+MATLAB’s saved **final** edges are not the same object as Python’s **raw**
+candidate list. Comparing those two made us think MATLAB never emitted an extra
+pair. It did. Ranking on the claimed Energy map (not the original photo) was the
+real leftover — now closed on Phase 1.
+
 ## Problem
 
 Network ADR 0012 fails by one strand because degree-excess keeps `(26444, 38584)`

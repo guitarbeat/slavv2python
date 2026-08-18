@@ -8,6 +8,12 @@ resolution_type: runbook
 
 # Parity experiment hygiene
 
+## In short
+
+Compare like with like (raw to raw, final to final). Do not start a second
+writer on a live folder. A proof JSON can sit in one folder and still belong to
+another — cite through `inspect-proof`. Cheap tests before overnight writers.
+
 ## Problem
 
 Parity agents launched full-volume writers, compared the wrong MATLAB artifact
@@ -46,14 +52,14 @@ only if the cheap layer cannot falsify the hypothesis.
 | Class | Examples | Use |
 |---|---|---|
 | Live oracle | `180709_E_full_v2`, `180709_E_crop_M_v2` | Proofs only |
-| Claim run | `canonical_full_v18` | Live claim (Phase 1 closed); historical residual record `v16` |
-| Lineage seed | `canonical_full_v4` Energy/Vertices, `v8` energy `.npy` | Seed successors |
+| Claim run | `canonical_full_v18` | Live claim (Phase 1 closed) |
 | Crop guard | `crop_M_exact_v3` candidates | Regression, not unevaluated proof JSON |
-| Audit history | `v5`–`v15` completed writers | Keep |
-| Failed shells | `v9`, `v11`, `v12`, `v13`, `v14` | Ignore; empty or stale “running” |
-| Contaminated | `canonical_full_v17` | Do not claim |
+| Stretch dest | `crop_M_stretch_engine_v2` | Crop Energy leftover; do not overwrite |
+| Archived proofs | `workspace/reports/phase1_volume_archive/` | `v4` Energy/Vertices JSON; `v16` Network FAIL record; other audit proofs. Volumes removed 2026-08-18 — do not resurrect |
+| Failed shells | `v9`, `v11`, `v12`, `v13`, `v14` | Already gone |
+| Contaminated | `canonical_full_v17` | Do not claim; deleted 2026-08-13 |
 | Duplicate oracle | `180709_E_crop_M_v2_old` | Ignore (points at v2 batch) |
-| Labeled scratch | `matlab_edge_dump/raw_full_candidates.mat` | Raw MATLAB compare |
+| Labeled scratch | `matlab_edge_dump/README.md` | Dump mats deleted 2026-08-18; README remains |
 
 **Proof pairing:** `dest_run_root` must equal the directory you opened.
 `adr0012_evaluated: true` required for Edges/Network closure.

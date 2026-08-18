@@ -155,13 +155,33 @@ tutorial_output/tutorial_parameters.json
 *.pkl
 bfg.jar
 
-# Volatile workspace data (runs, oracles, datasets, scratch, reports)
-workspace/
+# Volatile Experiment Root. Binaries stay local or USB/rsync (not GitHub LFS).
+# Dest names must match PHASE1_CLAIM_RUN_NAME / CROP_GUARD_RUN_NAME /
+# STRETCH_CROP_DEST_NAME in slavv_python/analytics/parity/constants.py.
+workspace/scratch/
+workspace/experiments/
+workspace/index.jsonl
+workspace/runs/oracle_180709_E/*.log
+workspace/**/*.log
+workspace/**/*.pid
+workspace/runs/**/00_Refs/
+workspace/runs/**/01_Input/
+workspace/**/*.npy
+workspace/oracles/**/01_Input/matlab_results/**/data/
+workspace/**/checkpoint_edge_candidates.pkl
+workspace/**/chosen_edges.pkl
+workspace/**/candidate_snapshot.pkl
+workspace/**/candidate_audit.json
 
 # Agent state and temporary files
 .claude/orchestrations/active/
+.agents/
 agent-tools/
 terminals/
+uv.lock
+AUDIT_REPORT.md
+TEST_INFRA.md
+TEST_READY.md
 # transient semantic-review tool output
 semantic-review/
 
@@ -179,5 +199,7 @@ comparisons/
 # Generated search index
 index.jsonl
 
-# Exclude external directory from all scans
-external/
+# Exclude external from scans. Vectorization-Public is the GitHub MATLAB submodule.
+# neurovasc-db stays a local catalog (url D:/db in .gitmodules; not clone-required).
+external/*
+!external/Vectorization-Public/

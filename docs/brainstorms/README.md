@@ -1,5 +1,10 @@
 # Brainstorms
 
+## In short
+
+Scratch ideas before a spec exists. Not live status. Promote to `docs/plans/`
+then delete the brainstorm.
+
 Ideas, requirements, and problem framing **before** a plan exists.
 
 **Hub:** [TODO.md](../TODO.md) indexes active brainstorms and points to promoted plans.

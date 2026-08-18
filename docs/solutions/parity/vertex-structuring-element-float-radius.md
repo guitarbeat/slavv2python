@@ -8,6 +8,12 @@ resolution_type: code_fix
 
 # Vertex NMS structuring element must use float radii
 
+## In short
+
+When suppressing nearby seed points, MATLAB uses **unrounded** ellipsoid radii
+in the membership test. Rounding first (or using skimage’s integer ellipsoid)
+changes which neighbors get suppressed.
+
 ## Problem
 `prove-exact --stage vertices` vs `180709_E_crop_M_v2` failed with a structural
 divergence: Python found 12,696 vertices vs MATLAB's 13,706 (1,216 missing + 206

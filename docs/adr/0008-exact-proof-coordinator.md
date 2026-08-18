@@ -1,5 +1,11 @@
 # ADR 0008: Exact Proof Coordinator
 
+## In short
+
+Comparing Python to saved MATLAB answers has one coordinator (`prove-exact`).
+Starting or resuming a writer is a different surface (preflight / resume). Do
+not mix those two jobs.
+
 ## Status
 Accepted
 

@@ -8,6 +8,12 @@ resolution_type: code_fix
 
 # MATLAB Stride Phase Lead (Energy Spatial Shift)
 
+## In short
+
+MATLAB’s downsampled read does not always start at pixel 0. It shifts the start
+so the last pixel still lands on the volume edge. Missing that shift looks like
+the whole Energy map slid by ~15 pixels.
+
 ## Problem
 During Energy stage parity certification for the `180709_E` volume, a significant spatial mismatch (a lead of ~15 pixels) was observed between the Python energy map and the MATLAB oracle. Even with orientation aligned to `[Y, X, Z]`, the values at the origin did not match, and the entire structure appeared shifted along the X and Y axes.
 

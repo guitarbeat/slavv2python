@@ -1,5 +1,10 @@
 # ADR 0006: Network Lifecycle Manager
 
+## In short
+
+Building strands and junctions is one manager (`NetworkManager`), matching
+Edges and Vertices. Graph cleanup lives there, not in the top-level pipeline.
+
 ## Status
 Accepted
 

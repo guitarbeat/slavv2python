@@ -8,6 +8,12 @@ resolution_type: code_fix
 
 # Resume/Init Input Reorientation Mismatch (Energy Axis Order)
 
+## In short
+
+A `(512, 64, 512)` Energy checkpoint is an **axis mix-up**, not bad numbers.
+Python applied a volume permutation twice. Crop never hit it. Confirm shape
+before interpreting a proof fail.
+
 ## Problem
 The first full-volume canonical certification run (`180709_E`, all four stages)
 completed, but `prove-exact-sequence` crashed at the energy gate:

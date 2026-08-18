@@ -14,7 +14,7 @@ Verify MATLAB↔Python parity for a SLAVV pipeline stage and report results hone
 ## Fixed surfaces (crop iteration tier)
 - Run root: `workspace/runs/oracle_180709_E/crop_M_exact_v3` (crop guard). Do **not** use pre–PR #103 `crop_M_exact` as the live crop surface.
 - Oracle root: `workspace/oracles/180709_E_crop_M_v2` (batch `batch_260624-105705`). Never `180709_E_crop_M_v2_old`.
-- Full claim numbers: `canonical_full_v16` vs `180709_E_full_v2`. Do **not** claim `canonical_full_v17`.
+- Full claim numbers: `canonical_full_v18` vs `180709_E_full_v2`. Do **not** claim `canonical_full_v17`. Historical `v16` proofs are under `workspace/reports/phase1_volume_archive/canonical_full_v16/` (volume removed 2026-08-18).
 - Checkpoints: `<run>/02_Output/python_results/checkpoints/checkpoint_<stage>.pkl`
 - Use the repo `.venv` Python and set `PYTHONPATH` to the repo root.
 

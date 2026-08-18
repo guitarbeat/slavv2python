@@ -1,5 +1,10 @@
 # ADR 0005: Edge Discovery Strategy Seam
 
+## In short
+
+Paper-path tracing and exact-route watershed are two strategies behind one
+interface. Both emit a Candidate Set, not a finished Edge Set.
+
 ## Status
 Accepted
 

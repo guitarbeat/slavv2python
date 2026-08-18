@@ -1,0 +1,12 @@
+Exact mismatch diagnosis: energy
+- energy: numeric_mismatch
+  count=407457 first=[np.int64(13), np.int64(0), np.int64(0)] matlab=-22.298862140284523 python=-22.298862140284538 max_ulp=27243
+- lumen_radius_microns: numeric_mismatch
+  count=8 first=[np.int64(16)] matlab=2.6726961544210184 python=2.672696154421018 max_ulp=2
+
+Energy context:
+- coordinate_zyx: [np.int64(13), np.int64(0), np.int64(0)]
+- probe_function: probe_exact_energy_voxel_at_octave
+- matlab_winner_scale: 43
+- python_winner_scale: 43
+- winner_scale_disagrees: False

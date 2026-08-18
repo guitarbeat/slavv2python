@@ -1,0 +1,9 @@
+{
+  "artifacts": {
+    "adjacency.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\05_Network\\adjacency.pkl",
+    "strands.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\05_Network\\strands.pkl"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+  "completed_at": "2026-08-13T21:14:34Z",
+  "stage": "network"
+}

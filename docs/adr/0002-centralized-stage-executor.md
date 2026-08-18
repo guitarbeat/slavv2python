@@ -1,5 +1,10 @@
 # ADR 0002: Centralized Stage Executor
 
+## In short
+
+One executor runs every stage the same way: load checkpoint, compute, save,
+report progress. The pipeline no longer juggles those details itself.
+
 ## Status
 Accepted
 
