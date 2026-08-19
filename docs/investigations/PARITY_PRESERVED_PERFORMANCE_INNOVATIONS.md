@@ -117,7 +117,7 @@ graph TD
 
 * **MATLAB Legacy Mechanism (`get_edges_by_watershed.m` & `sort_edges.m`):**
   MATLAB dynamically mutates a shared `energy_map` during watershed flood-fill by applying distance and directional penalties. When candidates are extracted, traces sample this mutated claim surface, ensuring that `sort_edges` ranks candidate connections based on penalized travel costs.
-* **Python Innovation ([`matlab_get_edges_by_watershed.py`](../../slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py) & [ADR 0013](../adr/0013-claimed-energy-trace-provenance.md)):**
+* **Python Innovation ([`matlab_get_edges_by_watershed.py`](../../slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py) & [ADR 0013](../adr/0013-claimed-energy-trace-provenance.md)):**
   Rather than requiring separate post-hoc selection re-sampling or complex network re-ranking, Python bakes the exact `Claimed Trace Energy` directly onto each candidate payload at watershed finalization. This enables pure-function edge selection:
   $$\text{Rank}(e) = \max_{v \in \text{trace}(e)} \text{ClaimedEnergy}(v)$$
 * **Topological Parity Impact:**
@@ -129,7 +129,7 @@ graph TD
 
 * **MATLAB Legacy Pattern (`get_edges_by_watershed.m` Line 560):**
   Maintains frontier voxels using sorted array concatenation `available_locations = [front; new_loc; back]`, forcing an $O(N)$ full array copy and linear search on every single voxel step ($O(N^2)$ total complexity).
-* **Python Innovation ([`matlab_watershed_heap.py`](../../slavv_python/pipeline/edges/matlab_watershed_heap.py)):**
+* **Python Innovation ([`matlab_watershed_heap.py`](../../slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py)):**
   Engineered an indexed binary heap with composite tuple keys:
   $$\text{PriorityKey} = (\text{Energy}, \text{OriginSeedRank}, \text{FortranLinearIndex})$$
   Ensures $O(\log N)$ push/pop operations while mathematically guaranteeing 100% deterministic tie-breaking matching MATLAB's Fortran column-major linear memory ordering.

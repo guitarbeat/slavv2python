@@ -107,7 +107,7 @@ Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
-slavv-app = "slavv_python.interface.streamlit_launcher:main"
+slavv-app = "slavv_python.interface.streamlit.launcher:main"
 slavv = "slavv_python.interface.cli:main"
 
 [tool.setuptools]
@@ -170,7 +170,7 @@ mypy_path = "slavv_python"
 files = [
     "slavv_python/interface/cli/__init__.py",
     "slavv_python/interface/streamlit/app.py",
-    "slavv_python/interface/streamlit_launcher.py",
+    "slavv_python/interface/streamlit/launcher.py",
     "slavv_python/analytics/",
     "slavv_python/pipeline/energy/",
     "slavv_python/pipeline/network/",

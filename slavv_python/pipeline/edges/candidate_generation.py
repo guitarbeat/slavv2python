@@ -13,9 +13,6 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from joblib import Parallel, delayed
 
-from .matlab_get_edges_by_watershed import (
-    _generate_edge_candidates_matlab_global_watershed as execute_watershed_engine,
-)
 from .payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
@@ -26,6 +23,9 @@ from .radius_utils import _scalar_radius
 from .trace_directions import estimate_vessel_directions, generate_edge_directions
 from .trace_metrics import _trace_energy_series, _trace_scale_series
 from .tracing import trace_edge
+from .watershed.matlab_get_edges_by_watershed import (
+    _generate_edge_candidates_matlab_global_watershed as execute_watershed_engine,
+)
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree

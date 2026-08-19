@@ -15,8 +15,8 @@ from slavv_python.pipeline.energy.matlab_engine_backend import (
     resolve_matlab_root,
 )
 from slavv_python.pipeline.energy.matlab_engine_host import resolve_python37_executable
-from slavv_python.pipeline.energy.stretch_chunk_isolation import patch_stretch_status_extra
-from slavv_python.pipeline.energy.stretch_lattice_params_isolation import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import patch_stretch_status_extra
+from slavv_python.pipeline.energy.stretch.lattice_params_isolation import (
     CROP_YXZ,
     CROP_ZYX,
     EXPECTED_MATLAB_OCTAVE2_CHUNKS,

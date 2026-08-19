@@ -16,11 +16,11 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
     _coords_from_linear_trace,
     _matlab_global_watershed_unit_vectors,
 )
-from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )

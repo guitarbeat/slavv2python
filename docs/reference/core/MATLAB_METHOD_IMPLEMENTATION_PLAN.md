@@ -85,7 +85,7 @@ The maintained exact route is native-first.
 - Preserved MATLAB vectors remain the proof oracle for `prove-exact`.
 
 The parity-facing orchestration surface for this work now lives under
-`slavv_python/pipeline/edges/matlab_*.py` modules, which mirror the released MATLAB function
+`slavv_python/pipeline/edges/watershed/matlab_*.py` modules, which mirror the released MATLAB function
 boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
@@ -142,7 +142,7 @@ Completed work:
 2. `python_native_hessian` is the canonical exact-compatible provenance.
 3. The exact-route gate and proof tooling no longer accept imported MATLAB
    energy provenance.
-4. `slavv_python/pipeline/edges/matlab_*.py` now provides MATLAB-shaped ports and
+4. `slavv_python/pipeline/edges/watershed/matlab_*.py` now provides MATLAB-shaped ports and
    function wrappers for audits and proof routing.
 
 ### Phase 2: Close Downstream Native Exact Parity

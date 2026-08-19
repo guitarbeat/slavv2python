@@ -34,6 +34,12 @@ links keep working.
 - `schema/`, `storage/`, `utils/`, `visualization/`, `workflows/` — keep.
 - Top level (`docs/`, `tests/`, `scripts/`, `workspace/`, `external/`, configs) — keep.
 
+> **Follow-up (2026-08-19, not this plan):** Streamlit helpers now live under
+> `interface/streamlit/{views,services,state,launcher.py}`; Energy stretch
+> isolation under `pipeline/energy/stretch/`; MATLAB Watershed Discovery ports
+> under `pipeline/edges/watershed/`. Public `slavv` / `SlavvPipeline` imports
+> unchanged. See [AGENTS.md](../../AGENTS.md) Repository Map.
+
 ## Core change — sub-group `analytics/parity/` (48 → 5 themed subpackages)
 
 | New subpackage | Modules (current names) |

@@ -20,7 +20,7 @@ from slavv_python.analytics.parity.proof.stretch import (
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     get_chunking_lattice_v190,
 )
-from slavv_python.pipeline.energy.stretch_chunk_isolation import build_octave_chunk_lattice
+from slavv_python.pipeline.energy.stretch.chunk_isolation import build_octave_chunk_lattice
 
 logger = logging.getLogger(__name__)
 

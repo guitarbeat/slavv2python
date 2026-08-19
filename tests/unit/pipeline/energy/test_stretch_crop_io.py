@@ -12,7 +12,7 @@ from slavv_python.analytics.parity.constants import (
     EXPERIMENT_REFS_DIR,
     VALIDATED_PARAMS_PATH,
 )
-from slavv_python.pipeline.energy.stretch_crop_io import (
+from slavv_python.pipeline.energy.stretch.crop_io import (
     find_crop_tif,
     load_dest_params,
     reorient_image_to_energy,

@@ -5,12 +5,12 @@ from __future__ import annotations
 import streamlit as st
 
 from slavv_python.engine.state import load_run_snapshot
-from slavv_python.interface.shared_services.curation import (
+from slavv_python.interface.streamlit.services.curation import (
     apply_curated_results,
     run_interactive_curator,
 )
-from slavv_python.interface.shared_services.dashboard import render_run_dashboard
-from slavv_python.interface.shared_services.exports import (
+from slavv_python.interface.streamlit.services.dashboard import render_run_dashboard
+from slavv_python.interface.streamlit.services.exports import (
     build_run_task_dir,
     generate_export_data,
     generate_share_report_data,

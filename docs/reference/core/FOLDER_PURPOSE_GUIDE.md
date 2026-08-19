@@ -31,10 +31,10 @@ The **repo root** stays a short front door: `README.md`, `AGENTS.md`, `STRATEGY.
 
 **Contains:**
 - `engine/` — Pipeline orchestration and run lifecycle
-- `pipeline/` — Scientific computation (energy, vertices, edges, network)
+- `pipeline/` — Scientific computation (`energy/` including `stretch/` isolation, `vertices/`, `edges/` including `watershed/` MATLAB ports, `network/`)
 - `analytics/` — Analysis tools and parity proof harness
 - `storage/` — Data I/O (TIFF loading, JSON export)
-- `interface/` — User-facing surfaces (CLI, Streamlit app)
+- `interface/` — User-facing surfaces (`cli/`, Streamlit under `interface/streamlit/{views,services,state,launcher.py}`)
 - `visualization/` — Plotting and rendering
 - `workflows/` — Pipeline orchestration and profiles
 - `schema/` — Data models

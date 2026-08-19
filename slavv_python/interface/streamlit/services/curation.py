@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from slavv_python.interface.shared_state.curation import apply_curated_session_results
+from slavv_python.interface.streamlit.state.curation import apply_curated_session_results
 
 
 def apply_curated_results(

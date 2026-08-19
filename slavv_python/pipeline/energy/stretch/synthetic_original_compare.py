@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 
 from slavv_python.analytics.parity.proof.stretch import StretchStatus
-from slavv_python.pipeline.energy.stretch_helper_body_isolation import (
+from slavv_python.pipeline.energy.stretch.helper_body_isolation import (
     h5py_c_order_to_matlab_yxz,
 )
 

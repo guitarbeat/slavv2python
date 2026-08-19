@@ -33,28 +33,28 @@ from slavv_python.pipeline.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
 )
-from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+from slavv_python.pipeline.edges.payloads import (
+    _edge_metric_from_energy_trace,
+    _empty_edge_diagnostics,
+)
+from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
     _build_matlab_global_watershed_lut,
 )
-from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
 )
-from slavv_python.pipeline.edges.matlab_indexing import (
+from slavv_python.pipeline.edges.watershed.matlab_indexing import (
     _argmin_with_linear_index_tiebreak,
     _matlab_linear_index_to_coord,
     _matlab_watershed_min_candidate_energies,
 )
-from slavv_python.pipeline.edges.matlab_watershed_heap import (
+from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import (
     VoxelClaimMap,
     _claim_unowned_strel_arrays,
     _matlab_global_watershed_border_locations,
     _matlab_global_watershed_insert_available_location,
     _matlab_global_watershed_reset_join_locations,
     build_watershed_frontier,
-)
-from slavv_python.pipeline.edges.payloads import (
-    _edge_metric_from_energy_trace,
-    _empty_edge_diagnostics,
 )
 
 __all__ = [

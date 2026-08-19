@@ -10,10 +10,10 @@ from slavv_python.pipeline.energy.matlab_engine_backend import (
     MatlabEnginePolicyError,
     refuse_protected_stretch_energy_dest,
 )
-from slavv_python.pipeline.energy.stretch_helper_body_isolation import (
+from slavv_python.pipeline.energy.stretch.helper_body_isolation import (
     h5py_c_order_to_matlab_yxz,
 )
-from slavv_python.pipeline.energy.stretch_synthetic_original_compare import (
+from slavv_python.pipeline.energy.stretch.synthetic_original_compare import (
     INTENSITY_LOGNORMAL,
     INTERPRET_CLAMP_CLASS,
     INTERPRET_SYNTHETIC_MATCH,

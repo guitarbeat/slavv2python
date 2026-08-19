@@ -102,7 +102,7 @@ Single compare surface: [`proof/artifact_comparator.py`](../../../slavv_python/a
 (just `prove()`), `proof/artifact_comparator.py`, `runs/preflight.py`.
 
 **Avoid first:**
-Raw `exact_proof*.json` without `inspect-proof`; `pipeline/edges/matlab_*.py`
+Raw `exact_proof*.json` without `inspect-proof`; `pipeline/edges/watershed/matlab_*.py`
 before knowing discovery vs selection vs compare; `scripts/<domain>/*.py` probes
 (HANDOFF diagnostics only).
 

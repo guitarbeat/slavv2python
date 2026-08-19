@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from slavv_python.interface.shared_services.share_report import (
+from slavv_python.interface.streamlit.services.share_report import (
     build_share_report_html,
     make_share_report_filename,
     record_share_event,

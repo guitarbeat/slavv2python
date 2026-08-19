@@ -156,7 +156,7 @@ To match the MATLAB global watershed exactly, the algorithm uses:
 #### Implementation Architecture
 *   **Facade:** [`EdgeManager`](../../../slavv_python/pipeline/edges/manager.py)
 *   **Strategy Selection:** [`discovery.py`](../../../slavv_python/pipeline/edges/discovery.py)
-*   **Watershed Port:** [`matlab_get_edges_by_watershed.py`](../../../slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py)
+*   **Watershed Port:** [`matlab_get_edges_by_watershed.py`](../../../slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py)
 *   **Key Parameters:** `max_edge_length_per_origin_radius`, `number_of_edges_per_vertex`.
 
 ---

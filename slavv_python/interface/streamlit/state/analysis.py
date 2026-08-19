@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.interface.shared_state.curation import summarize_processing_counts
+from slavv_python.interface.streamlit.state.curation import summarize_processing_counts
 from slavv_python.schema import normalize_pipeline_result
 
 from . import normalize_state_results

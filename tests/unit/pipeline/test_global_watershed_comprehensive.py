@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from slavv_python.pipeline.edges.candidate_generation import sort_candidates_by_quality
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
     _matlab_global_watershed_border_locations,
@@ -30,15 +30,15 @@ from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
     _matlab_global_watershed_tolerance_mask,
     _matlab_global_watershed_trace_half,
 )
-from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
-from slavv_python.pipeline.edges.matlab_indexing import (
+from slavv_python.pipeline.edges.watershed.matlab_indexing import (
     _argmin_with_linear_index_tiebreak,
     _matlab_watershed_min_candidate_energies,
 )
-from slavv_python.pipeline.edges.matlab_watershed_heap import (
+from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import (
     SortedFrontier,
     VoxelClaimMap,
     _matlab_global_watershed_insert_available_location,
@@ -940,7 +940,7 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim
 def test_generate_edge_candidates_matlab_global_watershed_uses_configured_step_size(
     monkeypatch,
 ):
-    import slavv_python.pipeline.edges.matlab_get_edges_by_watershed as global_watershed_module
+    import slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed as global_watershed_module
 
     observed_step_sizes: list[float] = []
 

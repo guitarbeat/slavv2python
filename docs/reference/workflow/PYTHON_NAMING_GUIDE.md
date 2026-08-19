@@ -122,7 +122,7 @@ one `.m` basename and land on the matching Python port.
 | --- | --- | --- |
 | `matlab_<function>_<version>.py` | Direct port of a named MATLAB function | `matlab_get_energy_v202_chunked.py` ← `get_energy_V202.m` |
 | `matlab_<function>_<version>_<facet>.py` | Facet of the same MATLAB function | `matlab_energy_filter_v200.py` ← `energy_filter_V200.m` |
-| `matlab_<concept>_<facet>.py` | Shared helper in a MATLAB algorithm family | `matlab_watershed_heap.py` (watershed frontier heap) |
+| `matlab_<concept>_<facet>.py` | Shared helper in a MATLAB algorithm family | `edges/watershed/matlab_watershed_heap.py` (frontier heap) |
 | `matlab_<function>.py` | Port of a named MATLAB helper (no version suffix) | `matlab_calculate_linear_strel_range.py` ← `calculate_linear_strel_range.m` |
 | `matlab_<function>_<facet>.py` | Geometry/facet of a versioned MATLAB function | `matlab_get_edges_v300_geometry.py` ← `get_edges_V300.m` |
 | `parity_<domain>_<tool>.py` | Parity harness / probe (not a MATLAB port) | `parity_energy_voxel_probe.py` |

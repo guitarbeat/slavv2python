@@ -14,7 +14,7 @@ import tifffile
 
 from slavv_python.analytics.parity.probes.matlab_fail_fast import compare_lut_fixture_payload
 from slavv_python.engine import SlavvPipeline
-from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
     build_matlab_global_watershed_lut,
 )
 from slavv_python.storage import load_tiff_volume

@@ -25,15 +25,15 @@ from slavv_python.analytics.parity.experiments import (
     load_edge_artifact,
 )
 from slavv_python.pipeline.edges.cleanup import remove_excess_vertex_degrees
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
-    _matlab_global_watershed_assemble_results,
-    _matlab_global_watershed_finalize_edge_trace,
-)
-from slavv_python.pipeline.edges.matlab_watershed_heap import VoxelClaimMap
 from slavv_python.pipeline.edges.selection_payloads import (
     matlab_sort_edge_indices_by_raw_max,
     prepare_candidate_indices_for_cleanup,
 )
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
+    _matlab_global_watershed_assemble_results,
+    _matlab_global_watershed_finalize_edge_trace,
+)
+from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import VoxelClaimMap
 
 _REPO = Path(__file__).resolve().parents[3]
 _CROP_PY = _REPO / "workspace/runs/oracle_180709_E/crop_M_exact_v3/04_Edges/candidates.pkl"

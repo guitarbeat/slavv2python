@@ -8,8 +8,8 @@ import numpy as np
 import streamlit as st
 
 from slavv_python.engine import SlavvPipeline
-from slavv_python.interface.shared_services import app as app_services
-from slavv_python.interface.shared_state.processing import (
+from slavv_python.interface.streamlit.services import app as app_services
+from slavv_python.interface.streamlit.state.processing import (
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,

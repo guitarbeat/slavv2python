@@ -32,8 +32,8 @@ from slavv_python.pipeline.energy.matlab_engine_host import (
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     compute_exact_parity_energy_chunked,
 )
-from slavv_python.pipeline.energy.stretch_chunk_isolation import patch_stretch_status_extra
-from slavv_python.pipeline.energy.stretch_synthetic_original_compare import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import patch_stretch_status_extra
+from slavv_python.pipeline.energy.stretch.synthetic_original_compare import (
     ENERGY_HANDLE,
     INTENSITY_LOGNORMAL,
     INTENSITY_UNIT,

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from slavv_python.pipeline.edges.execution_tracing import ExecutionTracer, JsonExecutionTracer
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
 

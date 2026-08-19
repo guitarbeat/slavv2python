@@ -4,7 +4,7 @@ import warnings
 
 import streamlit as st
 
-from slavv_python.interface.shared_services.app import (
+from slavv_python.interface.streamlit.services.app import (
     _build_processing_run_dir,
     _has_full_network_results,
     _log_share_report_prepared_once,
@@ -15,13 +15,13 @@ from slavv_python.interface.shared_services.app import (
     generate_share_report_data,
     load_run_snapshot,
 )
-from slavv_python.interface.shared_services.app import (
+from slavv_python.interface.streamlit.services.app import (
     apply_curated_results as _apply_curated_results,
 )
-from slavv_python.interface.shared_services.app import (
+from slavv_python.interface.streamlit.services.app import (
     run_interactive_curator as _run_interactive_curator,
 )
-from slavv_python.interface.shared_services.dashboard import (
+from slavv_python.interface.streamlit.services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
     build_dashboard_breakdown_frame,

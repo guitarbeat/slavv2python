@@ -8,7 +8,7 @@ from slavv_python.analytics.parity.probes.matlab_fail_fast import (
     build_candidate_snapshot_payload,
     compare_lut_fixture_payload,
 )
-from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
     build_matlab_global_watershed_lut,
 )
 

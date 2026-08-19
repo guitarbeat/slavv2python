@@ -7,7 +7,7 @@ import plotly.express as px
 import streamlit as st
 
 from slavv_python.engine.state.status import target_stage_progress
-from slavv_python.interface.shared_services.dashboard import (
+from slavv_python.interface.streamlit.services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
     build_dashboard_backlog_frame,
@@ -17,7 +17,10 @@ from slavv_python.interface.shared_services.dashboard import (
     filter_dashboard_breakdown,
     render_run_dashboard,
 )
-from slavv_python.interface.shared_state.dashboard import DashboardContext, load_dashboard_context
+from slavv_python.interface.streamlit.state.dashboard import (
+    DashboardContext,
+    load_dashboard_context,
+)
 from slavv_python.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:

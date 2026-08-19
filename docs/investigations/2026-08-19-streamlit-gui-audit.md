@@ -15,11 +15,11 @@ entry script, so they stayed green.
 
 ## Method
 
-- Code map of `slavv_python/interface/streamlit/` (shell, pages, shared state).
+- Code map of `slavv_python/interface/streamlit/` (shell, views, services, state).
 - Live launch: `python -m streamlit run slavv_python/interface/streamlit/app.py --server.port 8501 --server.headless true`.
 - Browser: Edge headless screenshots of `http://127.0.0.1:8501` (desktop 1400×900 and 390×844). Both captured Streamlit’s empty skeleton; the script runner log has the crash.
 - `AppTest.from_file(app.py)` reproduced the same `ImportError`.
-- Official launcher resolves the same file: `streamlit_launcher._resolve_web_app_path()` → `slavv_python/interface/streamlit/app.py`.
+- Official launcher resolves the same file: `slavv_python.interface.streamlit.launcher._resolve_web_app_path()` → `slavv_python/interface/streamlit/app.py`.
 - Out of scope: CLI, TUI runner, exact-route writers.
 
 ## Live result

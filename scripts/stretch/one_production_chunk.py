@@ -40,7 +40,7 @@ from slavv_python.pipeline.energy.matlab_engine_host import (
     resolve_python37_executable,
     stretch_engine_float_body_session,
 )
-from slavv_python.pipeline.energy.stretch_chunk_isolation import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import (
     DEFAULT_MISMATCH_VOXEL_ZYX,
     DEFAULT_WINNER_SCALE,
     INTERPRET_INCOMPLETE_INFRA,
@@ -52,7 +52,7 @@ from slavv_python.pipeline.energy.stretch_chunk_isolation import (
     patch_stretch_status_extra,
     run_stretch_chunk_v202,
 )
-from slavv_python.pipeline.energy.stretch_crop_io import (
+from slavv_python.pipeline.energy.stretch.crop_io import (
     find_crop_tif,
     load_dest_params,
     reorient_image_to_energy,

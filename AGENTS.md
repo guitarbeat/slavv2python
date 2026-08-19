@@ -288,13 +288,14 @@ slavv2python/
 │   │       └── stage_handle.py         # StageController implementation
 │   ├── pipeline/                       # Pipeline stages (Energy → Vertices → Edges → Network)
 │   │   ├── energy/                     # EnergyManager, Hessian filtering, backends
+│   │   │   └── stretch/                # True zero-tolerance Energy isolation helpers
 │   │   ├── vertices/                   # Extraction, painting, selection
 │   │   │   ├── manager.py              # Vertex lifecycle (run + run_resumable)
 │   │   │   └── detection.py           # MATLAB-style candidate scan/choose
 │   │   ├── edges/                      # Watershed, tracing, selection, cleanup
 │   │   │   ├── discovery.py            # Edge discovery strategy seam
 │   │   │   ├── manager.py              # Edge lifecycle (run + run_resumable)
-│   │   │   └── matlab_get_edges_by_watershed.py, matlab_watershed_heap.py, ...  # Flat MATLAB-shaped edge modules
+│   │   │   └── watershed/              # MATLAB Watershed Discovery ports
 │   │   └── network/                    # Strand assembly, graph construction
 │   │       └── manager.py              # Network lifecycle (run + run_resumable)
 │   ├── image/                          # Image normalization, tiling
@@ -315,8 +316,7 @@ slavv2python/
 │   ├── interface/                      # User-facing surfaces
 │   │   ├── cli/                        # argparse CLI
 │   │   │   └── parity.py               # slavv parity <subcommand> entry point
-│   │   ├── streamlit/                  # Streamlit web app
-│   │   └── shared_services/            # Cross-UI service layer
+│   │   └── streamlit/                  # Streamlit app (views, services, state, launcher)
 │   ├── visualization/                  # Plotting & rendering
 │   ├── workflows/                      # Pipeline orchestration helpers, profiles
 │   ├── schema/                         # Data models

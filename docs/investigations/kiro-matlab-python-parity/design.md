@@ -122,8 +122,8 @@ MATLAB-faithful ports live in `matlab_*.py` files beside each stage package:
 | `get_energy_V202.m` | `pipeline/energy/matlab_get_energy_v202_chunked.py` |
 | `energy_filter_V200.m` | `pipeline/energy/matlab_energy_filter_v200.py` + `matlab_principal_energy.py` |
 | `get_vertices_V200.m` | `pipeline/vertices/detection.py` |
-| `get_edges_by_watershed.m` | `pipeline/edges/matlab_get_edges_by_watershed.py` + `matlab_watershed_heap.py` |
-| `get_edges_V300.m` | `pipeline/edges/matlab_get_edges_v300_frontier.py` + `matlab_get_edges_v300_geometry.py` |
+| `get_edges_by_watershed.m` | `pipeline/edges/watershed/matlab_get_edges_by_watershed.py` + `matlab_watershed_heap.py` |
+| `get_edges_V300.m` | `pipeline/edges/watershed/matlab_get_edges_v300_frontier.py` + `matlab_get_edges_v300_geometry.py` |
 | `get_network_V190.m` + `sort_network_V180.m` | `pipeline/network/manager.py` + `construction.py` |
 
 ### ExactProofCoordinator

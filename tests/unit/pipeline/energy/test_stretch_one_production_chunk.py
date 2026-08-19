@@ -16,7 +16,7 @@ from slavv_python.pipeline.energy.matlab_engine_backend import (
 )
 from slavv_python.pipeline.energy.matlab_engine_host import resolve_python37_executable
 from slavv_python.pipeline.energy.parity_energy_voxel_probe import resolve_write_chunk_idx_for_voxel
-from slavv_python.pipeline.energy.stretch_chunk_isolation import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import (
     DEFAULT_MISMATCH_VOXEL_ZYX,
     DEFAULT_WINNER_SCALE,
     INTERPRET_HELPER_ORACLE,
@@ -195,7 +195,7 @@ def test_run_stretch_chunk_monkeypatched_engine(monkeypatch: pytest.MonkeyPatch)
         return energy, scale
 
     monkeypatch.setattr(
-        "slavv_python.pipeline.energy.stretch_chunk_isolation.energy_chunk_v202_from_spatial",
+        "slavv_python.pipeline.energy.stretch.chunk_isolation.energy_chunk_v202_from_spatial",
         fake_chunk_helper,
     )
     image = np.zeros((16, 16, 16), dtype=np.float64)

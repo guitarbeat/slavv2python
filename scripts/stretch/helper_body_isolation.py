@@ -27,19 +27,19 @@ from slavv_python.pipeline.energy.config import _prepare_energy_config
 from slavv_python.pipeline.energy.matlab_engine_backend import (
     refuse_protected_stretch_energy_dest,
 )
-from slavv_python.pipeline.energy.stretch_chunk_isolation import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import (
     DEFAULT_WINNER_SCALE,
     OctaveChunkLattice,
     build_octave_chunk_lattice,
     octave_for_scale,
     patch_stretch_status_extra,
 )
-from slavv_python.pipeline.energy.stretch_crop_io import (
+from slavv_python.pipeline.energy.stretch.crop_io import (
     find_crop_tif,
     load_dest_params,
     reorient_image_to_energy,
 )
-from slavv_python.pipeline.energy.stretch_helper_body_isolation import (
+from slavv_python.pipeline.energy.stretch.helper_body_isolation import (
     INTERPRET_INCOMPLETE_INFRA,
     LocalRangeCompare,
     compare_input_windows,

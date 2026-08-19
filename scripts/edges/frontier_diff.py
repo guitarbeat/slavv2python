@@ -17,7 +17,7 @@ from slavv_python.analytics.parity.proof.coordinator import (
 )
 from slavv_python.engine.state import load_json_dict
 from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
 from slavv_python.pipeline.vertices.painting import paint_vertex_center_image

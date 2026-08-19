@@ -318,7 +318,9 @@ def octave_owned_mask(
     v2_scales: np.ndarray, scale_indices_at_octave: tuple[int, ...]
 ) -> np.ndarray:
     """True where v2 ``scale_indices`` were won by this octave (min-merge survivors)."""
-    result: np.ndarray = np.isin(np.asarray(v2_scales), np.asarray(scale_indices_at_octave, dtype=np.int16))
+    result: np.ndarray = np.isin(
+        np.asarray(v2_scales), np.asarray(scale_indices_at_octave, dtype=np.int16)
+    )
     return result
 
 

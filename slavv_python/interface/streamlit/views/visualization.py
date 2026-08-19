@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import streamlit as st
 
-from slavv_python.interface.shared_services import app as app_services
-from slavv_python.interface.shared_services.share_report import record_share_event
-from slavv_python.interface.shared_state.visualization import (
+from slavv_python.interface.streamlit.empty_state import require_processing_results
+from slavv_python.interface.streamlit.services import app as app_services
+from slavv_python.interface.streamlit.services.share_report import record_share_event
+from slavv_python.interface.streamlit.state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,
     normalize_visualization_results,
     resolve_visualization_session_context,
 )
-from slavv_python.interface.streamlit.empty_state import require_processing_results
 from slavv_python.visualization import NetworkVisualizer
 
 EXPORT_BUTTON_SPECS = (

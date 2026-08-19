@@ -16,7 +16,7 @@ This document provides technical implementation details for the global watershed
 
 ## 🏗️ Architecture Overview
 
-The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py` (MATLAB port of `get_edges_by_watershed.m`). Frontier state lives in `matlab_watershed_heap.py` (`SortedFrontier` production default, `FrontierQueue` heap fallback); strel LUT geometry in `matlab_calculate_linear_strel_range.py`.
+The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py` (MATLAB port of `get_edges_by_watershed.m`). Frontier state lives in `matlab_watershed_heap.py` (`SortedFrontier` production default, `FrontierQueue` heap fallback); strel LUT geometry in `matlab_calculate_linear_strel_range.py`.
 
 ### Modular Decomposition
 To maintain readability, the 800+ line discovery logic is decomposed into specialized helpers:
@@ -52,7 +52,7 @@ To achieve bit-perfect MATLAB parity, the engine realigns the physical volume (S
 | `d_over_r_map` | `float64` | Accumulates normalized distances ($r/R$) along traces. |
 | `branch_order_map` | `uint8` | Tracks the branch depth from the origin vertex. |
 
-[^dtype]: Core watershed maps (including `energy_map_temp` in `VoxelClaimMap`, see `slavv_python/pipeline/edges/matlab_watershed_heap.py`) are computed in `float64` per the double-precision alignment fix to avoid tie-breaking divergence; persisted energy volumes remain `float32`. See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) and [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
+[^dtype]: Core watershed maps (including `energy_map_temp` in `VoxelClaimMap`, see `slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py`) are computed in `float64` per the double-precision alignment fix to avoid tie-breaking divergence; persisted energy volumes remain `float32`. See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) and [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
 
 ---
 

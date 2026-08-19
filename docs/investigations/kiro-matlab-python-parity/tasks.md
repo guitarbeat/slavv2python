@@ -25,7 +25,7 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
 - [x] 1. Audit and close Exact Route implementation gaps
   - [x] 1.1 Audit float64 enforcement across all four stage computation paths
     - Read `pipeline/energy/matlab_get_energy_v202_chunked.py`,
-      `pipeline/vertices/detection.py`, `pipeline/edges/matlab_get_edges_by_watershed.py`,
+      `pipeline/vertices/detection.py`, `pipeline/edges/watershed/matlab_get_edges_by_watershed.py`,
       `pipeline/network/manager.py`
     - Confirm all intermediate arrays (energies, coordinates, radii, distance penalties,
       suppression factors, strand geometry) are `float64` before any persistence coercion
@@ -35,8 +35,8 @@ run sequence. All test files go under `tests/unit/` or `tests/integration/` per
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
   - [x] 1.2 Verify Fortran-order grid and orientation transitions in watershed
-    - Read `pipeline/edges/matlab_get_edges_by_watershed.py` and
-      `pipeline/edges/matlab_watershed_heap.py`
+    - Read `pipeline/edges/watershed/matlab_get_edges_by_watershed.py` and
+      `pipeline/edges/watershed/matlab_watershed_heap.py`
     - Confirm `vertex_index_map` and `energy_map` enter the watershed as
       `np.asfortranarray` with shape `[Y, X, Z]`
     - Confirm the `[Z,Y,X] → [Y,X,Z]` transpose is applied exactly once on entry and

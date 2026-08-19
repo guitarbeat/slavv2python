@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 import streamlit as st
 
 from slavv_python.engine.state import RunContext
-from slavv_python.interface.shared_state.processing import build_processing_run_dir
+from slavv_python.interface.streamlit.state.processing import build_processing_run_dir
 from slavv_python.schema import normalize_pipeline_result
 from slavv_python.visualization import NetworkVisualizer
 

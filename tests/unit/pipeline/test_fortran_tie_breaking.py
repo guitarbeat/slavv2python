@@ -17,7 +17,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
+from slavv_python.pipeline.edges.watershed.matlab_indexing import _argmin_with_linear_index_tiebreak
 
 # ---------------------------------------------------------------------------
 # Helpers

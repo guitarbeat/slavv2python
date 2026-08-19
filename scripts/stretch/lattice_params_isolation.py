@@ -33,9 +33,9 @@ from slavv_python.pipeline.energy.matlab_engine_host import resolve_python37_exe
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     get_chunking_lattice_v190,
 )
-from slavv_python.pipeline.energy.stretch_chunk_isolation import patch_stretch_status_extra
-from slavv_python.pipeline.energy.stretch_crop_io import load_dest_params
-from slavv_python.pipeline.energy.stretch_lattice_params_isolation import (
+from slavv_python.pipeline.energy.stretch.chunk_isolation import patch_stretch_status_extra
+from slavv_python.pipeline.energy.stretch.crop_io import load_dest_params
+from slavv_python.pipeline.energy.stretch.lattice_params_isolation import (
     EXPECTED_MATLAB_OCTAVE2_CHUNKS,
     INTERPRET_INCOMPLETE_INFRA,
     compare_param_fields,

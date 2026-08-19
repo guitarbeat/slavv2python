@@ -52,7 +52,7 @@ from slavv_python.analytics.parity.utils import (
 )
 from slavv_python.engine.state import load_json_dict
 from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
-from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
+from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
 

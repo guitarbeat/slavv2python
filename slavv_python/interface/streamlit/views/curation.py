@@ -11,13 +11,13 @@ import plotly.express as px
 import streamlit as st
 
 from slavv_python.analytics import AutomaticCurator, MLCurator
-from slavv_python.interface.shared_services import curation as curation_services
-from slavv_python.interface.shared_services.exports import update_run_task
-from slavv_python.interface.shared_state.curation import (
+from slavv_python.interface.streamlit.empty_state import require_edges
+from slavv_python.interface.streamlit.services import curation as curation_services
+from slavv_python.interface.streamlit.services.exports import update_run_task
+from slavv_python.interface.streamlit.state.curation import (
     build_curation_stats_rows,
     summarize_processing_counts,
 )
-from slavv_python.interface.streamlit.empty_state import require_edges
 
 
 def _apply_curated_results(

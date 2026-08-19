@@ -5,15 +5,15 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from slavv_python.interface.shared_services.exports import update_run_task
-from slavv_python.interface.shared_state.analysis import (
+from slavv_python.interface.streamlit.empty_state import require_network
+from slavv_python.interface.streamlit.services.exports import update_run_task
+from slavv_python.interface.streamlit.state.analysis import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
     has_analysis_network,
     normalize_analysis_results,
     resolve_analysis_stats,
 )
-from slavv_python.interface.streamlit.empty_state import require_network
 from slavv_python.visualization import NetworkVisualizer
 
 

@@ -8,30 +8,30 @@ import pytest
 pytest.importorskip("streamlit")
 
 from slavv_python.engine.state.models import RunSnapshot
-from slavv_python.interface.shared_state.analysis import (
+from slavv_python.interface.streamlit.state.analysis import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
     has_analysis_network,
     normalize_analysis_results,
     resolve_analysis_stats,
 )
-from slavv_python.interface.shared_state.curation import (
+from slavv_python.interface.streamlit.state.curation import (
     apply_curated_session_results,
     build_curation_stats_rows,
     sync_curated_processing_results,
 )
-from slavv_python.interface.shared_state.dashboard import (
+from slavv_python.interface.streamlit.state.dashboard import (
     load_dashboard_context,
     normalize_dashboard_results,
     resolve_dashboard_stats,
 )
-from slavv_python.interface.shared_state.processing import (
+from slavv_python.interface.streamlit.state.processing import (
     build_processing_run_dir,
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
 )
-from slavv_python.interface.shared_state.visualization import (
+from slavv_python.interface.streamlit.state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,
