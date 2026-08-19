@@ -191,7 +191,7 @@ slavv parity promote-oracle `
   --oracle-id 180709_E_full_v2
 ```
 
-The prepared canonical closure run is documented in **[.claude/HANDOFF.md](../../.claude/HANDOFF.md)** (see current claim root in ONE TRUTH / HANDOFF snapshot).
+The prepared canonical closure run is documented in **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** (see current claim root in ONE TRUTH / HANDOFF snapshot).
 
 ### 2. Verify Preflight
 Ensure the destination is correctly populated with oracle references and parameters.
@@ -204,7 +204,7 @@ slavv parity preflight-exact `
 
 ### 3. Run the Exact Proof
 
-Phase 1 closure ([ADR 0012 addendum](../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)) uses **per-stage** gates in order:
+Phase 1 closure ([ADR 0012 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-06-phase-1-closure-bar-vs-strict-field-stretch)) uses **per-stage** gates in order:
 
 `energy` → `vertices` → `edges` → `network`
 

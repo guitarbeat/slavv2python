@@ -1,7 +1,11 @@
 # Tasks: Automated Parity Job Monitoring System
 
+> ⛔ **DEPRECATED archive — do not execute.**  
+> Parity job monitoring is fully implemented and operational. See [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md).  
+> Live tasks & open checkboxes are exclusively owned by [TODO.md](../../TODO.md).
+
 **Last Updated**: 2026-06-22  
-**Status**: MVP Complete ✅ | Documentation Complete ✅ | Unit tests largely complete ✅ | Integration/manual pending ⏳
+**Status**: MVP Complete ✅ | Documentation Complete ✅ | Implemented in production (Archived)
 
 ---
 

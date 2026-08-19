@@ -102,7 +102,7 @@ After `canonical_full_v5` (writer succeeded, proof invalid):
 
 **Historical operating order (do not execute):** watershed fixes on crop → 80% milestone → map prep → `v6` writer → evaluated ADR 0012 proof.
 
-## Addendum (2026-07-12): Post-v6 residual — Network is the open ship gate
+## Historical Context: Post-v6 residual (closed on canonical_full_v18)
 
 > **Policy still in force for the ADR 0012 bars.** **Live pass/fail / claim root:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only — Phase 1 is **CLOSED**. The `v6` numbers below are a **historical milestone**, not the current residual.
 

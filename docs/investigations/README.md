@@ -1,25 +1,32 @@
-# Investigations
+# Investigations & Technical Reports
 
-> **History, not live status.** Nothing in this folder is current pass/fail.
+> **History / Drafts, not live status.** Nothing in this folder is current pass/fail.
 
 ## In short
 
-These are old investigation write-ups. Phase 1 already shipped. If a file still
-says Network is open or Phase 1 is OPEN, that sentence is **out of date**.
+This folder houses active technical performance catalogs, publication drafts, and historical investigation write-ups. Phase 1 already shipped. If a historical file still says Network is open or Phase 1 is OPEN, that sentence is **out of date**.
 
 **Live status:** [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)  
 **Tasks:** [TODO.md](../TODO.md) · **Commands:** [HANDOFF](../../.claude/HANDOFF.md)
 
-Keep investigation docs here only when they explain historical decisions that still help maintain the current Python codebase.
+---
 
-## Deprecated / do-not-execute archives
+## Active Performance Innovations & Publication Manuscripts
+
+| Document | Type | Description |
+|---|---|---|
+| [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Technical Reference | Formal catalog of 9 stage-by-stage mathematical, algorithmic, and memory innovations engineered during MATLAB-to-Python translation while preserving 1:1 parity (ADR 0011/0012). |
+| [MATLAB_PYTHON_TRANSLATION_PAPER.md](MATLAB_PYTHON_TRANSLATION_PAPER.md) | Publication Manuscript | Draft scientific paper on exact MATLAB-to-Python parity methodology, numerical nuances, and scaling breakthroughs for JORS/SoftwareX/IEEE CiSE submission. |
+
+---
+
+## Deprecated / Historical Archives
 
 | Entry | Note |
 |-------|------|
 | [kiro-matlab-python-parity/](kiro-matlab-python-parity/README.md) | ⛔ Frozen Kiro specs/tasks — **do not execute** |
 | [2026-07-03-honesty-audit.md](2026-07-03-honesty-audit.md) | ⛔ Session audit; crop-era FAIL narrative |
 | [exact-proof-findings-diary/](exact-proof-findings-diary/README.md) | ⛔ Pre-2026-08-13 findings dump (diary, join-emission essays). Not live status. |
-| [MATLAB_PYTHON_TRANSLATION_PAPER.md](MATLAB_PYTHON_TRANSLATION_PAPER.md) | Draft methodology; not pass/fail table |
 | [v22 Pointer Corruption](v22-pointer-corruption/README.md) | Historical pointer-corruption investigation |
 
 Retired parity investigations have been collapsed into the maintained parity

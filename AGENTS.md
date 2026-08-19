@@ -60,6 +60,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 3. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
 4. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
 5. See [Key Reference Documents](#key-reference-documents) table
+6. Review [Performance Innovations](docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) for 9 certified optimizations and [Translation Paper](docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) for translation methodology
 
 ### I'm setting up the environment
 1. Follow [Setup & Installation](#setup--installation) below
@@ -194,7 +195,7 @@ The state in which every required [Pipeline](#pipeline) stage passes its defined
 _Avoid_: Treating strict-field `connections` / strand-count equality as the Phase 1 ship gate for Edges/Network; that is a separate [Strict-Field Stretch Goal](#strict-field-stretch-goal). Citing audit portfolio, E1–E10 greens, or matlab2python coverage as Certification standing or Phase 1 Closure.
 
 ### Strict-Field Stretch Goal
-An optional engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—iterated on the [Crop Harness Volume](#crop-harness-volume) after Energy unlock. Distinct from [True Zero-Tolerance Stretch](#true-zero-tolerance-stretch). **Network ADR 0012 multiset equality was the Phase 1 ship gate** (not this stretch); live whether Phase 1 is closed is [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. Historical post-v6 wording: [ADR 0012 addendum](docs/adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate).
+An optional engineering target where Edges also match MATLAB on strict discrete fields (`connections` counts, order-sensitive edge emission)—iterated on the [Crop Harness Volume](#crop-harness-volume) after Energy unlock. Distinct from [True Zero-Tolerance Stretch](#true-zero-tolerance-stretch). **Network ADR 0012 multiset equality was the Phase 1 ship gate** (not this stretch); live whether Phase 1 is closed is [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only. Historical post-v6 wording: [ADR 0012 addendum](docs/adr/0012-edge-watershed-parity-bar.md#historical-context-post-v6-residual-closed-on-canonical_full_v18).
 _Avoid_: Calling stretch progress "certified," calling a historical Network multiset miss "stretch only," or conflating ownership-map pass with Phase 1 closure.
 
 **Post-v6 residual KPIs (closed):** full [Edge Set](#edge-set) undirected-pair multiset after [Edge Selection](#edge-selection), then **evaluated Network** `prove-exact` multiset equality. Crop remains a **regression guard**. **Live numbers only in** [EXACT_PROOF_FINDINGS](docs/reference/core/EXACT_PROOF_FINDINGS.md). Candidate-generation ≥80% is a **cleared historical gate**.
@@ -389,6 +390,8 @@ Read these first when working on relevant surfaces:
 | Parity Certification | [docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md](docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | `prove-exact` / `prove-exact-sequence` on canonical volume |
 | Documented Solutions | [docs/solutions/](docs/solutions/) | Searchable past fixes and workflows (`module`, `tags`, `problem_type` in YAML frontmatter); relevant when debugging parity, oracle promotion, or integration issues |
 | Domain Glossary | [AGENTS.md § Domain Glossary](AGENTS.md#domain-glossary) | Canonical domain vocabulary (entities, named processes, status concepts). Browsable mirror: [GLOSSARY.md](docs/reference/core/GLOSSARY.md) |
+| Performance Innovations | [docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Catalog of 9 verified parity-preserved mathematical and memory improvements |
+| Translation Paper | [docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md](docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) | Draft manuscript on exact MATLAB-to-Python scientific translation |
 | ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 

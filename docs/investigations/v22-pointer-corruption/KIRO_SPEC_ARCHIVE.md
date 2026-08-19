@@ -1,4 +1,8 @@
-﻿# Kiro Spec Archive
+# Kiro Spec Archive
+
+> ⛔ **DEPRECATED historical post-mortem archive — do not execute.**  
+> Preserves historical Kiro bugfix and design notes from the April 2026 v22 pointer corruption investigation.  
+> Live parity status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 
 [Up: v22 Pointer Corruption Archive](README.md)
 

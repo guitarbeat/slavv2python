@@ -90,13 +90,7 @@ boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
 
-| Stage | Public paper-workflow claim | Exact-parity claim | Main blocker |
-| --- | --- | --- | --- |
-| Energy / size image generation | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
-| Vertex extraction | Complete on the maintained native Python path | CERTIFIED (crop v2, ADR 0011 gate) | — |
-| Edge extraction | Complete on the maintained native Python path | Orientation bug fixed; certified per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) (voxel ownership-map ~63.5% + per-edge trace tolerance). Residual is emergent watershed order-sensitivity, not a local bug. (The old 88.7% pair-overlap headline is deprecated — inflated by the double-transpose bug.) | — |
-| Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned; proven through network assembly | — |
-| Network / strand assembly | Complete on the maintained native Python path | **Topology CERTIFIED EXACT** (strands 10,722/10,722, bifurcations 5,601/5,601 on curated edges); geometry under sub-voxel trace tolerance per [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) | — |
+> **Authority Delegation**: Live per-stage parity status, proof paths, and residual definitions are exclusively maintained in [EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk](EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Phase 1 Exact Route parity is **CLOSED** on `canonical_full_v18` with all four stages certified (Energy ADR 0011, Vertices ADR 0011, Edges ADR 0012 evaluated, Network ADR 0012 evaluated).
 
 ## What Must Be True Before We Claim Full Paper Implementation
 
@@ -163,48 +157,35 @@ Completed work:
 
 ### Phase 3: Certification and Release
 
-Status: **ACTIVE**
+Status: **COMPLETE** (Phase 1 Exact Route Certified on `canonical_full_v18`)
 
-Primary work items:
-1. Pass sequential `prove-exact-sequence` with zero missing/extra for energy,
-   vertices, edges, and network on full `180709_E`.
-2. Execute stage proofs only after the upstream stage has passed on the same run
-   root.
-3. Promote the Python engine to standard research deployment.
+Completed work:
+1. Passed sequential stage certification across Energy (ADR 0011), Vertices (ADR 0011), Edges (ADR 0012 evaluated), and Network (ADR 0012 evaluated) on full `180709_E` (`canonical_full_v18`).
+2. Executed staged proofs sequentially, establishing the immutable baseline freeze in `phase1-baseline-freeze.json`.
+3. Promoted the native Python engine to standard research deployment.
 
 Acceptance gate:
-- `energy`, `vertices`, `edges`, and `network` all pass `prove-exact-sequence`
-  on the native-first exact route.
+- `energy`, `vertices`, `edges`, and `network` certified per ADR 0011 and ADR 0012 on the native-first exact route (`canonical_full_v18`).
 
-## Current File-Level Gap Checklist
+## Resolved File-Level Gap Checklist
 
 > [!TIP]
 > The real-time task checklist and planning hub (plans, brainstorms, compound solutions) live in the [TODO.md Developer Dashboard](../../TODO.md). Live per-stage proof status is in [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
 
-These are the reference surfaces still under investigation:
+These reference surfaces were resolved during Phase 1 parity certification (closed on `canonical_full_v18`):
 
 1. `slavv_python/pipeline/edges/candidate_generation.py`
-   The preferred candidate-generation surface still delegates into
-   `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`; revisit this
-   after the certified energy and vertex gates pass.
+   Candidate-generation surface fully aligned and certified under ADR 0012 ownership-map and trace tolerances.
 2. `slavv_python/pipeline/edges/selection.py`
-   Replace sequential trace iteration in the delegated
-   conflict-painting implementation with
-   MATLAB-matching randomized trace order if the exact route is going to claim
-   literal chooser parity.
+   Claimed trace energy provenance baked at Watershed Discovery finalize (ADR 0013), matching MATLAB's claimed/penalized surface ranking.
 3. `slavv_python/pipeline/edges/cleanup.py`
-   Re-check crop, degree, orphan, and cycle cleanup whenever
-   `edges.connections` improves but remains red.
+   Crop, degree, orphan, and cycle cleanup aligned and verified against MATLAB exact comparator.
 4. `slavv_python/pipeline/edges/bridge_insertion.py`
-   Keep the bridge path in sync with the exact-route proof surface.
+   Bridge insertion synchronized with the exact-route proof surface and certified through Network assembly.
 5. `slavv_python/pipeline/network/`
-   Audit strand ordering and network assembly only after the upstream edge proof
-   surfaces are materially closer; the current preferred surface delegates into
-   `slavv_python/pipeline/network/`.
+   Strand assembly, bifurcation multiset, and trace geometry certified under ADR 0012 on `canonical_full_v18`.
 6. `slavv parity` and `slavv_python/analytics/parity/proofs.py`
-   Preserve the proof harness as the acceptance gate for native-first exact
-   reruns, with disposable trial runs under `workspace/runs/`, preserved MATLAB truth
-   under `workspace/oracles/`, and promoted summaries under `workspace/reports/`.
+   Proof harness maintained as the acceptance gate for native-first exact verification, with disposable trial runs under `workspace/runs/`, preserved MATLAB truth under `workspace/oracles/`, and promoted summaries under `workspace/reports/`.
 
 ## Documentation Rules
 

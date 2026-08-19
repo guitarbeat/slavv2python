@@ -23,6 +23,10 @@ canonical baseline frozen per
 **Research input**: [Post-parity optimization & the translation paper](../research/post-parity-optimization-and-paper.md)
 — cited methodology, a bit-preserving vs bit-perturbing technique matrix, and
 publication guidance.
+**Performance baseline & catalog**:
+- [Parity-Preserved Performance Innovations](../investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) — 9 verified mathematical, algorithmic, and memory improvements.
+- [Phase 2 Profiling Baseline](../reference/core/phase2-profiling-baseline.json) — recorded against frozen `canonical_full_v18` (identifying Edges at 5,534s / ~92.2m as the primary bottleneck).
+- [Translation Paper Manuscript](../investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) — JORS/SoftwareX exact parity study.
 
 ---
 
@@ -31,7 +35,7 @@ publication guidance.
 Phase 1 is CLOSED and the canonical dest is frozen. Read-only **profiling
 baseline** is recorded in
 [phase2-profiling-baseline.json](../reference/core/phase2-profiling-baseline.json).
-Measured wall-clock on that dest is Edges then Network; Energy/Vertices elapsed
+Measured wall-clock on that dest shows **Edges stage at 5,534.0 s (~92.2 min)** as the primary runtime bottleneck, followed by Network at 416.0 s (~6.9 min); Energy/Vertices elapsed
 0 means carried lineage, not instant compute. Do **not** implement the Great
 Transpose, C-order unwind, paper-profile writer, or neurovasc-db writers from
 this spec until an explicit Phase 2 ADR names the regression gate.
@@ -49,6 +53,12 @@ Vertices, and evaluated ADR 0012 spatial/topology bars for Edges and Network.
 To reach those bars, the Python codebase intentionally preserves MATLAB-facing
 behaviors such as Fortran-order tie-breaking, rounding choices, and edge-case
 handling where they affect certified outputs.
+
+During Phase 1, 9 parity-preserved innovations were already engineered (such as
+in-place octave accumulation yielding a 30× RAM cut, batched LAPACK eigensolver
+yielding a >20× speedup, sparse conjugate symmetry FFT cutting RAM by 50%, and
+an indexed binary heap queue for $O(N \log N)$ frontier traversal; cataloged in
+[PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](../investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md)).
 
 **Phase 2 represents the transition from emulation to optimization.** With a
 frozen Phase 1 canonical baseline and exact-proof harness, Phase 2 can unwind

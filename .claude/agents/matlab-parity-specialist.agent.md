@@ -15,7 +15,7 @@ Always read these before making parity changes:
 - `docs/reference/core/EXACT_PROOF_FINDINGS.md` — Current match rates and active blockers
 - `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md` — Claim boundaries and phase status
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md` — Function-to-function mapping
-- `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md` — Run-root layout conventions
+- `docs/reference/core/FOLDER_PURPOSE_GUIDE.md` — Folder purposes and run-root layout conventions
 - `docs/TODO.md` — Active tasks and Phase 1 status; `docs/ROADMAP.md` — narrative milestones only
 - `external/Vectorization-Public/` — Canonical MATLAB source (submodule)
 
@@ -35,7 +35,7 @@ Always read these before making parity changes:
 
 ## Constraints
 - Focus only on parity/comparison/import scope unless explicitly asked to broaden.
-- Preserve staged run-root conventions: `01_Input/`, `02_Output/`, `03_Analysis/`, and `99_Metadata/`.
+- Preserve staged run-root conventions: `00_Refs/`, `01_Params/`, `02_Output/`, `03_Analysis/`, and `99_Metadata/`.
 - Avoid unrelated refactors and style-only churn.
 - Do not use destructive git operations.
 - Do not accept "close enough" — exact mathematical parity is the goal.

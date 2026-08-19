@@ -1,10 +1,9 @@
 # Exact Proof Findings — historical trail (not live status)
 
-> **⛔ Not live status.** Pass/fail, claim root, and residual live only in
-> [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
-> This snapshot is the pre-2026-08-13 findings dump: session diary, join-emission
-> essays, crop-overlap logs, and superseded “fix deployed / watershed rewrite”
-> conclusions. Do not execute it. Do not cite pair IDs from here as current.
+> **⛔ DEPRECATED historical investigation diary — not live status.**  
+> Live parity status, pass/fail counts, and claim roots live exclusively in [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).  
+> This diary records historical investigation state superseded by [docs/reference/core/EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md).  
+> This snapshot is the pre-2026-08-13 findings dump (session diary, join-emission essays, crop-overlap logs, and superseded open ship gate notes). Do not execute it. Do not cite pair IDs or status tables from here as current.
 
 ---
 
@@ -13,12 +12,12 @@
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
 **Last Updated:** 2026-08-13  
-**Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
+**Role:** Historical investigation snapshot (superseded by [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md)).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only).
 
 ---
 
-## ONE TRUTH — Phase 1 parity (validated from disk)
+## Historical ONE TRUTH Snapshot (2026-08-13 -- Superseded)
 
 > **Answer:** We do **not** have 100% end-to-end MATLAB≡Python certification.  
 > **Phase 1 is OPEN.** Three of four stages pass their certification bars on the claim surface; Network fails ADR 0012 multiset equality by **one strand**.
@@ -124,9 +123,9 @@ the ADR 0012 bar.
 
 ## 📊 Executive status (stage model)
 
-**Numbers live only in [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk) above.** This section is the stage model + pointers, not a second status table.
+**Numbers live only in [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) above.** This section is the stage model + pointers, not a second status table.
 
-Phase 1 exit criterion ([ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate)): **evaluated** ADR 0012 on full `180709_E` for **both** Edges and Network. Claim root: `canonical_full_v16`. Operator brief: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md). Proposal figures: [figures/README.md](../../../figures/README.md).
+Phase 1 exit criterion ([ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#historical-context-post-v6-residual-closed-on-canonical_full_v18)): **evaluated** ADR 0012 on full `180709_E` for **both** Edges and Network. Claim root: `canonical_full_v16`. Operator brief: [.claude/HANDOFF.md](../../../.claude/HANDOFF.md). Proposal figures: [figures/README.md](../../../figures/README.md).
 
 | Stage | Certification bar | Full-volume claim (see ONE TRUTH) |
 | :--- | :--- | :--- |
@@ -159,7 +158,7 @@ Strict-field connection equality remains stretch after Network multiset passes.
 | **Canonical closure run (v16)** | `workspace/runs/oracle_180709_E/canonical_full_v16` | ✅ Writer **COMPLETED** (2026-07-15). Edges ADR 0012 ✅ **PASS** evaluated (`exact_proof_edges.json`: 69,500 / 69,500; ownership 99.999863%; trace failures 0). Network ADR 0012 ❌ **FAIL** (`exact_proof_network.json`: strand multiset 48,048 / 48,049). **Current claim surface for residual; Phase 1 OPEN.** |
 | **Canonical closure run (v17)** | *(removed 2026-08-13)* | Contaminated Energy rerun + leftover Edges/Network. Deleted. Next closure = **new** Edges→Network root (`v18`). |
 
-Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
+Evidence template: [PARITY_RUN_EVIDENCE.md](../../reference/workflow/PARITY_RUN_EVIDENCE.md)
 
 ### Watershed iteration log (crop overlap KPI → 80% gate)
 
@@ -184,7 +183,7 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 | 2026-07-14 | Bounded golden-trace regression after stale writer cleanup | **bounded_match** through iteration **30,000** | Killed two stale `watershed_frontier_diff.py --regenerate-python` processes that were interleaving JSONL writes. Patched bounded comparison so `--stop-after-iteration` compares only iteration-bearing rows. Current bounded trace passes well beyond the retired 13,761 split. |
 | 2026-07-14 | Test boundary-based suppression as extra-candidate explanation | **Rejected** as production rule | Geometry-only endpoint boundary filter damages overlap badly (threshold 1: overlap **14,984**, missing **527**). Oracle-aware zero-degree-boundary upper bound is only modest (best tested: overlap **15,377**, missing **134**, extras **238**), so boundary-adjacent zero-degree endpoints are not the root cause. |
 | 2026-07-14 | Match MATLAB post-watershed finalization and cleanup surface | **100%** generation; final **15,510 / 15,511** overlap | MATLAB raw watershed candidates equal Python raw candidates (**19,225 / 19,225**). Python now mirrors `resample_vectors`, map-resampled size/energy, smooth/crop unsigned casts, and cleanup on resampled traces. Refreshed crop final edges are **15,511** vs MATLAB **15,511** with one pair swap (`[4043, 6281]` vs `[4212, 6281]`). |
-| 2026-07-15 | Crop re-selection + full residual localization | Crop final **15,511 / 15,511** (closed); full pair **69,499 / 69,500** | Crop one-pair swap closed under current Edge Selection. Full residual = degree-excess displacement by extra join `cand 46698` (ablation → 69,500/69,500). Claim root **`canonical_full_v16`**: Edges ✅ Network ❌ (one strand). **Live detail:** [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk). |
+| 2026-07-15 | Crop re-selection + full residual localization | Crop final **15,511 / 15,511** (closed); full pair **69,499 / 69,500** | Crop one-pair swap closed under current Edge Selection. Full residual = degree-excess displacement by extra join `cand 46698` (ablation → 69,500/69,500). Claim root **`canonical_full_v16`**: Edges ✅ Network ❌ (one strand). **Live detail:** [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). |
 
 **Probe command:** `.\.venv\Scripts\python.exe scripts/watershed_candidate_gap_probe.py --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 --oracle-root workspace/oracles/180709_E_crop_M_v2`
 
@@ -318,7 +317,7 @@ Historical crop Energy evidence (2026-06-21, superseded writer state):
 
 ### Random component parity (2026-06-22)
 
-Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-component-parity-suite.md), [PARITY_RANDOM_COMPONENT_SUITE.md](../workflow/PARITY_RANDOM_COMPONENT_SUITE.md)):
+Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-component-parity-suite.md), [PARITY_RANDOM_COMPONENT_SUITE.md](../../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)):
 
 - **Structural gate (green):** 128 linspace contexts; 16 lattice/boundary `interp3` queries per case; Energy `padded_shape_yxz`, sample coordinates, and `valid`.
 - **IFFT floor:** With a **byte-identical** MATLAB complex spectrum loaded in Python, `_ifftn_matlab_symmetric` vs MATLAB `ifftn(...,'symmetric')` differs by **1 ULP** at sample voxels — NumPy vs MKL FFT, not the symmetry mask.
@@ -335,16 +334,16 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 If resuming exact parity work from a fresh thread:
 
-1. Read **[ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk)** (pass/fail, claim root, residual). Do **not** use the session diary or mid-file historical notes as status.
+1. Read **[ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** (pass/fail, claim root, residual). Do **not** use the session diary or mid-file historical notes as status.
 2. Read **[.claude/HANDOFF.md](../../../.claude/HANDOFF.md)** for commands only.
 3. `slavv jobs list` — no concurrent writer on the target `--dest-run-root`.
 4. `slavv parity ensure-oracle-artifacts --oracle-root workspace/oracles/180709_E_crop_M_v2 --stage all --no-repair` (and same for `180709_E_full_v2` before canonical work).
 5. **Residual loop (primary):** [ONE TRUTH residual](#active-residual-why-network-is-red). Crop frontier/generation/re-selection are **regression guards** (closed). Prefer `scripts/edge_selection_funnel_probe.py` and `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`.
 6. **Claim surface:** name and counts only in ONE TRUTH (currently `canonical_full_v16` lineage until ONE TRUTH moves). Historical audits `v6`…`v15` are not the open residual surface.
 7. Harness **fail loud** if ADR 0012 cannot evaluate (maps missing) — not a valid closure attempt.
-8. Capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md). Re-synthesize HANDOFF if ONE TRUTH changes.
+8. Capture evidence per [PARITY_RUN_EVIDENCE.md](../../reference/workflow/PARITY_RUN_EVIDENCE.md). Re-synthesize HANDOFF if ONE TRUTH changes.
 
-Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../workflow/PARITY_JOB_MONITORING.md)).
+Use `--monitor` on long reruns ([PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
 
 Scratch diagnostics: prefer promoted `scripts/*` probes; historical `workspace/scratch/edge_gap_split.py`, `workspace/scratch/matlab_edge_instr/`.
 
@@ -372,7 +371,7 @@ Curated index of solved problems under `docs/solutions/` (from `/ce-compound`). 
 |-------|-----|
 | MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
 | Detached exact-run jobs | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
-| Run/proof evidence template | [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) |
+| Run/proof evidence template | [PARITY_RUN_EVIDENCE.md](../../reference/workflow/PARITY_RUN_EVIDENCE.md) |
 | Sparse Meshgrid Memory Optimization | [sparse-meshgrid-memory-optimization.md](../../solutions/parity/sparse-meshgrid-memory-optimization.md) |
 | MATLAB Stride Phase Lead | [matlab-stride-phase-lead.md](../../solutions/parity/matlab-stride-phase-lead.md) |
 | Vertex NMS structuring element (float radii) | [vertex-structuring-element-float-radius.md](../../solutions/parity/vertex-structuring-element-float-radius.md) |
@@ -481,19 +480,19 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-> Live residual detail and counts: [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk) only.
+> Live residual detail and counts: [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only.
 
 1. **Full Edge Set residual** — see [ONE TRUTH residual](#active-residual-why-network-is-red). Not a Network rewrite; not cleanup reorder.
 2. **Phase 1 ship gate = Network ADR 0012 multiset** — Edges evaluated PASS on claim root; Network FAIL until Edge Set multiset matches (MATLAB-edge isolation exact). Do not reopen Network as an independent port.
 3. **Crop / frontier / cleanup** — regression guards only (closed on re-selection; generation gap 0; golden trace match; cleanup comparator green).
 
-**Superseded guidance:** “100% parity”, “>95% match”, “block on 80% crop overlap”, “crop one-pair swap is the open loop”, or strict-field fallback as closure verdict. Only **evaluated** ADR 0012 on **both** Edges and Network count; see [ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#addendum-2026-07-12-post-v6-residual--network-is-the-open-ship-gate).
+**Superseded guidance:** “100% parity”, “>95% match”, “block on 80% crop overlap”, “crop one-pair swap is the open loop”, or strict-field fallback as closure verdict. Only **evaluated** ADR 0012 on **both** Edges and Network count; see [ADR 0012 post-v6 addendum](../../adr/0012-edge-watershed-parity-bar.md#historical-context-post-v6-residual-closed-on-canonical_full_v18).
 
 ---
 
 ## Session diary (historical — not live status)
 
-The dated banners below are a chronological investigation log. **Do not read them as current status.** Current status is [ONE TRUTH](#one-truth--phase-1-parity-validated-from-disk) only.
+The dated banners below are a chronological investigation log. **Do not read them as current status.** Current status is [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) only.
 
 > 🟢 **2026-07-15 (full residual localized + ablated) — crop closed; full one-pair is generation-extra displacement at degree-excess; Phase 1 OPEN.**  
 > **Crop:** re-selection **15,511 / 15,511** pair overlap (closed).  

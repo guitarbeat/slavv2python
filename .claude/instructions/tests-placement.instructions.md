@@ -40,4 +40,4 @@ Tests mirror `slavv_python/` exactly — same folder name, same depth.
 
 - Follow and link to `tests/README.md` for placement conventions.
 - Follow `tests/conftest.py` for fixture and marker behavior.
-- When tests touch comparison/parity behavior, preserve staged layout semantics documented in `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md`.
+- When tests touch comparison/parity behavior, preserve staged layout semantics documented in `docs/reference/core/FOLDER_PURPOSE_GUIDE.md`.

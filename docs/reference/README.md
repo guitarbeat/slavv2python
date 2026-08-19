@@ -28,7 +28,7 @@ Read these first when working on the live implementation:
 | [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
 | [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |
 | [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md) | Engine design, component overview, and processing workflow | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
-| [New Engineer Start Here](core/NEW_ENGINEER_START_HERE.md) | Paper Path vs Exact Route (and vs the 2021 publication), first-week paths, traps | [TUTORIAL.md](../../TUTORIAL.md), [papers/README.md](papers/README.md), [ONE TRUTH](core/EXACT_PROOF_FINDINGS.md) |
+| [New Engineer Start Here](core/NEW_ENGINEER_START_HERE.md) | Paper Path vs Exact Route (and vs the 2021 publication), first-week paths, traps | [TUTORIAL.md](../TUTORIAL.md), [papers/README.md](papers/README.md), [ONE TRUTH](core/EXACT_PROOF_FINDINGS.md) |
 | [SLAVV Method Explained](core/SLAVV_METHOD_EXPLAINED.md) | Walkthrough of the 2021 publication (narrative; not Paper Path) | [papers/README.md](papers/README.md), [Research paper review](../research/slavv-original-paper-review.md) |
 | [Parity Methodology](core/PARITY_METHODOLOGY.md) | Why the cert bars are tolerance-based (literature); 5-row ambiguity index | [papers/README.md](papers/README.md), [ADR 0011](../adr/0011-energy-float-certification-policy.md), [ADR 0012](../adr/0012-edge-watershed-parity-bar.md) |
 

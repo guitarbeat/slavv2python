@@ -1,7 +1,18 @@
 # Design Document: MATLAB-Python Parity
 
-> ⛔ **DEPRECATED archive — do not treat as live design.**  
-> Bars → [ADR 0011](../../adr/0011-energy-float-certification-policy.md) / [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) · status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · index → [README](README.md).
+> ⛔ **DEPRECATED historical specification — do not treat as live design.**  
+> This 2026-06 planning snapshot is retained for provenance and design rationale. Use canonical living documentation:
+>
+> | Topic / Section in this Document | Authoritative Canonical Home |
+> |---|---|
+> | Pipeline Architecture & Execution Flow | [`docs/reference/core/TECHNICAL_ARCHITECTURE.md`](../../reference/core/TECHNICAL_ARCHITECTURE.md) |
+> | Continuous Float Policy & BLAS Tolerances | [`docs/adr/0011-energy-float-certification-policy.md`](../../adr/0011-energy-float-certification-policy.md) |
+> | Edges & Network Watershed Spatial Bars | [`docs/adr/0012-edge-watershed-parity-bar.md`](../../adr/0012-edge-watershed-parity-bar.md) |
+> | Claimed Trace Energy Provenance | [`docs/adr/0013-claimed-energy-trace-provenance.md`](../../adr/0013-claimed-energy-trace-provenance.md) |
+> | Parity Pre-Gate Tiers & Crop Harness | [`docs/reference/workflow/PARITY_PRE_GATE.md`](../../reference/workflow/PARITY_PRE_GATE.md) / [`ADR 0009`](../../adr/0009-parity-pre-gate-tiers.md) |
+> | Random Component Parity Suite | [`docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md`](../../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) / [`ADR 0010`](../../adr/0010-random-component-parity-suite.md) |
+> | Exact Proof Coordinator Architecture | [`docs/adr/0008-exact-proof-coordinator.md`](../../adr/0008-exact-proof-coordinator.md) |
+> | Live Parity Status & Proof Results | [`docs/reference/core/EXACT_PROOF_FINDINGS.md`](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 
 ## Overview
 

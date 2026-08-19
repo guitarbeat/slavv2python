@@ -14,8 +14,8 @@ Read these documents first to understand the current parity state:
 - `docs/reference/core/EXACT_PROOF_FINDINGS.md` — Current match rates and blockers
 - `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md` — Claim boundaries and phase status
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md` — Function-to-function mapping
-- `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md` — Run-root layout semantics
-- `docs/ROADMAP.md` — Active parity measures and priorities
+- `docs/reference/core/FOLDER_PURPOSE_GUIDE.md` — Folder purposes and run layout
+- `docs/TODO.md` — Active task dashboard (`docs/ROADMAP.md` is narrative milestones only)
 
 ## Constraints
 - Do not modify files.
@@ -24,7 +24,7 @@ Read these documents first to understand the current parity state:
 
 ## Approach
 1. Locate the relevant parity/runtime modules under `slavv_python/analytics/parity/` and `slavv_python/engine/state/`.
-2. Trace staged layout semantics (`01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`).
+2. Trace staged layout semantics (`00_Refs/`, `01_Params/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`).
 3. Cross-reference Python implementation against MATLAB source under `external/Vectorization-Public/`.
 4. Identify mismatches, nondeterminism sources, and brittle assumptions.
 5. Recommend minimal diffs and the exact tests to add/update.

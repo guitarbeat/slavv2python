@@ -76,11 +76,32 @@ Details: [EXACT_PROOF_FINDINGS](reference/core/EXACT_PROOF_FINDINGS.md), [TODO.m
 The exact route is correct-enough for certification but compute-heavy. Once
 Phase 1 Network is green, optimize *without* silent parity regression:
 
-- **Parallelism (started):** bit-exact threaded chunk energy (`n_jobs`). Next:
-  auto-size `n_jobs`, vertices/edges/network profiling.
-- **Profiling baseline (2026-08-17):** read-only timings from the frozen dest
-  ([phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)).
-  Measured dest bottleneck is Edges; Energy wall-clock was not re-measured there.
+- **Parity-Preserved Performance Innovations Baseline:** 9 verified algorithmic,
+  mathematical, and memory optimizations have already been engineered into the Python
+  engine, establishing the foundation for Phase 2 scaling without altering certified numerical
+  or topological parity:
+  1. **In-place octave accumulation:** 4D scale-stack elimination cutting peak RAM by **$30\times$** (300 MB $\to$ 10 MB/thread).
+  2. **Batched $3 \times 3$ Hessian eigensolver:** vectorization via `np.linalg.eigh` + `np.einsum` achieving **$>20\times$ faster** tensor filtering.
+  3. **Deterministic Joblib chunk parallelism:** fixed `chunk_idx` reduction order yielding **$\sim 5.2\times$ wall-clock throughput** on 6 cores.
+  4. **Structuring element offset cache:** memoized relative offsets $(\Delta y, \Delta x, \Delta z)$ yielding **$>10\times$ faster** vertex body painting.
+  5. **Sparse conjugate symmetry FFT:** sparse 1D broadcasting mask achieving **$50\%$ peak RAM reduction** in chunk IFFTs.
+  6. **Claimed Trace Energy bake (ADR 0013):** candidate payload provenance enabling pure-function selection and resolving multiset strand parity (**100% ADR 0012 multiset pass**).
+  7. **Indexed binary heap priority queue:** composite tie-breaking keys `(Energy, OriginSeedRank, FortranLinearIndex)` reducing queue complexity from **$O(N^2) \to O(N \log N)$**.
+  8. **Sparse CSR graph decomposition:** `scipy.sparse.csgraph.connected_components` reducing network strand extraction to **$<7\text{ seconds}$**.
+  9. **Continuous arc-length interpolation:** vectorized Euclidean arc-length centerline smoothing and resampling.
+  
+  *Full technical catalog:* [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md)  
+  *Publication manuscript:* [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) (JORS/SoftwareX/IEEE CiSE draft)
+
+- **Profiling baseline (2026-08-17):** read-only timings measured against the frozen canonical destination (`canonical_full_v18`, documented in [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)):
+  - **Edges stage is the primary measured bottleneck:** Elapsed **5,534.0 s** (~92.2 min), Peak RAM: 1.57 GB.
+  - **Network stage:** Elapsed **416.0 s** (~6.9 min), Peak RAM: 973.5 MB.
+  - **Energy & Vertices:** Elapsed **0.0 s** on this dest (carried lineage / resumed cache; historical 6-worker chunk throughput documented in [exact-energy-chunk-parallelism.md](solutions/parity/exact-energy-chunk-parallelism.md)).
+  - **Checkpoints:** Energy (167.8 MB), Network (106.4 MB), Edges (30.3 MB), Vertices (1.5 MB).
+
+- **Parallelism & Next Optimizations:**
+  - Auto-size `n_jobs` for energy and investigate parallel watershed frontier exploration.
+  - Focused optimization on the 92.2-minute Edges bottleneck via compiled kernels / algorithmic pruning.
 - **Optional unwind:** after a frozen cert baseline, Phase 2 may relax
   Fortran-order emulation toward idiomatic C-order — only under a new
   topological-tolerance gate (see [phase-2-optimization-spec.md](plans/phase-2-optimization-spec.md)).
@@ -88,7 +109,10 @@ Phase 1 Network is green, optimize *without* silent parity regression:
   profile (phase-1-spec F2) — program ship confidence requires this after exact
   route.
 
-> **Research input:** [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
+> **Research & Publication input:**
+> - [Post-parity optimization & the translation paper](research/post-parity-optimization-and-paper.md)
+> - [Parity-Preserved Performance Innovations](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md)
+> - [Scientific Translation Paper Manuscript](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md)
 
 **Do not start broad Phase 2 unwinding until a frozen cert baseline exists.** That freeze is recorded (2026-08-17). Phase 1 Network is green on the claim root in [ONE TRUTH](reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Profiling against the frozen dest is allowed; C-order unwind is not.
 

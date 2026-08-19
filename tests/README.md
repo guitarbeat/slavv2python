@@ -18,6 +18,7 @@ Tests mirror `slavv_python/` exactly — same folder name, same depth:
 | `slavv_python/utils/` | `tests/unit/utils/` |
 | `slavv_python/visualization/` | `tests/unit/visualization/` |
 | `slavv_python/workflows/` | `tests/unit/workflows/` |
+| `scripts/` | `tests/unit/scripts/` |
 
 - `tests/integration/` for cross-component workflows and end-to-end pipeline behavior
 - `tests/integration/parity/` for parity pre-gate integration tests (ADR 0009 tiers 1–2)

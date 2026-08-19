@@ -57,7 +57,7 @@ When modifying core vascular discovery logic (e.g. `matlab_get_edges_by_watershe
       --dest-run-root workspace/runs/my_fix_trial `
       --stage all
     ```
-3.  Parity-sensitive changes must preserve the strict-zero `prove-exact-sequence` bar. Historical match rates are diagnostics only.
+3.  Parity-sensitive changes must satisfy each stage's defined certification bar (ADR 0011 strict discrete + allclose floats for Energy/Vertices; ADR 0012 spatial bars for Edges/Network). Do not use strict-zero `prove-exact-sequence` failure as a Phase 1 reopen.
 
 ## Submitting a Pull Request
 

@@ -172,10 +172,10 @@ Ship confidence requires a **reproducible** certification on a **single canonica
 |------|------|--------|
 | **U1** | Extend `prove-exact` energy stage + `prove-exact-sequence` | Done |
 | **U2** | Align certification docs with strict zero bar | Done |
-| **U3** | Certification candidate run through network | See [ONE TRUTH](../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) / [audit inventory](../reference/core/EXACT_PROOF_FINDINGS.md#audit-inventory-folders-not-a-second-verdict) |
-| **U4** | Sequential `prove-exact` certification | Status in findings (not here) |
-| **U5** | Close parity gaps on failing stage | Active |
-| **U6** | Record phase 1 milestone in findings | Pending U4 |
+| **U3** | Certification candidate run through network | Done (certified on `canonical_full_v18`) |
+| **U4** | Sequential `prove-exact` certification | Done (certified on `canonical_full_v18`) |
+| **U5** | Close parity gaps on failing stage | Complete (closed on `canonical_full_v18` via ADR 0013) |
+| **U6** | Record phase 1 milestone in findings | Complete (`phase1-baseline-freeze.json` established) |
 
 **Current status table:** always update [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md), not this spec.
 
@@ -190,15 +190,13 @@ slavv parity prove-exact --stage <stage> `
 
 Run stages in order and stop if any stage fails. For Edges/Network, only evaluated ADR 0012 proofs count; `prove-exact-sequence` strict-field output is diagnostic and is not the Phase 1 ship gate. Do not claim phase 1 complete until all four stage-specific bars pass on the **same** dest root.
 
-### U5 — Closure loop (post-v6 residual)
+### U5 — Closure loop (post-v6 residual) — Historical (Closed on `canonical_full_v18`)
 
-Live operator sequence: [.claude/HANDOFF.md](../../.claude/HANDOFF.md). Summary:
-
-- Energy / Vertices certified on full volume → do not rerun without regression evidence.
-- Edges ownership evaluated PASS on canonical audit roots → residual work is the crop **edge-set funnel** (candidate-to-final cleanup balance), not reopening Energy.
-- Network multiset FAIL → confirm isolation with MATLAB edges still exact; fix edge-set residual; then **new successor** canonical root edges→network + evaluated Network proof.
-- Prefer per-stage `prove-exact --stage <s>` with `adr0012_evaluated: true`. Do not use `prove-exact-sequence` strict-field as the ship gate.
-- Record blockers and KPIs only in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
+Historical resolution summary:
+- The post-v6 ranking residual was resolved by baking Claimed Trace Energy provenance at Watershed Discovery finalize ([ADR 0013](../adr/0013-claimed-energy-trace-provenance.md)).
+- Full-volume Network ADR 0012 multiset equality passed on `canonical_full_v18`.
+- Phase 1 Exact Route certification is closed and recorded in `phase1-baseline-freeze.json`.
+- Live status and post-Phase 1 stretch tracking belong exclusively in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md). Operator commands belong in [.claude/HANDOFF.md](../../.claude/HANDOFF.md).
 
 ## Risks
 

@@ -21,6 +21,14 @@ For current behavior and **live proof status**, prefer:
 
 Changelog entries below are **dated product notes**, not the live parity table.
 
+## [Unreleased] - 2026-08-19
+
+### Added / Changed
+
+- **Parity-Preserved Performance Innovations Catalog**: Documented all 9 core mathematical, algorithmic, and memory improvements in [`docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md`](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) and narrated them in [`docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md`](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) (journal packaging still open).
+- **Docs integrity verifier**: Added [`scripts/verify_docs_integrity.py`](../scripts/verify_docs_integrity.py) for authority, banner, wiring, and relative-link checks.
+- **Vertex Painting Structuring Element Caching**: Optimized [`slavv_python/pipeline/vertices/painting.py`](../slavv_python/pipeline/vertices/painting.py) by memoizing scale-specific ellipsoid coordinate offsets, reducing mesh construction calls from $O(V)$ to $O(S)$ while preserving vertex-body occupancy masks.
+
 ## [Unreleased] - 2026-07-10
 
 ### Added / Changed

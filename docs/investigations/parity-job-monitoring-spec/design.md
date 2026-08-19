@@ -1,5 +1,9 @@
 # Design: Automated Parity Job Monitoring System
 
+> ⛔ **DEPRECATED archive — do not execute.**  
+> Parity job monitoring is fully implemented and operational. See [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md).  
+> Code: `slavv_python/analytics/parity/runs/`. Tasks → [TODO.md](../../TODO.md).
+
 ## Architecture Overview
 
 ```

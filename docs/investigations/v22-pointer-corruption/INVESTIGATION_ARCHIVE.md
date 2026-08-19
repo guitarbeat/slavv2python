@@ -1,5 +1,9 @@
 # Investigation Archive
 
+> ⛔ **DEPRECATED historical post-mortem archive — not live status.**  
+> This file preserves the historical April 2026 v22 watershed pointer corruption investigation trail.  
+> Live parity status → [ONE TRUTH](../../reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) · Watershed bar policy → [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md).
+
 [Up: v22 Pointer Corruption Archive](README.md)
 
 This file preserves the April 2026 v22 global watershed investigation as one

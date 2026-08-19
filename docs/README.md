@@ -22,6 +22,8 @@
 | Frozen Phase 1 hashes | [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) | HANDOFF/TODO restatements of SHA-256 |
 | Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) (plain-language first) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
 | Phase 2 profiling timings | [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json) | ROADMAP live wall-clock tables |
+| Performance innovations catalog | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Scattered optimization claims |
+| Translation paper manuscript | [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) | Outdated status declarations |
 | Archival deep dives / session diary | [investigations/](investigations/) · [findings diary](investigations/exact-proof-findings-diary/README.md) | Executable specs / current status |
 | New engineer onboarding (two tracks) | [NEW_ENGINEER_START_HERE.md](reference/core/NEW_ENGINEER_START_HERE.md) | Duplicating this guide in README/HANDOFF bodies |
 | Papers / which citation (or “no paper”) | [papers/README.md](reference/papers/README.md) | Full citation tables in onboarding docs |
@@ -90,6 +92,8 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 10. [Investigation index](investigations/README.md)
 11. [Test placement guide](../tests/README.md)
 12. [Proposal / methods figures](../figures/README.md) — exact-parity standalone claim figures
+13. [Performance innovations catalog](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) — 9 verified mathematical and memory improvements
+14. [Translation paper manuscript](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) — JORS/SoftwareX exact parity study
 
 ---
 
@@ -180,6 +184,8 @@ graph TD
 | **Understand a term** | [AGENTS.md § Glossary](../AGENTS.md#domain-glossary) |
 | **Find next task** | [TODO.md](TODO.md) |
 | **Read a spec** | [plans/](plans/) directory |
+| **Explore performance innovations** | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) |
+| **Read translation paper draft** | [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) |
 | **Debug a past issue** | [solutions/](solutions/) or [investigations/](investigations/) |
 | **Understand architecture** | [TECHNICAL_ARCHITECTURE.md](reference/core/TECHNICAL_ARCHITECTURE.md) |
 | **Set up environment** | [../README.md](../README.md) or [AGENTS.md Setup](../AGENTS.md#setup--installation) |
@@ -191,6 +197,8 @@ graph TD
 | Active tasks | [TODO.md](TODO.md) | `- [ ] Fix crop energy mismatch` |
 | Live parity status | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) | Active runs, proof results, blockers |
 | Specs | [plans/](plans/) | `phase-1-exact-route-spec.md` |
+| Performance innovations | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Catalog of 9 certified optimizations |
+| Translation paper | [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) | JORS/SoftwareX publication draft |
 | Pre-spec ideas | [brainstorms/](brainstorms/) | Rough ideas (promote to plans/) |
 | Solved problems | [solutions/](solutions/) | Compound docs with YAML frontmatter |
 | Design decisions | [adr/](adr/) | Schema changes, refactors |
@@ -237,6 +245,8 @@ graph TD
 - [Paper Profile](reference/workflow/PAPER_PROFILE.md)
 - [Papers we actually use](reference/papers/README.md) — annotated bibliography grouped by common confusions
 - [Python Naming Guide](reference/workflow/PYTHON_NAMING_GUIDE.md)
+- [Performance Innovations Catalog](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) — 9 verified mathematical and memory improvements
+- [Translation Paper Manuscript](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) — JORS/SoftwareX exact parity study draft
 
 ## Archive Entry Points
 

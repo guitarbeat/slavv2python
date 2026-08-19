@@ -8,6 +8,8 @@
 | **Operator commands** | [.claude/HANDOFF.md](../.claude/HANDOFF.md) |
 | **Phase 1 requirements** | [phase-1-exact-route-spec.md](plans/phase-1-exact-route-spec.md) |
 | **Specs / ideas / solutions / ADRs** | [plans/](plans/) · [brainstorms/](brainstorms/) · [solutions/](solutions/) · [adr/](adr/) |
+| **Performance innovations catalog** | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) |
+| **Translation paper manuscript** | [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) |
 | **Authority map** | [docs/README.md](README.md#documentation-authority-map-one-concept--one-home) |
 
 > Do **not** freeze run IDs, pair counts, or strand counts in this file. Those live only in ONE TRUTH.
@@ -50,7 +52,8 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 - [x] **Phase 1 → Phase 2 handoff** — Network ADR 0012 green; freeze recorded. Fortran-unwind still needs an explicit Phase 2 ADR/gate before code changes.
 - [x] **Phase 2 profiling baseline** — read-only timings from the frozen dest [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json). Energy/Vertices elapsed 0 = carried lineage. Measured bottleneck on dest = Edges. No unwind.
 - [x] **Energy `--n-jobs auto`** — opt-in CPU/RAM guard on `resume-exact-run` / `launch-exact-run`; dest default stays serial `n_jobs=1`. Do not reimplement; do not raise the default; do not forward the token `auto` into a detached job. See [exact-energy-chunk-parallelism.md](solutions/parity/exact-energy-chunk-parallelism.md).
-- [ ] **Phase 2 Edges/Network profiling** — dest measured bottleneck is Edges. Split discovery vs selection only with an authorized writer. No Fortran unwind.
+- [ ] **Translation paper manuscript** — draft in [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) now narrates all 9 catalog items; remaining work is journal packaging (citations, submission figures, cover letter), not a second catalog. Cross-reference: [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md).
+- [ ] **Phase 2 Edges/Network profiling** — dest measured bottleneck is Edges (5,534s / ~92.2m per [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json)). Split discovery vs selection only with an authorized writer. Cross-reference 9 innovations in [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md). No Fortran unwind.
 - [ ] **Phase 2 Fortran-order unwind** — needs an explicit Phase 2 ADR before production code changes.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
@@ -83,3 +86,4 @@ All of the following are **done**. Do not re-open as status; evidence lives in [
 - [x] Planning hub = this file; live status = ONE TRUTH only
 - [x] 2026-07-12 / 07-15 / 07-16 docs consolidate + ONE TRUTH + clash deprecation
 - [x] **2026-07-16 TODO lean rewrite** — open ship tasks only; historical gates collapsed to archive table
+- [x] **Performance innovations & publication hub integration** — linked [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) and [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) in docs hub, roadmap, agents, and specs.

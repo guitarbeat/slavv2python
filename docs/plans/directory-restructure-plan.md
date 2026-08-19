@@ -1,19 +1,21 @@
 ---
-title: "Directory Restructure Plan (proposed — for review)"
+title: "Directory Restructure Plan (archived — completed)"
 type: spec
-status: proposed
+status: completed (archived)
 date: 2026-06-29
 topic: directory-structure
 ---
 
-# Directory Restructure Plan (proposed)
+# Directory Restructure Plan (Archived / Completed)
+
+> 📦 **ARCHIVED PLAN — COMPLETE.**  
+> The parity package restructuring (`parity/proof/`, `parity/runs/`, `parity/oracle/`, `parity/probes/`, `parity/cli_handlers/`) has been fully executed in production.  
+> Current package layout is documented in [TECHNICAL_ARCHITECTURE.md](../reference/core/TECHNICAL_ARCHITECTURE.md) and [AGENTS.md](../../AGENTS.md).
 
 ## In short
 
-A proposed folder cleanup (mostly the old flat parity package). **Not executed.**
-Not live pass/fail. Do not treat this as a license to move files without review.
-
-**Status: PROPOSED — no moves executed. Approve the target tree before execution.**
+Historical plan for folder cleanup of the former flat `analytics/parity/` package. **Executed in production.**
+Current structure is active and verified across all test suites.
 
 ## Guiding principle
 The package is already well-layered (stages / engine / interface / analytics /
