@@ -53,7 +53,7 @@ from slavv_python.pipeline.energy.stretch_helper_body_isolation import (
 from slavv_python.storage.loaders.tiff import load_tiff_volume
 from slavv_python.utils.validation import validate_parameters
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / STRETCH_CROP_DEST_NAME
 DEFAULT_ORACLE = REPO_ROOT / "workspace" / "oracles" / STRETCH_CROP_ORACLE_ID
 DEFAULT_SCRATCH = REPO_ROOT / "workspace" / "scratch" / "stretch_helper_body_isolation.json"

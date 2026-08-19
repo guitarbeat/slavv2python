@@ -1,6 +1,6 @@
 """Synthetic complexity ladder report assembly and soft-cap stop policy.
 
-Pure helpers used by ``scripts/run_synthetic_complexity_ladder.py`` so unit tests
+Pure helpers used by ``scripts/ladder/run.py`` so unit tests
 can cover AE1-AE3 without MATLAB.
 """
 

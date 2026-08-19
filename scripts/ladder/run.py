@@ -4,9 +4,9 @@ Fixed four-rung fake-volume ladder reusing the tiny Y-junction dual-run pattern.
 Results are informative only — NOT Certification / NOT Phase 1.
 
 Usage (repo root):
-  .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py
-  .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --rung y_junction_32
-  .\\.venv\\Scripts\\python.exe scripts\\run_synthetic_complexity_ladder.py --skip-matlab --reuse-python
+  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py
+  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py --rung y_junction_32
+  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py --skip-matlab --reuse-python
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ from slavv_python.utils.synthetic import (
     generate_ladder_rung_volume,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 EXP_DIR = REPO_ROOT / "workspace" / "experiments" / "synthetic_complexity_ladder"
 MATLAB_DRIVER = Path(__file__).resolve().parent / "vectorize_ladder_rung.m"
 REPORT_PATH = EXP_DIR / "ladder_report.json"

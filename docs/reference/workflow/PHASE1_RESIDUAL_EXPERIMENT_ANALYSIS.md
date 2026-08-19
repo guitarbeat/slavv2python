@@ -51,10 +51,10 @@ only in the findings banner.
   proof JSON).
 - **Claim surface:** full `180709_E` claim run root in findings. Do not claim `v17`.
 - **Probes (prefer these):** `slavv_python.analytics.parity.experiments`,
-  `scripts/edge_selection_funnel_probe.py`,
-  `scripts/compare_clean_edge_pairs_matlab.py`,
-  `scripts/persist_crop_edges_selection.py` (`select_and_finalize_edge_set`),
-  `scripts/watershed_candidate_gap_probe.py` (`coverage_of_finals_by_raw`, not equality),
+  `scripts/edges/selection_funnel.py`,
+  `scripts/edges/clean_edge_pairs_matlab.py`,
+  `scripts/edges/persist_crop_selection.py` (`select_and_finalize_edge_set`),
+  `scripts/edges/candidate_gap.py` (`coverage_of_finals_by_raw`, not equality),
   `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`.
 - **Anti-patterns:** [UNPRODUCTIVE_LOOPS](../core/UNPRODUCTIVE_LOOPS.md) §16–17;
   no join-rule / tie-scan ship-gate change; no endpoint-descending cleanup

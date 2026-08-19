@@ -271,9 +271,7 @@ def main(argv: list[str] | None = None) -> int:
                     "python_candidate_pairs": int(payload["connections"].shape[0]),
                     "python_trace": str(args.python_trace),
                     "oracle_root": str(args.oracle_root) if args.oracle_root is not None else None,
-                    "trace_stopped_after_iteration": payload.get(
-                        "trace_stopped_after_iteration"
-                    ),
+                    "trace_stopped_after_iteration": payload.get("trace_stopped_after_iteration"),
                 },
                 indent=2,
             )
@@ -282,12 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     matlab_events = _load_trace(args.matlab_trace)
     python_events = _load_trace(args.python_trace)
     if args.stop_after_iteration is not None:
-        matlab_events = _filter_events_through_iteration(
-            matlab_events, args.stop_after_iteration
-        )
-        python_events = _filter_events_through_iteration(
-            python_events, args.stop_after_iteration
-        )
+        matlab_events = _filter_events_through_iteration(matlab_events, args.stop_after_iteration)
+        python_events = _filter_events_through_iteration(python_events, args.stop_after_iteration)
 
     event_checks = [
         ("iteration_start", ("iteration", "current_linear", "current_energy")),

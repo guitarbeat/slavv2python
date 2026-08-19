@@ -112,7 +112,7 @@ This plan owns the **E11–E20 zero-tolerance stretch experiments** only. Surrou
   - **Cheap-first procedure:** Unit fixture through the **production worker marshalling**, not only in-process `MatlabEngineSession.roundtrip_float64` (that helper skips on repo 3.12). Include Inf/NaN payloads. Skip if py37/engine absent (`incomplete_infra`).
   - **Pass:** `np.array_equal` on finite values; Inf/NaN payload identity (NaN positions preserved).
   - **Fail:** any finite ULP or shape/order change through the worker path.
-  - **Artifacts:** `scripts/stretch_matlab_engine_worker.py`; `slavv_python/pipeline/energy/matlab_engine_backend.py` (`numpy_to_matlab_double`); new test under `tests/unit/pipeline/energy/`.
+  - **Artifacts:** `scripts/stretch/engine_worker.py`; `slavv_python/pipeline/energy/matlab_engine_backend.py` (`numpy_to_matlab_double`); new test under `tests/unit/pipeline/energy/`.
   - **Does not prove:** Energy math bit-equality vs oracle; crop unlock.
   - **Cost:** `synthetic/unit` seconds; engine skip on CI.
 
@@ -121,7 +121,7 @@ This plan owns the **E11–E20 zero-tolerance stretch experiments** only. Surrou
   - **Cheap-first procedure:** Tiny engine probes (one chunk / few scales) **before** another crop writer. Compare MATLAB-side `interp3` of a known Inf/NaN volume vs Python `_interp3_matlab_linear_inf`. Compare `linspace` meshes from `stretch_energy_chunk_v202` vs `get_energy_V202.m`. Isolate (c) only as a **small** engine call, not a full writer. Block if E11 still running.
   - **Pass:** named source reproduces the v2 mismatch pattern (or all three sources bit-match, which **fails** this isolation hypothesis and forces a new named source — still `blocked_float_path`, not allclose success).
   - **Fail:** isolation cannot attribute v2 mismatches to (a)(b)(c) and no new named source is recorded.
-  - **Artifacts:** `scripts/stretch_energy_chunk_v202.m`; `external/Vectorization-Public/source/get_energy_V202.m`; `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py` (`_interp3_matlab_linear_inf`); v2 mismatch JSON if prove has run.
+  - **Artifacts:** `scripts/stretch/stretch_energy_chunk_v202.m`; `external/Vectorization-Public/source/get_energy_V202.m`; `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py` (`_interp3_matlab_linear_inf`); v2 mismatch JSON if prove has run.
   - **Does not prove:** crop Energy unlock; that deepening MATLAB surface is complete.
   - **Cost:** `synthetic/unit` minutes on operator host with MATLAB; skip without engine.
 
@@ -156,10 +156,10 @@ This plan owns the **E11–E20 zero-tolerance stretch experiments** only. Surrou
 
 - R17. **E17 — Claimed-trace ranking + cleanup MATLAB comparator (regression, not Phase 1)**
   - **Hypothesis:** ADR 0013 claimed-trace bake and crop cleanup MATLAB comparator remain green on existing crop artifacts. This is a **regression guard** so operators do not reopen ranking as the 100% gap.
-  - **Cheap-first procedure:** No-writer crop probes already in HANDOFF (`watershed_frontier_diff.py`, `compare_clean_edge_pairs_matlab.py`, E1–E4 surfaces). Do **not** launch an Edges writer. Do **not** cite this as Phase 1 work.
+  - **Cheap-first procedure:** No-writer crop probes already in HANDOFF (`edges/frontier_diff.py`, `edges/clean_edge_pairs_matlab.py`, E1–E4 surfaces). Do **not** launch an Edges writer. Do **not** cite this as Phase 1 work.
   - **Pass:** crop raw pair-set / cleanup comparator still agree; claimed-map ranking still prefers the documented oracle partner on stored fixtures.
   - **Fail:** ranking/cleanup regression → fix as stretch-adjacent production regression, still without reopening ONE TRUTH CLOSED.
-  - **Artifacts:** `crop_M_exact_v3` candidates (read-only); `scripts/compare_clean_edge_pairs_matlab.py`; `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`.
+  - **Artifacts:** `crop_M_exact_v3` candidates (read-only); `scripts/edges/clean_edge_pairs_matlab.py`; `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`.
   - **Does not prove:** Energy bit-equality; discrete stretch complete; Phase 1 anything new.
   - **Cost:** `crop` / `full no-writer` minutes; never a writer for this ID.
 
@@ -421,7 +421,7 @@ Recorded so implementers do not treat unlock as already true. Re-read disk; do n
 - **Files:**
   - Create: `tests/unit/pipeline/energy/test_stretch_worker_marshalling.py` (skip without py37/engine)
   - Create: `tests/unit/pipeline/energy/test_stretch_ulp_isolation.py` (Inf/NaN interp3 + linspace mesh; engine cases skip)
-  - Read: `scripts/stretch_matlab_engine_worker.py`, `matlab_engine_backend.py`, `_interp3_matlab_linear_inf`
+  - Read: `scripts/stretch/engine_worker.py`, `matlab_engine_backend.py`, `_interp3_matlab_linear_inf`
 - **Approach:**
   1. E12: round-trip a Fortran `[Y,X,Z]` float64 array through the **same** `float` list + `matlab.double(size=)` + `_data` reshape the worker uses; include Inf/NaN.
   2. E13: fixture MATLAB-compatible Inf propagation vs `_interp3_matlab_linear_inf`; fixture `linspace` endpoint equality vs `stretch_energy_chunk_v202` mesh. Do not start a crop writer.
@@ -437,7 +437,7 @@ Recorded so implementers do not treat unlock as already true. Re-read disk; do n
 - **Requirements:** R14; stretch plan R6
 - **Dependencies:** U2 (E12 green preferred)
 - **Files:**
-  - Create: short operator note in this plan’s Appendix map is enough unless a thin script is required — if a script is added, `scripts/stretch_whole_crop_get_energy_v202.py` under 1000 lines, skip-if-missing, write only under `workspace/scratch/`
+  - Create: short operator note in this plan’s Appendix map is enough unless a thin script is required — if a script is added, `scripts/stretch/whole_crop_get_energy_v202.py` under 1000 lines, skip-if-missing, write only under `workspace/scratch/`
   - Test: `tests/unit/pipeline/energy/test_stretch_whole_crop_get_energy_policy.py` — refuses MATLAB-only checkpoint as stretch success; refuses overwrite of v2/claim roots
 - **Approach:** Policy + skip path first. Implement the engine call only if E11 completes red and E12 is green.
 - **Test scenarios:**
@@ -467,7 +467,7 @@ Recorded so implementers do not treat unlock as already true. Re-read disk; do n
 - **Dependencies:** None
 - **Files:**
   - Reuse: `tests/unit/pipeline/test_watershed_energy_map_sort_experiments.py`
-  - Reuse: `scripts/compare_clean_edge_pairs_matlab.py`
+  - Reuse: `scripts/edges/clean_edge_pairs_matlab.py`
   - Do not modify production ranking
 - **Approach:** Document E17 entrypoints in the Appendix map. Skip if crop candidates missing.
 - **Test scenarios:** Existing E1/E2 unit coverage remains green; E17 non-claim language in the operator map.
@@ -550,7 +550,7 @@ Recorded so implementers do not treat unlock as already true. Re-read disk; do n
 | E14 | crop optional | scratch whole-crop `get_energy_V202` engine call | Isolation only; not production unlock |
 | E15 | unit then crop | `test_stretch_vertices_strict_floats.py` then vertices `--strict-floats` | After Energy unlock |
 | E16 | unit then crop | `test_stretch_discrete_strict_field.py` then stretch discrete compare | Expands to `energy+discrete` |
-| E17 | crop no-writer | existing E1–E4 / `compare_clean_edge_pairs_matlab.py` | Regression; not 100% |
+| E17 | crop no-writer | existing E1–E4 / `edges/clean_edge_pairs_matlab.py` | Regression; not 100% |
 | E18 | unit | `test_mkl_spike_does_not_replace_engine.py` + v1 status | Cannot unlock |
 | E19 | unit | `test_stretch_full_volume_gate.py` | Refuse full without unlock |
 | E20 | unit then engine | `test_stretch_high_octave_chunk_vs_full.py` | Required before later full writer |

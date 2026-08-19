@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import streamlit as st
 
-from .pages.analysis import show_analysis_page
-from .pages.curation import show_ml_curation_page
-from .pages.processing import show_processing_page
-from .pages.static import show_about_page, show_home_page
-from .pages.visualization import show_visualization_page
+from .views.analysis import show_analysis_page
+from .views.curation import show_ml_curation_page
+from .views.processing import show_processing_page
+from .views.static import show_about_page, show_home_page
+from .views.visualization import show_visualization_page
 
 PAGE_HANDLERS = {
     "🏠 Home": show_home_page,

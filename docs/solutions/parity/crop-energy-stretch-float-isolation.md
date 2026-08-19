@@ -70,7 +70,7 @@ Ruled out on cheap fixtures (engine skip = `incomplete_infra`, not fail):
   match MATLAB `floor`/`ceil`. Helper `energy>=0` clamp is not the 1e-10
   class. TIFF vs HDF5 on the production chunk-0 window **matches**. Residual
   is filter/interp3 args or MATLAB engine helper vs original batch internals.
-  Operator: `scripts/stretch_helper_body_isolation.py`. Scratch:
+  Operator: `scripts/stretch/helper_body_isolation.py`. Scratch:
   `workspace/scratch/stretch_helper_body_isolation.json`.
 - Standalone windows (seeded noise, `180709_EL` corner, crop 21×51×51 write
   window as its own volume): helper vs live `get_energy_V202` **bit-matched**.
@@ -106,13 +106,13 @@ vs MATLAB today.
 
 - E12/E13/E17/E18/E19 unit tests under `tests/unit/pipeline/energy/` and
   `tests/unit/parity/` (engine tests skip without py37 + R2019a).
-- One-chunk mapping/interpret: `tests/unit/pipeline/energy/test_stretch_one_production_chunk.py`.
-  Operator: `scripts/stretch_one_production_chunk.py`.
-- Lattice/params: `tests/unit/pipeline/energy/test_stretch_lattice_params_isolation.py`.
-  Operator: `scripts/stretch_lattice_params_isolation.py`.
-- Helper body: `tests/unit/pipeline/energy/test_stretch_helper_body_isolation.py`.
-  Operator: `scripts/stretch_helper_body_isolation.py`.
-- Standalone TIFF/noise windows: `scripts/stretch_synthetic_original_compare.py`.
+- One-chunk mapping/interpret: `tests/unit/pipeline/energy/test_stretch/one_production_chunk.py`.
+  Operator: `scripts/stretch/one_production_chunk.py`.
+- Lattice/params: `tests/unit/pipeline/energy/test_stretch/lattice_params_isolation.py`.
+  Operator: `scripts/stretch/lattice_params_isolation.py`.
+- Helper body: `tests/unit/pipeline/energy/test_stretch/helper_body_isolation.py`.
+  Operator: `scripts/stretch/helper_body_isolation.py`.
+- Standalone TIFF/noise windows: `scripts/stretch/synthetic_original_compare.py`.
 - E11 prove already ran on v2; do not re-run the writer to “verify” this note.
 
 ## Follow-Up

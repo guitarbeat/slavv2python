@@ -49,7 +49,7 @@ from slavv_python.pipeline.energy.stretch_synthetic_original_compare import (
 from slavv_python.storage.loaders.tiff import load_tiff_volume
 from slavv_python.utils.validation import validate_parameters
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DEST = REPO_ROOT / "workspace" / "scratch" / "stretch_synthetic_original_8"
 DEFAULT_STATUS = (
     REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / STRETCH_CROP_DEST_NAME / STATUS_FILENAME

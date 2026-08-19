@@ -103,7 +103,7 @@ Single compare surface: [`proof/artifact_comparator.py`](../../../slavv_python/a
 
 **Avoid first:**
 Raw `exact_proof*.json` without `inspect-proof`; `pipeline/edges/matlab_*.py`
-before knowing discovery vs selection vs compare; `scripts/*.py` probes
+before knowing discovery vs selection vs compare; `scripts/<domain>/*.py` probes
 (HANDOFF diagnostics only).
 
 Methodology (why these bars exist): [PARITY_METHODOLOGY.md](../core/PARITY_METHODOLOGY.md).

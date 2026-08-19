@@ -80,7 +80,7 @@ slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_
 Crop regression guards (read-only; do not overwrite `crop_M_exact_v3`):
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/watershed_frontier_diff.py `
+.\.venv\Scripts\python.exe scripts/edges/frontier_diff.py `
   --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --regenerate-python
@@ -115,7 +115,7 @@ Phase 1 already closed on `canonical_full_v18`. Do **not** resurrect `v4`…`v16
 | Area | Files / functions | Planning note |
 |------|-------------------|---------------|
 | Claimed Trace Energy bake | `matlab_get_edges_by_watershed.py` assemble (`claim_map.energy_map`) | ADR 0013 — regression guard |
-| Stretch leftover isolation | `pipeline/energy/stretch_helper_body_isolation.py` | Crop last-digit leftover; not unlock |
+| Stretch leftover isolation | `pipeline/energy/stretch/helper_body_isolation.py` | Crop last-digit leftover; not unlock |
 | Phase 2 profiling baseline | `analytics/performance/phase2_baseline.py` | Read-only frozen dest timings; not unwind |
 | Finalization | `pipeline/edges/finalize.py` | Crop guard; resample/map-resample/smooth/crop path |
 | Selection row order | `selection_payloads.py` (`prepare_candidate_indices_for_cleanup`) | Regression guard (double-precision metric sort) |

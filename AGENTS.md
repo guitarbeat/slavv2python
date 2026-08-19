@@ -277,6 +277,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 - **`workspace/`** — Experiment Root (Oracles, live dests, datasets on disk/USB; scratch gitignored)
 - **`docs/`** — Maintained reference docs and archival investigation notes
 - **`figures/`** — Publication figures (`figures/claim/` ship story + `figures/research/` ULP/speedup) ([figures/README.md](figures/README.md))
+- **`scripts/`** — Developer probes (`edges/`, `stretch/`, `ladder/`, `monitor/`, `docs/`, `profiling/`) ([scripts/README.md](scripts/README.md))
 
 ```text
 slavv2python/
@@ -359,11 +360,13 @@ slavv2python/
 │   ├── Vectorization-Public/           # Canonical MATLAB source (GitHub submodule)
 │   └── neurovasc-db/                   # Local catalog only (`D:/db`; not clone-required)
 │
-├── scripts/                            # Developer probe scripts (referenced from HANDOFF)
-│   ├── watershed_frontier_diff.py      # Golden-trace comparison
-│   ├── watershed_candidate_gap_probe.py # Crop regression guard probe
-│   ├── edge_selection_funnel_probe.py  # Full-volume funnel diagnostics
-│   └── ...                             # Other diagnostic probes (not public CLI)
+├── scripts/                            # Developer probe scripts (not the public CLI)
+│   ├── edges/                          # Watershed / selection probes
+│   ├── stretch/                        # Energy stretch isolation (MATLAB helpers keep function names)
+│   ├── ladder/                         # Synthetic complexity ladder
+│   ├── monitor/                        # Parity run health / throughput
+│   ├── docs/                           # Docs integrity verifier
+│   └── profiling/                      # Phase 2 baseline
 ```
 
 ---
@@ -380,6 +383,7 @@ Read these first when working on relevant surfaces:
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |
 | Publication figures | [figures/README.md](figures/README.md) | Claim charts (`figures/claim/`) + research ULP/speedup + regenerators |
+| Developer probes | [scripts/README.md](scripts/README.md) | Domain-grouped operator scripts (not the public CLI) |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results |
@@ -490,9 +494,9 @@ parity watcher.
 over tailing the harness log.
 ```powershell
 # One-shot verdict (RUNNING/STALLED/COMPLETED/FAILED) + liveness + stage, run-dir only:
-python scripts\check_parity_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
+python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
 # Live energy chunk rate + ETA (needs the run log with joblib "Done N tasks"):
-python scripts\parity_run_throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
+python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
 ```
 Interpretation rules (learned the hard way):
 - **Liveness = heartbeat *age*** (`resume_state.heartbeat_at` / `run_snapshot.updated_at`), **not** `started_at` — start-time clocks go stale across restarts.

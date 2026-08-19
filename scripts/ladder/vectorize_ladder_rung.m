@@ -1,6 +1,6 @@
 % Parameterized headless vectorization for one synthetic complexity-ladder rung.
-% Invoked by scripts/run_synthetic_complexity_ladder.py via:
-%   matlab.exe -batch "run('<driver>'); vectorize_ladder_rung('<tif>','<out_dir>')"
+% Invoked by scripts/ladder/run.py via:
+%   matlab.exe -batch "addpath('<scripts/ladder>'); vectorize_ladder_rung('<tif>','<out_dir>')"
 %
 % The function lives in this file; run() loads it, then the batch calls it.
 
@@ -10,8 +10,8 @@ function vectorize_ladder_rung(tif_path, out_dir)
   end
 
   script_dir = fileparts(mfilename('fullpath'));
-  % scripts/ -> repo root
-  repo_root = fileparts(script_dir);
+  % scripts/ladder/ -> scripts/ -> repo root
+  repo_root = fileparts(fileparts(script_dir));
   cd(repo_root);
 
   vectorization_root = fullfile(repo_root, 'external', 'Vectorization-Public');

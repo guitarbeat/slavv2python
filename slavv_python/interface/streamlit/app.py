@@ -27,10 +27,10 @@ from slavv_python.interface.shared_services.dashboard import (
     build_dashboard_breakdown_frame,
     build_dashboard_stage_frame,
 )
-
-from .pages.analysis import show_analysis_page
-from .pages.curation import show_ml_curation_page
-from .pages.dashboard import (
+from slavv_python.interface.streamlit.shell import main
+from slavv_python.interface.streamlit.views.analysis import show_analysis_page
+from slavv_python.interface.streamlit.views.curation import show_ml_curation_page
+from slavv_python.interface.streamlit.views.dashboard import (
     DASHBOARD_ASSUMPTION,
     DASHBOARD_RELEASE_URL,
     DASHBOARD_REPO_URL,
@@ -43,16 +43,15 @@ from .pages.dashboard import (
     _toast_dashboard_feedback,
     show_dashboard_page,
 )
-from .pages.processing import show_processing_page
-from .pages.static import show_about_page, show_home_page
-from .pages.visualization import (
+from slavv_python.interface.streamlit.views.processing import show_processing_page
+from slavv_python.interface.streamlit.views.static import show_about_page, show_home_page
+from slavv_python.interface.streamlit.views.visualization import (
     EXPORT_BUTTON_SPECS,
     show_visualization_page,
 )
-from .pages.visualization import (
+from slavv_python.interface.streamlit.views.visualization import (
     _render_export_download as _render_export_download_impl,
 )
-from .shell import main
 
 warnings.filterwarnings("ignore")
 
@@ -229,3 +228,7 @@ __all__ = [
     "show_processing_page",
     "show_visualization_page",
 ]
+
+
+if __name__ == "__main__":
+    main()

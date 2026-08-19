@@ -288,7 +288,7 @@ flowchart TD
 **Dependencies:** U1, U2
 
 **Files:**
-- Create: `scripts/run_synthetic_complexity_ladder.py`
+- Create: `scripts/ladder/run.py`
 - Create: `workspace/experiments/synthetic_complexity_ladder/vectorize_ladder_rung.m` (required parameterized MATLAB driver: TIFF path + output batch dir; the tiny `.m` hardcodes one TIFF)
 - Create (runtime artifacts, not git-required): `workspace/experiments/synthetic_complexity_ladder/` with **per-rung** input / matlab_batches / python_run subdirs plus top-level `ladder_report.json`
 - Test: `tests/unit/analytics/parity/test_synthetic_ladder_report.py` (report assembly / stop orchestration on mocked per-rung results — no MATLAB in default CI)

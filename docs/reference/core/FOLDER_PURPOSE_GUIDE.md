@@ -93,6 +93,19 @@ their generators for the PhD proposal appendix and related methods write-ups.
 
 ## scripts/ — Developer Utilities
 
+Developer probes, grouped by domain. Not the public CLI. Inventory:
+[scripts/README.md](../../../scripts/README.md).
+
+```text
+scripts/
+├── edges/       # watershed / selection probes
+├── stretch/     # Energy stretch isolation (MATLAB .m names stay function-matched)
+├── ladder/      # synthetic complexity ladder
+├── monitor/     # parity run health / throughput
+├── docs/        # docs integrity verifier
+└── profiling/   # Phase 2 baseline
+```
+
 > **Note:** Prefer CLI subcommands for product workflows:
 > - Parity runner → `slavv parity <subcommand>`
 > - Trace comparator → `slavv parity compare-traces`
@@ -200,7 +213,7 @@ guard, stretch dest, and archived proofs. `scratch/` stays local.
 **See [Experiment Root](../../../AGENTS.md#experiment-root).** GitHub carries code, not Oracle/dest/dataset binaries. Completeness is `slavv parity inspect-experiment-root` after USB/rsync.
 
 ### "Can scripts/ import from slavv_python/?"
-**Yes.** `scripts/` contains developer probe scripts (e.g. `watershed_frontier_diff.py`, `edge_selection_funnel_probe.py`) referenced from [HANDOFF](../../../.claude/HANDOFF.md). They import from `slavv_python/` and are not part of the public CLI — use `slavv parity <subcommand>` for product workflows.
+**Yes.** `scripts/` contains developer probe scripts (e.g. `edges/frontier_diff.py`, `edges/selection_funnel.py`) referenced from [HANDOFF](../../../.claude/HANDOFF.md). They import from `slavv_python/` and are not part of the public CLI — use `slavv parity <subcommand>` for product workflows.
 
 ### "Where do MATLAB parity tests go?"
 - **Pre-gate integration tests:** `tests/integration/parity/`

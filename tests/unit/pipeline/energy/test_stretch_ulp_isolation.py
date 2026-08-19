@@ -17,7 +17,7 @@ from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
 from slavv_python.utils.validation import validate_parameters
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-CHUNK_HELPER = REPO_ROOT / "scripts" / "stretch_energy_chunk_v202.m"
+CHUNK_HELPER = REPO_ROOT / "scripts" / "stretch" / "stretch_energy_chunk_v202.m"
 GET_ENERGY = REPO_ROOT / "external" / "Vectorization-Public" / "source" / "get_energy_V202.m"
 
 

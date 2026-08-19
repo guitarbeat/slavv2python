@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 
 STRETCH_PY37_ENV = "STRETCH_PY37_PYTHON"
 DEFAULT_MATCHING_KERNEL = "3D gaussian conv annular pulse"
-WORKER_SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "stretch_matlab_engine_worker.py"
-HELPER_DIR = Path(__file__).resolve().parents[3] / "scripts"
+WORKER_SCRIPT = Path(__file__).resolve().parents[3] / "scripts" / "stretch" / "engine_worker.py"
+HELPER_DIR = Path(__file__).resolve().parents[3] / "scripts" / "stretch"
 
 
 def default_isolated_python37() -> Path:

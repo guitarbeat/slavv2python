@@ -26,7 +26,7 @@ from slavv_python.pipeline.energy.matlab_engine_backend import (
     refuse_protected_stretch_energy_dest,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DEST = REPO_ROOT / "workspace" / "runs" / "oracle_180709_E" / PHASE1_CLAIM_RUN_NAME
 DEFAULT_SCRATCH = REPO_ROOT / "workspace" / "scratch" / "phase2_profiling_baseline.json"
 DEFAULT_TRACKED = REPO_ROOT / "docs" / "reference" / "core" / "phase2-profiling-baseline.json"

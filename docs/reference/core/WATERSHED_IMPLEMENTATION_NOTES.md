@@ -28,7 +28,7 @@ To maintain readability, the 800+ line discovery logic is decomposed into specia
 6.  `_matlab_global_watershed_reset_join_locations`: Handles frontier cleanup during watershed joins.
 7.  `_matlab_global_watershed_assemble_results`: Finalizes traces and assembles the candidate payload.
 
-**Frontier backend:** `watershed_frontier_backend=sorted` (default) or `heap` (legacy). Golden trace diff: `scripts/watershed_frontier_diff.py` vs `workspace/scratch/matlab_edge_dump/frontier_trace.jsonl`.
+**Frontier backend:** `watershed_frontier_backend=sorted` (default) or `heap` (legacy). Golden trace diff: `scripts/edges/frontier_diff.py` vs `workspace/scratch/matlab_edge_dump/frontier_trace.jsonl`.
 
 ---
 

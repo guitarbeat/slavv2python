@@ -37,7 +37,7 @@ More commands: [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md). First extract
 | `tests/` | CI test suite |
 | `docs/` | Maintained docs (start at [docs/README.md](docs/README.md)) |
 | `figures/` | Publication figures |
-| `scripts/` | Developer probes (not the public CLI) |
+| `scripts/` | Developer probes by domain ([scripts/README.md](scripts/README.md); not the public CLI) |
 | `workspace/` | Experiment Root (binaries local/USB; scratch gitignored). See [Experiment Root](AGENTS.md#experiment-root). |
 | `external/` | Vendored MATLAB source |
 

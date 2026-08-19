@@ -6,12 +6,12 @@ plus per-stage progress and liveness. Liveness uses the resume/snapshot
 heartbeat AGE (reliable); it does NOT trust run-dir start-time clocks, which can
 be stale across restarts. It deliberately omits an ETA: the only run-dir
 progress signal is the merge cursor, which lags the parallel compute under
-n_jobs>1 -- use scripts/parity_run_throughput.py --log for the real chunk rate.
+n_jobs>1 -- use scripts/monitor/throughput.py --log for the real chunk rate.
 
 Usage::
 
-    python scripts/check_parity_run.py --run-dir workspace/runs/oracle_180709_E/canonical_full_v3
-    python scripts/check_parity_run.py --run-dir <run> --stall-min 20
+    python scripts/monitor/check_run.py --run-dir workspace/runs/oracle_180709_E/canonical_full_v3
+    python scripts/monitor/check_run.py --run-dir <run> --stall-min 20
 """
 
 from __future__ import annotations
@@ -126,7 +126,7 @@ def main() -> None:
     # Energy octave detail + overall progress.
     # NOTE: under n_jobs>1 these are the MERGE cursor, which lags the parallel
     # compute — the joblib "Done N tasks" log is the leading indicator. Use
-    # scripts/parity_run_throughput.py --log <run-log> for the live chunk rate.
+    # scripts/monitor/throughput.py --log <run-log> for the live chunk rate.
     if resume.get("units_total"):
         u, t = int(resume.get("completed_units", 0)), int(resume["units_total"])
         print(
@@ -139,7 +139,7 @@ def main() -> None:
     # Deliberately no ETA here: the only run-dir progress signal (the merge
     # cursor) lags the parallel compute, so an ETA from it is garbage. The
     # reliable rate is the joblib "Done N tasks" timeline in the run log.
-    print("rate/ETA: scripts/parity_run_throughput.py --log <run-log> --total-chunks <N>")
+    print("rate/ETA: scripts/monitor/throughput.py --log <run-log> --total-chunks <N>")
 
 
 if __name__ == "__main__":

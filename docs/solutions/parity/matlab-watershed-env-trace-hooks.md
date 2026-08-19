@@ -26,8 +26,8 @@ stub, not production tracing.
 - Historical crop traces: `workspace/scratch/matlab_edge_dump/` (JSONL labeled
   there; `.mat` dumps removed 2026-08-18).
 - Python: `slavv_python/pipeline/edges/execution_tracing.py`,
-  `scripts/watershed_frontier_diff.py`,
-  `scripts/compare_watershed_strel_state.py`.
+  `scripts/edges/frontier_diff.py`,
+  `scripts/edges/strel_state.py`.
 - Diary: [EXACT_PROOF_FINDINGS.HISTORICAL.md](../../investigations/exact-proof-findings-diary/EXACT_PROOF_FINDINGS.HISTORICAL.md)
   (2026-07-13 claim-state diagnostic).
 

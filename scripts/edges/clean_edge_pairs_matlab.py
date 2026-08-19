@@ -120,7 +120,9 @@ def main(argv: list[str] | None = None) -> int:
         reject_nonnegative_energy_edges=not matlab_global,
     )
 
-    crop_row_by_candidate = {candidate_index: row for row, candidate_index in enumerate(kept_after_crop)}
+    crop_row_by_candidate = {
+        candidate_index: row for row, candidate_index in enumerate(kept_after_crop)
+    }
     python_rows_one_based = np.asarray(
         [crop_row_by_candidate[index] + 1 for index in python_indices], dtype=np.int64
     )
@@ -151,9 +153,9 @@ def main(argv: list[str] | None = None) -> int:
         max_degree=max_degree,
     )
     matlab_output = loadmat(output_path)
-    matlab_rows_one_based = np.asarray(matlab_output["original_edge_indices"], dtype=np.int64).reshape(
-        -1
-    )
+    matlab_rows_one_based = np.asarray(
+        matlab_output["original_edge_indices"], dtype=np.int64
+    ).reshape(-1)
 
     min_len = min(len(python_rows_one_based), len(matlab_rows_one_based))
     mismatch_positions = np.flatnonzero(
@@ -166,8 +168,12 @@ def main(argv: list[str] | None = None) -> int:
         "same_length": bool(len(python_rows_one_based) == len(matlab_rows_one_based)),
         "mismatch_count_prefix": len(mismatch_positions),
         "first_mismatch_position": int(mismatch_positions[0]) if mismatch_positions.size else None,
-        "python_only_count": len(set(python_rows_one_based.tolist()) - set(matlab_rows_one_based.tolist())),
-        "matlab_only_count": len(set(matlab_rows_one_based.tolist()) - set(python_rows_one_based.tolist())),
+        "python_only_count": len(
+            set(python_rows_one_based.tolist()) - set(matlab_rows_one_based.tolist())
+        ),
+        "matlab_only_count": len(
+            set(matlab_rows_one_based.tolist()) - set(python_rows_one_based.tolist())
+        ),
     }
     print(json.dumps(summary, indent=2))
 

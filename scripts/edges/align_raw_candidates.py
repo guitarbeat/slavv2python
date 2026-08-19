@@ -4,8 +4,9 @@ oracle/Python canonical vertex indexing via the verified coordinate transform
 MATLAB's emission order of the tied crop pair (4043,6281)/(4212,6281) with Python's.
 
 Run:
-  .venv\\Scripts\\python.exe scripts/align_matlab_raw_candidates.py
+  .venv\\Scripts\\python.exe scripts/edges/align_raw_candidates.py
 """
+
 from __future__ import annotations
 
 import scipy.io
@@ -16,11 +17,13 @@ import numpy as np
 
 from slavv_python.utils.safe_unpickle import safe_load
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 BATCH = REPO / "workspace/oracles/180709_E_crop_M_v2/01_Input/matlab_results/batch_260624-105705"
 STANDALONE_DUMP = REPO / "workspace/scratch/matlab_edge_dump/raw_watershed_candidates.mat"
 PY_CAND = REPO / "workspace/runs/oracle_180709_E/crop_M_exact_v3/04_Edges/candidates.pkl"
-ORACLE_VERTS = REPO / "workspace/oracles/180709_E_crop_M_v2/03_Analysis/normalized/oracle/vertices.pkl"
+ORACLE_VERTS = (
+    REPO / "workspace/oracles/180709_E_crop_M_v2/03_Analysis/normalized/oracle/vertices.pkl"
+)
 
 
 def canonical_positions(positions_zxy: np.ndarray) -> np.ndarray:
@@ -35,9 +38,7 @@ def position_to_index_map(positions: np.ndarray) -> dict[tuple[int, int, int], i
 
 def main() -> None:
     # Canonical vertex positions (oracle == Python) in 0-based [Z,Y,X].
-    canon_pos = np.asarray(
-        safe_load(ORACLE_VERTS)["positions"], dtype=np.float64
-    )
+    canon_pos = np.asarray(safe_load(ORACLE_VERTS)["positions"], dtype=np.float64)
     canon_pos_yxz = canonical_positions(canon_pos)
     canon_map = position_to_index_map(canon_pos_yxz)
     n_canon = len(canon_pos)
@@ -48,7 +49,9 @@ def main() -> None:
     print(f"MATLAB standalone raw candidates: {matl_e2v.shape[0]} edges")
 
     # Batch curated vertex positions in [Y,X,Z] 1-based.
-    sv = scipy.io.loadmat(str(BATCH / "vectors" / "curated_vertices_260624-105705_180709_E_crop_M.mat"))
+    sv = scipy.io.loadmat(
+        str(BATCH / "vectors" / "curated_vertices_260624-105705_180709_E_crop_M.mat")
+    )
     batch_pos = np.asarray(sv["vertex_space_subscripts"], dtype=np.int64)  # [Y,X,Z] 1-based
     assert batch_pos.shape[0] == n_canon, (batch_pos.shape[0], n_canon)
 

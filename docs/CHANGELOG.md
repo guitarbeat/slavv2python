@@ -25,9 +25,11 @@ Changelog entries below are **dated product notes**, not the live parity table.
 
 ### Added / Changed
 
+- **Streamlit launch (G1–G4):** `slavv-app` now starts. `app.py` uses absolute imports, calls `shell.main()`, and page modules live in `interface/streamlit/views/` so Streamlit 1.58 does not treat them as MPA `pages/`. Smoke: `tests/ui/test_streamlit_entry.py`. Audit: [`2026-08-19-streamlit-gui-audit.md`](investigations/2026-08-19-streamlit-gui-audit.md).
+- **Scripts layout:** developer probes now live under [`scripts/edges/`](../scripts/edges/), [`scripts/stretch/`](../scripts/stretch/), [`scripts/ladder/`](../scripts/ladder/), [`scripts/monitor/`](../scripts/monitor/), [`scripts/docs/`](../scripts/docs/), and [`scripts/profiling/`](../scripts/profiling/). MATLAB stretch helpers keep function-matched filenames. Inventory: [`scripts/README.md`](../scripts/README.md).
 - **Figures layout:** publication assets now split into [`figures/claim/`](../figures/claim/) (ship story) and [`figures/research/`](../figures/research/) (ULP / speedup). Claim stems are `crop_missing_edges`, `crop_leftover_funnel`, `full_signed_residual`, `mismatch_budget`; generators sit next to their outputs (`claim/generate.py`, `research/generate.py`).
 - **Parity-Preserved Performance Innovations Catalog**: Documented all 9 core mathematical, algorithmic, and memory improvements in [`docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md`](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) and narrated them in [`docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md`](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) (journal packaging still open).
-- **Docs integrity verifier**: Added [`scripts/verify_docs_integrity.py`](../scripts/verify_docs_integrity.py) for authority, banner, wiring, and relative-link checks.
+- **Docs integrity verifier**: Added [`scripts/docs/verify_integrity.py`](../scripts/docs/verify_integrity.py) for authority, banner, wiring, and relative-link checks.
 - **Vertex Painting Structuring Element Caching**: Optimized [`slavv_python/pipeline/vertices/painting.py`](../slavv_python/pipeline/vertices/painting.py) by memoizing scale-specific ellipsoid coordinate offsets, reducing mesh construction calls from $O(V)$ to $O(S)$ while preserving vertex-body occupancy masks.
 
 ## [Unreleased] - 2026-07-10

@@ -680,7 +680,7 @@ def main() -> int:
     parser.add_argument(
         "--root",
         type=Path,
-        default=Path(__file__).resolve().parent.parent,
+        default=Path(__file__).resolve().parents[2],
         help="Repository root directory (default: parent of scripts/)",
     )
     parser.add_argument(

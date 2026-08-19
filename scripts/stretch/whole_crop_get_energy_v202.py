@@ -39,7 +39,7 @@ from slavv_python.pipeline.energy.matlab_engine_host import (
     resolve_python37_executable,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DEST = REPO_ROOT / "workspace" / "scratch" / "e14_whole_crop_get_energy_v202"
 ORACLE_BATCH = (
     REPO_ROOT

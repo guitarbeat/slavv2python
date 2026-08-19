@@ -83,8 +83,8 @@ speedup**, cutting energy from ~37 h to ~9–10 h and the full sequence to
   compute** — joblib computes all chunks concurrently, then the progress callback
   fires during the serial merge. So `resume_state` can read ~600 while the joblib
   log shows ~2800 *computed*. For live energy rate/ETA, use the joblib
-  `Done N tasks | elapsed` lines (`scripts/parity_run_throughput.py --log`); for a
-  liveness/verdict check, use `scripts/check_parity_run.py --run-dir` (it reads the
+  `Done N tasks | elapsed` lines (`scripts/monitor/throughput.py --log`); for a
+  liveness/verdict check, use `scripts/monitor/check_run.py --run-dir` (it reads the
   heartbeat **age**, not the lagging cursor). Do **not** derive an ETA from the
   run-dir progress — it lags and produces nonsense.
 - The energy stage is **not mid-stage resumable** (`resumable: false`), so

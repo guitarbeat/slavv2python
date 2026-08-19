@@ -8,7 +8,7 @@ reliable live signal for the energy stage.
 
 Usage::
 
-    python scripts/parity_run_throughput.py --run-dir <run> [--log <logfile>]
+    python scripts/monitor/throughput.py --run-dir <run> [--log <logfile>]
 """
 
 from __future__ import annotations

@@ -1,1 +1,1 @@
-"""Grouped Streamlit page surfaces for SLAVV."""
+"""Streamlit view modules. Named ``views`` so Streamlit does not treat this folder as MPA ``pages/``."""

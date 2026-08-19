@@ -20,6 +20,14 @@ This folder houses active technical performance catalogs, publication drafts, an
 
 ---
 
+## Product / UI
+
+| Document | Type | Description |
+|---|---|---|
+| [2026-08-19-streamlit-gui-audit.md](2026-08-19-streamlit-gui-audit.md) | UI audit | Streamlit `slavv-app` does not start (relative import + unused `main()`); ranked page findings. Not parity status. |
+
+---
+
 ## Deprecated / Historical Archives
 
 | Entry | Note |

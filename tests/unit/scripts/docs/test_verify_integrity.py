@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from scripts.verify_docs_integrity import (
+from scripts.docs.verify_integrity import (
     MANDATORY_PAPER_DOC,
     MANDATORY_PERFORMANCE_DOC,
     REQUIRED_DEPRECATION_BANNER_FILES,

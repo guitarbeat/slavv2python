@@ -42,7 +42,7 @@ A single matching 32³ Y-junction dual-run (`workspace/experiments/tiny_syntheti
 
 The **synthetic complexity ladder** answers a narrower question: under the same MATLAB↔Python dual-run compare pattern as the tiny experiment, escalate a **fixed**, hand-defined set of fake volumes until the **first real mismatch** on vertices, edges, or strands — or until a soft size/time cap / last fixed rung if they still agree. It is a **falsification / early-break probe**, not Certification, not Phase 1 Closure, and not evidence that the ADR 0013 Claimed Trace Energy production fix is done. Soft-cap full match on every rung is an informative negative result for the ladder hypothesis only; it does not prove the full-volume residual is ranking-only, and it must never update ONE TRUTH or claim-run roots.
 
-Implementation on branch `feat/synthetic-complexity-ladder` (PR #108 open / unmerged as of this writing) maps to three units: U1 named geometries in `slavv_python/utils/synthetic.py`, U2 strict compare in `slavv_python/analytics/parity/probes/synthetic_dual_run_compare.py`, U3 orchestrator `scripts/run_synthetic_complexity_ladder.py` plus report helpers in `synthetic_ladder_report.py`. Unit coverage for report/stop orchestration lives in `tests/unit/analytics/parity/test_synthetic_ladder_report.py` (eight unit tests).
+Implementation on branch `feat/synthetic-complexity-ladder` (PR #108 open / unmerged as of this writing) maps to three units: U1 named geometries in `slavv_python/utils/synthetic.py`, U2 strict compare in `slavv_python/analytics/parity/probes/synthetic_dual_run_compare.py`, U3 orchestrator `scripts/ladder/run.py` plus report helpers in `synthetic_ladder_report.py`. Unit coverage for report/stop orchestration lives in `tests/unit/analytics/parity/test_synthetic_ladder_report.py` (eight unit tests).
 
 ## Guidance
 
@@ -57,14 +57,14 @@ A short fixed ladder of four named synthetic TIFF geometries, run in escalation 
 
 Rung ids and builders are registered in `slavv_python/utils/synthetic.py` (`LADDER_RUNG_IDS`; `generate_ladder_rung_volume`). Max dimension per rung for soft-size checks is `LADDER_RUNG_MAX_DIM`. There is **no** open-ended or search-based volume generator.
 
-Each rung dual-runs MATLAB Vectorization-Public (parameterized driver `scripts/vectorize_ladder_rung.m`) and Python `SlavvPipeline` with shared params mirroring the tiny experiment, then applies a **strict** first-break surface: curated vertex spatial keys → spatial undirected edge pairs → strand counts (`first_break_surface` in `synthetic_dual_run_compare.py`). Graded tiny-script residual bands are **not** the stop predicate.
+Each rung dual-runs MATLAB Vectorization-Public (parameterized driver `scripts/ladder/vectorize_ladder_rung.m`) and Python `SlavvPipeline` with shared params mirroring the tiny experiment, then applies a **strict** first-break surface: curated vertex spatial keys → spatial undirected edge pairs → strand counts (`first_break_surface` in `synthetic_dual_run_compare.py`). Graded tiny-script residual bands are **not** the stop predicate.
 
 ### How to run
 
 From the repo root (PowerShell):
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\run_synthetic_complexity_ladder.py
+.\.venv\Scripts\python.exe scripts\ladder\run.py
 ```
 
 Useful flags:
@@ -79,7 +79,7 @@ Useful flags:
 
 ### Stop-at-first-mismatch and outcome semantics
 
-Orchestration (`run_ladder` in `scripts/run_synthetic_complexity_ladder.py`):
+Orchestration (`run_ladder` in `scripts/ladder/run.py`):
 
 1. For each planned rung, optionally apply soft-cap **before** starting it (`soft_cap_blocks_next_rung` in `synthetic_ladder_report.py`): size if next max dim > policy; time if either prior side’s wall_sec exceeded the budget (null wall under reuse skips that side).
 2. Run dual-run; status becomes `match`, `first_break`, `inconclusive`, or `failed`.
@@ -122,7 +122,7 @@ Do **not** use ladder outcomes to update ONE TRUTH, promote claim-run roots, dec
 ### Full ladder (operator)
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\run_synthetic_complexity_ladder.py
+.\.venv\Scripts\python.exe scripts\ladder\run.py
 ```
 
 Writes `workspace/experiments/synthetic_complexity_ladder/ladder_report.json`.
@@ -130,13 +130,13 @@ Writes `workspace/experiments/synthetic_complexity_ladder/ladder_report.json`.
 ### Smoke baseline rung only
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\run_synthetic_complexity_ladder.py --rung y_junction_32
+.\.venv\Scripts\python.exe scripts\ladder\run.py --rung y_junction_32
 ```
 
 ### Reuse artifacts while iterating report logic
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\run_synthetic_complexity_ladder.py --skip-matlab --reuse-python
+.\.venv\Scripts\python.exe scripts\ladder\run.py --skip-matlab --reuse-python
 ```
 
 ### Expected report shapes (from unit tests)
