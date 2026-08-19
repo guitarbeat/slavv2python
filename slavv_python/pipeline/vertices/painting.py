@@ -28,6 +28,7 @@ def paint_vertex_image(
     including maintained-path terminal detection that should treat entering a vertex body as a hit.
     """
     vertex_image: np.ndarray = np.zeros(image_shape, dtype=np.uint16)
+    strel_cache: dict[tuple[float, float, float], tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 
     for i, (pos, scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if len(lumen_radius_pixels) == len(vertex_positions):
@@ -39,17 +40,22 @@ def paint_vertex_image(
             radii: np.ndarray = np.repeat(float(np.asarray(val).item()), 3)
         else:
             radii = np.asarray(val)
+        radii_key = (float(radii[0]), float(radii[1]), float(radii[2]))
         try:
-            ellipsoid_mask = ellipsoid(radii[0], radii[1], radii[2], spacing=(1.0, 1.0, 1.0))
-            coords = np.where(ellipsoid_mask)
-            center: Int64Array = np.array(ellipsoid_mask.shape, dtype=np.int64) // 2
-            rr = coords[0] - center[0]
-            cc = coords[1] - center[1]
-            dd = coords[2] - center[2]
+            if radii_key in strel_cache:
+                rr, cc, dd = strel_cache[radii_key]
+            else:
+                ellipsoid_mask = ellipsoid(radii[0], radii[1], radii[2], spacing=(1.0, 1.0, 1.0))
+                coords = np.where(ellipsoid_mask)
+                center: Int64Array = np.array(ellipsoid_mask.shape, dtype=np.int64) // 2
+                rr = np.asarray(coords[0] - center[0], dtype=np.int64)
+                cc = np.asarray(coords[1] - center[1], dtype=np.int64)
+                dd = np.asarray(coords[2] - center[2], dtype=np.int64)
+                strel_cache[radii_key] = (rr, cc, dd)
 
-            y_coords = rr + int(slavv_round_array(np.asarray([pos[0]]))[0])
-            x_coords = cc + int(slavv_round_array(np.asarray([pos[1]]))[0])
-            z_coords = dd + int(slavv_round_array(np.asarray([pos[2]]))[0])
+            y_coords: np.ndarray = rr + int(slavv_round_array(np.asarray([pos[0]]))[0])
+            x_coords: np.ndarray = cc + int(slavv_round_array(np.asarray([pos[1]]))[0])
+            z_coords: np.ndarray = dd + int(slavv_round_array(np.asarray([pos[2]]))[0])
 
             valid_mask = (
                 (y_coords >= 0)
