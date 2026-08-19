@@ -84,7 +84,8 @@ class ParamFieldCompare:
 
 def matlab_round_positive(values: np.ndarray) -> np.ndarray:
     """MATLAB ``round`` for non-negative values (half away from zero)."""
-    return np.floor(np.asarray(values, dtype=float) + 0.5)
+    result: np.ndarray = np.floor(np.asarray(values, dtype=float) + 0.5)
+    return result
 
 
 def matlab_derived_scales_per_octave(radii: np.ndarray) -> float:
@@ -117,14 +118,14 @@ def lattice_from_rf(
     microns_per_pixel = microns_f * rf_f
     voxel_aspect = 1.0 / microns_per_pixel
     dims, n_chunks = get_chunking_lattice_v190(voxel_aspect, float(max_voxels), approx_size)
-    dim_t = tuple(int(v) for v in np.asarray(dims).tolist())
-    approx_t = tuple(int(v) for v in approx_size.tolist())
-    rf_t = tuple(int(v) for v in rf_f.tolist())
+    dim_list = [int(v) for v in np.asarray(dims).tolist()]
+    rf_list = [int(v) for v in rf_f.tolist()]
+    approx_list = [int(v) for v in approx_size.tolist()]
     return LatticeRecord(
         octave=int(octave),
-        rf=rf_t,
-        approx_size=approx_t,
-        lattice_dimensions=(dim_t[0], dim_t[1], dim_t[2]),
+        rf=(rf_list[0], rf_list[1], rf_list[2]),
+        approx_size=(approx_list[0], approx_list[1], approx_list[2]),
+        lattice_dimensions=(dim_list[0], dim_list[1], dim_list[2]),
         number_of_chunks=int(n_chunks),
         frame=frame,
     )
@@ -141,11 +142,12 @@ def python_lattices_from_config(config: dict[str, Any]) -> list[LatticeRecord]:
         matlab_image_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
         rf_m = np.array([built.rf_zyx[1], built.rf_zyx[2], built.rf_zyx[0]], dtype=float)
         approx = matlab_round_positive(matlab_image_shape / np.maximum(rf_m, 1.0))
+        approx_l = [int(v) for v in approx.tolist()]
         records.append(
             LatticeRecord(
                 octave=built.octave,
                 rf=rf_matlab,
-                approx_size=tuple(int(v) for v in approx.tolist()),
+                approx_size=(approx_l[0], approx_l[1], approx_l[2]),
                 lattice_dimensions=built.lattice_dimensions_yxz,
                 number_of_chunks=built.number_of_chunks,
                 frame="python_yxz",
@@ -172,12 +174,12 @@ def matlab_formula_lattices(
         else matlab_derived_scales_per_octave(radii_f)
     )
     n_scales = int(radii_f.size)
-    scale_subscripts = np.arange(1, n_scales + 1, dtype=float)
+    scale_subscripts: np.ndarray = np.arange(1, n_scales + 1, dtype=float)
     octave_at_scales = np.ceil(scale_subscripts / spo / 3.0).astype(np.int32)
     octave_range = np.unique(octave_at_scales)
     worst = float(_WORST_RESOLUTION_TO_DOWNSAMPLE)
     max_oct = int(octave_range.max())
-    rf_by_octave = np.zeros((max_oct, 3), dtype=float)
+    rf_by_octave: np.ndarray = np.zeros((max_oct, 3), dtype=float)
     for current_octave in octave_range:
         smallest = min(
             n_scales,
@@ -190,7 +192,7 @@ def matlab_formula_lattices(
         rf_by_octave[int(current_octave) - 1, :] = matlab_round_positive(worst / resolutions)
     rf_matrix = np.stack([rf_by_octave[int(o) - 1] for o in octave_range], axis=0)
     _unique_rf, inverse = np.unique(rf_matrix, axis=0, return_inverse=True)
-    ia_last = np.zeros(int(_unique_rf.shape[0]), dtype=int)
+    ia_last: np.ndarray = np.zeros(int(_unique_rf.shape[0]), dtype=int)
     for idx, row_id in enumerate(inverse):
         ia_last[int(row_id)] = int(idx)
     octave_range_kept = octave_range[ia_last]
@@ -324,7 +326,8 @@ _CORE_PARAM_NAMES = frozenset(
 def zyx_to_yxz(values: np.ndarray) -> np.ndarray:
     """Permute a ZYX vector to MATLAB YXZ."""
     arr = np.asarray(values, dtype=np.float64).reshape(3)
-    return arr[[1, 2, 0]]
+    result: np.ndarray = arr[[1, 2, 0]]
+    return result
 
 
 def lattices_match_by_rf(

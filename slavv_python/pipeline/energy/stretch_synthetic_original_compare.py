@@ -48,29 +48,34 @@ def seeded_volume_zyx(
     """Seeded float64 volume in pipeline ZYX order."""
     rng = np.random.default_rng(int(seed))
     if intensity == INTENSITY_UNIT:
-        return np.ascontiguousarray(rng.random(shape_zyx, dtype=np.float64))
+        result: np.ndarray = np.ascontiguousarray(rng.random(shape_zyx, dtype=np.float64))
+        return result
     if intensity == INTENSITY_LOGNORMAL:
-        return np.ascontiguousarray(
+        result_ln: np.ndarray = np.ascontiguousarray(
             np.exp(rng.normal(loc=0.0, scale=1.0, size=shape_zyx)).astype(np.float64)
         )
+        return result_ln
     raise ValueError(f"unknown intensity {intensity!r}")
 
 
 def volume_zyx_to_matlab_yxz(image_zyx: np.ndarray) -> np.ndarray:
     """Pipeline ZYX -> MATLAB YXZ."""
-    return np.transpose(np.asarray(image_zyx, dtype=np.float64), (1, 2, 0))
+    result: np.ndarray = np.transpose(np.asarray(image_zyx, dtype=np.float64), (1, 2, 0))
+    return result
 
 
 def matlab_yxz_to_h5py_c_order(volume_yxz: np.ndarray) -> np.ndarray:
     """Inverse of ``h5py_c_order_to_matlab_yxz`` for a 3D MATLAB ``[Y, X, Z]`` array."""
     arr = np.asarray(volume_yxz, dtype=np.float64)
-    return np.transpose(arr, tuple(range(arr.ndim - 1, -1, -1)))
+    result: np.ndarray = np.transpose(arr, tuple(range(arr.ndim - 1, -1, -1)))
+    return result
 
 
 def energy_h5py_plane_to_zyx(plane: np.ndarray) -> np.ndarray:
     """MATLAB energy ``[Y, X, Z]`` via h5py reverse-all-axes -> pipeline ZYX."""
     yxz = h5py_c_order_to_matlab_yxz(np.asarray(plane, dtype=np.float64))
-    return np.transpose(yxz, (2, 0, 1))
+    result: np.ndarray = np.transpose(yxz, (2, 0, 1))
+    return result
 
 
 def classify_synthetic_compare(

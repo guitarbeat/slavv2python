@@ -144,7 +144,8 @@ def default_production_local_compares() -> list[LocalRangeCompare]:
 def h5py_c_order_to_matlab_yxz(volume: np.ndarray) -> np.ndarray:
     """Reverse all axes: h5py C-order of MATLAB column-major ``[Y, X, Z]``."""
     arr = np.asarray(volume)
-    return np.transpose(arr, tuple(range(arr.ndim - 1, -1, -1)))
+    result: np.ndarray = np.transpose(arr, tuple(range(arr.ndim - 1, -1, -1)))
+    return result
 
 
 def python_strided_chunk_yxz(
@@ -165,7 +166,8 @@ def python_strided_chunk_yxz(
         y_start : y_start + y_count : stride_y,
         x_start : x_start + x_count : stride_x,
     ]
-    return np.transpose(chunk_zyx, (1, 2, 0)).astype(np.float64, copy=False)
+    result: np.ndarray = np.transpose(chunk_zyx, (1, 2, 0)).astype(np.float64, copy=False)
+    return result
 
 
 def matlab_h52mat_chunk_yxz(
@@ -187,11 +189,12 @@ def matlab_h52mat_chunk_yxz(
     y_n = downsample_count(int(y_read_count), rf_y)
     x_n = downsample_count(int(x_read_count), rf_x)
     z_n = downsample_count(int(z_read_count), rf_z)
-    return np.asarray(volume_yxz, dtype=np.float64)[
+    result: np.ndarray = np.asarray(volume_yxz, dtype=np.float64)[
         y0 : y0 + y_n * rf_y : rf_y,
         x0 : x0 + x_n * rf_x : rf_x,
         z0 : z0 + z_n * rf_z : rf_z,
     ]
+    return result
 
 
 @dataclass(frozen=True)

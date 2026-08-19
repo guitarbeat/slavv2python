@@ -24,7 +24,11 @@ from slavv_python.analytics.parity.proof.stretch import (
 )
 from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.matlab_engine_backend import MatlabEngineInfraError
-from slavv_python.pipeline.energy.matlab_engine_host import energy_chunk_v202_from_spatial
+from slavv_python.pipeline.energy.matlab_engine_host import (
+    MatlabEnginePy37Worker,
+    MatlabEngineSession,
+    energy_chunk_v202_from_spatial,
+)
 from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _matlab_coarse_local_slices,
     get_chunking_lattice_v190,
@@ -314,7 +318,8 @@ def octave_owned_mask(
     v2_scales: np.ndarray, scale_indices_at_octave: tuple[int, ...]
 ) -> np.ndarray:
     """True where v2 ``scale_indices`` were won by this octave (min-merge survivors)."""
-    return np.isin(np.asarray(v2_scales), np.asarray(scale_indices_at_octave, dtype=np.int16))
+    result: np.ndarray = np.isin(np.asarray(v2_scales), np.asarray(scale_indices_at_octave, dtype=np.int16))
+    return result
 
 
 def run_stretch_chunk_v202(
@@ -322,7 +327,7 @@ def run_stretch_chunk_v202(
     config: dict[str, Any],
     lattice: OctaveChunkLattice,
     chunk_index: int,
-    session: object,
+    session: MatlabEngineSession | MatlabEnginePy37Worker,
 ) -> tuple[np.ndarray, np.ndarray, tuple[slice, slice, slice]]:
     """Re-run one chunk via ``energy_chunk_v202_from_spatial`` (engine body only).
 
