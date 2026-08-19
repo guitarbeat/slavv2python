@@ -4,8 +4,11 @@
 
 Do not require Python and MATLAB to emit the exact same edge-pair list in the
 same order (watershed is a chaotic flood-fill). Ship bar: who-owns-which-voxel
-map plus matching strand/junction bags. Phase 1 is closed on that bar. Exact
-`connections` order is optional stretch.
+map plus matching strand/junction bags. Raw pair overlap is the analogue of
+pixel-accuracy; ownership-map + strand/junction bags is the analogue of Dice/IoU
++ spatial tolerance ([PARITY_METHODOLOGY.md](../reference/core/PARITY_METHODOLOGY.md) §4,
+Müller et al. PMC9208116). Phase 1 is closed on that bar. Exact `connections`
+order is optional stretch.
 
 ## Status
 Accepted (2026-06-25)

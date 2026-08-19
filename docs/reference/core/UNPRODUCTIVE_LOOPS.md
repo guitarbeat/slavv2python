@@ -48,7 +48,7 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 
 ## 8. The FIFO/LIFO Tie-Breaking Illusion
 *   **The Loop**: Implementing chronological tie-breakers (FIFO/LIFO) in priority queues to match observed MATLAB behavior.
-*   **The Reality**: MATLAB tie-breaking for sorting and `min()` is almost always based on **lowest linear index** (column-major). Any other tie-breaker is a divergence.
+*   **The Reality**: MATLAB `min` / `sort` / `find` ties break on **lowest Fortran (column-major) linear index**, not FIFO/LIFO. Any other tie-breaker is a divergence. No peer-reviewed SLAVV paper — [MathWorks column-major vs row-major](https://www.mathworks.com/help/coder/ug/what-are-column-major-and-row-major-representation-1.html) and [NumPy for MATLAB users](https://numpy.org/doc/stable/user/numpy-for-matlab-users.html); index: [papers/README.md](../papers/README.md) §5.
 *   **Guidance**: Use **Lowest Linear Index Priority** as the secondary sort key in all priority queues (Frontier, Vertex candidates).
 
 ## 9. The Intensity Scaling Mirage

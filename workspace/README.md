@@ -1,5 +1,7 @@
 # Workspace
 
+**New engineer?** Start with [New engineer start here](../docs/reference/core/NEW_ENGINEER_START_HERE.md) — then return here for dest layout.
+
 See [Experiment Root](../AGENTS.md#experiment-root).
 
 **Purpose:** On-disk Oracles, datasets, live Claim Run Root / crop guard /

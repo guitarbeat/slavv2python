@@ -7,6 +7,7 @@ shipped; speed and paper write-up come after that.
 
 Cited research syntheses that inform the project's direction — distinct from:
 
+- **[papers/README.md](../reference/papers/README.md)** — annotated index of papers this repo actually uses (or “no paper”), grouped by common confusions
 - **[plans/](../plans/)** — scoped specs for active initiatives
 - **[brainstorms/](../brainstorms/)** — raw pre-plan ideas (deleted once promoted)
 - **[solutions/](../solutions/)** — solved problems and runbooks

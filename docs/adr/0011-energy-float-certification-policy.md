@@ -5,6 +5,8 @@
 For Energy **ship**, scale winners must match exactly, but the Energy numbers
 only need to be close (`allclose`). MATLAB and NumPy math libraries differ in
 the last digits. Identical last digits is a later stretch goal, not this ADR.
+Literature: [PARITY_METHODOLOGY.md](../reference/core/PARITY_METHODOLOGY.md)
+(CARFAC, Demmel, MKL CNR, NumPy `allclose`). Index: [papers/README.md](../reference/papers/README.md) §3.
 
 ## Status
 Accepted (2026-06-24)

@@ -5,9 +5,9 @@ MATLAB source lives in `external/Vectorization-Public/source/`.
 
 **Status:** Phase 1 is **CLOSED** — close enough to ship on the full volume, not identical last digits. Live numbers: [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Tasks: [TODO.md](docs/TODO.md). Commands: [HANDOFF](.claude/HANDOFF.md).
 
-The public workflow is paper-first: `slavv run` with the default `paper` profile, then export `network.json`. Exact MATLAB proof is a separate developer track (`slavv parity`).
+The public workflow is **Paper Path** first: `slavv run` with the default `paper` profile (not Mihelic et al. 2021), then export `network.json`. Exact MATLAB proof is a separate developer track (`slavv parity`). Which citation, or “no paper”: [papers/README.md](docs/reference/papers/README.md).
 
-**New here?** Read [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) first — two products, two reading paths, what confuses people on week one.
+**New here?** Read [New engineer start here](docs/reference/core/NEW_ENGINEER_START_HERE.md) first — Paper Path vs Exact Route, two reading paths, common week-one traps.
 
 ## Quick start
 
@@ -47,7 +47,7 @@ Folder rules: [FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE
 
 | I need… | Go here |
 |---------|---------|
-| **Brand-new engineer — start here** | [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) |
+| **Brand-new engineer — start here** | [New engineer start here](docs/reference/core/NEW_ENGINEER_START_HERE.md) |
 | Full documentation map | [docs/README.md](docs/README.md) |
 | Live parity status | [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 | Stretch leftover (plain English) | [crop-energy-stretch-float-isolation.md](docs/solutions/parity/crop-energy-stretch-float-isolation.md) |

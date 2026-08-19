@@ -17,6 +17,15 @@ adversarially fact-checked. Sources are listed at the end.
 > flood-fill), counting exact edge pairs is the wrong bar — use who-owns-which-voxel
 > and matching strand/junction bags instead. That is ADR 0011 (`allclose`) and ADR 0012.
 > Identical last digits is an extra stretch goal, not the ship bar. Phase 1 is already closed.
+> Annotated index (which citation, or “no paper”): [papers/README.md](../papers/README.md).
+
+| Ambiguity | Citation / decision | Home |
+|-----------|---------------------|------|
+| Paper prose vs MATLAB vs Python | Mihelic 2021 is narrative; `external/Vectorization-Public/` is the executable spec | [MATLAB_METHOD_IMPLEMENTATION_PLAN.md](MATLAB_METHOD_IMPLEMENTATION_PLAN.md#canonical-hierarchy) |
+| “Paper” vs Paper Path | **No external paper.** Publication = Mihelic 2021; Paper Path = `paper` profile | [papers/README.md](../papers/README.md) §2 · [GLOSSARY.md](GLOSSARY.md) |
+| Last float bits | CARFAC, Demmel, ReproBLAS, ACM TOMS binned numbers, MKL CNR, Cornea ULP, NumPy `allclose` | this doc §§2–3 · [ADR 0011](../../adr/0011-energy-float-certification-policy.md) |
+| Exact edge-pair / pixel bar | Müller et al. (pixel-accuracy vs Dice/IoU); ADR 0012 is the repo bar | this doc §4 · [ADR 0012](../../adr/0012-edge-watershed-parity-bar.md) |
+| Fortran tie-break vs FIFO | **No SLAVV paper.** MathWorks column-major + NumPy for MATLAB users | this doc §5 · glossary **Lowest Linear Index Priority** |
 
 **Figure (proposal appendix):** quantitative summary of the port —
 candidate-pair overlap trajectory, edge-pair recovery waterfall, full-volume
@@ -86,7 +95,8 @@ watershed analogue: edges certify on **voxel ownership-map agreement** (a spatia
 overlap measure on the catchment partition) and network on **strand endpoint-pair +
 bifurcation multisets** (topology) + **sub-voxel trace tolerance** (a boundary/distance
 bar). Raw edge-pair overlap is explicitly rejected — the direct analogue of "don't use
-pixel-accuracy."
+pixel-accuracy." In one sentence: raw pair overlap ≅ pixel-accuracy; ownership-map +
+strand/junction bags ≅ Dice/IoU + spatial tolerance.
 
 ## 5. Convention pitfalls (all confirmed against primary docs)
 
@@ -128,6 +138,7 @@ on certification mechanics, somewhat ahead of published practice.
 | 9 | NumPy, [NumPy for MATLAB users](https://numpy.org/doc/stable/user/numpy-for-matlab-users.html) | primary | Indexing + memory-order conventions |
 | 10 | MathWorks, [column-major vs row-major](https://www.mathworks.com/help/coder/ug/what-are-column-major-and-row-major-representation-1.html) | primary | Memory layout |
 | 11 | NumPy, [`numpy.round`](https://numpy.org/doc/stable/reference/generated/numpy.round.html) | primary | Banker's rounding |
+| 12 | Ahrens, Demmel, Nguyen, *Algorithms for Efficient Reproducible Floating Point Summation*, ACM TOMS, [doi:10.1145/3389360](https://doi.org/10.1145/3389360) | peer-reviewed | Binned-number reproducible accumulators (also [post-parity-optimization-and-paper.md](../../research/post-parity-optimization-and-paper.md)) |
 
 *Compiled 2026-06-25 from a fact-checked deep-research pass (5 search angles, 25 sources,
 25 claims verified 3-of-3). See [ADR 0011](../../adr/0011-energy-float-certification-policy.md)

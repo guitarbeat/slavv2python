@@ -11,8 +11,13 @@ explains the published method. Live Python-vs-MATLAB status is [ONE TRUTH](EXACT
 
 Original method from Mihelic et al. (2021): how a 3D two-photon volume becomes a network of vessel centerlines.
 
-**Paper:** Mihelic SA, Sikora WA, Hassan AM, Williamson MR, Jones TA, Dunn AK. *Segmentation-Less, Automated, Vascular Vectorization.* PLOS Computational Biology 17(10): e1009451 (2021).  
+**Paper (publication):** Mihelic SA, Sikora WA, Hassan AM, Williamson MR, Jones TA, Dunn AK. *Segmentation-Less, Automated, Vascular Vectorization.* PLOS Computational Biology 17(10): e1009451 (2021).  
 **DOI:** [10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451)
+
+This page is the publication’s **narrative**. The executable spec for parity is
+`external/Vectorization-Public/` ([hierarchy](MATLAB_METHOD_IMPLEMENTATION_PLAN.md#canonical-hierarchy)).
+**Paper Path** in the running-pathways table below is the public `paper` profile —
+not this article. Index: [papers/README.md](../papers/README.md).
 
 ---
 
@@ -188,7 +193,8 @@ The final network graph consists of three topological elements based on voxel de
 
 ## ⚙️ The Running Pathways
 
-The repository supports two major running pathways configured via execution profiles:
+The repository supports two major running pathways configured via execution profiles.
+**Paper Path** is the `paper` profile, not the 2021 publication above.
 
 | Feature | Paper Path (`paper` profile) | Exact Route (`matlab_compat` / `exact`) |
 | :--- | :--- | :--- |

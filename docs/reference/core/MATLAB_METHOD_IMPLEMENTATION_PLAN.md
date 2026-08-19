@@ -6,8 +6,10 @@
 
 This file says what “Python implements the published SLAVV method” is allowed to
 mean. Live pass/fail is [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md), not
-this plan. Public `slavv run` (paper profile) is separate from the exact MATLAB
-proof track. Phase 1 exact-route certification is already closed.
+this plan. Public `slavv run` (**Paper Path**, `paper` profile) is separate from
+the exact MATLAB proof track — and is **not** the 2021 publication. Phase 1
+exact-route certification is already closed. Papers index:
+[papers/README.md](../papers/README.md).
 
 This document defines what it means to say that Python implements the released
 SLAVV method and records the remaining work to make that statement truthful.
@@ -46,6 +48,9 @@ Implications:
   released MATLAB code.
 - Current Python docs must never overrule either the MATLAB slavv_python or proof
   artifacts.
+
+Annotated bibliography for this hierarchy and the other four common confusions:
+[papers/README.md](../papers/README.md).
 
 ## Claim Boundaries
 

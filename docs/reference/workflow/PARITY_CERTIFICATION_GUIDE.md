@@ -13,6 +13,103 @@ For faster iteration before (or in parallel with) full-volume certification, see
 
 ---
 
+## Parity harness code tour
+
+*If you just cloned the repo and opened `slavv_python/analytics/parity/` expecting
+one `compare_to_matlab.py`, this section is for you.*
+
+CLI registry: [`commands.py`](../../../slavv_python/analytics/parity/commands.py) → handlers in
+[`cli_handlers/`](../../../slavv_python/analytics/parity/cli_handlers/).
+
+### Four jobs that all look like "parity"
+
+| Job | Code home | Answers | Does **not** answer |
+|-----|-----------|---------|---------------------|
+| **Parity Preflight** | `runs/preflight.py` | Safe to launch/resume? memory, params, provenance | Python ≡ MATLAB |
+| **Exact-run writer** | `runs/resume.py`, `writer_session.py` → `SlavvPipeline.run` | Produce checkpoints on `dest_run_root` | Compare or certify |
+| **Exact Proof Coordinator** | `proof/coordinator.py` (`prove-exact`) | Stage pass/fail vs oracle after checkpoints exist | Run watershed/Energy |
+| **Parity Experiment** | `experiments/` (library — **no** dedicated CLI) | Cheap same-class pair-set compare, proof dest pairing, cheap-loop gate | Phase 1 closure by itself |
+
+The module docstring in [`experiments/__init__.py`](../../../slavv_python/analytics/parity/experiments/__init__.py) states the boundary: experiments are **not** Certification; coordinator owns `prove`/`capture`; preflight owns launch safety.
+
+**Trap:** Green preflight → run `prove-exact` → red. That is normal if checkpoints are stale, wrong dest, or the bug is in generation — preflight never loaded MATLAB vectors for compare.
+
+### Package map
+
+| Folder | Owns |
+|--------|------|
+| `proof/` | Coordinator, `artifact_comparator.py` (ADR 0011/0012 gates), proof JSON persistence |
+| `experiments/` | `ArtifactClass`, `compare_same_class_pair_sets`, `load_proof_record`, `require_cheap_loop` |
+| `oracle/` | Load/normalize MATLAB vectors + Python checkpoints; promote oracle; params audit |
+| `runs/` | Preflight, init/resume/launch, writer lease, detached jobs, monitor |
+| `probes/` | Diagnostics (trace diff, crop export, candidate capture adapters) — not the cert compare surface |
+| `constants.py` | On-disk paths, `LIVE_DEST_NAMES`, `PROTECTED_DEST_NAMES`, inspect manifest paths |
+
+### Writer vs reader
+
+Pipeline writers (`SlavvPipeline` + stage managers) produce checkpoints.
+Parity readers (`preflight`, `coordinator.prove`, `experiments`) load and judge
+what is on disk. `coordinator.py` does **not** run the pipeline — it loads
+existing checkpoints and oracle vectors.
+
+### Three roots on every exact proof
+
+| Flag / concept | Meaning |
+|----------------|---------|
+| `--oracle-root` | Preserved MATLAB truth under `workspace/oracles/<id>/` |
+| `--source-run-root` | Baseline run that seeds the proof surface (params, pairing) |
+| `--dest-run-root` | Run under test; checkpoints compared here; proof JSON written here |
+
+**Trap:** `--dest-run-root` in the proof payload must match the folder you think
+you proved. Always cite via `slavv parity inspect-proof`.
+
+### Edge artifacts (raw vs final)
+
+| `ArtifactClass` | Typical paths | Glossary term |
+|-----------------|---------------|---------------|
+| `RAW_CANDIDATE_SET` | `04_Edges/candidates.pkl`, `checkpoint_edge_candidates.pkl` (fallback) | **Candidate Set** |
+| `EDGE_SET` | `checkpoint_edges.pkl`, oracle `edges.pkl`, `edges_*.mat` | **Edge Set** |
+
+**Trap:** Oracle `edges.pkl` is **final** (after MATLAB cleanup). Python
+`candidates.pkl` is **raw watershed emission**. Comparing them looks like "MATLAB
+never emits pair X" when the bug is artifact-class mismatch. Use same-class
+compare (`raw↔raw`, `final↔final`).
+
+### CLI surface (read by group)
+
+| Handler module | Examples | When |
+|----------------|----------|------|
+| `cli_runs.py` | `preflight-exact`, `resume-exact-run`, `launch-exact-run`, `promote-oracle` | Launch lifecycle |
+| `cli_proofs.py` | `prove-exact`, `prove-exact-sequence`, `prove-energy-ulp` | After checkpoints exist |
+| `cli_edges.py` | `capture-candidates`, `replay-edges`, `fail-fast`, `export-crop` | Cheap edge gates / diagnostics |
+| `cli_diagnostics.py` | `inspect-proof`, `inspect-experiment-root`, `summarize`, `diagnose-energy` | Cite proofs safely; root completeness |
+
+### Where ADR 0011 / 0012 live in code
+
+Single compare surface: [`proof/artifact_comparator.py`](../../../slavv_python/analytics/parity/proof/artifact_comparator.py):
+
+| Stage | Gate |
+|-------|------|
+| Energy | ADR 0011 — discrete exact + `np.allclose` (optional `--strict-floats`) |
+| Vertices | Discrete + allclose on floats |
+| Edges | ADR 0012 — ownership map + trace tolerance; `adr0012_evaluated: true` required |
+| Network | ADR 0012 — strand/bifurcation multiset equality |
+
+### Open first vs avoid first
+
+**Open first:**
+`commands.py`, `constants.py`, `experiments/__init__.py`, `proof/coordinator.py`
+(just `prove()`), `proof/artifact_comparator.py`, `runs/preflight.py`.
+
+**Avoid first:**
+Raw `exact_proof*.json` without `inspect-proof`; `pipeline/edges/matlab_*.py`
+before knowing discovery vs selection vs compare; `scripts/*.py` probes
+(HANDOFF diagnostics only).
+
+Methodology (why these bars exist): [PARITY_METHODOLOGY.md](../core/PARITY_METHODOLOGY.md).
+
+---
+
 ## 🏗️ Certification Infrastructure
 
 Certification is a developer-only workflow that uses the `slavv parity` harness to compare Python's output against preserved MATLAB truth vectors.

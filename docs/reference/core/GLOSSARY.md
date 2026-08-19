@@ -1,8 +1,12 @@
 # Glossary
 
-[Up: Documentation Index](../../README.md) · [AGENTS.md](../../../AGENTS.md)
+[Up: Documentation Index](../../README.md) · [AGENTS.md](../../../AGENTS.md) · [New engineer start here](NEW_ENGINEER_START_HERE.md)
 
 Maintain this reference for domain-specific and project-specific terms used throughout the `slavv2python` repository. This glossary consolidates all terms from both user-facing and AI agent contexts.
+
+> **New here?** Read [NEW_ENGINEER_START_HERE.md](NEW_ENGINEER_START_HERE.md) first for Paper Path vs Exact Route and a minimal term cheat sheet — then use this file or [AGENTS.md § Domain Glossary](../../../AGENTS.md#domain-glossary) for depth.
+
+> **Name collision:** **Paper Path** is the public `paper` pipeline profile (Tracing Discovery, `float32`, C-order `[Z, Y, X]`). **Paper (publication)** is Mihelic et al. 2021. There is no external paper for that split. Index: [papers/README.md](../papers/README.md).
 
 > **Glossary Sync Note:**  
 > This glossary is **supplementary** to the canonical Domain Glossary in [AGENTS.md § Domain Glossary](../../../AGENTS.md#domain-glossary), which is automatically loaded into AI agent context. This file provides additional technical details and extended definitions. Terms specific to AI agent workflows are marked with 🤖.
@@ -14,6 +18,8 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | Term | Definition |
 | --- | --- |
 | **Pipeline** | The authoritative sequence of computational stages (Energy → Vertices → Edges → Network) required to transform a 3D vascular volume into a vectorized graph representation. |
+| **Paper Path** | Public `paper` profile: Tracing Discovery, `float32`, C-order `[Z, Y, X]`. Not Mihelic et al. 2021 (the publication). No external paper for this split. |
+| **Exact Route** | MATLAB-faithful Certification path: Watershed Discovery, `float64`, F-order `[Y, X, Z]`. Incremental octave-chunked engine. Not the public `paper` profile. |
 | **Vertex** | A localized point of interest in the vascular volume, characterized by a 3D position, an estimated radius, and a local energy value. |
 | **Seed Vertex** | A Vertex identified directly from the energy field as a local minimum. These serve as the initial discovery points for the Pipeline. |
 | **Bridge Vertex** | A structural Vertex inserted during Edge Selection. Owned by the Edge Set (bridge fields on the edge payload), not by rewriting the Vertices-stage Vertex Set. |
@@ -34,7 +40,7 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Strand** | A connected sequence of one or more edges that represents a distinct vascular branch or segment between junction points. |
 | **Neighborhood** | The local spatial region around an Origin where multiple origins may compete for candidates. |
 | **Frontier** | The active set of pixels at the leading edge of a trace expansion or watershed search. |
-| **Lowest Linear Index Priority** | The secondary tie-breaking rule for Vertex and Edge Discovery. When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized. |
+| **Lowest Linear Index Priority** | The secondary tie-breaking rule for Vertex and Edge Discovery. When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized. MATLAB `min` / `sort` / `find` ties break on **lowest Fortran linear index**, not FIFO/LIFO. No peer-reviewed SLAVV paper — MathWorks column-major and NumPy for MATLAB users ([papers/README.md](../papers/README.md) §5). |
 | **Energy** | A pre-processed image volume (e.g., vesselness, objectness, or Hessian map) that serves as the numerical input for vertex and edge extraction. |
 
 ---

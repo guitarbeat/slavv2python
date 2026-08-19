@@ -2,8 +2,9 @@
 
 ## In short
 
-Paper-path tracing and exact-route watershed are two strategies behind one
-interface. Both emit a Candidate Set, not a finished Edge Set.
+Paper Path tracing (`paper` profile — not the 2021 publication) and Exact Route
+watershed are two strategies behind one interface. Both emit a Candidate Set,
+not a finished Edge Set. There is no external paper for this split.
 
 ## Status
 Accepted

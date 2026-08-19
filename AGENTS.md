@@ -55,7 +55,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 5. If touching parity-sensitive code (energy, vertices, edges, network), also see parity workflow above
 
 ### I'm exploring the codebase
-1. Read [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) — two products, first-week paths, common traps
+1. Read [New engineer start here](docs/reference/core/NEW_ENGINEER_START_HERE.md) — two products (Paper Path vs Exact Route), first-week paths, common traps
 2. Start with [Repository Map](#repository-map) below
 3. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
 4. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
@@ -82,13 +82,14 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 > **Sync:** when adding or redefining a term, update both this section and `GLOSSARY.md`; if they ever disagree, this section wins.
 
 ### Lowest Linear Index Priority
-The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized.
+The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized. MATLAB `min` / `sort` / `find` ties break on **lowest Fortran linear index**, not FIFO/LIFO. No peer-reviewed SLAVV paper — MathWorks column-major docs and NumPy for MATLAB users; see [papers/README.md](docs/reference/papers/README.md) §5.
 
 ### Paper Path
-The baseline production [Pipeline](#pipeline) workflow. Optimized for multi-core scale-level parallelism, it utilizes `float32` precision and standard stride alignment. While fast on small volumes, it requires a significant memory footprint for the 4D scale stack.
+The baseline production [Pipeline](#pipeline) workflow (public `paper` profile): [Tracing Discovery](#tracing-discovery), `float32`, C-order `[Z, Y, X]`. Optimized for multi-core scale-level parallelism; significant memory footprint for the 4D scale stack.
+_Avoid_: Calling this “the paper” as if it were Mihelic et al. 2021. **Paper (publication)** = that PLOS Comp Biol article (narrative). **Paper Path** = this profile. There is no external paper for the split; see [papers/README.md](docs/reference/papers/README.md).
 
 ### Exact Route (Innovation)
-A memory-safe, bit-perfect [Pipeline](#pipeline) workflow that improves upon the original MATLAB architecture. It utilizes an **Incremental Octave-Chunked Engine** and `float64` precision to achieve [Certification](#certification) on massive volumes with minimal memory overhead.
+MATLAB-faithful [Certification](#certification) path: [Watershed Discovery](#watershed-discovery), `float64`, F-order `[Y, X, Z]`. Memory-safe incremental octave-chunked engine on massive volumes. Not the public `paper` profile.
 
 ### Pipeline
 The authoritative sequence of computational stages (Energy → Vertices → Edges → Network) required to transform a 3D vascular volume into a vectorized graph representation.
@@ -370,7 +371,8 @@ Read these first when working on relevant surfaces:
 
 | Document | Path | Purpose |
 |:---------|:-----|:--------|
-| New engineer onboarding | [docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) | Two products (paper vs exact), first-week paths, common traps |
+| New engineer onboarding | [docs/reference/core/NEW_ENGINEER_START_HERE.md](docs/reference/core/NEW_ENGINEER_START_HERE.md) | Two products (Paper Path vs Exact Route; “paper” also means Mihelic 2021), first-week paths, common traps |
+| Papers we actually use | [docs/reference/papers/README.md](docs/reference/papers/README.md) | Annotated bibliography grouped by the five common confusions (or “no paper”) |
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |
