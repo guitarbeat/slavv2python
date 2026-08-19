@@ -13,7 +13,7 @@
 
 **Last Updated:** 2026-08-13  
 **Role:** Historical investigation snapshot (superseded by [EXACT_PROOF_FINDINGS.md](../../reference/core/EXACT_PROOF_FINDINGS.md)).  
-**Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only).
+**Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([campaign_series.py](../../../figures/claim/campaign_series.py) — mirror KPIs only).
 
 ---
 
@@ -115,7 +115,7 @@ generation. That helper and its kiro spec were removed.
 root has evaluated Edges **and** Network proofs. Approximate strand-count % is not
 the ADR 0012 bar.
 
-**Figure KPI mirror:** update [`figures/parity_campaign_series.py`](../../../figures/parity_campaign_series.py) only when the table above moves; then regenerate claim figures.
+**Figure KPI mirror:** update [`figures/claim/campaign_series.py`](../../../figures/claim/campaign_series.py) only when the table above moves; then regenerate claim figures.
 
 **Spec:** [phase-1-exact-route-spec.md](../../plans/phase-1-exact-route-spec.md)
 

@@ -124,8 +124,11 @@ Examples: `parity-safe-change.instructions.md`, `test-placement.instructions.md`
 
 ## 🚫 Anti-Patterns
 
+❌ **Don't recreate top-level `.agents/` or `.kiro/`**  
+✅ Skills/agents live under `.claude/`; session dumps go in `workspace/scratch/`
+
 ❌ **Don't keep completed orchestrations in root**  
-✅ Archive to `orchestrations/completed/` or `archive/`
+✅ Archive to `orchestrations/completed/` or `workspace/scratch/`
 
 ❌ **Don't create numbered orchestration variants** (`_1`, `_2`, `_3`)  
 ✅ Use `orchestrations/active/<name>/iterations/` for iteration tracking

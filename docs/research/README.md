@@ -27,4 +27,4 @@ concrete actions from it into [plans/](../plans/) or [TODO.md](../TODO.md).
   — Mihelic et al. 2021 (PLOS Comp Biol): the method of record, with transcribed
   equations, validation framework, and what the port adds.
 - [Publication figures](../../figures/README.md) — claim charts + [research drafts](../../figures/research/)
-  (ULP / speedup; regenerate via `scripts/make_report_figures.py`).
+  (ULP / speedup; regenerate via `figures/research/generate.py`).

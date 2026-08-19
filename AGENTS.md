@@ -276,7 +276,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Experiment Root (Oracles, live dests, datasets on disk/USB; scratch gitignored)
 - **`docs/`** — Maintained reference docs and archival investigation notes
-- **`figures/`** — Publication figures (claim charts + `figures/research/` ULP/speedup) ([figures/README.md](figures/README.md))
+- **`figures/`** — Publication figures (`figures/claim/` ship story + `figures/research/` ULP/speedup) ([figures/README.md](figures/README.md))
 
 ```text
 slavv2python/
@@ -343,7 +343,9 @@ slavv2python/
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
-├── figures/                            # Publication figures (claim + research/)
+├── figures/                            # Publication figures
+│   ├── claim/                          # Phase 1 ship / proposal appendix
+│   └── research/                       # Energy ULP / speedup drafts
 │
 ├── workspace/                          # EXPERIMENT ROOT (binaries local/USB; scratch gitignored)
 │   ├── oracles/                        # Preserved MATLAB oracle vectors
@@ -377,7 +379,7 @@ Read these first when working on relevant surfaces:
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |
-| Publication figures | [figures/README.md](figures/README.md) | Claim charts + research ULP/speedup + regenerators |
+| Publication figures | [figures/README.md](figures/README.md) | Claim charts (`figures/claim/`) + research ULP/speedup + regenerators |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results |

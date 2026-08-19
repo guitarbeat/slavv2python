@@ -2,18 +2,18 @@
 """Standalone claim-driven MATLAB↔Python parity figures (view layer).
 
 Each figure answers one non-trivial question from the exact-parity campaign.
-Campaign numbers live only in parity_campaign_series.py — update that file when
+Campaign numbers live only in campaign_series.py — update that file when
 docs/reference/core/EXACT_PROOF_FINDINGS.md moves.
 
 Layout is **wrap-first**: canvas ~3.3 in wide so type stays legible at
 ``0.48\\textwidth`` wrapfigure (and still scales cleanly to full-width).
 Long narrative stays in manuscript captions — not in-figure footnotes.
 
-Outputs:
-  parity_trajectory.{png,pdf}
-  parity_funnel.{png,pdf}
-  parity_agreement.{png,pdf}
-  parity_cert_table.{png,pdf}
+Outputs (written next to this script under figures/claim/):
+  crop_missing_edges.{png,pdf}
+  crop_leftover_funnel.{png,pdf}
+  full_signed_residual.{png,pdf}
+  mismatch_budget.{png,pdf}
 """
 
 from __future__ import annotations
@@ -32,12 +32,12 @@ from matplotlib.patches import FancyBboxPatch
 # Halo keeps data labels legible over lines/markers at wrap scale
 _LABEL_HALO = [pe.withStroke(linewidth=2.2, foreground="white")]
 
-# Sibling import when run as `python figures/generate_parity_claim_figures.py`
+# Sibling import when run as `python figures/claim/generate.py`
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from parity_campaign_series import (  # noqa: E402
+from campaign_series import (  # noqa: E402
     AGREEMENT_CLAIM,
     CANONICAL_AUDITS,
     CERT_CLAIM,
@@ -698,10 +698,10 @@ def main() -> list[Path]:
 
     # Height tuned so panels are slightly tall (better than wide when wrapped)
     specs = [
-        FigureSpec("parity_trajectory", (w, 3.15), 0.14, 0.97, 0.86, 0.16, draw_trajectory),
-        FigureSpec("parity_funnel", (w, 3.05), 0.13, 0.97, 0.86, 0.15, draw_funnel),
-        FigureSpec("parity_agreement", (w, 3.25), 0.14, 0.97, 0.84, 0.16, draw_agreement),
-        FigureSpec("parity_cert_table", (w, 3.55), 0.02, 0.99, 0.90, 0.02, draw_cert_table),
+        FigureSpec("crop_missing_edges", (w, 3.15), 0.14, 0.97, 0.86, 0.16, draw_trajectory),
+        FigureSpec("crop_leftover_funnel", (w, 3.05), 0.13, 0.97, 0.86, 0.15, draw_funnel),
+        FigureSpec("full_signed_residual", (w, 3.25), 0.14, 0.97, 0.84, 0.16, draw_agreement),
+        FigureSpec("mismatch_budget", (w, 3.55), 0.02, 0.99, 0.90, 0.02, draw_cert_table),
     ]
 
     for spec in specs:

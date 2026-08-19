@@ -109,6 +109,9 @@ node_modules/
 .dmypy.json
 dmypy.json
 
+# ruff
+.ruff_cache/
+
 # Pyre type checker
 .pyre/
 
@@ -173,7 +176,8 @@ workspace/**/chosen_edges.pkl
 workspace/**/candidate_snapshot.pkl
 workspace/**/candidate_audit.json
 
-# Agent state and temporary files
+# Agent state and temporary files.
+# Canonical agent home is .claude/. Do not recreate top-level .agents/ or .kiro/.
 .claude/orchestrations/active/
 .agents/
 agent-tools/

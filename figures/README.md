@@ -10,8 +10,27 @@ methods write-ups. Distinct from runtime plotting (`slavv_python/visualization/`
 
 | Location | Role |
 |----------|------|
-| **`figures/` (claim charts)** | Exact-parity claim figures + regenerator |
-| [`figures/research/`](research/) | Data-backed energy ULP / speedup drafts (`scripts/make_report_figures.py`) |
+| **[`figures/claim/`](claim/)** | Exact-parity claim figures + regenerator |
+| **[`figures/research/`](research/)** | Data-backed energy ULP / speedup drafts |
+
+```text
+figures/
+├── README.md                 # this inventory
+├── claim/                    # Phase 1 ship / proposal appendix
+│   ├── README.md
+│   ├── campaign_series.py    # KPI mirror (edit when ONE TRUTH moves)
+│   ├── generate.py           # paints series data to PDF/PNG
+│   ├── crop_missing_edges.{pdf,png}
+│   ├── crop_leftover_funnel.{pdf,png}
+│   ├── full_signed_residual.{pdf,png}
+│   └── mismatch_budget.{pdf,png}
+└── research/                 # Energy ULP / speedup
+    ├── README.md
+    ├── generate.py
+    ├── energy_ulp_histogram.png
+    ├── energy_parity_composition.png
+    └── energy_octave1_speedup.png
+```
 
 ## MATLAB→Python exact-parity figures
 
@@ -26,34 +45,34 @@ They still scale cleanly inside `fullwidthfigure` when needed.
 
 | File | Claim | Why it is interesting |
 |------|-------|------------------------|
-| [`parity_trajectory`](parity_trajectory.pdf) | One lookup-table fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics did nothing; only the LUT step jumped |
-| [`parity_funnel`](parity_funnel.pdf) | Crop leftover collapsed from thousands to a closed pair set | Missing vs extra; extras during cleanup → re-selection closes crop (guard) |
-| [`parity_agreement`](parity_agreement.pdf) | Full-volume Edges under-, over-, then matched; historical Network miss of one strand | Signed leftover across `v4→v16`; Network tracks Edges. **Live:** Phase 1 CLOSED on `v18` (ONE TRUTH) |
-| [`parity_cert_table`](parity_cert_table.pdf) | Phase 1 CLOSED: Network bags match on `v18` | Absolute leftover budget; historical `v16` one-strand miss is closed. **Live** status: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
+| [`crop_missing_edges`](claim/crop_missing_edges.pdf) | One lookup-table fix recovered ~6k missing MATLAB edges | Log-scale *missing* pairs; queue cosmetics did nothing; only the LUT step jumped |
+| [`crop_leftover_funnel`](claim/crop_leftover_funnel.pdf) | Crop leftover collapsed from thousands to a closed pair set | Missing vs extra; extras during cleanup → re-selection closes crop (guard) |
+| [`full_signed_residual`](claim/full_signed_residual.pdf) | Full-volume Edges under-, over-, then matched; historical Network miss of one strand | Signed leftover across `v4→v16`; Network tracks Edges. **Live:** Phase 1 CLOSED on `v18` (ONE TRUTH) |
+| [`mismatch_budget`](claim/mismatch_budget.pdf) | Phase 1 CLOSED: Network bags match on `v18` | Absolute leftover budget; historical `v16` one-strand miss is closed. **Live** status: [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 
 | Script | Role |
 |--------|------|
-| [`parity_campaign_series.py`](parity_campaign_series.py) | **Edit this when findings KPIs move** — all counts, labels, callouts, cert tones |
-| [`generate_parity_claim_figures.py`](generate_parity_claim_figures.py) | View layer — paints series data to PDF/PNG |
+| [`campaign_series.py`](claim/campaign_series.py) | **Edit this when findings KPIs move** — all counts, labels, callouts, cert tones |
+| [`generate.py`](claim/generate.py) | View layer — paints series data to PDF/PNG |
 
 Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 
 **Regenerate:**
 
 ```powershell
-.\.venv\Scripts\python.exe figures\generate_parity_claim_figures.py
+.\.venv\Scripts\python.exe figures\claim\generate.py
 ```
 
 ### Suggested captions
 
-**Trajectory**
+**Crop missing edges**
 
 > How many MATLAB edges Python was still missing on the small real cut-out
 > (*n* = 15,511 MATLAB final pairs). Reordering the queue recovered zero pairs.
 > One lookup-table + suppression change recovered 6,115 pairs and cleared the
 > old 80% gate.
 
-**Funnel**
+**Crop leftover funnel**
 
 > The crop leftover collapsing. Early work was “Python never found ~6.5k
 > edges.” Once candidates covered MATLAB’s set, leftover missing pairs were
@@ -61,7 +80,7 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 > (a regression guard). The old full-volume leftover was a different class and
 > is closed on the live claim surface.
 
-**Agreement**
+**Full signed residual**
 
 > Python minus MATLAB on the full photo across audits. Edges under-selected
 > through `v7`, over-selected at `v10`, then matched at `v15`/`v16`. Network
@@ -83,7 +102,7 @@ Prefer **PDF** for Word/LaTeX (vector text); PNG is 600 dpi for preview/slides.
 [EXACT_PROOF_FINDINGS](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
 
 When numbers in findings move, update constants in
-[`parity_campaign_series.py`](parity_campaign_series.py) and re-run the generator.
+[`campaign_series.py`](claim/campaign_series.py) and re-run the generator.
 
 ## Figure ↔ documentation story map
 
@@ -94,10 +113,10 @@ the status log and not the methodology paper alone.
 
 | Figure | Story beat | Primary docs |
 |------|------------|--------------|
-| Trajectory | Missing edges on the crop: cosmetics flat; lookup-table leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
-| Funnel | Crop leftover collapse after generation closed | Findings funnel/cleanup + [PHASE1 residual framing](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
-| Agreement | Full under→over→Edges matched; Network tracks Edges; historical `v16` miss | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set”. **Live:** CLOSED on the claim root |
-| Cert table | Absolute leftover budget; Phase 1 CLOSED on `v18` | Findings executive status; ADR 0012 ship vs stretch |
+| Crop missing edges | Missing edges on the crop: cosmetics flat; lookup-table leap closes candidates | Findings watershed iteration log; residual analysis hypothesis |
+| Crop leftover funnel | Crop leftover collapse after generation closed | Findings funnel/cleanup + [PHASE1 residual framing](../docs/reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) |
+| Full signed residual | Full under→over→Edges matched; Network tracks Edges; historical `v16` miss | Findings canonical audit ladder; ADR 0012 “Network downstream of edge set”. **Live:** CLOSED on the claim root |
+| Mismatch budget | Absolute leftover budget; Phase 1 CLOSED on `v18` | Findings executive status; ADR 0012 ship vs stretch |
 
 **Told by these four:** watershed leftover campaign (generation → selection → historical Network miss, now closed).
 
@@ -114,14 +133,14 @@ the status log and not the methodology paper alone.
 
 Appendix `.tex` includes live under the PhD-Writing manuscript, not in this
 repo (`figures/include/` is not checked in here). Source stems below are the
-PDFs/PNGs generated in `figures/`.
+PDFs/PNGs generated in `figures/claim/`.
 
 | Manuscript asset | Source stem |
 |------------------|-------------|
-| `fig-appendix-parity-trajectory` | `parity_trajectory` |
-| `fig-appendix-parity-funnel` | `parity_funnel` |
-| `fig-appendix-parity-agreement` | `parity_agreement` |
-| `fig-appendix-parity-cert-table` | `parity_cert_table` |
+| `fig-appendix-parity-trajectory` | `claim/crop_missing_edges` |
+| `fig-appendix-parity-funnel` | `claim/crop_leftover_funnel` |
+| `fig-appendix-parity-agreement` | `claim/full_signed_residual` |
+| `fig-appendix-parity-cert-table` | `claim/mismatch_budget` |
 
 Macros: `PhD-Writing/manuscript/config/figure-assets.tex`.
 Prose: `sections/30-backmatter/appendix/370-analytical-development.tex`.
@@ -130,12 +149,12 @@ Prose: `sections/30-backmatter/appendix/370-analytical-development.tex`.
 
 ```powershell
 $dst = "D:\2P_Data\Aaron\PhD-Writing\manuscript\figures"
-Copy-Item -Force figures\parity_trajectory.pdf  "$dst\fig-appendix-parity-trajectory.pdf"
-Copy-Item -Force figures\parity_trajectory.png  "$dst\fig-appendix-parity-trajectory.png"
-Copy-Item -Force figures\parity_funnel.pdf      "$dst\fig-appendix-parity-funnel.pdf"
-Copy-Item -Force figures\parity_funnel.png      "$dst\fig-appendix-parity-funnel.png"
-Copy-Item -Force figures\parity_agreement.pdf   "$dst\fig-appendix-parity-agreement.pdf"
-Copy-Item -Force figures\parity_agreement.png   "$dst\fig-appendix-parity-agreement.png"
-Copy-Item -Force figures\parity_cert_table.pdf  "$dst\fig-appendix-parity-cert-table.pdf"
-Copy-Item -Force figures\parity_cert_table.png  "$dst\fig-appendix-parity-cert-table.png"
+Copy-Item -Force figures\claim\crop_missing_edges.pdf     "$dst\fig-appendix-parity-trajectory.pdf"
+Copy-Item -Force figures\claim\crop_missing_edges.png     "$dst\fig-appendix-parity-trajectory.png"
+Copy-Item -Force figures\claim\crop_leftover_funnel.pdf   "$dst\fig-appendix-parity-funnel.pdf"
+Copy-Item -Force figures\claim\crop_leftover_funnel.png   "$dst\fig-appendix-parity-funnel.png"
+Copy-Item -Force figures\claim\full_signed_residual.pdf   "$dst\fig-appendix-parity-agreement.pdf"
+Copy-Item -Force figures\claim\full_signed_residual.png   "$dst\fig-appendix-parity-agreement.png"
+Copy-Item -Force figures\claim\mismatch_budget.pdf        "$dst\fig-appendix-parity-cert-table.pdf"
+Copy-Item -Force figures\claim\mismatch_budget.png        "$dst\fig-appendix-parity-cert-table.png"
 ```

@@ -12,5 +12,5 @@ Data-backed energy ULP / speedup figures now live under:
 Regenerate:
 
 ```powershell
-python scripts/make_report_figures.py --ulp-json <path> --run-log <path> --out-dir figures/research
+python figures/research/generate.py --ulp-json <path> --run-log <path>
 ```

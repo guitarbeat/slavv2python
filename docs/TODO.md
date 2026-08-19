@@ -33,7 +33,7 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 ### Standing process (always)
 
 - [ ] **Parity change verification** — Before/after any residual code change: focused unit tests + Ruff; no long writer until crop guards hold. Record proof outcomes with [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
-- [ ] **Doc freshness** — When ONE TRUTH moves: same-session HANDOFF + this file (open rows only) + `figures/parity_campaign_series.py` if paint KPIs change.
+- [ ] **Doc freshness** — When ONE TRUTH moves: same-session HANDOFF + this file (open rows only) + `figures/claim/campaign_series.py` if paint KPIs change.
 
 **Guardrails:** `preflight-exact` before recovery launch; never concurrent writers on one `--dest-run-root`; use `.venv\Scripts\slavv.exe` after `pip install -e .`.
 

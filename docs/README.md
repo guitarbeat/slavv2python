@@ -18,7 +18,7 @@
 | Experiment *framing* (hypothesis, method) | [PHASE1 residual](reference/workflow/PHASE1_RESIDUAL_EXPERIMENT_ANALYSIS.md) + [template](reference/workflow/EXPERIMENT_ANALYSIS_TEMPLATE.md) | Live KPIs |
 | Experiment Root completeness | `slavv parity inspect-experiment-root` · [Experiment Root](../AGENTS.md#experiment-root) | ONE TRUTH; treating MATLAB source or Git LFS pointers as completeness |
 | Narrative milestones | [ROADMAP.md](ROADMAP.md) | Live pass/fail tables with frozen counts |
-| Figure paint KPIs (mirror only) | [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py) | Second status tables in prose docs |
+| Figure paint KPIs (mirror only) | [`figures/claim/campaign_series.py`](../figures/claim/campaign_series.py) | Second status tables in prose docs |
 | Frozen Phase 1 hashes | [phase1-baseline-freeze.json](reference/core/phase1-baseline-freeze.json) | HANDOFF/TODO restatements of SHA-256 |
 | Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) (plain-language first) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
 | Phase 2 profiling timings | [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json) | ROADMAP live wall-clock tables |

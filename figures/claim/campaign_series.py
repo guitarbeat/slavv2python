@@ -1,8 +1,8 @@
-"""Parity campaign series — figure paint KPI mirror only.
+"""Claim-figure paint KPI mirror only.
 
 Authoritative live status: docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth
 Update these numbers only when ONE TRUTH moves, then regenerate claim figures.
-Figure drawers in generate_parity_claim_figures.py only paint; they do not invent counts.
+Figure drawers in figures/claim/generate.py only paint; they do not invent counts.
 """
 
 from __future__ import annotations

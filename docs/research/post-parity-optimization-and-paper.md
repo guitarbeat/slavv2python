@@ -26,10 +26,9 @@ source fetch → 3-vote adversarial verification → synthesis).
 > what failed verification — do not treat those as established.
 
 > **Publication figures** live under [figures/](../../figures/README.md):
-> claim charts (parity trajectory / residual / agreement / cert table) and
+> claim charts (`figures/claim/`) and
 > [figures/research/](../../figures/research/) (ULP histogram, composition,
-> speedup). Regenerate research drafts via `scripts/make_report_figures.py`
-> (`--out-dir figures/research`).
+> octave-1 speedup). Regenerate research drafts via `figures/research/generate.py`.
 
 ---
 

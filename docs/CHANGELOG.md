@@ -25,6 +25,7 @@ Changelog entries below are **dated product notes**, not the live parity table.
 
 ### Added / Changed
 
+- **Figures layout:** publication assets now split into [`figures/claim/`](../figures/claim/) (ship story) and [`figures/research/`](../figures/research/) (ULP / speedup). Claim stems are `crop_missing_edges`, `crop_leftover_funnel`, `full_signed_residual`, `mismatch_budget`; generators sit next to their outputs (`claim/generate.py`, `research/generate.py`).
 - **Parity-Preserved Performance Innovations Catalog**: Documented all 9 core mathematical, algorithmic, and memory improvements in [`docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md`](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) and narrated them in [`docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md`](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) (journal packaging still open).
 - **Docs integrity verifier**: Added [`scripts/verify_docs_integrity.py`](../scripts/verify_docs_integrity.py) for authority, banner, wiring, and relative-link checks.
 - **Vertex Painting Structuring Element Caching**: Optimized [`slavv_python/pipeline/vertices/painting.py`](../slavv_python/pipeline/vertices/painting.py) by memoizing scale-specific ellipsoid coordinate offsets, reducing mesh construction calls from $O(V)$ to $O(S)$ while preserving vertex-body occupancy masks.
@@ -34,11 +35,9 @@ Changelog entries below are **dated product notes**, not the live parity table.
 ### Added / Changed
 
 - **Proposal methods figures (exact-parity claims):** four standalone figures
-  under [`figures/`](../figures/) — `parity_trajectory`, `parity_funnel`,
-  `parity_agreement`, `parity_cert_table` (PDF + PNG each; no multipanel).
-  Data: [`figures/parity_campaign_series.py`](../figures/parity_campaign_series.py).
-  Generator:
-  [`figures/generate_parity_claim_figures.py`](../figures/generate_parity_claim_figures.py).
+  under [`figures/claim/`](../figures/claim/) (PDF + PNG each; no multipanel).
+  Data: [`figures/claim/campaign_series.py`](../figures/claim/campaign_series.py).
+  Generator: [`figures/claim/generate.py`](../figures/claim/generate.py).
   Index: [`figures/README.md`](../figures/README.md).
 - **Architecture deepening (candidates 1–6):** glossary-aligned discovery names
   (`TracingDiscovery` / `WatershedDiscovery`); deep `CandidateManifest`;

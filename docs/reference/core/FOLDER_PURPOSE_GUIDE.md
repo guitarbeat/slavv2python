@@ -83,8 +83,8 @@ their generators for the PhD proposal appendix and related methods write-ups.
 [figures/README.md](../../../figures/README.md).
 
 **Contains (summary):**
-- Claim charts: `parity_trajectory`, `parity_funnel`, `parity_agreement`, `parity_cert_table`
-- Data + regenerator: `parity_campaign_series.py`, `generate_parity_claim_figures.py`
+- Claim charts in [`figures/claim/`](../../../figures/claim/README.md): `crop_missing_edges`, `crop_leftover_funnel`, `full_signed_residual`, `mismatch_budget`
+- Data + regenerator: `figures/claim/campaign_series.py`, `figures/claim/generate.py`
 - Research drafts: [`figures/research/`](../../../figures/research/) (ULP / speedup)
 
 **Not here:** runtime plotting (`slavv_python/visualization/`).
@@ -99,8 +99,8 @@ their generators for the PhD proposal appendix and related methods write-ups.
 > - Crop export → `slavv parity export-crop`
 > - One-off diagnostics → `workspace/scratch/`
 >
-> Some checked-in generators remain under `scripts/` (e.g. `make_report_figures.py`)
-> writing into `figures/research/`, and under `figures/` for claim figures.
+> Figure regenerators live next to their outputs: `figures/claim/generate.py`
+> and `figures/research/generate.py`. One-off diagnostics stay in `workspace/scratch/`.
 
 ---
 

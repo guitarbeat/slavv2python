@@ -7,10 +7,9 @@ All figures are derived from real run artifacts (no synthetic data):
 
 Usage::
 
-    python scripts/make_report_figures.py \
+    python figures/research/generate.py \
         --ulp-json workspace/runs/oracle_180709_E/crop_M_exact/03_Analysis/exact_proof_energy_ulp.json \
-        --run-log <baguette-log> \
-        --out-dir figures/research
+        --run-log <baguette-log>
 """
 
 from __future__ import annotations
@@ -184,7 +183,12 @@ def main() -> None:
         default=44.4,
         help="Measured serial baseline (default from the n_jobs=1 run)",
     )
-    parser.add_argument("--out-dir", type=Path, default=Path("figures/research"))
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path(__file__).resolve().parent,
+        help="Output directory (default: this script's folder)",
+    )
     args = parser.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -198,7 +202,7 @@ def main() -> None:
         figure_speedup(
             _parse_run_log(args.run_log),
             args.serial_s_per_chunk,
-            args.out_dir / "energy_speedup.png",
+            args.out_dir / "energy_octave1_speedup.png",
         )
     else:
         print("  (no --run-log; skipping speedup figure)")

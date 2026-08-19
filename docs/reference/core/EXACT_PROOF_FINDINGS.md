@@ -4,7 +4,7 @@
 
 **Last Updated:** 2026-08-18  
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
-**Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([parity_campaign_series.py](../../../figures/parity_campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
+**Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([campaign_series.py](../../../figures/claim/campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
 
 ---
 
@@ -62,7 +62,7 @@ Full digests and checkpoint hashes are in the freeze JSON. Cite proofs with `sla
 
 **Archived (do not treat as live residual):** join-emission attempts A–C, the `find(...,'last')` rewrite conclusion, and the session diary live in [exact-proof-findings-diary](../../investigations/exact-proof-findings-diary/README.md).
 
-**Figure KPI mirror:** update [`figures/parity_campaign_series.py`](../../../figures/parity_campaign_series.py) only when the table above moves; then regenerate claim figures.
+**Figure KPI mirror:** update [`figures/claim/campaign_series.py`](../../../figures/claim/campaign_series.py) only when the table above moves; then regenerate claim figures.
 
 **Spec:** [phase-1-exact-route-spec.md](../../plans/phase-1-exact-route-spec.md)
 

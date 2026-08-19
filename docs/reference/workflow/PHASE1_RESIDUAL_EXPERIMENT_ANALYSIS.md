@@ -64,7 +64,7 @@ only in the findings banner.
 
 Read **[ONE TRUTH](../core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk)** and **TODO open Phase 1 rows**.
 When the residual moves, update ONE TRUTH + HANDOFF + TODO the same session;
-refresh [figures/parity_campaign_series.py](../../../figures/parity_campaign_series.py)
+refresh [figures/claim/campaign_series.py](../../../figures/claim/campaign_series.py)
 only if publication KPIs change.
 
 ## Done criteria
