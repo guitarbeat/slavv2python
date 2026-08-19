@@ -55,10 +55,11 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 5. If touching parity-sensitive code (energy, vertices, edges, network), also see parity workflow above
 
 ### I'm exploring the codebase
-1. Start with [Repository Map](#repository-map) below
-2. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
-3. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
-4. See [Key Reference Documents](#key-reference-documents) table
+1. Read [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) — two products, first-week paths, common traps
+2. Start with [Repository Map](#repository-map) below
+3. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
+4. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
+5. See [Key Reference Documents](#key-reference-documents) table
 
 ### I'm setting up the environment
 1. Follow [Setup & Installation](#setup--installation) below
@@ -369,6 +370,7 @@ Read these first when working on relevant surfaces:
 
 | Document | Path | Purpose |
 |:---------|:-----|:--------|
+| New engineer onboarding | [docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) | Two products (paper vs exact), first-week paths, common traps |
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/` |

@@ -7,8 +7,9 @@ Use this folder for current, maintained technical references. These docs outrank
 **In short:** Phase 1 already shipped (close enough to MATLAB). Live pass/fail is [ONE TRUTH](core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk). Identical last digits is a separate leftover — [plain-English diagnosis](../solutions/parity/crop-energy-stretch-float-isolation.md).
 
 **⭐ Start Here:**
+- **Brand new to the repo?** [NEW_ENGINEER_CONFUSION_MAP.md](core/NEW_ENGINEER_CONFUSION_MAP.md) — pick paper vs exact track before diving in
 - **New to parity work?** [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md) → [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md)
-- **New to repository?** [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) → [GLOSSARY.md](core/GLOSSARY.md)
+- **New to repository code?** [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) → [GLOSSARY.md](core/GLOSSARY.md)
 - **Contributing code?** [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) → [tests/README.md](../../tests/README.md)
 - **Need quick answers?** [QUICK_REFERENCE.md](../QUICK_REFERENCE.md) ⚡
 
@@ -27,6 +28,7 @@ Read these first when working on the live implementation:
 | [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
 | [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |
 | [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md) | Engine design, component overview, and processing workflow | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
+| [New Engineer Confusion Map](core/NEW_ENGINEER_CONFUSION_MAP.md) | Two products, first-week paths, common onboarding traps | [TUTORIAL.md](../../TUTORIAL.md), [ONE TRUTH](core/EXACT_PROOF_FINDINGS.md) |
 | [SLAVV Method Explained](core/SLAVV_METHOD_EXPLAINED.md) | Paper-stage walkthrough of the original MATLAB method (Mihelic et al. 2021) | [Research paper review](../research/slavv-original-paper-review.md) |
 
 ## Workflow Docs

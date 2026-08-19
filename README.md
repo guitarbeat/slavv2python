@@ -7,6 +7,8 @@ MATLAB source lives in `external/Vectorization-Public/source/`.
 
 The public workflow is paper-first: `slavv run` with the default `paper` profile, then export `network.json`. Exact MATLAB proof is a separate developer track (`slavv parity`).
 
+**New here?** Read [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) first — two products, two reading paths, what confuses people on week one.
+
 ## Quick start
 
 ```powershell
@@ -45,6 +47,7 @@ Folder rules: [FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE
 
 | I need… | Go here |
 |---------|---------|
+| **Brand-new engineer — start here** | [New engineer confusion map](docs/reference/core/NEW_ENGINEER_CONFUSION_MAP.md) |
 | Full documentation map | [docs/README.md](docs/README.md) |
 | Live parity status | [ONE TRUTH](docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 | Stretch leftover (plain English) | [crop-energy-stretch-float-isolation.md](docs/solutions/parity/crop-energy-stretch-float-isolation.md) |

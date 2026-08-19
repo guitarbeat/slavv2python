@@ -23,6 +23,7 @@
 | Stretch leftover diagnosis | [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md) (plain-language first) + [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1) | HANDOFF body KPI dump |
 | Phase 2 profiling timings | [phase2-profiling-baseline.json](reference/core/phase2-profiling-baseline.json) | ROADMAP live wall-clock tables |
 | Archival deep dives / session diary | [investigations/](investigations/) · [findings diary](investigations/exact-proof-findings-diary/README.md) | Executable specs / current status |
+| New engineer onboarding (two tracks, confusion map) | [NEW_ENGINEER_CONFUSION_MAP.md](reference/core/NEW_ENGINEER_CONFUSION_MAP.md) | Duplicating this map in README/HANDOFF bodies |
 
 **One truth rule:** if two docs disagree on pass/fail, claim root, or residual, **ONE TRUTH wins**. Update findings first; same-session sync HANDOFF + TODO checkboxes + figure series if KPIs moved.
 
@@ -47,9 +48,10 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 ## 🚀 Quick Start By Use Case
 
 ### 🆕 New to SLAVV
-1. [Repository README](../README.md) — Short front door (install + where to go)
-2. [Tutorial](TUTORIAL.md) — Your first vascular extraction
-3. [Reference index](reference/README.md) — Technical documentation
+1. **[New engineer confusion map](reference/core/NEW_ENGINEER_CONFUSION_MAP.md)** — Two products (paper vs exact), first-week reading paths, common traps
+2. [Repository README](../README.md) — Short front door (install + where to go)
+3. [Tutorial](TUTORIAL.md) — Your first vascular extraction (paper path; not parity proof)
+4. [Reference index](reference/README.md) — Technical documentation
 
 ### 🤖 AI Agents
 1. **[AGENTS.md](../AGENTS.md)** ⭐ — **START HERE:** Canonical instructions, domain glossary, architecture guidelines
