@@ -119,8 +119,8 @@ def _render_dashboard_surface() -> None:
             "share-report counters"
         )
     with link_col:
-        st.link_button("Release notes", DASHBOARD_RELEASE_URL, use_container_width=True)
-        st.link_button("Repository", DASHBOARD_REPO_URL, use_container_width=True)
+        st.link_button("Release notes", DASHBOARD_RELEASE_URL, width="stretch")
+        st.link_button("Repository", DASHBOARD_REPO_URL, width="stretch")
 
     st.space("small")
 
@@ -179,7 +179,7 @@ def _render_dashboard_surface() -> None:
             showlegend=False,
         )
         with trend_col1:
-            st.plotly_chart(stage_fig, use_container_width=True)
+            st.plotly_chart(stage_fig, width="stretch")
             st.caption("Pipeline progress is derived from the resumable run snapshot.")
 
         with trend_col2:
@@ -194,15 +194,15 @@ def _render_dashboard_surface() -> None:
                         height=320,
                         margin={"l": 20, "r": 20, "t": 40, "b": 20},
                     )
-                    st.plotly_chart(depth_fig, use_container_width=True)
+                    st.plotly_chart(depth_fig, width="stretch")
                     st.caption("Depth statistics reuse the existing analysis visualization.")
                 except Exception as exc:
-                    st.plotly_chart(build_dashboard_placeholder_trend(), use_container_width=True)
+                    st.plotly_chart(build_dashboard_placeholder_trend(), width="stretch")
                     st.caption(
                         f"Depth trend placeholder shown because the live chart is unavailable: {exc}"
                     )
             else:
-                st.plotly_chart(build_dashboard_placeholder_trend(), use_container_width=True)
+                st.plotly_chart(build_dashboard_placeholder_trend(), width="stretch")
                 st.caption(
                     "Placeholder trend slot for depth-resolved metrics once a complete network is available."
                 )
@@ -224,7 +224,7 @@ def _render_dashboard_surface() -> None:
         else:
             st.dataframe(
                 filtered_breakdown,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "Section": st.column_config.TextColumn("Section", width="small"),
@@ -268,7 +268,7 @@ def _render_dashboard_surface() -> None:
             ),
             key="dashboard_backlog_editor",
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
             num_rows="fixed",
             column_config={
                 "Metric": st.column_config.TextColumn("Metric", width="medium"),
@@ -309,7 +309,7 @@ def show_dashboard_page():
     _init_dashboard_state()
 
     controls_col, action_col = st.columns([3, 1], gap="large", vertical_alignment="bottom")
-    with controls_col, st.popover("Dashboard controls", use_container_width=True):
+    with controls_col, st.popover("Dashboard controls", width="stretch"):
         st.segmented_control(
             "Focus",
             ["Overview", "Pipeline", "Network"],
@@ -335,7 +335,7 @@ def show_dashboard_page():
         )
         st.caption("These controls sync with the URL so the current view is easy to share.")
     with action_col:
-        if st.button("Plan metrics", use_container_width=True):
+        if st.button("Plan metrics", width="stretch"):
             _open_dashboard_metric_dialog()
 
     if st.session_state.get("dashboard_auto_refresh", False):

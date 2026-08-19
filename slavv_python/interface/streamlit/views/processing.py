@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib import util
+
 import numpy as np
 import streamlit as st
 
@@ -14,6 +16,17 @@ from slavv_python.interface.shared_state.processing import (
 )
 from slavv_python.utils import validate_parameters
 from slavv_python.workflows.profiles import PIPELINE_PROFILE_CHOICES, get_pipeline_profile_defaults
+
+
+def available_public_energy_methods() -> list[str]:
+    """Return Energy backends the current interpreter can import."""
+    methods = ["hessian", "frangi", "sato"]
+    if util.find_spec("SimpleITK") is not None:
+        methods.append("simpleitk_objectness")
+    if util.find_spec("cupy") is not None:
+        methods.append("cupy_hessian")
+    return methods
+
 
 _PROFILE_WIDGET_DEFAULTS = {
     "processing_microns_per_voxel_y": lambda defaults: float(defaults["microns_per_voxel"][0]),
@@ -119,11 +132,13 @@ def show_processing_page() -> None:
     _sync_processing_profile_defaults(pipeline_profile)
     if pipeline_profile == "paper":
         st.caption(
-            "Paper profile: native Python tracing/network workflow with paper-style Hessian projection."
+            "Paper Path: Tracing Discovery and paper-style Hessian projection. "
+            "This is the public GUI default."
         )
     else:
         st.caption(
-            "MATLAB-compatible profile: legacy projection defaults with the same maintained Python pipeline."
+            "MATLAB-compatible defaults on the same Python pipeline. "
+            "Watershed Discovery (Exact Route) is under Advanced → Edge method."
         )
 
     tab1, tab2, tab3, tab4 = st.tabs(["Microscopy", "Vessel Sizes", "Processing", "Advanced"])
@@ -323,27 +338,35 @@ def show_processing_page() -> None:
                 help="Weighting factor of the spherical pulse over the combined weights of spherical and annular pulses. (MATLAB: spherical_to_annular_ratio)",
             )
         with col2:
-            energy_method_options = [
-                "hessian",
-                "frangi",
-                "sato",
-                "simpleitk_objectness",
-                "cupy_hessian",
-            ]
+            energy_method_options = available_public_energy_methods()
+            current_energy = str(st.session_state.get("processing_energy_method", "hessian"))
+            if current_energy not in energy_method_options:
+                st.session_state["processing_energy_method"] = energy_method_options[0]
             energy_method = st.selectbox(
                 "Energy method",
                 options=energy_method_options,
-                index=energy_method_options.index(st.session_state["processing_energy_method"]),
                 key="processing_energy_method",
-                help="Energy computation backend for the public Python pipeline.",
+                help=(
+                    "Energy backend. Optional backends (SimpleITK, CuPy) appear only "
+                    "when those packages import in this environment."
+                ),
             )
-            edge_method_options = ["tracing", "watershed"]
+            edge_method_labels = {
+                "tracing": "Tracing Discovery (Paper Path)",
+                "watershed": "Watershed Discovery (Exact Route)",
+            }
+            current_edge = str(st.session_state.get("processing_edge_method", "tracing"))
+            if current_edge not in edge_method_labels:
+                st.session_state["processing_edge_method"] = "tracing"
             edge_method = st.selectbox(
                 "Edge method",
-                options=edge_method_options,
-                index=edge_method_options.index(st.session_state["processing_edge_method"]),
+                options=list(edge_method_labels),
+                format_func=lambda key: edge_method_labels[key],
                 key="processing_edge_method",
-                help="Edge extraction backend for the public Python pipeline.",
+                help=(
+                    "Tracing Discovery is the public Paper Path. "
+                    "Watershed Discovery is the Exact Route / certification method."
+                ),
             )
             energy_projection_mode = st.selectbox(
                 "Energy projection mode",
@@ -413,12 +436,20 @@ def show_processing_page() -> None:
         stop_after_val = stop_after_options[stop_after_selection]
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
-        force_rerun_stage = st.selectbox(
+        force_rerun_options = {
+            "None (use cache)": None,
+            "Energy": "energy",
+            "Vertices": "vertices",
+            "Edges": "edges",
+            "Network": "network",
+        }
+        force_rerun_selection = st.selectbox(
             "Force Recalculation From:",
-            options=["None", "energy", "vertices", "edges", "network"],
+            options=list(force_rerun_options.keys()),
             index=0,
-            help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
+            help="Ignore cached results and recalculate from this stage onward.",
         )
+        force_rerun_stage = force_rerun_options[force_rerun_selection]
 
     current_snapshot = load_processing_snapshot(
         st.session_state,
@@ -497,7 +528,7 @@ def show_processing_page() -> None:
                         event_callback=event_cb,
                         run_dir=run_dir,
                         stop_after=stop_after_val,
-                        force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
+                        force_rerun_from=force_rerun_stage,
                     )
                     final_snapshot = app_services.load_run_snapshot(run_dir) if run_dir else None
                     with dashboard_placeholder.container():

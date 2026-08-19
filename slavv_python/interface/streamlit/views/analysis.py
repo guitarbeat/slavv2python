@@ -13,28 +13,28 @@ from slavv_python.interface.shared_state.analysis import (
     normalize_analysis_results,
     resolve_analysis_stats,
 )
+from slavv_python.interface.streamlit.empty_state import require_network
 from slavv_python.visualization import NetworkVisualizer
 
 
 def show_analysis_page() -> None:
     """Display the analysis page."""
     st.markdown('<h2 class="section-header">Network Analysis</h2>', unsafe_allow_html=True)
-    if "processing_results" not in st.session_state:
-        st.warning("No processing results found. Please process an image first.")
+    raw = require_network()
+    if raw is None:
         return
 
-    results = normalize_analysis_results(st.session_state["processing_results"])
+    results = normalize_analysis_results(raw)
     if not has_analysis_network(results):
         st.warning(
-            "Analysis requires complete network extraction. Please run the pipeline up to the 'network' target."
+            "This step needs a complete Network. On Image Processing, set Pipeline Target "
+            "to Full Pipeline (Network)."
         )
         return
 
     st.markdown(
-        """
-    Perform comprehensive statistical analysis on the vectorized vascular network. This section provides key metrics and detailed distributions.
-    Corresponds to `SpecialOutput` parameters like `histograms`, `depth-stats`, `original-stats` in MATLAB.
-    """
+        "Length, radius, topology, and morphometry for the current Network. "
+        "Download the statistics table as CSV."
     )
 
     parameters = results["parameters"]
@@ -89,16 +89,14 @@ def show_analysis_page() -> None:
                 visualizer.plot_strand_analysis(
                     results["network"], results["vertices"], parameters
                 ),
-                use_container_width=True,
+                width="stretch",
             )
         with col2:
             st.plotly_chart(
-                visualizer.plot_radius_distribution(results["vertices"]), use_container_width=True
+                visualizer.plot_radius_distribution(results["vertices"]), width="stretch"
             )
         st.markdown("#### Length-Weighted Histograms")
-        st.caption(
-            "Depth, radius, and inclination distributions weighted by segment length. Ported from `area_histogram_plotter.m`."
-        )
+        st.caption("Depth, radius, and inclination distributions weighted by segment length.")
         try:
             st.plotly_chart(
                 visualizer.plot_length_weighted_histograms(
@@ -107,7 +105,7 @@ def show_analysis_page() -> None:
                     results.get("parameters", {}),
                     number_of_bins=50,
                 ),
-                use_container_width=True,
+                width="stretch",
             )
         except Exception as exc:
             st.info(f"Length-weighted histograms unavailable: {exc}")
@@ -117,17 +115,17 @@ def show_analysis_page() -> None:
         col1, col2 = st.columns(2, gap="large")
         with col1:
             st.plotly_chart(
-                visualizer.plot_degree_distribution(results["network"]), use_container_width=True
+                visualizer.plot_degree_distribution(results["network"]), width="stretch"
             )
         with col2:
             connectivity_stats = pd.DataFrame(build_analysis_connectivity_rows(stats))
-            st.dataframe(connectivity_stats, use_container_width=True)
+            st.dataframe(connectivity_stats, width="stretch")
 
     with tab3:
         st.markdown("#### Morphometric Analysis")
         st.plotly_chart(
             visualizer.plot_depth_statistics(results["vertices"], results["edges"], parameters),
-            use_container_width=True,
+            width="stretch",
         )
         col1, col2 = st.columns(2, gap="small")
         with col1:
@@ -158,7 +156,7 @@ def show_analysis_page() -> None:
         full_stats = pd.DataFrame(build_analysis_full_stats_rows(stats))
         st.dataframe(
             full_stats,
-            use_container_width=True,
+            width="stretch",
             column_config={
                 "Metric": st.column_config.TextColumn("Metric", help="Statistic name"),
                 "Value": st.column_config.TextColumn("Value", help="Computed value"),

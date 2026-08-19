@@ -5,10 +5,9 @@
 
 ## In short
 
-**G1–G4 closed (2026-08-19 follow-up).** `app.py` uses absolute imports, calls
-`shell.main()`, and page modules live in `views/` (not Streamlit’s reserved
-`pages/`). `tests/ui/test_streamlit_entry.py` loads the real entry file and
-visits every sidebar page. Remaining items G5–G18 are still open.
+**G1–G18 closed (2026-08-19 follow-ups).** Launch works (G1–G4). Copy, empty
+states, viz controls, desktop-curator labeling, and optional Energy backends
+are updated (G5–G18). Dashboard remains a Home section, not a separate nav item.
 
 Original finding: `slavv-app` / `streamlit run …/app.py` died on a relative
 import before any page rendered. Existing UI tests never launched the real
@@ -55,20 +54,20 @@ in-process. `tests/unit/interface/test_streamlit_launcher.py` mocks
 | G2 | **P0 closed** | Launch | Entry script never calls `shell.main()`, so the product shell would not render after G1 | `app.py` imports `main` and ends at `__all__` | `if __name__ == "__main__": main()` |
 | G3 | **P0 closed** | Nav | `interface/streamlit/pages/` collides with Streamlit’s reserved multipage `pages/` directory | Traceback path `_mpa_v1`; Streamlit 1.58 MPA | Renamed to `interface/streamlit/views/` |
 | G4 | **P1 closed** | Tests | No test actually runs `streamlit run` / `slavv-app` against the real entry file | launcher test mocks subprocess; smoke test imports `shell.main` | `tests/ui/test_streamlit_entry.py` |
-| G5 | P1 | Home | Documentation links are placeholders (`[Algorithm Overview](#)` and siblings) | `pages/static.py` | Point at `docs/TUTORIAL.md` / `docs/README.md` or remove the list |
-| G6 | P1 | Home | Onboarding copy does not match the two-product model (Paper Path tracing vs Exact Route Watershed Discovery) | Home “Edge Extraction - Tracing”; Processing still exposes both `tracing` and `watershed` | Name Paper Path vs Exact Route; default edge method should follow the selected profile |
-| G7 | P1 | Home | “Export Formats: 5+” vs Visualization’s three downloads + share HTML | `static.py` vs `EXPORT_BUTTON_SPECS` | Count real buttons, or add MAT/JSON downloads |
-| G8 | P1 | Visualization | Opacity slider and 3D camera-angle selectbox are never read or passed into `NetworkVisualizer` | `pages/visualization.py` | Wire them or remove the widgets |
-| G9 | P1 | Visualization | Energy-field slice controls are stuffed into the global sidebar, unlike other viz options | same file, `st.sidebar.selectbox` | Keep slice controls in the page column |
-| G10 | P1 | Visualization | `from ...shared_services.share_report import record_share_event` is an inline import | `visualization.py` ~253 | Module-level import (repo rule) |
-| G11 | P1 | Curation | Interactive path launches a **desktop** Qt/napari window from the web app; Streamlit blocks until it closes | `pages/curation.py` | Label as desktop-only, disable in headless/server, or drop from the web flow |
-| G12 | P1 | Curation | No-op `st.session_state["parameters"]`; mixed `[!]`, `[Curation]`, `[Launch]`, `[OK]` prefixes | `curation.py` | Delete the no-op; use Streamlit warnings without ASCII badges |
-| G13 | P1 | Processing | `cupy_hessian` is offered in Energy method; will fail if CuPy is absent | `processing.py` energy_method options | Hide unavailable backends |
-| G14 | P1 | Processing | “Force Recalculation From” uses raw stage ids (`energy`) next to “Pipeline Target” human labels | `processing.py` | Same label style as stop-after |
-| G15 | P1 | Empty states | Curation vs Visualization/Analysis warn with different copy and `[!]` vs plain text | curation / visualization / analysis pages | One empty-state helper: “Process an image first (Image Processing)” |
-| G16 | P2 | Shell | Sidebar `selectbox` navigation + emoji labels; dashboard is only on Home, not in the nav list | `shell.py`, `static.py` | `st.navigation` with Home, Processing, Curation, Visualization, Analysis, About; Dashboard as Home section or its own item |
-| G17 | P2 | About | Credits say “Python Port” with no paper vs exact-route split; no link to docs | `static.py` `show_about_page` | Link NEW_ENGINEER / TUTORIAL |
-| G18 | P2 | Analysis | MATLAB `SpecialOutput` / `area_histogram_plotter.m` names in user-facing captions | `analysis.py` | User language first; MATLAB names in help tooltips only |
+| G5 | **P1 closed** | Home | Documentation links are placeholders | `views/static.py` | Repo paths: TUTORIAL, docs hub, NEW_ENGINEER |
+| G6 | **P1 closed** | Home / Processing | Copy ignored Paper Path vs Exact Route | Home steps + Processing captions/edge-method labels | Tracing Discovery vs Watershed Discovery named in the UI |
+| G7 | **P1 closed** | Home | “Export Formats: 5+” vs in-app downloads | `static.py` | Metric is 4 in-app formats (VMV, CASX, CSV zip, HTML) |
+| G8 | **P1 closed** | Visualization | Opacity and camera widgets unused | `_apply_figure_display` | Slider/camera applied to Plotly traces / scene camera |
+| G9 | **P1 closed** | Visualization | Energy slice controls lived in the global sidebar | Display Options column | Slice axis/index sit with other viz controls |
+| G10 | **P1 closed** | Visualization | Inline import of `record_share_event` | `visualization.py` | Module-level import |
+| G11 | **P1 closed** | Curation | Desktop Qt/napari launched as if it were in-browser | `desktop_curator_available()` | Labeled desktop-only; disabled headless / via env flag |
+| G12 | **P1 closed** | Curation | No-op parameters lookup; ASCII `[!]` / `[OK]` prefixes | `curation.py` | Plain Streamlit status text |
+| G13 | **P1 closed** | Processing | `cupy_hessian` offered without CuPy | `available_public_energy_methods()` | Optional backends only if importable |
+| G14 | **P1 closed** | Processing | Force-rerun used raw stage ids | `processing.py` | Human labels matching Pipeline Target |
+| G15 | **P1 closed** | Empty states | Inconsistent missing-run copy | `empty_state.py` | Shared warnings that name Image Processing |
+| G16 | **P2 closed** | Shell | Emoji nav labels | `shell.py` | Plain Home / Image Processing / Curation / … (dashboard stays on Home) |
+| G17 | **P2 closed** | About | No Paper Path / Exact Route; no doc pointers | `views/static.py` | Two-product copy + repo doc paths |
+| G18 | **P2 closed** | Analysis | MATLAB script names in user captions | `analysis.py` | User-language captions |
 
 ## Per-page notes (source; live shell never reached)
 

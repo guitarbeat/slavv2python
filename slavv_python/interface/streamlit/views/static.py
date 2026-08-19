@@ -18,23 +18,22 @@ def show_home_page():
         st.markdown("""
         ### What is SLAVV?
 
-        SLAVV (Segmentation-Less, Automated, Vascular Vectorization) is a sophisticated algorithm
-        for extracting and analyzing vascular networks from 3D microscopy images. The method works
-        through four main steps:
+        SLAVV (Segmentation-Less, Automated, Vascular Vectorization) extracts a
+        vascular Network from 3D microscopy volumes without a prior segmentation.
+        The pipeline has four stages:
 
-        1. **Energy Image Formation** - Multi-scale Hessian-based filtering to enhance vessel centerlines
-        2. **Vertex Extraction** - Detection of vessel bifurcations and endpoints as local energy minima
-        3. **Edge Extraction** - Tracing vessel segments between vertices through gradient descent
-        4. **Network Construction** - Assembly of edges into connected vascular strands
+        1. **Energy** — multi-scale Hessian filtering that highlights vessel centerlines
+        2. **Vertices** — local energy minima (seed points with position, radius, energy)
+        3. **Edges** — **Tracing Discovery** on the public Paper Path, or **Watershed Discovery** on the Exact Route
+        4. **Network** — strands and bifurcations assembled from the Edge Set
 
         ### Key Features
 
-        - **Multi-scale Analysis** - Detects vessels across a wide range of sizes
-        - **PSF Correction** - Accounts for microscope point spread function
-        - **ML Curation** - Machine learning-assisted quality control
-        - **Comprehensive Statistics** - Detailed network analysis and metrics
-        - **Multiple Export Formats** - VMV, CASX, and custom formats
-        - **Interactive Visualization** - 2D and 3D network rendering
+        - Multi-scale vessel sizes and optional PSF correction
+        - Paper Path (`paper`) vs Exact Route (Watershed Discovery) on the same stages
+        - Optional ML / automatic / desktop curation of vertices and edges
+        - 2D and 3D visualization
+        - In-app exports: VMV, CASX, CSV zip, and a shareable HTML report
         """)
 
         st.markdown('<div class="success-box">', unsafe_allow_html=True)
@@ -59,7 +58,11 @@ def show_home_page():
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
+        st.metric(
+            "In-app exports",
+            "4",
+            help="Visualization downloads: VMV, CASX, CSV zip, and share HTML. The CLI can also write JSON.",
+        )
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("### System Requirements")
@@ -72,17 +75,18 @@ def show_home_page():
 
         st.markdown("### Documentation")
         st.markdown("""
-            - [Algorithm Overview](#)
-            - [Parameter Guide](#)
-            - [Export Formats](#)
-            - [Troubleshooting](#)
+            Repo paths (open these files locally):
+
+            - Tutorial: `docs/TUTORIAL.md`
+            - Docs hub: `docs/README.md`
+            - Two products (Paper Path vs Exact Route): `docs/reference/core/NEW_ENGINEER_START_HERE.md`
             """)
 
-        st.markdown("### Workflow Control")
+        st.markdown("### Workflow control")
         st.markdown("""
-            Like the original MATLAB scripts (`StartWorkflow`/`FinalWorkflow`), you can
-            pause the pipeline early to inspect intermediate results or force the pipeline
-            to recalculate specific steps to test parameter changes.
+            On **Image Processing**, Pipeline Target stops after Energy, Vertices, Edges,
+            or Network. Force Recalculation From ignores cached stage outputs from that
+            stage onward.
             """)
 
 
@@ -103,17 +107,19 @@ def show_about_page():
 
     ### Implementation Details
 
-    This system is a modern Python implementation of the original SLAVV algorithm. Key improvements include:
-    - **Performance**: Numba acceleration and multi-threaded processing.
-    - **Scalability**: Chunk-based processing for large volumes.
-    - **Modern UI**: Interactive Streamlit interface for parameter tuning and visualization.
-    - **ML Integration**: Machine learning models for automatic quality control.
+    This app is the public **Paper Path** (`paper` profile): Tracing Discovery,
+    the Streamlit workflow, and in-app visualization. The **Exact Route** is the
+    MATLAB-faithful certification path (Watershed Discovery, `float64`, Fortran
+    `[Y, X, Z]`) used by `slavv parity`, not this GUI's default.
+
+    - Tutorial: `docs/TUTORIAL.md`
+    - Two products: `docs/reference/core/NEW_ENGINEER_START_HERE.md`
+    - Docs hub: `docs/README.md`
 
     ### Credits and License
 
-    - **Original Algorithm**: Samuel Alexander Mihelic
-    - **Python Port**: Developed for modern high-throughput analysis.
-    - **License**: Provided as open-source for scientific research.
-
-    For more information or to cite this work, please refer to the project documentation.
+    - **Method (publication):** Mihelic et al. 2021 (PLOS Computational Biology)
+    - **MATLAB source of truth:** `external/Vectorization-Public/`
+    - **This Python package:** SLAVV Paper Path + Exact Route in `slavv_python/`
+    - **License:** GPL-3.0 (see `LICENSE`)
     """)

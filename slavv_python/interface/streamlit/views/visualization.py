@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from slavv_python.interface.shared_services import app as app_services
+from slavv_python.interface.shared_services.share_report import record_share_event
 from slavv_python.interface.shared_state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
@@ -12,6 +13,7 @@ from slavv_python.interface.shared_state.visualization import (
     normalize_visualization_results,
     resolve_visualization_session_context,
 )
+from slavv_python.interface.streamlit.empty_state import require_processing_results
 from slavv_python.visualization import NetworkVisualizer
 
 EXPORT_BUTTON_SPECS = (
@@ -93,20 +95,32 @@ def _render_export_download(
             )
 
 
+_CAMERA_EYE = {
+    "Isometric": {"x": 1.6, "y": 1.6, "z": 1.2},
+    "Top": {"x": 0.0, "y": 0.0, "z": 2.4},
+    "Side": {"x": 2.4, "y": 0.0, "z": 0.2},
+    "Front": {"x": 0.0, "y": 2.4, "z": 0.2},
+}
+
+
+def _apply_figure_display(fig, *, opacity: float, camera: str | None = None) -> None:
+    """Apply opacity and an optional 3D camera eye to a Plotly figure."""
+    fig.update_traces(opacity=float(opacity))
+    if camera is not None:
+        fig.update_layout(scene_camera={"eye": _CAMERA_EYE[camera]})
+
+
 def show_visualization_page() -> None:
     """Display the visualization page."""
     st.markdown('<h2 class="section-header">Network Visualization</h2>', unsafe_allow_html=True)
 
-    if "processing_results" not in st.session_state:
-        st.warning("No processing results found. Please process an image first.")
+    results = require_processing_results()
+    if results is None:
         return
 
     st.markdown(
-        """
-        <p>Visualize the vectorized vascular network in 2D and 3D. This section provides interactive tools to explore the results.
-        Corresponds to <code>Visual</code> and <code>SpecialOutput</code> parameters in MATLAB.</p>
-        """,
-        unsafe_allow_html=True,
+        "Explore the Energy field and the vectorized Network in 2D or 3D. "
+        "Exports (VMV, CASX, CSV zip, share HTML) unlock after the Network stage."
     )
 
     results = normalize_visualization_results(st.session_state["processing_results"])
@@ -125,23 +139,63 @@ def show_visualization_page() -> None:
 
     with col2:
         st.markdown("### Display Options")
-        show_vertices = st.checkbox(
-            "Show vertices", value=True, help="Display detected vertex markers"
-        )
-        show_edges = st.checkbox("Show edges", value=True, help="Display traced vessel segments")
-        show_bifurcations = st.checkbox(
-            "Show bifurcations", value=True, help="Highlight branching points in the network"
-        )
-        color_scheme = st.selectbox(
-            "Color scheme",
-            ["Energy", "Depth", "Strand ID", "Radius", "Length", "Random"],
-            help="How to color the network components",
-        )
-        st.slider("Opacity", 0.1, 1.0, 0.8, 0.1, help="Adjust transparency of network rendering")
-        if viz_type == "3D Network":
-            st.selectbox(
-                "Camera angle", ["Isometric", "Top", "Side", "Front"], help="3D viewing angle"
+        show_vertices = True
+        show_edges = True
+        show_bifurcations = True
+        color_scheme = "Energy"
+        opacity = 0.8
+        camera: str | None = None
+        slice_axis = 0
+        slice_index = 0
+        if viz_type == "Energy Field":
+            energy = results["energy_data"]["energy"]
+            slice_axis = st.selectbox(
+                "Slice axis",
+                [0, 1, 2],
+                format_func=lambda x: ["Y", "X", "Z"][x],
+                help="Which volume axis to cut.",
             )
+            max_idx = max(int(energy.shape[slice_axis]) - 1, 0)
+            slice_index = int(
+                st.number_input(
+                    "Slice index",
+                    min_value=0,
+                    max_value=max_idx,
+                    value=max_idx // 2,
+                    help="Index along the selected axis.",
+                )
+            )
+        else:
+            show_vertices = st.checkbox(
+                "Show vertices", value=True, help="Display detected vertex markers"
+            )
+            show_edges = st.checkbox(
+                "Show edges", value=True, help="Display vessel segments from the Edge Set"
+            )
+            show_bifurcations = st.checkbox(
+                "Show bifurcations", value=True, help="Highlight branching points in the Network"
+            )
+            color_scheme = st.selectbox(
+                "Color scheme",
+                ["Energy", "Depth", "Strand ID", "Radius", "Length", "Random"],
+                help="How to color the network components",
+            )
+            opacity = float(
+                st.slider(
+                    "Opacity",
+                    0.1,
+                    1.0,
+                    0.8,
+                    0.1,
+                    help="Trace and marker transparency.",
+                )
+            )
+            if viz_type == "3D Network":
+                camera = st.selectbox(
+                    "Camera angle",
+                    ["Isometric", "Top", "Side", "Front"],
+                    help="3D viewing angle",
+                )
 
     visualizer = NetworkVisualizer()
     with col1:
@@ -157,7 +211,8 @@ def show_visualization_page() -> None:
                 show_edges=show_edges,
                 show_bifurcations=show_bifurcations,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            _apply_figure_display(fig, opacity=opacity)
+            st.plotly_chart(fig, width="stretch")
         elif viz_type == "3D Network":
             fig = visualizer.plot_3d_network(
                 results["vertices"],
@@ -169,38 +224,32 @@ def show_visualization_page() -> None:
                 show_edges=show_edges,
                 show_bifurcations=show_bifurcations,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            _apply_figure_display(fig, opacity=opacity, camera=camera)
+            st.plotly_chart(fig, width="stretch")
         elif viz_type == "Depth Projection":
             fig = visualizer.plot_depth_statistics(
                 results["vertices"],
                 results["edges"],
                 results["parameters"],
             )
-            st.plotly_chart(fig, use_container_width=True)
+            _apply_figure_display(fig, opacity=opacity)
+            st.plotly_chart(fig, width="stretch")
         elif viz_type == "Strand Analysis":
             fig = visualizer.plot_strand_analysis(
                 results["network"],
                 results["vertices"],
                 results["parameters"],
             )
-            st.plotly_chart(fig, use_container_width=True)
+            _apply_figure_display(fig, opacity=opacity)
+            st.plotly_chart(fig, width="stretch")
         elif viz_type == "Energy Field":
-            st.info(
-                "Energy Field visualization is a 2D slice. Select slice axis and index in sidebar."
-            )
-            slice_axis = st.sidebar.selectbox(
-                "Slice Axis", [0, 1, 2], format_func=lambda x: ["Y", "X", "Z"][x]
-            )
-            energy = results["energy_data"]["energy"]
-            slice_index = st.sidebar.number_input(
-                "Slice Index", value=int(energy.shape[slice_axis] // 2)
-            )
+            st.info("Energy Field is a 2D slice through the Energy volume.")
             fig = visualizer.plot_energy_field(
                 results["energy_data"],
                 slice_axis=slice_axis,
                 slice_index=slice_index,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     if not has_visualization_network(results):
         st.info("Complete the full network stage to unlock exports and the share report.")
@@ -250,8 +299,6 @@ def show_visualization_page() -> None:
             help="Download a self-contained HTML report to share with collaborators.",
         )
         if downloaded:
-            from ...shared_services.share_report import record_share_event
-
             record_share_event(
                 st.session_state,
                 "share_report_downloaded",

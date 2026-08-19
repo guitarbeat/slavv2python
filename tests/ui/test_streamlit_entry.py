@@ -37,12 +37,12 @@ def test_entry_script_loads_and_renders_shell() -> None:
     markdown = [el.value for el in at.markdown if isinstance(getattr(el, "value", None), str)]
     assert any("SLAVV" in value for value in markdown)
     for page in (
-        "🏠 Home",
-        "⚙️ Image Processing",
-        "🤖 ML Curation",
-        "📊 Visualization",
-        "📈 Analysis",
-        "Info: About",
+        "Home",
+        "Image Processing",
+        "Curation",
+        "Visualization",
+        "Analysis",
+        "About",
     ):
         nav.select(page)
         at.run()

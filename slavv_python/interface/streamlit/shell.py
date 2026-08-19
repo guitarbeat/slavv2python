@@ -9,32 +9,30 @@ from .views.static import show_about_page, show_home_page
 from .views.visualization import show_visualization_page
 
 PAGE_HANDLERS = {
-    "🏠 Home": show_home_page,
-    "⚙️ Image Processing": show_processing_page,
-    "🤖 ML Curation": show_ml_curation_page,
-    "📊 Visualization": show_visualization_page,
-    "📈 Analysis": show_analysis_page,
-    "Info: About": show_about_page,
+    "Home": show_home_page,
+    "Image Processing": show_processing_page,
+    "Curation": show_ml_curation_page,
+    "Visualization": show_visualization_page,
+    "Analysis": show_analysis_page,
+    "About": show_about_page,
 }
 
 
 def main():
     """Main Streamlit application shell."""
     st.markdown(
-        '<h1 class="main-header">🩸 SLAVV - Vascular Vectorization System</h1>',
+        '<h1 class="main-header">SLAVV — Vascular Vectorization</h1>',
         unsafe_allow_html=True,
     )
     st.markdown(
         """
-    **Segmentation-Less, Automated, Vascular Vectorization** - A comprehensive tool for analyzing
-    vascular networks from grayscale, volumetric microscopy images.
-
-    This Python/Streamlit implementation is based on the MATLAB SLAVV algorithm by Samuel Alexander Mihelic.
-    The public workflow defaults to the native `paper` profile.
+    Extract a vascular **Network** from a 3D grayscale TIFF. The public default is the
+    **Paper Path** (`paper` profile: Tracing Discovery). The **Exact Route**
+    (Watershed Discovery, MATLAB-faithful) is available as an advanced edge method.
     """
     )
 
-    st.sidebar.title("Navigation")
+    st.sidebar.title("Pages")
     page = st.sidebar.selectbox("Choose a page:", list(PAGE_HANDLERS))
     PAGE_HANDLERS[page]()
 

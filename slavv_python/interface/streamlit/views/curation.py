@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from typing import cast
 
 import pandas as pd
@@ -15,6 +17,7 @@ from slavv_python.interface.shared_state.curation import (
     build_curation_stats_rows,
     summarize_processing_counts,
 )
+from slavv_python.interface.streamlit.empty_state import require_edges
 
 
 def _apply_curated_results(
@@ -32,6 +35,15 @@ def _apply_curated_results(
     )
 
 
+def desktop_curator_available() -> bool:
+    """Return whether a desktop Qt/napari window can be opened from this process."""
+    if os.environ.get("SLAVV_DISABLE_DESKTOP_CURATOR") == "1":
+        return False
+    if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+        return False
+    return True
+
+
 def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt"):
     """Import desktop curator backends lazily so the web app can load without GUI deps."""
     return curation_services.run_interactive_curator(
@@ -46,40 +58,38 @@ def show_ml_curation_page():
     """Display the ML curation page."""
     st.markdown('<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True)
 
-    if "processing_results" not in st.session_state:
-        st.warning("[!] No processing results found. Please process an image first.")
-        return
-
-    results = st.session_state["processing_results"]
-    if "vertices" not in results or "edges" not in results:
-        st.warning(
-            "[!] Curation requires both vertices and edges to be extracted. Please run the pipeline at least up to the 'edges' stage."
-        )
+    results = require_edges()
+    if results is None:
         return
 
     st.markdown(
-        """
-    Use machine learning algorithms or heuristic rules to automatically curate and refine the detected vertices and edges.
-    This step helps improve the accuracy of the vectorization by removing false positives and enhancing
-    true vascular structures. This functionality is based on `MLDeployment.py` and `MLLibrary.py` from the original MATLAB repository.
-    """
+        "Remove false-positive vertices and edges, then rebuild the Network. "
+        "Automatic and machine-learning modes stay in the browser. "
+        "The desktop curator opens a separate Qt or napari window."
     )
 
-    results = st.session_state["processing_results"]
-    st.session_state["parameters"]
-
-    st.markdown("### [Curation] Curation Options")
+    st.markdown("### Curation options")
     curation_type = st.radio(
-        "Select Curation Type:",
-        ("Interactive (Manual GUI)", "Automatic (Rule-based)", "Machine Learning (Model-based)"),
-        help="Choose how to curate nodes/edges. Interactive opens a 3D pop-up window.",
+        "Curation type",
+        (
+            "Desktop curator (Qt / napari)",
+            "Automatic (rule-based)",
+            "Machine Learning (model-based)",
+        ),
+        help="Desktop curator opens a window on this machine, not inside the browser tab.",
     )
 
-    if curation_type == "Interactive (Manual GUI)":
-        st.markdown("#### Interactive 3D Curation")
+    if curation_type == "Desktop curator (Qt / napari)":
+        st.markdown("#### Desktop 3D curator")
         st.info(
-            "Launch the 3D Graphical Curator Interface to manually add or delete vertices and edges."
+            "This opens a **separate desktop window** (Qt/PyVista or napari). "
+            "It does not run inside this browser tab. Close that window to save and continue."
         )
+        if not desktop_curator_available():
+            st.warning(
+                "Desktop curator is unavailable in this session (headless Linux, or "
+                "SLAVV_DISABLE_DESKTOP_CURATOR=1). Use Automatic or Machine Learning instead."
+            )
         curator_backend_label = st.selectbox(
             "Interactive curator backend",
             ("Qt/PyVista (default)", "napari (experimental)"),
@@ -91,7 +101,13 @@ def show_ml_curation_page():
         curator_backend = "napari" if curator_backend_label.startswith("napari") else "qt"
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("[Launch] Launch Interactive Curator", type="primary", width=250):
+            launch = st.button(
+                "Launch desktop curator",
+                type="primary",
+                width=250,
+                disabled=not desktop_curator_available(),
+            )
+            if launch:
                 update_run_task(
                     st.session_state.get("current_run_dir"),
                     "manual_curation",
@@ -102,7 +118,7 @@ def show_ml_curation_page():
                     "Interactive Curator running in new window...", expanded=True
                 ) as status:
                     st.warning(
-                        "[!] Please check your taskbar for the new 3D window. Closing the window will save and continue."
+                        "Check the taskbar for the new 3D window. Closing it saves and continues."
                     )
                     curated_vertices, curated_edges = _run_interactive_curator(
                         results["energy_data"],
@@ -115,7 +131,7 @@ def show_ml_curation_page():
                         baseline_counts, current_counts = _apply_curated_results(
                             curated_vertices,
                             curated_edges,
-                            curation_mode="Interactive (Manual GUI)",
+                            curation_mode="Desktop curator (Qt / napari)",
                         )
                     except Exception as exc:
                         update_run_task(
@@ -136,7 +152,7 @@ def show_ml_curation_page():
                         detail="Interactive curation saved and network rebuilt",
                     )
                     status.update(label="Interactive Curation complete!", state="complete")
-                    st.success("[OK] Interactive edits saved!")
+                    st.success("Desktop curator edits saved.")
                     st.caption(
                         "The downstream network, exports, and share report now use the curated vertices and edges."
                     )
@@ -158,7 +174,7 @@ def show_ml_curation_page():
                         )
                         st.markdown("</div>", unsafe_allow_html=True)
 
-    elif curation_type == "Automatic (Rule-based)":
+    elif curation_type == "Automatic (rule-based)":
         st.markdown("#### Automatic Curation Parameters")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
@@ -251,7 +267,7 @@ def show_ml_curation_page():
                     baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
-                        curation_mode="Automatic (Rule-based)",
+                        curation_mode="Automatic (rule-based)",
                     )
                 except Exception as exc:
                     update_run_task(
@@ -271,7 +287,7 @@ def show_ml_curation_page():
                     status="completed",
                     detail="Automatic curation complete and network rebuilt",
                 )
-                st.success("[OK] Automatic curation complete!")
+                st.success("Automatic curation complete.")
                 status.update(label="Automatic curation complete!", state="complete")
                 st.caption(
                     "The downstream network, exports, and share report now use the curated vertices and edges."
@@ -296,7 +312,7 @@ def show_ml_curation_page():
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
 
-    elif curation_type == "Machine Learning (Model-based)":
+    elif curation_type == "Machine Learning (model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
         st.info("Upload pre-trained models or provide CSV training data to train new classifiers.")
         col1, col2 = st.columns(2, gap="medium")
@@ -381,9 +397,9 @@ def show_ml_curation_page():
                         detail="ML models trained",
                     )
                     status.update(label="Training complete!", state="complete")
-                    st.success("[OK] Models trained!")
+                    st.success("Models trained.")
 
-        if st.button("[ML] Start ML Curation", type="primary", width=250):
+        if st.button("Start ML curation", type="primary", width=250):
             update_run_task(
                 st.session_state.get("current_run_dir"),
                 "ml_curation",
@@ -396,7 +412,7 @@ def show_ml_curation_page():
                     ml_curator = MLCurator()
                     ml_curator.load_models(vertex_model_file, edge_model_file)
                 if ml_curator.vertex_classifier is None and ml_curator.edge_classifier is None:
-                    st.error("[ERROR] ML models not loaded or trained. Cannot perform ML curation.")
+                    st.error("ML models are not loaded or trained, so ML curation cannot run.")
                     update_run_task(
                         st.session_state.get("current_run_dir"),
                         "ml_curation",
@@ -427,7 +443,7 @@ def show_ml_curation_page():
                     baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
-                        curation_mode="Machine Learning (Model-based)",
+                        curation_mode="Machine Learning (model-based)",
                     )
                 except Exception as exc:
                     update_run_task(
@@ -441,7 +457,7 @@ def show_ml_curation_page():
                         f"{exc!s}"
                     )
                     st.stop()
-                st.success("[OK] ML curation complete!")
+                st.success("ML curation complete.")
                 status.update(label="ML curation complete!", state="complete")
                 update_run_task(
                     st.session_state.get("current_run_dir"),
@@ -489,7 +505,7 @@ def show_ml_curation_page():
                 st.caption(
                     f"Most recent curation mode: {curation_mode}. The network was rebuilt after the curated vertices and edges were applied."
                 )
-            st.dataframe(curation_stats, use_container_width=True)
+            st.dataframe(curation_stats, width="stretch")
             fig = px.bar(
                 curation_stats,
                 x="Component",
@@ -497,4 +513,4 @@ def show_ml_curation_page():
                 title="Curation Results",
                 barmode="group",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
