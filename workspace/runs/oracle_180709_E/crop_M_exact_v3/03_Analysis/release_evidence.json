@@ -1,6 +1,6 @@
 {
   "artifact_hashes": {
-    "edges": "a36192a034f6986d7e26c3670410b231452a389506f8c5315542b8681196b90d",
+    "edges": "0c1a8719ecb0e2c60bc80640ddac3f68528882708a707275f78988c1bc67420e",
     "energy": "ecdbb94bc535128e0c8ad071e819ff4202be3b9e1619fb382044d0590f14c089",
     "vertices": "e2555f3f1637a3b8539bfe8020d9b07115aac5a499eb883c94bf4e4da5621083"
   },
@@ -8,9 +8,9 @@
   "oracle_id": "180709_E_crop_M_v2",
   "oracle_manifest_hash": "ea08e00cc4294346f5869b643aab3db95b59a6727592c4ad700fc6d9adadfdec",
   "params_fingerprint": "995d5ab90d36928ec5fb4d86f07f2b42ea33dd23ae51ea8ddff94065f6ba2e85",
-  "proof_passed": false,
-  "proof_report_hash": "9d7d8d6d24f4212427cb385ff5c4629efb6e4e3f9bcc844e1864bdc67e8c79e6",
-  "run_manifest_hash": "14a1b8dc0dd51c2ecb5aeaa50bb434b517932b7fa84ddbb819d193651c1fa33b",
+  "proof_passed": true,
+  "proof_report_hash": "5bf6941b85ce30313941492d0b9a1fbaa04d6fb8c659786f64393316addb3979",
+  "run_manifest_hash": "003318c5cd3cf7d41fe9c21f9f20669590da6a42eadd1ec23bc79238f33babb9",
   "schema_version": 1,
-  "source_commit": "032148dbf134e8043ff461bb8c5cfc06698c73ce"
+  "source_commit": "cff61c596b57095f1bb27cef16e8b8c45ee376d2"
 }

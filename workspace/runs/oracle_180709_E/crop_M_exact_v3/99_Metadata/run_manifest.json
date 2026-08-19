@@ -1,25 +1,21 @@
 {
-  "current_stage": "edges",
-  "dataset_hash": "10a147670737aff4785d49382469c0e87372e03139e9b9363f4a46c12c26c0cc",
-  "kind": "slavv_run",
+  "analysis_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\03_Analysis",
+  "artifacts": {},
+  "command": "prove-exact",
+  "dataset_hash": "test-hash",
+  "exact_report": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\03_Analysis\\exact_proof.json",
+  "hashes_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\03_Analysis\\hashes",
+  "kind": "parity_run",
   "manifest_version": 1,
-  "matlab_source_version": null,
-  "oracle_id": null,
-  "params_fingerprint": "995d5ab90d36928ec5fb4d86f07f2b42ea33dd23ae51ea8ddff94065f6ba2e85",
-  "promotion_state": "ephemeral",
-  "provenance": {
-    "image_shape": [
-      64,
-      256,
-      256
-    ],
-    "slavv_python": "pipeline",
-    "stop_after": "edges"
-  },
+  "normalized_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\03_Analysis\\normalized",
+  "oracle_id": "180709_E_crop_M_v2",
+  "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2",
+  "params_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\99_Metadata\\validated_params.json",
   "python_commit": "c6f99619083c31440d9cea8adb45bca733f22025",
-  "retention": "disposable",
+  "retention": "promoted",
   "run_id": "3fce1055f30d",
   "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3",
+  "stage": "edges",
   "stage_metrics": {
     "edges": {
       "completed_at": "2026-08-11T18:29:22Z",
@@ -46,11 +42,11 @@
       "status": "completed"
     }
   },
-  "status": "completed_target",
-  "target_stage": "edges",
+  "stages": {},
+  "status": "passed",
   "timestamps": {
     "completed_at": "2026-08-11T18:29:22Z",
     "created_at": "2026-07-04T12:20:07Z",
-    "updated_at": "2026-08-11T18:29:22Z"
+    "updated_at": "2026-08-19T22:03:47Z"
   }
 }

@@ -1,38 +1,32 @@
 {
   "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3",
   "edges_adr0012_gate": {
-    "adr0012_evaluated": false,
-    "adr0012_unavailable_reason": "Python watershed ownership map unavailable \u2014 re-capture edge candidates with --include-debug-maps to persist vertex_index_map",
+    "adr0012_evaluated": true,
     "adr_bar": "ADR 0012 spatial bars (ownership-map \u2265 60% + trace tolerance)",
     "n_matlab_connections": 15511,
-    "n_python_connections": 15511
+    "n_python_connections": 15511,
+    "ownership_map_agreement_rate": 1.0,
+    "ownership_map_n_agreed": 1398025,
+    "ownership_map_n_matlab_claimed": 1398025,
+    "ownership_map_passed": true,
+    "ownership_map_threshold": 0.6,
+    "passed": true,
+    "trace_n_compared": 15511,
+    "trace_n_failures": 15257,
+    "trace_passed": false
   },
   "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
-  "first_failing_field_path": "edges.adr0012_gate",
-  "first_failing_stage": "edges",
-  "first_failure": {
-    "field_path": "edges.adr0012_gate",
-    "matlab_preview": "Python watershed ownership map unavailable \u2014 re-capture edge candidates with --include-debug-maps to persist vertex_index_map",
-    "mismatch_type": "adr0012_not_evaluated",
-    "python_preview": "ADR 0012 spatial bars were not evaluated because ownership-map artifacts are missing or incompatible. This is not a spatial-bar failure and strict-field connection counts are informational only. Reason: Python watershed ownership map unavailable \u2014 re-capture edge candidates with --include-debug-maps to persist vertex_index_map",
-    "stage": "edges"
-  },
+  "first_failing_field_path": null,
+  "first_failing_stage": null,
+  "first_failure": null,
   "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2\\01_Input\\matlab_results\\batch_260624-105705",
-  "mismatch_diagnosis": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\03_Analysis\\exact_mismatch_edges.json",
-  "passed": false,
+  "passed": true,
   "report_scope": "exact route",
   "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3",
   "stage_summaries": {
     "edges": {
       "field_count": 9,
-      "first_failure": {
-        "field_path": "edges.adr0012_gate",
-        "matlab_preview": "Python watershed ownership map unavailable \u2014 re-capture edge candidates with --include-debug-maps to persist vertex_index_map",
-        "mismatch_type": "adr0012_not_evaluated",
-        "python_preview": "ADR 0012 spatial bars were not evaluated because ownership-map artifacts are missing or incompatible. This is not a spatial-bar failure and strict-field connection counts are informational only. Reason: Python watershed ownership map unavailable \u2014 re-capture edge candidates with --include-debug-maps to persist vertex_index_map",
-        "stage": "edges"
-      },
-      "passed": false
+      "passed": true
     }
   },
   "stages": [
