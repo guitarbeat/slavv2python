@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -105,8 +106,10 @@ class NetworkManager:
             NetworkResult: The final constructed network graph and metadata.
         """
         logger.info("Constructing network")
+        t0 = time.perf_counter()
         inputs = cls._inputs_from_stages(edges, vertices, params)
 
+        t_adj_start = time.perf_counter()
         adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
             _build_graph_state(
                 inputs.edge_traces,
@@ -116,7 +119,9 @@ class NetworkManager:
                 inputs.n_vertices,
             )
         )
+        t_adj = time.perf_counter() - t_adj_start
 
+        t_hair_start = time.perf_counter()
         _remove_short_hairs(
             graph_edges,
             adjacency_list,
@@ -125,6 +130,9 @@ class NetworkManager:
             graph_edge_scales,
             graph_edge_energies,
         )
+        t_hair = time.perf_counter() - t_hair_start
+
+        t_cycle_start = time.perf_counter()
         cycles = (
             _remove_cycles(
                 graph_edges,
@@ -136,8 +144,10 @@ class NetworkManager:
             if inputs.remove_cycles
             else []
         )
+        t_cycle = time.perf_counter() - t_cycle_start
 
-        return _network_payload(
+        t_finalize_start = time.perf_counter()
+        payload = _network_payload(
             adjacency_list,
             graph_edges,
             graph_edge_scales,
@@ -148,6 +158,17 @@ class NetworkManager:
             lumen_radius_microns=inputs.lumen_radius_microns,
             microns_per_voxel=inputs.microns_per_voxel,
         )
+        t_finalize = time.perf_counter() - t_finalize_start
+        t_total = time.perf_counter() - t0
+        logger.info(
+            "Network construction completed in %.2fs (adj=%.2fs, hair=%.2fs, cycle=%.2fs, finalize=%.2fs)",
+            t_total,
+            t_adj,
+            t_hair,
+            t_cycle,
+            t_finalize,
+        )
+        return payload
 
     @classmethod
     def run_resumable(
@@ -168,8 +189,9 @@ class NetworkManager:
         Returns:
             NetworkResult: The final constructed network graph and metadata.
         """
-        from slavv_python.engine.state.io import atomic_joblib_dump
+        from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
 
+        t0 = time.perf_counter()
         inputs = cls._inputs_from_stages(edges, vertices, params)
 
         stage_controller.begin(detail="Building network graph", units_total=5, substage="adjacency")
@@ -178,6 +200,7 @@ class NetworkManager:
         cycle_path = stage_controller.artifact_path("cycle_pruned.pkl")
         strands_path = stage_controller.artifact_path("strands.pkl")
 
+        t_adj_start = time.perf_counter()
         if not adjacency_path.exists():
             adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
                 _build_graph_state(
@@ -205,8 +228,10 @@ class NetworkManager:
         graph_edge_scales = adjacency_payload["graph_edge_scales"]
         graph_edge_energies = adjacency_payload["graph_edge_energies"]
         dangling_edges = adjacency_payload["dangling_edges"]
+        t_adj = time.perf_counter() - t_adj_start
         stage_controller.update(units_total=5, units_completed=1, substage="adjacency")
 
+        t_hair_start = time.perf_counter()
         if inputs.min_hair_length > 0 and not pruned_path.exists():
             _remove_short_hairs(
                 graph_edges,
@@ -231,8 +256,10 @@ class NetworkManager:
             graph_edges = pruned_payload["graph_edges"]
             graph_edge_scales = pruned_payload["graph_edge_scales"]
             graph_edge_energies = pruned_payload["graph_edge_energies"]
+        t_hair = time.perf_counter() - t_hair_start
         stage_controller.update(units_total=5, units_completed=2, substage="hair_prune")
 
+        t_cycle_start = time.perf_counter()
         cycles: list[tuple[int, int]] = []
         if inputs.remove_cycles and graph_edges and not cycle_path.exists():
             cycles = _remove_cycles(
@@ -259,8 +286,10 @@ class NetworkManager:
             graph_edge_scales = cycle_payload["graph_edge_scales"]
             graph_edge_energies = cycle_payload["graph_edge_energies"]
             cycles = cycle_payload["cycles"]
+        t_cycle = time.perf_counter() - t_cycle_start
         stage_controller.update(units_total=5, units_completed=3, substage="cycle_prune")
 
+        t_strand_start = time.perf_counter()
         if not strands_path.exists():
             (
                 pruned_connections,
@@ -281,8 +310,10 @@ class NetworkManager:
             )
             atomic_joblib_dump(topology, strands_path)
         safe_load(strands_path)
+        t_strand = time.perf_counter() - t_strand_start
         stage_controller.update(units_total=5, units_completed=4, substage="strand_trace")
 
+        t_finalize_start = time.perf_counter()
         network = _network_payload(
             adjacency_list,
             graph_edges,
@@ -293,6 +324,29 @@ class NetworkManager:
             inputs.n_vertices,
             lumen_radius_microns=inputs.lumen_radius_microns,
             microns_per_voxel=inputs.microns_per_voxel,
+        )
+        t_finalize = time.perf_counter() - t_finalize_start
+        t_total = time.perf_counter() - t0
+
+        atomic_write_json(
+            stage_controller.artifact_path("phase2_network_split.json"),
+            {
+                "adjacency_seconds": t_adj,
+                "hair_prune_seconds": t_hair,
+                "cycle_prune_seconds": t_cycle,
+                "strand_trace_seconds": t_strand,
+                "finalize_seconds": t_finalize,
+                "total_seconds": t_total,
+            },
+        )
+        logger.info(
+            "Network construction completed in %.2fs (adj=%.2fs, hair=%.2fs, cycle=%.2fs, strand=%.2fs, finalize=%.2fs)",
+            t_total,
+            t_adj,
+            t_hair,
+            t_cycle,
+            t_strand,
+            t_finalize,
         )
         stage_controller.update(units_total=5, units_completed=5, substage="finalize")
         return network
