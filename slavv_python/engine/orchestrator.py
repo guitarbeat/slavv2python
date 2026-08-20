@@ -68,6 +68,7 @@ class SlavvPipeline:
         run_dir: str | None = None,
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
+        force_resume: bool = False,
     ) -> PipelineResult:
         """Execute the complete SLAVV processing pipeline.
 
@@ -79,6 +80,7 @@ class SlavvPipeline:
             run_dir: Optional path to a structured run directory for resumable state.
             stop_after: Optional stage name to stop execution after ("energy", "vertices", "edges").
             force_rerun_from: Optional stage name to ignore checkpoints and restart from.
+            force_resume: If True, bypass parameter fingerprint mismatches for developer runs.
 
         Returns:
             A PipelineResult object containing all extracted data and provenance.
@@ -100,6 +102,7 @@ class SlavvPipeline:
             stop_after=stop_after,
             force_rerun_from=force_rerun_from,
             event_callback=event_callback,
+            force_resume=force_resume,
         )
 
         run_state = RunState(parameters=parameters)

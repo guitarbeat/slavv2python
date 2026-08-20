@@ -193,6 +193,7 @@ def resume_exact_run(
         run_dir=str(dest_run_root),
         stop_after=effective_stop_after,
         force_rerun_from=force_rerun_from,
+        force_resume=force,
     )
     return dest_run_root
 

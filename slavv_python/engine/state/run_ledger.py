@@ -125,9 +125,14 @@ class RunContext:
 
         # 1. Resolve Run Directory
         effective_dir = run_dir
-        if effective_dir is None and event_callback is not None:
-            import tempfile
 
+        if effective_dir is None:
+            if stop_after is not None:
+                raise ValueError("stop_after requires an explicit run_dir")
+            if force_rerun_from is not None:
+                raise ValueError("force_rerun_from requires an explicit run_dir")
+
+            import tempfile
             effective_dir = tempfile.mkdtemp(prefix="slavv_run_")
 
         # 2. Validate and fingerprint the caller's parameters before resume adoption.
@@ -161,6 +166,7 @@ class RunContext:
                 input_fingerprint=input_hash,
                 params_fingerprint=params_hash_incoming,
                 force_rerun_from=force_rerun_from,
+                force_resume=force_resume,
             )
 
             if existing_params:
@@ -225,6 +231,7 @@ class RunContext:
         input_fingerprint: str,
         params_fingerprint: str,
         force_rerun_from: str | None = None,
+        force_resume: bool = False,
     ) -> None:
         mismatch = fingerprint_mismatches(
             self.snapshot,
@@ -232,7 +239,12 @@ class RunContext:
             params_fingerprint=params_fingerprint,
         )
 
-        if not mismatch:
+        if not mismatch or force_resume:
+            if mismatch:
+                logger.warning(
+                    "Bypassing parameter fingerprint mismatch because force_resume=True: %s",
+                    mismatch,
+                )
             update_snapshot_fingerprints(
                 self.snapshot,
                 input_fingerprint=input_fingerprint,
