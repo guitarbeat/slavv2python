@@ -1,0 +1,32 @@
+{
+  "fields": [
+    {
+      "field": "energies",
+      "first_coordinate": [
+        0
+      ],
+      "first_fortran_linear_index": 0,
+      "kind": "numeric_mismatch",
+      "matlab_value": -65532.21844447687,
+      "max_abs_delta": 65182.97402641489,
+      "max_ulp": 48852437010057353,
+      "mismatch_count": 13706,
+      "python_value": -364.4540710449219,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9_plus": 13706
+      },
+      "ulp_p50": 4.707408673815744e+16,
+      "ulp_p90": 4.878962272634878e+16
+    }
+  ],
+  "stage": "vertices"
+}

@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_off\\03_Vertices\\candidates.pkl",
+    "chosen_mask.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_off\\03_Vertices\\chosen_mask.pkl",
+    "cropped_candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_off\\03_Vertices\\cropped_candidates.pkl",
+    "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_off\\03_Vertices\\stage_manifest.json"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_off\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+  "completed_at": "2026-08-20T22:07:13Z",
+  "stage": "vertices"
+}

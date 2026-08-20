@@ -1,0 +1,7 @@
+Exact mismatch diagnosis: network
+- strands: sequence_field
+- strand_subscripts: sequence_field
+- strand_energy_traces: sequence_field
+- mean_strand_energies: numeric_mismatch
+  count=10722 first=[np.int64(0)] matlab=-0.38781782654365554 python=-0.3780743479728699 max_ulp=11938753754097116
+- vessel_directions: sequence_field

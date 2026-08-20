@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "probed": 2,
+  "passed": 0,
+  "failed": 2,
+  "results": [
+    {
+      "request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "passed": false,
+      "first_difference": {
+        "stage": "per_scale_energy",
+        "global_scale": 36,
+        "path": "per_scale[36].upsampled_energy",
+        "python": -2.1129204332364875,
+        "matlab": -2.1129204332364786,
+        "python_hex": "0xc000e742d3fe682c",
+        "matlab_hex": "0xc000e742d3fe6818",
+        "ulp_distance": 20
+      }
+    },
+    {
+      "request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "passed": false,
+      "first_difference": {
+        "stage": "per_scale_energy",
+        "global_scale": 36,
+        "path": "per_scale[36].upsampled_energy",
+        "python": -39.5751445124198,
+        "matlab": -39.57514451241986,
+        "python_hex": "0xc043c99e55dba890",
+        "matlab_hex": "0xc043c99e55dba899",
+        "ulp_distance": 9
+      }
+    }
+  ]
+}

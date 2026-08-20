@@ -1,0 +1,91 @@
+{
+  "energy_context": {
+    "coordinate_zyx": [
+      0,
+      0,
+      0
+    ],
+    "matlab_winner_scale": 90,
+    "probe_function": "probe_exact_energy_voxel_at_octave",
+    "python_winner_scale": 90,
+    "winner_scale_disagrees": false
+  },
+  "energy_scale_agreeing_mismatch": {
+    "max_abs_delta": 1.992361831071321e-11,
+    "max_ulp": 72343,
+    "mismatch_count": 3810126,
+    "ulp_histogram": {
+      "0": 0,
+      "1": 599786,
+      "2": 610311,
+      "3": 466986,
+      "4": 438302,
+      "5": 306636,
+      "6": 275670,
+      "7": 187398,
+      "8": 169771,
+      "9_plus": 755266
+    },
+    "ulp_p50": 4.0,
+    "ulp_p90": 13.0
+  },
+  "fields": [
+    {
+      "field": "energy",
+      "first_coordinate": [
+        0,
+        0,
+        0
+      ],
+      "first_fortran_linear_index": 0,
+      "kind": "numeric_mismatch",
+      "matlab_value": -20.37433178324523,
+      "max_abs_delta": 1.992361831071321e-11,
+      "max_ulp": 72343,
+      "mismatch_count": 3810126,
+      "python_value": -20.374331783245218,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 599786,
+        "2": 610311,
+        "3": 466986,
+        "4": 438302,
+        "5": 306636,
+        "6": 275670,
+        "7": 187398,
+        "8": 169771,
+        "9_plus": 755266
+      },
+      "ulp_p50": 4.0,
+      "ulp_p90": 13.0
+    },
+    {
+      "field": "lumen_radius_microns",
+      "first_coordinate": [
+        16
+      ],
+      "first_fortran_linear_index": 16,
+      "kind": "numeric_mismatch",
+      "matlab_value": 2.6726961544210184,
+      "max_abs_delta": 7.105427357601002e-15,
+      "max_ulp": 2,
+      "mismatch_count": 8,
+      "python_value": 2.672696154421018,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 6,
+        "2": 2,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9_plus": 0
+      },
+      "ulp_p50": 1.0,
+      "ulp_p90": 2.0
+    }
+  ],
+  "stage": "energy"
+}

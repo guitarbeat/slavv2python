@@ -1,0 +1,12 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3_numba_off --oracle-root workspace/oracles/180709_E_crop_M_v2 --force-rerun-from edges",
+  "ended_at": "2026-08-20T22:12:20Z",
+  "pid": 21604,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "f05d292f2595119ee0d8d08ec649ccf9d5aae939",
+  "stage": "network",
+  "started_at": "2026-08-20T22:07:12Z",
+  "status": "completed",
+  "updated_at": "2026-08-20T22:12:20Z"
+}

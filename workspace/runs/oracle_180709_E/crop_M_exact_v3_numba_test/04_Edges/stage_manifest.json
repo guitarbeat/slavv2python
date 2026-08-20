@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "candidate_audit.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\04_Edges\\candidate_audit.json",
+    "candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\04_Edges\\candidates.pkl",
+    "chosen_edges.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\04_Edges\\chosen_edges.pkl",
+    "phase2_edges_split.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\04_Edges\\phase2_edges_split.json"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+  "completed_at": "2026-08-20T19:30:34Z",
+  "stage": "edges"
+}

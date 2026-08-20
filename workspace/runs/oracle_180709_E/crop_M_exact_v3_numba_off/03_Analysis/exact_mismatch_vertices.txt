@@ -1,0 +1,3 @@
+Exact mismatch diagnosis: vertices
+- energies: numeric_mismatch
+  count=13706 first=[np.int64(0)] matlab=-65532.21844447687 python=-364.4540710449219 max_ulp=48852437010057353
