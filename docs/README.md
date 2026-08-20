@@ -197,7 +197,7 @@ graph TD
 | Active tasks | [TODO.md](TODO.md) | `- [ ] Fix crop energy mismatch` |
 | Live parity status | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) | Active runs, proof results, blockers |
 | Specs | [plans/](plans/) | `phase-1-exact-route-spec.md` |
-| Performance innovations | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Catalog of 9 certified optimizations |
+| Performance innovations | [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) | Catalog of 10 certified optimizations |
 | Translation paper | [MATLAB_PYTHON_TRANSLATION_PAPER.md](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) | JORS/SoftwareX publication draft |
 | Pre-spec ideas | [brainstorms/](brainstorms/) | Rough ideas (promote to plans/) |
 | Solved problems | [solutions/](solutions/) | Compound docs with YAML frontmatter |

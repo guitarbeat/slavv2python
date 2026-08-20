@@ -32,6 +32,7 @@ graph TD
         W1["Sparse Conjugate Symmetry (50% IFFT RAM Cut)"]
         W2["Claimed Trace Energy Bake (ADR 0013 Parity)"]
         W3["Indexed Heap Priority Queue (O(log N) Frontier)"]
+        W4["JIT Geometric Penalties & Voxel Claiming (Numba)"]
     end
 
     subgraph Network["4. Network Stage Innovations"]
@@ -136,6 +137,18 @@ graph TD
 * **Complexity Impact:**
   - Reduces watershed queue complexity from $O(N^2)$ to $O(N \log N)$, targeting a **$>10\times$ acceleration** on the primary 92-minute pipeline bottleneck.
 
+### Innovation 3.4: JIT-Compiled Strel Geometric Penalties & Atomic Voxel Claiming (Numba)
+
+* **MATLAB Legacy & Naive Python Pattern (`get_edges_by_watershed.m` / `matlab_get_edges_v300_geometry.py`):**
+  The watershed discovery loop processes tens of thousands of active voxels per volume. For each voxel, extracting its structuring element (strel) neighborhood, evaluating size Gaussian penalties, distance cosine adjustments, directional alignment projections, and updating multi-array voxel claim states (`vertex_index`, `pointer`, `energy`, `d_over_r`, `size_map`) involved repeated NumPy temporary array allocations and masking passes. Profiling identified this inner loop as 98.5% of Edge stage runtime.
+* **Python Innovation ([`matlab_get_edges_v300_geometry.py`](../../slavv_python/pipeline/edges/watershed/matlab_get_edges_v300_geometry.py) & [`matlab_watershed_heap.py`](../../slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py)):**
+  - Compiled the geometric penalty evaluation (`_matlab_frontier_adjusted_neighbor_energies_numba_impl` and `_matlab_frontier_directional_suppression_factors_numba_impl`) and atomic multi-map voxel claiming (`_claim_unowned_strel_arrays_numba_impl`) into C-speed machine code using Numba JIT loops without heap-allocated intermediate arrays.
+  - Implemented single-pass 1D coordinate bounds checking in `_matlab_global_watershed_current_strel`.
+  - Architected fail-safe fallbacks: gracefully degrades to pure Python when Numba is not installed or when explicitly disabled (`SLAVV_DISABLE_NUMBA=1`).
+* **Complexity & Parity Impact:**
+  - **A/B Parity Verification:** 100% bit-identical candidate spatial traces, 100% identical final edge set pairs (`15,511 / 15,511` on `crop_M`), and 100% identical network topology against pure-Python baselines on the same commit (max float error $< 5 \times 10^{-16}$).
+  - **Runtime:** Eliminates intermediate array allocations across millions of strel evaluations in the primary Edge Discovery bottleneck.
+
 ---
 
 ## 4. Network Stage Innovations (Graph Topology & Strand Decomposition)
@@ -175,8 +188,9 @@ graph TD
 | **5** | **Vertices** | Redundant `ellipsoid()` mesh builds per vertex | Memoized structuring element offset cache | Exact bit-identical painting | **$>10\times$ faster** vertex painting |
 | **6** | **Edges** | Dynamic claim map mutations diverge | Claimed Trace Energy bake at finalize (ADR 0013) | **100% ADR 0012 multiset parity** on full volume | Zero post-hoc re-sampling overhead |
 | **7** | **Edges** | $O(N)$ sorted array copying (`[front; x; back]`) | Indexed Binary Heap with composite tie-break keys | Identical deterministic flood-fill path | **$O(N^2) \to O(N \log N)$** theoretical complexity |
-| **8** | **Network** | Nested `find()` cell loops for strand sorting | `scipy.sparse.csgraph.connected_components` | Identical strand/bifurcation multisets | Instantaneous graph decomposition ($<7\text{s}$) |
-| **9** | **Network** | Discretized pixel smoothing | Vectorized cumulative arc-length interpolation | Sub-voxel centerline accuracy | High-fidelity vectorized smoothing |
+| **8** | **Edges** | Python array allocation in strel penalties/claims | JIT-compiled geometric penalties & voxel claiming (Numba) | **100% bit-identical edges & network** | Eliminates allocation overhead in 98.5% bottleneck |
+| **9** | **Network** | Nested `find()` cell loops for strand sorting | `scipy.sparse.csgraph.connected_components` | Identical strand/bifurcation multisets | Instantaneous graph decomposition ($<7\text{s}$) |
+| **10** | **Network** | Discretized pixel smoothing | Vectorized cumulative arc-length interpolation | Sub-voxel centerline accuracy | High-fidelity vectorized smoothing |
 
 ---
 

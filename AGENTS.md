@@ -60,7 +60,7 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 3. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
 4. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
 5. See [Key Reference Documents](#key-reference-documents) table
-6. Review [Performance Innovations](docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) for 9 certified optimizations and [Translation Paper](docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) for translation methodology
+6. Review [Performance Innovations](docs/investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) for 10 certified optimizations and [Translation Paper](docs/investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) for translation methodology
 
 ### I'm setting up the environment
 1. Follow [Setup & Installation](#setup--installation) below
