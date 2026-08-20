@@ -114,6 +114,7 @@ class RunContext:
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
+        force_resume: bool = False,
     ) -> tuple[dict[str, Any], RunContext | None, dict[str, bool]]:
         """
         Validate inputs and prepare the run context for pipeline execution.
