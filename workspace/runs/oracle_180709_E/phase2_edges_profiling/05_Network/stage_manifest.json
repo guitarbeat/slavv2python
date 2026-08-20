@@ -1,0 +1,9 @@
+{
+  "artifacts": {
+    "adjacency.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling\\05_Network\\adjacency.pkl",
+    "strands.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling\\05_Network\\strands.pkl"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+  "completed_at": "2026-08-19T23:30:32Z",
+  "stage": "network"
+}

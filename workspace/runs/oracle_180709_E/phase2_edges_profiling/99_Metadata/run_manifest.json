@@ -1,0 +1,57 @@
+{
+  "current_stage": "network",
+  "dataset_hash": "40dd7ea8d6ec3a47e4ffaf3de31e1f38f0f148e52e09e60bc616c2becb456cff",
+  "kind": "slavv_run",
+  "manifest_version": 1,
+  "matlab_source_version": null,
+  "oracle_id": null,
+  "params_fingerprint": "447bf00aee4b23c6f4ce67de2776d5e038dae7a2e95ed92cd1dd84869a93072c",
+  "promotion_state": "ephemeral",
+  "provenance": {
+    "image_shape": [
+      64,
+      512,
+      512
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "python_commit": "43cc446f1c48667c38ffa39fbe8fe6c0ee02522c",
+  "retention": "disposable",
+  "run_id": "ab6264506b40",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": "2026-08-19T23:25:46Z",
+      "elapsed_seconds": 3678.0,
+      "peak_memory_bytes": 1893576704,
+      "status": "completed"
+    },
+    "energy": {
+      "completed_at": "2026-08-19T22:24:28Z",
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 538206208,
+      "status": "completed"
+    },
+    "network": {
+      "completed_at": "2026-08-19T23:30:32Z",
+      "elapsed_seconds": 285.0,
+      "peak_memory_bytes": 1285046272,
+      "status": "completed"
+    },
+    "vertices": {
+      "completed_at": "2026-08-19T22:24:28Z",
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 538918912,
+      "status": "completed"
+    }
+  },
+  "status": "completed",
+  "target_stage": "network",
+  "timestamps": {
+    "completed_at": "2026-08-19T23:30:32Z",
+    "created_at": "2026-07-07T19:59:40Z",
+    "updated_at": "2026-08-19T23:30:32Z"
+  }
+}

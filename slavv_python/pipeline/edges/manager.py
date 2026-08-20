@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
 
@@ -203,6 +204,7 @@ class EdgeManager:
                     resumed=False,
                 )
 
+        t_discovery_start = time.perf_counter()
         manifest = discovery.discover(
             EdgeDiscoveryContext(
                 energy_data=energy_data,
@@ -215,6 +217,9 @@ class EdgeManager:
                 heartbeat=heartbeat,
             )
         )
+        t_discovery_end = time.perf_counter()
+        discovery_elapsed = t_discovery_end - t_discovery_start
+        logger.info("Edge discovery completed in %.2f seconds", discovery_elapsed)
         if resumable:
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
 
@@ -265,6 +270,7 @@ class EdgeManager:
             )
 
         # Post-Edge Discovery: single deep module shared with residual scripts
+        t_selection_start = time.perf_counter()
         edge_set = select_and_finalize_edge_set(
             manifest,
             energy_data,
@@ -272,10 +278,23 @@ class EdgeManager:
             params,
             apply_bridge_vertices=use_watershed,
         )
+        t_selection_end = time.perf_counter()
+        selection_elapsed = t_selection_end - t_selection_start
+        logger.info("Edge selection and finalization completed in %.2f seconds", selection_elapsed)
+
         chosen_dict = edge_set.to_dict()
 
         if resumable:
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
+            
+            atomic_write_json(
+                handle.artifact_path("phase2_edges_split.json"),
+                {
+                    "discovery_seconds": discovery_elapsed,
+                    "selection_seconds": selection_elapsed,
+                    "total_seconds": discovery_elapsed + selection_elapsed,
+                }
+            )
             from slavv_python.pipeline.edges.frontier_events import (
                 _build_frontier_candidate_lifecycle,
             )

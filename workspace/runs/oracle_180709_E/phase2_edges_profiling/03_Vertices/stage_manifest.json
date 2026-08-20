@@ -1,0 +1,8 @@
+{
+  "artifacts": {
+    "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling\\03_Vertices\\stage_manifest.json"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_profiling\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+  "completed_at": "2026-08-19T22:24:28Z",
+  "stage": "vertices"
+}
