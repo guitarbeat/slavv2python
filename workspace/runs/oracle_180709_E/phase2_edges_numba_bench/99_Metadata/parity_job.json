@@ -1,0 +1,23 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root workspace/runs/oracle_180709_E/phase2_edges_numba_bench --oracle-root workspace/oracles/180709_E_full_v2 --dataset-root workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 --force-rerun-from edges",
+  "cwd": "D:\\2P_Data\\Aaron\\slavv2python",
+  "dataset_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18",
+  "ended_at": null,
+  "exit_code": null,
+  "force_rerun_from": "edges",
+  "kind": "parity_exact_run_job",
+  "launched_at": "2026-08-13T19:33:37Z",
+  "n_jobs": null,
+  "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_full_v2",
+  "pid": 23296,
+  "pid_file": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.pid",
+  "python_commit": "c6f99619083c31440d9cea8adb45bca733f22025",
+  "reason": null,
+  "stage": "edges",
+  "started_at": "2026-08-13T19:33:37Z",
+  "status": "running",
+  "stderr": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.err.log",
+  "stdout": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\99_Metadata\\parity_job.out.log",
+  "stop_after": "network"
+}

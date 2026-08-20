@@ -1,0 +1,143 @@
+{
+  "artifacts": {
+    "edges.candidate_audit.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\04_Edges\\candidate_audit.json",
+    "edges.candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\04_Edges\\candidates.pkl",
+    "edges.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+    "edges.chosen_edges.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\04_Edges\\chosen_edges.pkl",
+    "energy.best_energy.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_energy.npy",
+    "energy.best_scale.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_scale.npy",
+    "energy.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "energy.stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Energy\\stage_manifest.json",
+    "network.adjacency.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\05_Network\\adjacency.pkl",
+    "network.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+    "network.strands.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v18\\05_Network\\strands.pkl",
+    "preprocess_done": "true",
+    "vertices.checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\03_Vertices\\stage_manifest.json"
+  },
+  "created_at": "2026-07-07T19:59:40Z",
+  "current_detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=29887, candidates=3910)",
+  "current_stage": "edges",
+  "elapsed_seconds": 3811366.4483776093,
+  "errors": [
+    {
+      "at": "2026-08-20T22:31:22Z",
+      "message": "Resume blocked because the parameters fingerprint changed. Re-run with force_rerun_from='energy' to start a fresh pipeline."
+    }
+  ],
+  "eta_seconds": 3118390.730490772,
+  "input_fingerprint": "40dd7ea8d6ec3a47e4ffaf3de31e1f38f0f148e52e09e60bc616c2becb456cff",
+  "last_event": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=29887, candidates=3910)",
+  "optional_tasks": {},
+  "overall_progress": 0.5499999999999999,
+  "params_fingerprint": "b27d263bbe882bca993b4111324304475f4da10663501e46048b4226645f2084",
+  "provenance": {
+    "image_shape": [
+      64,
+      512,
+      512
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "run_id": "ab6264506b40",
+  "stages": {
+    "edges": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=29887, candidates=3910)",
+      "elapsed_seconds": 647.4483776092529,
+      "eta_seconds": null,
+      "name": "edges",
+      "peak_memory_bytes": 1632530432,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": "2026-08-20T22:31:39Z",
+      "status": "running",
+      "substage": "generate_candidates",
+      "units_completed": 0,
+      "units_total": 3,
+      "updated_at": "2026-08-20T22:42:26Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_energy.npy",
+        "best_scale.npy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\canonical_full_v8\\02_Energy\\best_scale.npy",
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+        "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Energy\\stage_manifest.json"
+      },
+      "completed_at": "2026-08-20T22:31:39Z",
+      "detail": "Loaded cached Energy Field",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "energy",
+      "peak_memory_bytes": 560242688,
+      "progress": 1.0,
+      "resumed": true,
+      "started_at": null,
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-08-20T22:31:39Z"
+    },
+    "network": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "network",
+      "peak_memory_bytes": 0,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-08-20T22:31:38Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 3810597.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 392429568,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-07-07T20:01:41Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-08-20T22:31:38Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\03_Vertices\\stage_manifest.json"
+      },
+      "completed_at": "2026-08-20T22:31:39Z",
+      "detail": "Loaded cached Vertices",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "vertices",
+      "peak_memory_bytes": 561217536,
+      "progress": 1.0,
+      "resumed": true,
+      "started_at": null,
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-08-20T22:31:39Z"
+    }
+  },
+  "status": "running",
+  "target_stage": "network",
+  "updated_at": "2026-08-20T22:42:26Z"
+}

@@ -1,0 +1,11 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root workspace/runs/oracle_180709_E/phase2_edges_numba_bench --oracle-root workspace/oracles/180709_E_full_v2 --dataset-root workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 --force-rerun-from edges",
+  "pid": 23296,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "e8790c7dfbb4dbcf35615ba88fb14d8046d4520c",
+  "stage": "edges",
+  "started_at": "2026-08-20T22:31:37Z",
+  "status": "running",
+  "updated_at": "2026-08-20T22:31:37Z"
+}

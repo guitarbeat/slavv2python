@@ -1,0 +1,8 @@
+{
+  "heartbeat_at": "2026-08-20T22:42:21Z",
+  "progress_cursor": {
+    "substage": "generate_candidates",
+    "units_completed": 0,
+    "units_total": 3
+  }
+}

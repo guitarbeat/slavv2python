@@ -1,0 +1,8 @@
+{
+  "artifacts": {
+    "stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Energy\\stage_manifest.json"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\phase2_edges_numba_bench\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+  "completed_at": "2026-08-20T22:31:39Z",
+  "stage": "energy"
+}

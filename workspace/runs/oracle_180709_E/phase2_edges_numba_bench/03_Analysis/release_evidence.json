@@ -1,0 +1,17 @@
+{
+  "artifact_hashes": {
+    "edges": "36724dfae06a5e594fc9935ff376b57197d04facf999f376e2b4fa9b68666f01",
+    "energy": "c668a847f32d39bc22c2560b30e61f168b58c30c570900243f3b747ea427520f",
+    "network": "d3a81ea363ca8719302bc1a5cebd0d0866dee652a674a944b58161d72774575d",
+    "vertices": "c5f3bd41ae5ecf6bfe075664ccd0f299d3aebf748534a6c65a2f7003662cf12b"
+  },
+  "input_fingerprint": null,
+  "oracle_id": "180709_E_full_v2",
+  "oracle_manifest_hash": "8cc7b70065a7ed9eceb453afb4226379c41e69807923932a3562edb9e5a437d6",
+  "params_fingerprint": "447bf00aee4b23c6f4ce67de2776d5e038dae7a2e95ed92cd1dd84869a93072c",
+  "proof_passed": true,
+  "proof_report_hash": "0c94f9fa9fc46616f08518ccc0d55ee23e65fe9bedbc27e8fda6ace8eb8a4036",
+  "run_manifest_hash": "ba32a8b0c69a99a8bb18cc2b3857f33dd4227b2d9c3531af875ad5728ace3ae6",
+  "schema_version": 1,
+  "source_commit": "d6efbe5858925a455228b5deb9620d8d5c353f54"
+}
