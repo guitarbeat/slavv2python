@@ -13,7 +13,7 @@ Moving a scientific computing pipeline from MATLAB to Python represents a shift 
 
 A critical challenge in this migration is ensuring mathematical trust. Instead of targeting "good enough" correlation, our Phase 1 milestone achieved **1:1 structural exact parity**: zero missing and zero extra vertices or edges between the legacy MATLAB oracle and the new Python output across the canonical volume.
 
-This paper serves as both a retrospective of the translational challenges faced and a repository of technical lessons that act as soil for Phase 2 optimizations. The nine parity-preserving speed and memory improvements that made that certification runnable on a workstation are cataloged in [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md); the sections below keep the narrative and send quantitative mechanism detail to that catalog.
+This paper serves as both a retrospective of the translational challenges faced and a repository of technical lessons that act as soil for Phase 2 optimizations. The ten parity-preserving speed and memory improvements that made that certification runnable on a workstation are cataloged in [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md); the sections below keep the narrative and send quantitative mechanism detail to that catalog.
 
 ## 2. Phase 1: The Exact Parity Method
 
@@ -35,7 +35,7 @@ Phase 1 preserved mathematical structure while replacing MATLAB’s unstructured
 
 ## 5. Scaling & Performance Breakthroughs
 
-Translating a pipeline for certified parity often means keeping memory-intensive intermediate structure that MATLAB could afford on a single large array. Scaling to full canonical volumes ($512\times 512\times 64$ and beyond) exposed Energy and Edges bottlenecks that would not fit on a 16 GB workstation. Nine parity-preserved innovations made that volume runnable without changing certified numerical behavior. Mechanism, complexity, and verification for each item live in [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md).
+Translating a pipeline for certified parity often means keeping memory-intensive intermediate structure that MATLAB could afford on a single large array. Scaling to full canonical volumes ($512\times 512\times 64$ and beyond) exposed Energy and Edges bottlenecks that would not fit on a 16 GB workstation. Ten parity-preserved innovations made that volume runnable without changing certified numerical behavior. Mechanism, complexity, and verification for each item live in [PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md).
 
 ### 5.1 In-place octave accumulation
 
@@ -72,6 +72,10 @@ MATLAB network assembly walked cell arrays with nested `find`. Python builds a C
 ### 5.9 Arc-length centerline resampling
 
 MATLAB smoothed discrete pixel polylines with 2D Gaussian kernels. Python parameterizes traces by cumulative Euclidean arc length, applies a 1D energy-weighted Gaussian, and interpolates to uniform samples. Catalog [Innovation 4.2](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md#innovation-42-continuous-arc-length-centerline-smoothing--interpolation) is the smoothing note.
+
+### 5.10 JIT-compiled geometric penalties & voxel claiming
+
+The global watershed discovery loop evaluates neighborhood structuring elements (strels) across millions of steps. Naive Python implementations incur severe memory overhead from repeated NumPy array allocations for size penalties, distance adjustments, directional projections, and multi-map updates. Python compiles the geometric calculations and atomic voxel claiming loops via Numba JIT while maintaining bit-identical topological invariants and safe pure-Python fallbacks. Catalog [Innovation 3.4](PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md#innovation-34-jit-compiled-strel-geometric-penalties--atomic-voxel-claiming-numba) documents the verified parity and mechanism.
 
 ## 6. Performance Innovations Catalog
 
