@@ -35,7 +35,7 @@ def _matlab_global_watershed_insert_available_location(
 ) -> tuple[list[int], bool]:
     """Insert ``next_location`` into MATLAB worst-to-best ``available_locations`` order."""
     is_clear = is_current_location_clear
-    original = list(available_locations)
+    original = available_locations
 
     target_energy = float(next_energy)
 
@@ -62,10 +62,14 @@ def _matlab_global_watershed_insert_available_location(
 
     if not is_current_location_clear:
         is_clear = True
-        updated = [*original[:insert_at], int(next_location), *original[insert_at:-1]]
+        if insert_at < len(original):
+            original.pop()
+            original.insert(insert_at, int(next_location))
+        else:
+            original.append(int(next_location))
     else:
-        updated = [*original[:insert_at], int(next_location), *original[insert_at:]]
-    return updated, is_clear
+        original.insert(insert_at, int(next_location))
+    return original, is_clear
 
 
 def _matlab_global_watershed_reset_join_locations(

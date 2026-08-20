@@ -166,3 +166,62 @@ def test_claim_unowned_strel_arrays_python_vs_numba_equivalence():
     assert np.allclose(nrg_map_py, nrg_map_num, atol=1e-12, equal_nan=True)
     assert np.allclose(dor_map_py, dor_map_num, atol=1e-12, equal_nan=True)
     assert np.array_equal(siz_map_py, siz_map_num)
+
+
+def test_insert_available_location_in_place_equivalence():
+    """Verify in-place available locations insertion matches reference MATLAB slicing exactly."""
+    from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import (
+        _matlab_global_watershed_insert_available_location,
+    )
+
+    np.random.seed(999)
+    energy_lookup = np.random.uniform(0.0, 100.0, size=500)
+
+    # Reference implementation using full list copying
+    def reference_insert(orig, next_loc, next_nrg, s_idx, is_clear):
+        original = list(orig)
+        target_energy = float(next_nrg)
+        if not original:
+            return [int(next_loc)], True
+        if s_idx == 1:
+            if float(energy_lookup[int(original[0])]) <= target_energy:
+                insert_at = 0
+            else:
+                insert_at = len(original)
+                for idx in range(len(original) - 1, -1, -1):
+                    if float(energy_lookup[int(original[idx])]) > target_energy:
+                        insert_at = idx + 1
+                        break
+        elif float(energy_lookup[int(original[-1])]) >= target_energy:
+            insert_at = len(original) if is_clear else len(original) - 1
+        else:
+            insert_at = len(original)
+            for idx, loc in enumerate(original):
+                if float(energy_lookup[int(loc)]) < target_energy:
+                    insert_at = idx
+                    break
+        if not is_clear:
+            updated = [*original[:insert_at], int(next_loc), *original[insert_at:-1]]
+        else:
+            updated = [*original[:insert_at], int(next_loc), *original[insert_at:]]
+        return updated, True
+
+    # Test random sequences of insertions
+    for s_idx in [1, 2]:
+        ref_list = []
+        opt_list = []
+        is_clear_ref = True
+        is_clear_opt = True
+
+        for step in range(50):
+            loc = int(np.random.randint(0, 500))
+            nrg = float(energy_lookup[loc])
+            is_clear_flag = bool(step % 3 == 0)
+
+            ref_list, is_clear_ref = reference_insert(ref_list, loc, nrg, s_idx, is_clear_flag)
+            opt_list, is_clear_opt = _matlab_global_watershed_insert_available_location(
+                opt_list, loc, nrg, energy_lookup, s_idx, is_clear_flag
+            )
+
+            assert ref_list == opt_list, f"Mismatch at step {step}, seed_idx {s_idx}"
+            assert is_clear_ref == is_clear_opt
