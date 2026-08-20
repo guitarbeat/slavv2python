@@ -22,9 +22,9 @@
     "vertices.stage_manifest.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test\\03_Vertices\\stage_manifest.json"
   },
   "created_at": "2026-07-04T12:20:07Z",
-  "current_detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=8704, candidates=1198)",
+  "current_detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=10240, candidates=1579)",
   "current_stage": "edges",
-  "elapsed_seconds": 4086384.931854248,
+  "elapsed_seconds": 4086398.028543949,
   "errors": [
     {
       "at": "2026-08-20T19:23:39Z",
@@ -35,9 +35,9 @@
       "message": "Resume blocked because the parameters fingerprint changed. Re-run with force_rerun_from='energy' to start a fresh pipeline."
     }
   ],
-  "eta_seconds": 3343405.853335295,
+  "eta_seconds": 3343416.5688086865,
   "input_fingerprint": "10a147670737aff4785d49382469c0e87372e03139e9b9363f4a46c12c26c0cc",
-  "last_event": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=8704, candidates=1198)",
+  "last_event": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=10240, candidates=1579)",
   "optional_tasks": {},
   "overall_progress": 0.5499999999999999,
   "params_fingerprint": "c98c0edc9aa2fed247d53035dd0a086e05c0540712890e13fe19c91101f5b098",
@@ -55,11 +55,11 @@
     "edges": {
       "artifacts": {},
       "completed_at": null,
-      "detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=8704, candidates=1198)",
-      "elapsed_seconds": 57.931854248046875,
+      "detail": "Generating edge candidates through Watershed Discovery (Exact Route) (iterations=10240, candidates=1579)",
+      "elapsed_seconds": 71.0285439491272,
       "eta_seconds": null,
       "name": "edges",
-      "peak_memory_bytes": 613412864,
+      "peak_memory_bytes": 613982208,
       "progress": 0.0,
       "resumed": false,
       "started_at": "2026-08-20T19:25:34Z",
@@ -67,7 +67,7 @@
       "substage": "generate_candidates",
       "units_completed": 0,
       "units_total": 3,
-      "updated_at": "2026-08-20T19:26:31Z"
+      "updated_at": "2026-08-20T19:26:45Z"
     },
     "energy": {
       "artifacts": {
@@ -151,5 +151,5 @@
   },
   "status": "running",
   "target_stage": "network",
-  "updated_at": "2026-08-20T19:26:31Z"
+  "updated_at": "2026-08-20T19:26:45Z"
 }

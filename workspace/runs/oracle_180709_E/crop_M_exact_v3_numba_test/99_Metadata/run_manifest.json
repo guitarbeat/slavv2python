@@ -23,8 +23,8 @@
   "stage_metrics": {
     "edges": {
       "completed_at": null,
-      "elapsed_seconds": 53.68445539474487,
-      "peak_memory_bytes": 613330944,
+      "elapsed_seconds": 71.0285439491272,
+      "peak_memory_bytes": 613982208,
       "status": "running"
     },
     "energy": {
@@ -51,6 +51,6 @@
   "timestamps": {
     "completed_at": "2026-08-20T19:25:34Z",
     "created_at": "2026-07-04T12:20:07Z",
-    "updated_at": "2026-08-20T19:26:27Z"
+    "updated_at": "2026-08-20T19:26:45Z"
   }
 }
