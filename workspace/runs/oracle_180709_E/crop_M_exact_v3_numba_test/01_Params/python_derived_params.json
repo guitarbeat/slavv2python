@@ -1,0 +1,18 @@
+{
+  "orchestration_params": {
+    "comparison_exact_network": true,
+    "comparison_exact_network_use_conflict_painting": true,
+    "energy_axis_permutation": [
+      2,
+      0,
+      1
+    ],
+    "energy_storage_format": "npy",
+    "n_jobs": 1,
+    "return_all_scales": false
+  },
+  "python_only_params": {},
+  "unclassified_params": {
+    "pipeline_profile": "paper"
+  }
+}

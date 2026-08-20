@@ -1,0 +1,23 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact_v3_numba_test --oracle-root workspace/oracles/180709_E_crop_M_v2 --force-rerun-from edges",
+  "cwd": "D:\\2P_Data\\Aaron\\slavv2python",
+  "dataset_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\datasets\\0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3",
+  "ended_at": null,
+  "exit_code": null,
+  "force_rerun_from": "edges",
+  "kind": "parity_exact_run_job",
+  "launched_at": "2026-07-08T20:19:17Z",
+  "n_jobs": null,
+  "oracle_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M_v2",
+  "pid": 10400,
+  "pid_file": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\99_Metadata\\parity_job.pid",
+  "python_commit": "e358fa7d54b39f5eb7560ccb96c79dde99b97dfa",
+  "reason": null,
+  "stage": "edges",
+  "started_at": "2026-07-08T20:19:17Z",
+  "status": "running",
+  "stderr": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\99_Metadata\\parity_job.err.log",
+  "stdout": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3\\99_Metadata\\parity_job.out.log",
+  "stop_after": "edges"
+}

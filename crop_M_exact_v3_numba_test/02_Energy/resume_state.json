@@ -1,8 +1,8 @@
 {
-  "heartbeat_at": "2026-08-20T17:30:32Z",
+  "heartbeat_at": "2026-08-20T19:25:59Z",
   "progress_cursor": {
     "substage": "exact_parity_chunks",
-    "units_completed": 35,
+    "units_completed": 225,
     "units_total": 821
   }
 }

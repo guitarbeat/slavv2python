@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "voxels": [
+    {
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35,
+      "mismatch_count": 333,
+      "boundary_class": "interior"
+    },
+    {
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35,
+      "mismatch_count": 333,
+      "boundary_class": "interior"
+    }
+  ],
+  "requests": [
+    {
+      "request_id": "g00_0__oct1",
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "rf_zyx": [
+        1,
+        1,
+        1
+      ],
+      "rf_matlab_yxz": [
+        1,
+        1,
+        1
+      ],
+      "consolidated_octave": 1,
+      "first_scale": 0,
+      "last_scale": 35,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_0__oct2",
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "rf_zyx": [
+        1,
+        3,
+        3
+      ],
+      "rf_matlab_yxz": [
+        3,
+        3,
+        1
+      ],
+      "consolidated_octave": 2,
+      "first_scale": 36,
+      "last_scale": 53,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_0__oct3",
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "rf_zyx": [
+        2,
+        5,
+        5
+      ],
+      "rf_matlab_yxz": [
+        5,
+        5,
+        2
+      ],
+      "consolidated_octave": 3,
+      "first_scale": 54,
+      "last_scale": 71,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_0__oct4",
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "rf_zyx": [
+        5,
+        10,
+        10
+      ],
+      "rf_matlab_yxz": [
+        10,
+        10,
+        5
+      ],
+      "consolidated_octave": 4,
+      "first_scale": 72,
+      "last_scale": 89,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_0__oct5",
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "rf_zyx": [
+        9,
+        20,
+        20
+      ],
+      "rf_matlab_yxz": [
+        20,
+        20,
+        9
+      ],
+      "consolidated_octave": 5,
+      "first_scale": 90,
+      "last_scale": 98,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_1__oct1",
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "rf_zyx": [
+        1,
+        1,
+        1
+      ],
+      "rf_matlab_yxz": [
+        1,
+        1,
+        1
+      ],
+      "consolidated_octave": 1,
+      "first_scale": 0,
+      "last_scale": 35,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_1__oct2",
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "rf_zyx": [
+        1,
+        3,
+        3
+      ],
+      "rf_matlab_yxz": [
+        3,
+        3,
+        1
+      ],
+      "consolidated_octave": 2,
+      "first_scale": 36,
+      "last_scale": 53,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_1__oct3",
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "rf_zyx": [
+        2,
+        5,
+        5
+      ],
+      "rf_matlab_yxz": [
+        5,
+        5,
+        2
+      ],
+      "consolidated_octave": 3,
+      "first_scale": 54,
+      "last_scale": 71,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_1__oct4",
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "rf_zyx": [
+        5,
+        10,
+        10
+      ],
+      "rf_matlab_yxz": [
+        10,
+        10,
+        5
+      ],
+      "consolidated_octave": 4,
+      "first_scale": 72,
+      "last_scale": 89,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    },
+    {
+      "request_id": "g00_1__oct5",
+      "parent_request_id": "g00_1",
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "rf_zyx": [
+        9,
+        20,
+        20
+      ],
+      "rf_matlab_yxz": [
+        20,
+        20,
+        9
+      ],
+      "consolidated_octave": 5,
+      "first_scale": 90,
+      "last_scale": 98,
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35
+    }
+  ]
+}

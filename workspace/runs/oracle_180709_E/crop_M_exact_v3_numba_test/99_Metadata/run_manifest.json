@@ -1,0 +1,56 @@
+{
+  "current_stage": "edges",
+  "dataset_hash": "10a147670737aff4785d49382469c0e87372e03139e9b9363f4a46c12c26c0cc",
+  "kind": "slavv_run",
+  "manifest_version": 1,
+  "matlab_source_version": null,
+  "oracle_id": null,
+  "params_fingerprint": "c98c0edc9aa2fed247d53035dd0a086e05c0540712890e13fe19c91101f5b098",
+  "promotion_state": "ephemeral",
+  "provenance": {
+    "image_shape": [
+      64,
+      256,
+      256
+    ],
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "python_commit": "964da3866dd958154b3751c7641fac50ca9552e0",
+  "retention": "disposable",
+  "run_id": "3fce1055f30d",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact_v3_numba_test",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": null,
+      "elapsed_seconds": 53.68445539474487,
+      "peak_memory_bytes": 613330944,
+      "status": "running"
+    },
+    "energy": {
+      "completed_at": "2026-08-20T19:25:34Z",
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 308645888,
+      "status": "completed"
+    },
+    "network": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    },
+    "vertices": {
+      "completed_at": "2026-08-20T19:25:34Z",
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 308674560,
+      "status": "completed"
+    }
+  },
+  "status": "running",
+  "target_stage": "network",
+  "timestamps": {
+    "completed_at": "2026-08-20T19:25:34Z",
+    "created_at": "2026-07-04T12:20:07Z",
+    "updated_at": "2026-08-20T19:26:27Z"
+  }
+}

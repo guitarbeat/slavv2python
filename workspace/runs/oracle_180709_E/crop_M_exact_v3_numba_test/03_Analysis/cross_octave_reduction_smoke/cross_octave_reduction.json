@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "voxels": 1,
+  "requests": 5,
+  "classifications": {
+    "python_stored_state_path": 1
+  },
+  "results": [
+    {
+      "parent_request_id": "g00_0",
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "stored_matlab_scale": 36,
+      "stored_python_scale": 35,
+      "mismatch_count": 333,
+      "boundary_class": "interior",
+      "classification": "python_stored_state_path",
+      "python_reduction": {
+        "global_scale": 36,
+        "upsampled_energy": -2.1129204332364875,
+        "source_request_id": "g00_0__oct2",
+        "candidates": [
+          {
+            "request_id": "g00_0__oct1",
+            "consolidated_octave": 1,
+            "global_scale": 35,
+            "upsampled_energy": -1.5055060000906564
+          },
+          {
+            "request_id": "g00_0__oct2",
+            "consolidated_octave": 2,
+            "global_scale": 36,
+            "upsampled_energy": -2.1129204332364875
+          },
+          {
+            "request_id": "g00_0__oct3",
+            "consolidated_octave": 3,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          },
+          {
+            "request_id": "g00_0__oct4",
+            "consolidated_octave": 4,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          },
+          {
+            "request_id": "g00_0__oct5",
+            "consolidated_octave": 5,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          }
+        ]
+      },
+      "matlab_reduction": {
+        "global_scale": 36,
+        "upsampled_energy": -2.1129204332364786,
+        "source_request_id": "g00_0__oct2",
+        "candidates": [
+          {
+            "request_id": "g00_0__oct1",
+            "consolidated_octave": 1,
+            "global_scale": 35,
+            "upsampled_energy": -1.505506000090651
+          },
+          {
+            "request_id": "g00_0__oct2",
+            "consolidated_octave": 2,
+            "global_scale": 36,
+            "upsampled_energy": -2.1129204332364786
+          },
+          {
+            "request_id": "g00_0__oct3",
+            "consolidated_octave": 3,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          },
+          {
+            "request_id": "g00_0__oct4",
+            "consolidated_octave": 4,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          },
+          {
+            "request_id": "g00_0__oct5",
+            "consolidated_octave": 5,
+            "global_scale": -1,
+            "upsampled_energy": 0.0
+          }
+        ]
+      },
+      "replay_scales_agree": true,
+      "stored_scales_agree": false,
+      "python_replay_matches_stored": false,
+      "matlab_replay_matches_stored": true
+    }
+  ]
+}

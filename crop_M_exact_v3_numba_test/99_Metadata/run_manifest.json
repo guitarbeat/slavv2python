@@ -30,8 +30,8 @@
     },
     "energy": {
       "completed_at": null,
-      "elapsed_seconds": 1003.5761044025421,
-      "peak_memory_bytes": 289869824,
+      "elapsed_seconds": 7930.948912858963,
+      "peak_memory_bytes": 291610624,
       "status": "running"
     },
     "network": {
@@ -52,6 +52,6 @@
   "timestamps": {
     "completed_at": "2026-08-20T17:13:49Z",
     "created_at": "2026-08-20T17:13:49Z",
-    "updated_at": "2026-08-20T17:30:32Z"
+    "updated_at": "2026-08-20T19:25:59Z"
   }
 }

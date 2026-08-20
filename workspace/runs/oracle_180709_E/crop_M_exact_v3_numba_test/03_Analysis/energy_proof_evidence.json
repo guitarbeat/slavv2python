@@ -1,0 +1,53 @@
+{
+  "energy_checkpoint": {
+    "exists": true,
+    "modified_at": "2026-06-24T09:25:23.845462Z",
+    "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl"
+  },
+  "failures": [],
+  "historical_reports": [
+    {
+      "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\03_Analysis\\exact_mismatch_energy.json",
+      "stale": false,
+      "stale_reason": ""
+    },
+    {
+      "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\03_Analysis\\exact_proof.json",
+      "stale": false,
+      "stale_reason": ""
+    },
+    {
+      "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\03_Analysis\\exact_proof_energy.json",
+      "stale": true,
+      "stale_reason": "predates_current_energy_checkpoint"
+    },
+    {
+      "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\03_Analysis\\exact_proof_energy_ulp.json",
+      "stale": false,
+      "stale_reason": ""
+    }
+  ],
+  "parity_job": {
+    "exists": true,
+    "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\99_Metadata\\parity_job.json",
+    "stage": "energy",
+    "status": "succeeded"
+  },
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact",
+  "run_snapshot": {
+    "energy_started_at": "2026-06-24T01:33:09Z",
+    "energy_status": "completed",
+    "energy_updated_at": "2026-06-24T09:25:23Z",
+    "exists": true,
+    "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\99_Metadata\\run_snapshot.json",
+    "status": "failed"
+  },
+  "schema_version": 1,
+  "valid": true,
+  "writer_lease": {
+    "exists": true,
+    "path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\oracle_180709_E\\crop_M_exact\\99_Metadata\\writer_lease.json",
+    "stage": "energy",
+    "status": "completed"
+  }
+}

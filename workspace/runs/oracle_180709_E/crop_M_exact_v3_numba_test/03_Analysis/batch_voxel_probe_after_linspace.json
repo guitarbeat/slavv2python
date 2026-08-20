@@ -1,0 +1,486 @@
+{
+  "probed": 30,
+  "fixed": 30,
+  "results": [
+    {
+      "voxel_zyx": [
+        50,
+        104,
+        1
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 35,
+      "reprobe_scale": 36,
+      "reprobe_energy": -2.1129204332364875,
+      "oracle_energy": -2.1129204332364786,
+      "match": true,
+      "chunk_idx": 52,
+      "mismatch_count": 333,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        26,
+        100,
+        134
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 35,
+      "reprobe_scale": 36,
+      "reprobe_energy": -39.5751445124198,
+      "oracle_energy": -39.57514451241986,
+      "match": true,
+      "chunk_idx": 36,
+      "mismatch_count": 333,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        35,
+        186,
+        2
+      ],
+      "matlab_scale": 35,
+      "stored_python_scale": 36,
+      "reprobe_scale": 35,
+      "reprobe_energy": -12.311469571088807,
+      "oracle_energy": -12.311469571088791,
+      "match": true,
+      "chunk_idx": 371,
+      "mismatch_count": 180,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        61,
+        240,
+        60
+      ],
+      "matlab_scale": 35,
+      "stored_python_scale": 36,
+      "reprobe_scale": 35,
+      "reprobe_energy": -15.798919020107117,
+      "oracle_energy": -15.798919020107105,
+      "match": true,
+      "chunk_idx": 637,
+      "mismatch_count": 180,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        49,
+        131,
+        7
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 37,
+      "reprobe_scale": 36,
+      "reprobe_energy": -10.379192184661246,
+      "oracle_energy": -10.379192184661267,
+      "match": true,
+      "chunk_idx": 52,
+      "mismatch_count": 135,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        11,
+        216,
+        109
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 37,
+      "reprobe_scale": 36,
+      "reprobe_energy": -108.123434203509,
+      "oracle_energy": -108.12343420350896,
+      "match": true,
+      "chunk_idx": 14,
+      "mismatch_count": 135,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        62,
+        216,
+        16
+      ],
+      "matlab_scale": 37,
+      "stored_python_scale": 36,
+      "reprobe_scale": 37,
+      "reprobe_energy": -11.820220863812184,
+      "oracle_energy": -11.8202208638122,
+      "match": true,
+      "chunk_idx": 54,
+      "mismatch_count": 118,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        32,
+        230,
+        192
+      ],
+      "matlab_scale": 37,
+      "stored_python_scale": 36,
+      "reprobe_scale": 37,
+      "reprobe_energy": -47.986615228660696,
+      "oracle_energy": -47.98661522866066,
+      "match": true,
+      "chunk_idx": 44,
+      "mismatch_count": 118,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        53,
+        222,
+        44
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 0,
+      "reprobe_scale": 36,
+      "reprobe_energy": -5.698066067079989,
+      "oracle_energy": -5.698066067079987,
+      "match": true,
+      "chunk_idx": 54,
+      "mismatch_count": 111,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        52,
+        107,
+        74
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 0,
+      "reprobe_scale": 36,
+      "reprobe_energy": -18.1195856857559,
+      "oracle_energy": -18.11958568575594,
+      "match": true,
+      "chunk_idx": 57,
+      "mismatch_count": 111,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        46,
+        165,
+        38
+      ],
+      "matlab_scale": 53,
+      "stored_python_scale": 54,
+      "reprobe_scale": 53,
+      "reprobe_energy": -6.708280363801599,
+      "oracle_energy": -6.708280363801601,
+      "match": true,
+      "chunk_idx": 53,
+      "mismatch_count": 110,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        59,
+        122,
+        159
+      ],
+      "matlab_scale": 53,
+      "stored_python_scale": 54,
+      "reprobe_scale": 53,
+      "reprobe_energy": -26.952943336096496,
+      "oracle_energy": -26.9529433360965,
+      "match": true,
+      "chunk_idx": 67,
+      "mismatch_count": 110,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        43,
+        228,
+        13
+      ],
+      "matlab_scale": 52,
+      "stored_python_scale": 53,
+      "reprobe_scale": 52,
+      "reprobe_energy": -19.394494288268852,
+      "oracle_energy": -19.394494288268877,
+      "match": true,
+      "chunk_idx": 54,
+      "mismatch_count": 98,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        49,
+        9,
+        225
+      ],
+      "matlab_scale": 52,
+      "stored_python_scale": 53,
+      "reprobe_scale": 52,
+      "reprobe_energy": -14.967774886892427,
+      "oracle_energy": -14.96777488689241,
+      "match": true,
+      "chunk_idx": 70,
+      "mismatch_count": 98,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        41,
+        225,
+        15
+      ],
+      "matlab_scale": 54,
+      "stored_python_scale": 53,
+      "reprobe_scale": 54,
+      "reprobe_energy": -23.390634147197805,
+      "oracle_energy": -23.390634147197815,
+      "match": true,
+      "chunk_idx": 11,
+      "mismatch_count": 92,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        32,
+        151,
+        175
+      ],
+      "matlab_scale": 54,
+      "stored_python_scale": 53,
+      "reprobe_scale": 54,
+      "reprobe_energy": -29.54953946029432,
+      "oracle_energy": -29.549539460294312,
+      "match": true,
+      "chunk_idx": 16,
+      "mismatch_count": 92,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        18,
+        189,
+        2
+      ],
+      "matlab_scale": 38,
+      "stored_python_scale": 36,
+      "reprobe_scale": 38,
+      "reprobe_energy": -25.148266017628686,
+      "oracle_energy": -25.148266017628686,
+      "match": true,
+      "chunk_idx": 3,
+      "mismatch_count": 90,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        6,
+        171,
+        60
+      ],
+      "matlab_scale": 38,
+      "stored_python_scale": 36,
+      "reprobe_scale": 38,
+      "reprobe_energy": -55.817172303139905,
+      "oracle_energy": -55.81717230313985,
+      "match": true,
+      "chunk_idx": 8,
+      "mismatch_count": 90,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        48,
+        116,
+        4
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 33,
+      "reprobe_scale": 36,
+      "reprobe_energy": -2.0112290365249734,
+      "oracle_energy": -2.011229036524982,
+      "match": true,
+      "chunk_idx": 52,
+      "mismatch_count": 89,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        2,
+        210,
+        230
+      ],
+      "matlab_scale": 36,
+      "stored_python_scale": 33,
+      "reprobe_scale": 36,
+      "reprobe_energy": -44.734464658604004,
+      "oracle_energy": -44.73446465860399,
+      "match": true,
+      "chunk_idx": 24,
+      "mismatch_count": 89,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        10,
+        225,
+        5
+      ],
+      "matlab_scale": 45,
+      "stored_python_scale": 46,
+      "reprobe_scale": 45,
+      "reprobe_energy": -33.7882379953667,
+      "oracle_energy": -33.78823799536668,
+      "match": true,
+      "chunk_idx": 4,
+      "mismatch_count": 89,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        52,
+        113,
+        147
+      ],
+      "matlab_scale": 45,
+      "stored_python_scale": 46,
+      "reprobe_scale": 45,
+      "reprobe_energy": -22.137898048477354,
+      "oracle_energy": -22.137898048477386,
+      "match": true,
+      "chunk_idx": 62,
+      "mismatch_count": 89,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        54,
+        165,
+        4
+      ],
+      "matlab_scale": 37,
+      "stored_python_scale": 35,
+      "reprobe_scale": 37,
+      "reprobe_energy": -21.66444216217399,
+      "oracle_energy": -21.66444216217396,
+      "match": true,
+      "chunk_idx": 53,
+      "mismatch_count": 88,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        1,
+        216,
+        147
+      ],
+      "matlab_scale": 37,
+      "stored_python_scale": 35,
+      "reprobe_scale": 37,
+      "reprobe_energy": -65.90640503439148,
+      "oracle_energy": -65.90640503439155,
+      "match": true,
+      "chunk_idx": 14,
+      "mismatch_count": 88,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        53,
+        119,
+        18
+      ],
+      "matlab_scale": 53,
+      "stored_python_scale": 52,
+      "reprobe_scale": 53,
+      "reprobe_energy": -4.6343577859647205,
+      "oracle_energy": -4.634357785964729,
+      "match": true,
+      "chunk_idx": 52,
+      "mismatch_count": 88,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        2,
+        66,
+        68
+      ],
+      "matlab_scale": 53,
+      "stored_python_scale": 52,
+      "reprobe_scale": 53,
+      "reprobe_energy": -9.131808973099892,
+      "oracle_energy": -9.131808973099856,
+      "match": true,
+      "chunk_idx": 6,
+      "mismatch_count": 88,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        3,
+        177,
+        4
+      ],
+      "matlab_scale": 48,
+      "stored_python_scale": 49,
+      "reprobe_scale": 48,
+      "reprobe_energy": -21.236423683705684,
+      "oracle_energy": -21.23642368370572,
+      "match": true,
+      "chunk_idx": 3,
+      "mismatch_count": 86,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        62,
+        116,
+        169
+      ],
+      "matlab_scale": 48,
+      "stored_python_scale": 49,
+      "reprobe_scale": 48,
+      "reprobe_energy": -13.312078139955283,
+      "oracle_energy": -13.312078139955267,
+      "match": true,
+      "chunk_idx": 67,
+      "mismatch_count": 86,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        62,
+        128,
+        7
+      ],
+      "matlab_scale": 42,
+      "stored_python_scale": 43,
+      "reprobe_scale": 42,
+      "reprobe_energy": -6.369653870303126,
+      "oracle_energy": -6.3696538703031145,
+      "match": true,
+      "chunk_idx": 52,
+      "mismatch_count": 84,
+      "boundary_class": "interior"
+    },
+    {
+      "voxel_zyx": [
+        13,
+        165,
+        30
+      ],
+      "matlab_scale": 42,
+      "stored_python_scale": 43,
+      "reprobe_scale": 42,
+      "reprobe_energy": -133.24835964753555,
+      "oracle_energy": -133.2483596475356,
+      "match": true,
+      "chunk_idx": 3,
+      "mismatch_count": 84,
+      "boundary_class": "interior"
+    }
+  ]
+}

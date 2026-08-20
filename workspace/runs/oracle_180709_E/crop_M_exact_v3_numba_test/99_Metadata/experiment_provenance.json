@@ -1,0 +1,19 @@
+{
+  "bootstrap_kind": "init-exact-run",
+  "created_at": "2026-06-14T00:59:42Z",
+  "dataset_hash": "0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+  "input_axis_permutation": null,
+  "oracle_id": "180709_E_crop_M_v2",
+  "oracle_size_of_image": [
+    64,
+    256,
+    256
+  ],
+  "selected_settings_paths": {
+    "edges": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M\\01_Input\\matlab_results\\batch_260527-220010\\settings\\edges_260527-220010.mat",
+    "energy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M\\01_Input\\matlab_results\\batch_260527-220010\\settings\\energy_260527-220010.mat",
+    "network": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M\\01_Input\\matlab_results\\batch_260527-220010\\settings\\network_260527-220010.mat",
+    "vertices": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_crop_M\\01_Input\\matlab_results\\batch_260527-220010\\settings\\vertices_260527-220010.mat"
+  },
+  "stop_after": "vertices"
+}

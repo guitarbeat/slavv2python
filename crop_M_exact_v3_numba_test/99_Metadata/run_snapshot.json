@@ -3,15 +3,15 @@
     "preprocess_done": "true"
   },
   "created_at": "2026-08-20T17:13:49Z",
-  "current_detail": "Exact Energy octave 1, chunk 35",
+  "current_detail": "Exact Energy octave 1, chunk 225",
   "current_stage": "energy",
-  "elapsed_seconds": 1003.5761044025421,
+  "elapsed_seconds": 7930.948912858963,
   "errors": [],
-  "eta_seconds": 14454.885090991213,
+  "eta_seconds": 46420.545723678675,
   "input_fingerprint": "10a147670737aff4785d49382469c0e87372e03139e9b9363f4a46c12c26c0cc",
-  "last_event": "Exact Energy octave 1, chunk 35",
+  "last_event": "Exact Energy octave 1, chunk 225",
   "optional_tasks": {},
-  "overall_progress": 0.06492082825822168,
+  "overall_progress": 0.14591961023142508,
   "params_fingerprint": "9bad0f6630b184122129ab46e5422a6d7b02f757657598b23d8fb2ed8cb15c38",
   "provenance": {
     "image_shape": [
@@ -45,19 +45,19 @@
     "energy": {
       "artifacts": {},
       "completed_at": null,
-      "detail": "Exact Energy octave 1, chunk 35",
-      "elapsed_seconds": 1003.5761044025421,
-      "eta_seconds": 22537.451944582805,
+      "detail": "Exact Energy octave 1, chunk 225",
+      "elapsed_seconds": 7930.948912858963,
+      "eta_seconds": 21008.202453617523,
       "name": "energy",
-      "peak_memory_bytes": 289869824,
-      "progress": 0.04263093788063337,
+      "peak_memory_bytes": 291610624,
+      "progress": 0.2740560292326431,
       "resumed": false,
       "started_at": "2026-08-20T17:13:49Z",
       "status": "running",
       "substage": "exact_parity_chunks",
-      "units_completed": 35,
+      "units_completed": 225,
       "units_total": 821,
-      "updated_at": "2026-08-20T17:30:32Z"
+      "updated_at": "2026-08-20T19:25:59Z"
     },
     "network": {
       "artifacts": {},
@@ -113,5 +113,5 @@
   },
   "status": "running",
   "target_stage": "vertices",
-  "updated_at": "2026-08-20T17:30:32Z"
+  "updated_at": "2026-08-20T19:25:59Z"
 }
