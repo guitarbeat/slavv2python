@@ -7,7 +7,7 @@ MATLAB lineage: ``get_edges_by_watershed.m`` shared-state helpers.
 from __future__ import annotations
 
 import heapq
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 from scipy import sparse
@@ -100,14 +100,15 @@ def _matlab_global_watershed_reset_join_locations(
     return updated, is_clear
 
 
+import os
+
 try:
     from numba import njit
 except ImportError:
     njit = None
 
-_NUMBA_AVAILABLE = njit is not None
+_NUMBA_AVAILABLE = njit is not None and os.environ.get("SLAVV_DISABLE_NUMBA", "0") != "1"
 
-@njit(cache=False)
 def _claim_unowned_strel_arrays_numba_impl(
     current_vertex_index: int,
     current_scale_label: int,
@@ -148,7 +149,7 @@ def _claim_unowned_strel_arrays_numba_impl(
 
 
 if _NUMBA_AVAILABLE:
-    _numba_claim = _claim_unowned_strel_arrays_numba_impl
+    _numba_claim = cast("Any", njit(cache=False)(_claim_unowned_strel_arrays_numba_impl))
 else:
     _numba_claim = None
 

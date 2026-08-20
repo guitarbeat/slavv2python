@@ -1,3 +1,0 @@
-Exact preflight report
-Status: PASS
-Memory gate: required 0.16 GiB <= budget 4.25 GiB (pass)

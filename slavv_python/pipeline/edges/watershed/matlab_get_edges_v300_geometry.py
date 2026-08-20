@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import math
 import logging
 from typing import TYPE_CHECKING, Any, cast
@@ -13,7 +14,7 @@ try:
 except ImportError:
     njit = None
 
-_NUMBA_AVAILABLE = njit is not None
+_NUMBA_AVAILABLE = njit is not None and os.environ.get("SLAVV_DISABLE_NUMBA", "0") != "1"
 _NUMBA_FAILURE_MESSAGE = (
     "Numba geometry acceleration is unavailable in this environment; "
     "falling back to the pure-Python helpers."
