@@ -3,9 +3,24 @@
 from __future__ import annotations
 
 import math
+import logging
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+
+try:
+    from numba import njit
+except ImportError:
+    njit = None
+
+_NUMBA_AVAILABLE = njit is not None
+_NUMBA_FAILURE_MESSAGE = (
+    "Numba geometry acceleration is unavailable in this environment; "
+    "falling back to the pure-Python helpers."
+)
+_NUMBA_ACCELERATION_ENABLED = _NUMBA_AVAILABLE
+
+logger = logging.getLogger(__name__)
 
 from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
     build_matlab_local_strel_geometry,
@@ -79,7 +94,7 @@ def _matlab_frontier_size_tolerance(
     return float(math.log(1.0 + float(radius_tolerance)) / math.log(size_ratio_per_index))
 
 
-def _matlab_frontier_adjusted_neighbor_energies(
+def _matlab_frontier_adjusted_neighbor_energies_python(
     raw_energies: np.ndarray,
     *,
     neighbor_offsets: np.ndarray,
@@ -153,7 +168,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
     return cast("np.ndarray", adjusted.astype(np.float64, copy=False))
 
 
-def _matlab_frontier_directional_suppression_factors(
+def _matlab_frontier_directional_suppression_factors_python(
     neighbor_offsets: np.ndarray,
     *,
     selected_index: int,
@@ -170,6 +185,241 @@ def _matlab_frontier_directional_suppression_factors(
     cosine_to_selected = np.sum(unit_vectors * unit_vectors[int(selected_index)], axis=1)
     suppression = (1.0 - cosine_to_selected) / 2.0
     return cast("np.ndarray", suppression.astype(np.float64, copy=False))
+
+
+def _matlab_frontier_adjusted_neighbor_energies_numba_impl(
+    raw_energies: np.ndarray,
+    neighbor_offsets: np.ndarray,
+    neighbor_unit_vectors: np.ndarray,
+    neighbor_r_over_R: np.ndarray,
+    neighbor_scale_indices: np.ndarray,
+    propagated_scale_index: int,
+    current_d_over_r: float,
+    current_forward_unit: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    size_tolerance: float,
+    distance_tolerance: float,
+    use_scale_penalty: bool,
+    use_directional_penalty: bool,
+    use_neighbor_unit_vectors: bool,
+) -> np.ndarray:
+    n = len(raw_energies)
+    adjusted = np.empty(n, dtype=np.float64)
+
+    safe_distance_tolerance = distance_tolerance
+    if safe_distance_tolerance < 1e-6:
+        safe_distance_tolerance = 1e-6
+
+    total_distance_adjustment = math.exp(
+        -0.5 * ((3.0 * current_d_over_r / safe_distance_tolerance) ** 2)
+    )
+
+    forward_norm = 0.0
+    if use_directional_penalty:
+        forward_norm = math.sqrt(
+            current_forward_unit[0]**2 + current_forward_unit[1]**2 + current_forward_unit[2]**2
+        )
+
+    for i in range(n):
+        val = raw_energies[i]
+
+        if use_scale_penalty and size_tolerance > 0.0:
+            size_diff = neighbor_scale_indices[i] - propagated_scale_index
+            val *= math.exp(-0.5 * (size_diff / size_tolerance) ** 2)
+
+        r_over_R = neighbor_r_over_R[i]
+        v = (4.0 / 3.0) * r_over_R
+        if v > 1.0:
+            v = 1.0
+        local_dist_adj = (1.0 - math.cos(math.pi * v)) / 2.0
+        val *= local_dist_adj
+
+        val *= total_distance_adjustment
+
+        if use_directional_penalty and forward_norm > 1e-12:
+            if use_neighbor_unit_vectors:
+                directional_alignment = (
+                    neighbor_unit_vectors[i, 0] * current_forward_unit[0] +
+                    neighbor_unit_vectors[i, 1] * current_forward_unit[1] +
+                    neighbor_unit_vectors[i, 2] * current_forward_unit[2]
+                )
+            else:
+                vx = neighbor_offsets[i, 0] * microns_per_voxel[0]
+                vy = neighbor_offsets[i, 1] * microns_per_voxel[1]
+                vz = neighbor_offsets[i, 2] * microns_per_voxel[2]
+                vnorm = math.sqrt(vx*vx + vy*vy + vz*vz)
+                if vnorm > 1e-12:
+                    directional_alignment = (
+                        vx * current_forward_unit[0] +
+                        vy * current_forward_unit[1] +
+                        vz * current_forward_unit[2]
+                    ) / vnorm
+                else:
+                    directional_alignment = 0.0
+
+            if directional_alignment < 0.0:
+                directional_alignment = 0.0
+
+            val *= directional_alignment
+
+        if math.isnan(val) or (math.isinf(val) and val > 0):
+            val = math.inf
+
+        adjusted[i] = val
+
+    return adjusted
+
+
+def _matlab_frontier_directional_suppression_factors_numba_impl(
+    neighbor_offsets: np.ndarray,
+    selected_index: int,
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    n = len(neighbor_offsets)
+    suppression = np.empty(n, dtype=np.float64)
+
+    sx = neighbor_offsets[selected_index, 0] * microns_per_voxel[0]
+    sy = neighbor_offsets[selected_index, 1] * microns_per_voxel[1]
+    sz = neighbor_offsets[selected_index, 2] * microns_per_voxel[2]
+    snorm = math.sqrt(sx*sx + sy*sy + sz*sz)
+    if snorm > 1e-12:
+        sx /= snorm
+        sy /= snorm
+        sz /= snorm
+    else:
+        sx = 0.0
+        sy = 0.0
+        sz = 0.0
+
+    for i in range(n):
+        vx = neighbor_offsets[i, 0] * microns_per_voxel[0]
+        vy = neighbor_offsets[i, 1] * microns_per_voxel[1]
+        vz = neighbor_offsets[i, 2] * microns_per_voxel[2]
+        vnorm = math.sqrt(vx*vx + vy*vy + vz*vz)
+        if vnorm > 1e-12:
+            vx /= vnorm
+            vy /= vnorm
+            vz /= vnorm
+        else:
+            vx = 0.0
+            vy = 0.0
+            vz = 0.0
+
+        cosine_to_selected = vx * sx + vy * sy + vz * sz
+        suppression[i] = (1.0 - cosine_to_selected) / 2.0
+
+    return suppression
+
+
+if _NUMBA_AVAILABLE:
+    _numba_adjusted_energies = cast("Any", njit(cache=False)(_matlab_frontier_adjusted_neighbor_energies_numba_impl))
+    _numba_suppression_factors = cast("Any", njit(cache=False)(_matlab_frontier_directional_suppression_factors_numba_impl))
+else:
+    _numba_adjusted_energies = None
+    _numba_suppression_factors = None
+
+
+def _matlab_frontier_adjusted_neighbor_energies(
+    raw_energies: np.ndarray,
+    *,
+    neighbor_offsets: np.ndarray,
+    neighbor_unit_vectors: np.ndarray | None = None,
+    neighbor_r_over_R: np.ndarray,
+    neighbor_scale_indices: np.ndarray | None,
+    propagated_scale_index: int,
+    current_d_over_r: float,
+    origin_radius_microns: float,
+    current_forward_unit: np.ndarray | None,
+    microns_per_voxel: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    radius_tolerance: float = 0.5,
+    distance_tolerance: float = 3.0,
+) -> np.ndarray:
+    """Apply MATLAB-style size, distance, and direction penalties to neighborhood energies."""
+    global _NUMBA_ACCELERATION_ENABLED
+
+    if _NUMBA_ACCELERATION_ENABLED and _numba_adjusted_energies is not None:
+        try:
+            size_tolerance = _matlab_frontier_size_tolerance(
+                lumen_radius_microns, radius_tolerance=radius_tolerance
+            )
+            use_scale_penalty = neighbor_scale_indices is not None and math.isfinite(size_tolerance) and size_tolerance > 0
+            use_directional_penalty = current_forward_unit is not None
+            use_neighbor_unit_vectors = neighbor_unit_vectors is not None
+            
+            # Dummy arrays to satisfy numba static typing when None
+            dummy_unit_vecs = neighbor_unit_vectors
+            if not use_neighbor_unit_vectors:
+                dummy_unit_vecs = np.zeros((1, 3), dtype=np.float64)
+            dummy_fwd = current_forward_unit
+            if not use_directional_penalty:
+                dummy_fwd = np.zeros(3, dtype=np.float64)
+            dummy_scale = neighbor_scale_indices
+            if not use_scale_penalty:
+                dummy_scale = np.zeros(1, dtype=np.float64)
+                
+            return cast("np.ndarray", _numba_adjusted_energies(
+                np.asarray(raw_energies, dtype=np.float64),
+                np.asarray(neighbor_offsets, dtype=np.int32),
+                np.asarray(dummy_unit_vecs, dtype=np.float64),
+                np.asarray(neighbor_r_over_R, dtype=np.float64),
+                np.asarray(dummy_scale, dtype=np.float64),
+                int(propagated_scale_index),
+                float(current_d_over_r),
+                np.asarray(dummy_fwd, dtype=np.float64).reshape(3),
+                np.asarray(microns_per_voxel, dtype=np.float64),
+                float(size_tolerance if math.isfinite(size_tolerance) else 0.0),
+                float(distance_tolerance),
+                bool(use_scale_penalty),
+                bool(use_directional_penalty),
+                bool(use_neighbor_unit_vectors),
+            ))
+        except Exception as exc:
+            logger.warning("%s Detail: %s", _NUMBA_FAILURE_MESSAGE, exc)
+            _NUMBA_ACCELERATION_ENABLED = False
+
+    return _matlab_frontier_adjusted_neighbor_energies_python(
+        raw_energies,
+        neighbor_offsets=neighbor_offsets,
+        neighbor_unit_vectors=neighbor_unit_vectors,
+        neighbor_r_over_R=neighbor_r_over_R,
+        neighbor_scale_indices=neighbor_scale_indices,
+        propagated_scale_index=propagated_scale_index,
+        current_d_over_r=current_d_over_r,
+        origin_radius_microns=origin_radius_microns,
+        current_forward_unit=current_forward_unit,
+        microns_per_voxel=microns_per_voxel,
+        lumen_radius_microns=lumen_radius_microns,
+        radius_tolerance=radius_tolerance,
+        distance_tolerance=distance_tolerance,
+    )
+
+
+def _matlab_frontier_directional_suppression_factors(
+    neighbor_offsets: np.ndarray,
+    *,
+    selected_index: int,
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Return MATLAB's continuous same-direction suppression factors for a chosen seed."""
+    global _NUMBA_ACCELERATION_ENABLED
+
+    if _NUMBA_ACCELERATION_ENABLED and _numba_suppression_factors is not None:
+        try:
+            return cast("np.ndarray", _numba_suppression_factors(
+                np.asarray(neighbor_offsets, dtype=np.int32),
+                int(selected_index),
+                np.asarray(microns_per_voxel, dtype=np.float64),
+            ))
+        except Exception as exc:
+            logger.warning("%s Detail: %s", _NUMBA_FAILURE_MESSAGE, exc)
+            _NUMBA_ACCELERATION_ENABLED = False
+
+    return _matlab_frontier_directional_suppression_factors_python(
+        neighbor_offsets,
+        selected_index=selected_index,
+        microns_per_voxel=microns_per_voxel,
+    )
 
 
 def _matlab_frontier_select_seed_moves(

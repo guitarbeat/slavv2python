@@ -1,0 +1,12 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root crop_M_exact_v3_numba_test --force-rerun-from edges",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\crop_M_exact_v3_numba_test",
+  "ended_at": "2026-08-20T17:12:39Z",
+  "exit_code": 1,
+  "kind": "parity_exact_run_job",
+  "pid": 13800,
+  "reason": "missing 99_Metadata\\experiment_provenance.json; directory was not created by init-exact-run",
+  "stage": "edges",
+  "started_at": "2026-08-20T17:12:39Z",
+  "status": "failed"
+}

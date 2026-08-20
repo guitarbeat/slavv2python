@@ -1,0 +1,12 @@
+{
+  "command": "C:\\Users\\alw4834\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\slavv parity resume-exact-run --dest-run-root crop_M_exact_v3_numba_test --force-rerun-from edges",
+  "ended_at": "2026-08-20T17:12:39Z",
+  "pid": 13800,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "11ffe7c1f7b419a91fb68532c11291e2c2661b91",
+  "stage": "edges",
+  "started_at": "2026-08-20T17:12:39Z",
+  "status": "failed",
+  "updated_at": "2026-08-20T17:12:39Z"
+}

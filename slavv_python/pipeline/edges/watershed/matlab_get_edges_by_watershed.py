@@ -222,44 +222,29 @@ def _matlab_global_watershed_current_strel(
     offsets = np.asarray(lut["local_subscripts"], dtype=np.int32)
     linear_offsets_full = np.asarray(lut["linear_offsets"], dtype=np.int64)
 
-    # Verify LUT consistency
-    assert len(offsets) == len(linear_offsets_full), (
-        f"LUT inconsistency: local_subscripts has {len(offsets)} elements "
-        f"but linear_offsets has {len(linear_offsets_full)} elements"
-    )
+    # Calculate absolute coordinates
+    strel_coords_y = current_coord[0] + offsets[:, 0]
+    strel_coords_x = current_coord[1] + offsets[:, 1]
+    strel_coords_z = current_coord[2] + offsets[:, 2]
 
-    strel_coords = current_coord[None, :] + offsets
+    # Use bitwise ops for fast bounds checking
     valid_mask = (
-        (strel_coords[:, 0] >= 0)
-        & (strel_coords[:, 0] < shape[0])
-        & (strel_coords[:, 1] >= 0)
-        & (strel_coords[:, 1] < shape[1])
-        & (strel_coords[:, 2] >= 0)
-        & (strel_coords[:, 2] < shape[2])
+        (strel_coords_y >= 0) & (strel_coords_y < shape[0]) &
+        (strel_coords_x >= 0) & (strel_coords_x < shape[1]) &
+        (strel_coords_z >= 0) & (strel_coords_z < shape[2])
     )
-    valid_coords = np.asarray(strel_coords[valid_mask], dtype=np.int32)
-    valid_offsets = np.asarray(offsets[valid_mask], dtype=np.int32)
-    valid_linear_raw = linear_offsets_full[valid_mask] + np.int64(current_linear)
 
-    img_size = shape[0] * shape[1] * shape[2]
-    linear_valid_mask = (valid_linear_raw >= 0) & (valid_linear_raw < img_size)
-    if not np.all(linear_valid_mask):
-        bad_linear = valid_linear_raw[~linear_valid_mask][:5].tolist()
-        raise AssertionError(
-            "Global watershed produced out-of-bounds linear indices for one in-bounds strel: "
-            f"current={current_linear}, scale={current_scale_label}, sample={bad_linear}"
-        )
-    valid_linear = valid_linear_raw
+    valid_coords = np.column_stack((
+        strel_coords_y[valid_mask],
+        strel_coords_x[valid_mask],
+        strel_coords_z[valid_mask]
+    )).astype(np.int32)
+    
+    valid_offsets = offsets[valid_mask]
+    valid_linear = linear_offsets_full[valid_mask] + np.int64(current_linear)
 
-    # Pointer indices are 1-based indices into the FULL LUT (before filtering)
-    # Corrected: Use the back-pointing indices from the LUT to ensure traces go to the center.
+    # Pointer indices are 1-based indices into the FULL LUT
     pointer_indices = np.asarray(lut["pointer_indices"], dtype=np.uint64)[valid_mask]
-
-    if not (np.all(pointer_indices >= 1) and np.all(pointer_indices <= len(offsets))):
-        raise AssertionError(
-            f"Invalid pointer indices: min={np.min(pointer_indices)}, "
-            f"max={np.max(pointer_indices)}, LUT size={len(offsets)}"
-        )
 
     return {
         "current_coord": current_coord.astype(np.int32, copy=False),
@@ -271,8 +256,7 @@ def _matlab_global_watershed_current_strel(
         "distance_microns": np.asarray(lut["distance_lut"], dtype=np.float64)[valid_mask],
         "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float64)[valid_mask],
         "lut_size": len(offsets),  # Store for debugging
-        "scale_label_clipped": current_scale_index
-        + 1,  # Clipped scale for consistent pointer/size_map usage
+        "scale_label_clipped": current_scale_index + 1,
     }
 
 

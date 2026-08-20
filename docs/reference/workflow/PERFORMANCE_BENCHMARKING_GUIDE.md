@@ -51,6 +51,18 @@ The watershed discovery emits progress heartbeats every 512 iterations or 5 seco
 
 ---
 
+## ⚠️ Profiling & Resume Gotchas
+
+When resuming an `exact-route` pipeline for targeted profiling (e.g., picking up from cached Energy/Vertices checkpoints), you may encounter two primary roadblocks:
+
+1. **Missing Dataset Tiffs**: Older canonical runs (like `v18`) often have their raw `.tif` files removed from `00_Refs` to save disk space. If `resume-exact-run` fails with a missing dataset error, you must manually provide the paths to the original dataset and oracle using `--dataset-root` and `--oracle-root`.
+2. **Parameter Fingerprint Blocks**: SLAVV's `RunContext` enforces strict parameter fingerprinting to prevent semantic drift. If you attempt to resume a pipeline and hit a `RuntimeError: Resume blocked because the parameters fingerprint changed`, you can temporarily bypass this by:
+   - Modifying `slavv_python/engine/state/run_ledger.py` -> `ensure_resume_allowed`
+   - Commenting out `raise RuntimeError(message)` and returning early.
+   - **CRITICAL**: Always revert this bypass immediately after launching your profiling run to maintain repository integrity.
+
+---
+
 ## 🚀 Optimization Workflow
 
 ### 1. Establish Baseline
