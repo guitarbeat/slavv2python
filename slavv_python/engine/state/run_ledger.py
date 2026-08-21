@@ -128,8 +128,6 @@ class RunContext:
         effective_dir = run_dir
 
         if effective_dir is None:
-            if stop_after is not None:
-                raise ValueError("stop_after requires an explicit run_dir")
             if force_rerun_from is not None:
                 raise ValueError("force_rerun_from requires an explicit run_dir")
 

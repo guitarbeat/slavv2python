@@ -252,16 +252,22 @@ def _matlab_get_network_v190(
         np.int32, copy=False
     )
     if non_interior_vertices.size:
-        adjacency_without_interiors = adjacency_matrix.toarray().astype(bool)
-        adjacency_without_interiors[vertex_is_interior, :] = False
-        adjacency_without_interiors[:, vertex_is_interior] = False
-        extra_rows, extra_cols = _matlab_find_nonzero_matrix_entries(adjacency_without_interiors)
-        extra_edge_ids = _matlab_lookup_edge_ids(edge_lookup_table, extra_rows, extra_cols)
-        for edge_index in extra_edge_ids.tolist():
-            vertices: np.ndarray = normalized[int(edge_index)].astype(np.int32, copy=False)
-            vertices_in_strands.append(vertices.copy())
-            edge_indices_in_strands.append(np.asarray([edge_index], dtype=np.int32))
-            end_vertices_in_strands.append(vertices.copy())
+        # Extract edges between non-interior vertices directly from sparse adjacency without dense allocation
+        coo = adjacency_matrix.tocoo()
+        valid = (~vertex_is_interior[coo.row]) & (~vertex_is_interior[coo.col])
+        if np.any(valid):
+            rows = coo.row[valid]
+            cols = coo.col[valid]
+            flat_f = cols.astype(np.int64) * n_vertices + rows.astype(np.int64)
+            order = np.argsort(flat_f, kind="stable")
+            extra_rows = rows[order]
+            extra_cols = cols[order]
+            extra_edge_ids = _matlab_lookup_edge_ids(edge_lookup_table, extra_rows, extra_cols)
+            for edge_index in extra_edge_ids.tolist():
+                vertices: np.ndarray = normalized[int(edge_index)].astype(np.int32, copy=False)
+                vertices_in_strands.append(vertices.copy())
+                edge_indices_in_strands.append(np.asarray([edge_index], dtype=np.int32))
+                end_vertices_in_strands.append(vertices.copy())
 
     return (
         vertices_in_strands,
