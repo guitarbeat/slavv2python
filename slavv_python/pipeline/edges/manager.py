@@ -286,7 +286,7 @@ class EdgeManager:
 
         if resumable:
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
-            
+
             atomic_write_json(
                 handle.artifact_path("phase2_edges_split.json"),
                 {

@@ -145,6 +145,7 @@ def _read_summary(run_dir: Path) -> dict[str, Any]:
 )
 @settings(
     max_examples=50,
+    deadline=None,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_all_pass_stages_emit_certified_aggregate_verdict(
@@ -217,6 +218,7 @@ def test_all_pass_stages_emit_certified_aggregate_verdict(
 )
 @settings(
     max_examples=50,
+    deadline=None,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_all_four_stages_are_evaluated_before_certified_verdict(

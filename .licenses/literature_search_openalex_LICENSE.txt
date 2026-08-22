@@ -1,0 +1,3 @@
+OpenAlex API Terms & License Notification
+Notified User: Check terms at https://developers.openalex.org/ and verify licenses of retrieved papers.
+Timestamp: 2026-08-21T18:47:50-05:00

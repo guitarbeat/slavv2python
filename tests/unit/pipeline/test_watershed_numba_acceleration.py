@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
 import numpy as np
 
 from slavv_python.pipeline.edges.watershed.matlab_get_edges_v300_geometry import (
+    _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_adjusted_neighbor_energies_python,
-    _matlab_frontier_adjusted_neighbor_energies_numba_impl,
-    _matlab_frontier_directional_suppression_factors_python,
     _matlab_frontier_directional_suppression_factors_numba_impl,
+    _matlab_frontier_directional_suppression_factors_python,
 )
 from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import (
     _claim_unowned_strel_arrays,
@@ -52,10 +51,6 @@ def test_adjusted_neighbor_energies_python_vs_numba_equivalence():
         lumen_radius_microns=lumen_radius_microns,
         radius_tolerance=0.5,
         distance_tolerance=3.0,
-    )
-
-    from slavv_python.pipeline.edges.watershed.matlab_get_edges_v300_geometry import (
-        _matlab_frontier_adjusted_neighbor_energies,
     )
 
     num_res = _matlab_frontier_adjusted_neighbor_energies(
@@ -225,3 +220,122 @@ def test_insert_available_location_in_place_equivalence():
 
             assert ref_list == opt_list, f"Mismatch at step {step}, seed_idx {s_idx}"
             assert is_clear_ref == is_clear_opt
+
+
+def test_argmin_with_linear_index_tiebreak_python_vs_numba_equivalence():
+    """Verify Numba JIT scalar argmin tie-breaking matches Python fallback and NumPy."""
+    from slavv_python.pipeline.edges.watershed.matlab_indexing import (
+        _argmin_with_linear_index_tiebreak,
+        _argmin_with_linear_index_tiebreak_numba_impl,
+        _argmin_with_linear_index_tiebreak_python,
+    )
+
+    np.random.seed(42)
+    # Test distinct values
+    energies = np.array([5.0, 2.0, 3.0], dtype=np.float64)
+    linear_indices = np.array([10, 20, 30], dtype=np.int64)
+    assert _argmin_with_linear_index_tiebreak_python(energies, linear_indices) == 1
+    assert _argmin_with_linear_index_tiebreak_numba_impl(energies, linear_indices) == 1
+    assert _argmin_with_linear_index_tiebreak(energies, linear_indices) == 1
+
+    # Test ties on energy with different linear indices
+    energies_tied = np.array([5.0, 2.0, 2.0, 5.0], dtype=np.float64)
+    linear_indices_tied = np.array([10, 30, 20, 40], dtype=np.int64)
+    # Tie at idx 1 (lin=30) vs idx 2 (lin=20): lowest linear index is 20 -> idx 2
+    assert _argmin_with_linear_index_tiebreak_python(energies_tied, linear_indices_tied) == 2
+    assert _argmin_with_linear_index_tiebreak_numba_impl(energies_tied, linear_indices_tied) == 2
+    assert _argmin_with_linear_index_tiebreak(energies_tied, linear_indices_tied) == 2
+
+    # Test inf and -inf
+    energies_inf = np.array([np.inf, np.inf, -np.inf, -np.inf], dtype=np.float64)
+    linear_inf = np.array([10, 5, 200, 100], dtype=np.int64)
+    assert _argmin_with_linear_index_tiebreak_python(energies_inf, linear_inf) == 3
+    assert _argmin_with_linear_index_tiebreak_numba_impl(energies_inf, linear_inf) == 3
+    assert _argmin_with_linear_index_tiebreak(energies_inf, linear_inf) == 3
+
+    # Randomized stress test against NumPy reference
+    for _ in range(50):
+        n = np.random.randint(1, 100)
+        e = np.random.choice([-10.0, 0.0, 1.5, 5.0, np.inf], size=n).astype(np.float64)
+        lin = np.random.randint(0, 10000, size=n).astype(np.int64)
+
+        # NumPy reference
+        min_e = np.min(e)
+        tied = np.flatnonzero(e == min_e)
+        expected_idx = int(tied[np.argmin(lin[tied])])
+
+        py_idx = _argmin_with_linear_index_tiebreak_python(e, lin)
+        numba_idx = _argmin_with_linear_index_tiebreak_numba_impl(e, lin)
+        pub_idx = _argmin_with_linear_index_tiebreak(e, lin)
+
+        assert py_idx == expected_idx
+        assert numba_idx == expected_idx
+        assert pub_idx == expected_idx
+
+
+def test_reset_join_locations_single_pass_equivalence():
+    """Verify single-pass reset join locations matches reference quadratic scan exactly."""
+    from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import (
+        _matlab_global_watershed_reset_join_locations,
+    )
+
+    def reference_reset(orig, next_locs, is_clear):
+        updated = list(orig)
+        next_locations = set(np.asarray(next_locs, dtype=np.int64).tolist())
+        locations_to_reset = sorted({int(loc) for loc in updated if int(loc) in next_locations})
+        if not is_clear:
+            if updated:
+                tail_location = int(updated[-1])
+                locations_to_reset = [loc for loc in locations_to_reset if loc != tail_location]
+                updated.pop()
+            is_clear = True
+
+        reset_indices: list[int] = []
+        for location in locations_to_reset:
+            for idx, available_location in enumerate(updated):
+                if int(available_location) == int(location):
+                    reset_indices.append(idx)
+                    break
+
+        for idx in sorted(set(reset_indices), reverse=True):
+            del updated[idx]
+        return updated, is_clear
+
+    np.random.seed(777)
+    for _ in range(100):
+        length = np.random.randint(0, 50)
+        available = np.random.randint(0, 100, size=length).tolist()
+        num_targets = np.random.randint(0, 10)
+        targets = np.random.randint(0, 100, size=num_targets).astype(np.int64)
+        is_clear = bool(np.random.choice([True, False]))
+
+        ref_updated, ref_clear = reference_reset(available, targets, is_clear)
+        opt_updated, opt_clear = _matlab_global_watershed_reset_join_locations(
+            available, next_vertex_locations=targets, is_current_location_clear=is_clear
+        )
+
+        assert ref_updated == opt_updated
+        assert ref_clear == opt_clear
+
+
+def test_structuring_element_offsets_memoization():
+    """Verify structuring element offsets memoization returns identical arrays and hits cache."""
+    from slavv_python.pipeline.edges.selection import (
+        _construct_structuring_element_offsets_matlab,
+        _construct_structuring_element_offsets_matlab_cached,
+    )
+
+    _construct_structuring_element_offsets_matlab_cached.cache_clear()
+
+    radii1 = np.array([2.0, 2.0, 2.0], dtype=np.float32)
+    offsets1 = _construct_structuring_element_offsets_matlab(radii1)
+    info1 = _construct_structuring_element_offsets_matlab_cached.cache_info()
+    assert info1.misses == 1
+    assert info1.hits == 0
+
+    # Second call with same radii should hit cache
+    offsets2 = _construct_structuring_element_offsets_matlab(radii1)
+    info2 = _construct_structuring_element_offsets_matlab_cached.cache_info()
+    assert info2.hits == 1
+    assert np.array_equal(offsets1, offsets2)
+

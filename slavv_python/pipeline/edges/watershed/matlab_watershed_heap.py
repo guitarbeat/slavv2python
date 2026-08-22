@@ -7,10 +7,18 @@ MATLAB lineage: ``get_edges_by_watershed.m`` shared-state helpers.
 from __future__ import annotations
 
 import heapq
+import os
 from typing import Any, cast
 
 import numpy as np
 from scipy import sparse
+
+try:
+    from numba import njit
+except ImportError:
+    njit = None
+
+_NUMBA_AVAILABLE = njit is not None and os.environ.get("SLAVV_DISABLE_NUMBA", "0") != "1"
 
 
 def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np.ndarray:
@@ -79,39 +87,41 @@ def _matlab_global_watershed_reset_join_locations(
     is_current_location_clear: bool,
 ) -> tuple[list[int], bool]:
     """Remove join targets from ``available_locations`` (MATLAB watershed join reset)."""
+    if not available_locations:
+        return [], True
+
     is_clear = is_current_location_clear
-    updated = list(available_locations)
-    next_locations = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
-    locations_to_reset = sorted({int(loc) for loc in updated if int(loc) in next_locations})
+    next_loc_arr = np.asarray(next_vertex_locations, dtype=np.int64).reshape(-1)
+    if next_loc_arr.size == 0:
+        if not is_clear:
+            available_locations.pop()
+        return available_locations, True
+
+    next_locations = {int(x) for x in next_loc_arr}
+
     if not is_clear:
-        if updated:
-            # MATLAB builds ``locations_to_reset`` before clearing the current tail, then
-            # removes the tail value from that reset list before popping ``end``.
-            tail_location = int(updated[-1])
-            locations_to_reset = [loc for loc in locations_to_reset if loc != tail_location]
-            updated.pop()
+        tail_location = int(available_locations[-1])
+        working_list = available_locations[:-1]
         is_clear = True
+        reset_set = {loc for loc in working_list if loc in next_locations and loc != tail_location}
+    else:
+        working_list = available_locations
+        reset_set = {loc for loc in working_list if loc in next_locations}
 
-    reset_indices: list[int] = []
-    for location in locations_to_reset:
-        for idx, available_location in enumerate(updated):
-            if int(available_location) == int(location):
-                reset_indices.append(idx)
-                break
+    if not reset_set:
+        return working_list, is_clear
 
-    for idx in sorted(set(reset_indices), reverse=True):
-        del updated[idx]
+    # Single-pass filter removing the first occurrence of each element in reset_set
+    updated: list[int] = []
+    seen_reset: set[int] = set()
+    for loc in working_list:
+        if loc in reset_set and loc not in seen_reset:
+            seen_reset.add(loc)
+        else:
+            updated.append(loc)
+
     return updated, is_clear
 
-
-import os
-
-try:
-    from numba import njit
-except ImportError:
-    njit = None
-
-_NUMBA_AVAILABLE = njit is not None and os.environ.get("SLAVV_DISABLE_NUMBA", "0") != "1"
 
 def _claim_unowned_strel_arrays_numba_impl(
     current_vertex_index: int,
@@ -136,7 +146,7 @@ def _claim_unowned_strel_arrays_numba_impl(
         idx = valid_linear[i]
         vert_idx = vertex_index_map_flat[idx]
         vertices_of_current_strel[i] = vert_idx
-        
+
         is_empty = (vert_idx == 0)
         is_without_vertex[i] = is_empty
 

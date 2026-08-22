@@ -208,7 +208,14 @@ def _matlab_global_watershed_current_strel(
     step_size_per_origin_radius: float,
 ) -> dict[str, Any]:
     """Build the in-bounds MATLAB strel around one current location."""
-    current_coord = _matlab_linear_index_to_coord(int(current_linear), shape)
+    current_linear_int = int(current_linear)
+    sy, sx, sz = shape
+    cy = current_linear_int % sy
+    rem = current_linear_int // sy
+    cx = rem % sx
+    cz = rem // sx
+    current_coord = np.array([cy, cx, cz], dtype=np.int32)
+
     current_scale_index = int(
         np.clip(int(current_scale_label) - 1, 0, len(lumen_radius_microns) - 1)
     )
@@ -219,43 +226,83 @@ def _matlab_global_watershed_current_strel(
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
-    offsets = np.asarray(lut["local_subscripts"], dtype=np.int32)
-    linear_offsets_full = np.asarray(lut["linear_offsets"], dtype=np.int64)
+    offsets = lut["local_subscripts"]
+    linear_offsets_full = lut["linear_offsets"]
+    pointer_indices_full = lut["pointer_indices"]
+    r_over_R_full = lut["r_over_R"]
+    distance_lut_full = lut["distance_lut"]
+    unit_vectors_full = lut["unit_vectors"]
 
-    # Calculate absolute coordinates
-    strel_coords_y = current_coord[0] + offsets[:, 0]
-    strel_coords_x = current_coord[1] + offsets[:, 1]
-    strel_coords_z = current_coord[2] + offsets[:, 2]
+    min_off = lut.get("min_offsets")
+    max_off = lut.get("max_offsets")
+    if min_off is None:
+        min_off = (
+            int(np.min(offsets[:, 0])),
+            int(np.min(offsets[:, 1])),
+            int(np.min(offsets[:, 2])),
+        )
+        max_off = (
+            int(np.max(offsets[:, 0])),
+            int(np.max(offsets[:, 1])),
+            int(np.max(offsets[:, 2])),
+        )
 
-    # Use bitwise ops for fast bounds checking
-    valid_mask = (
-        (strel_coords_y >= 0) & (strel_coords_y < shape[0]) &
-        (strel_coords_x >= 0) & (strel_coords_x < shape[1]) &
-        (strel_coords_z >= 0) & (strel_coords_z < shape[2])
+    is_interior = (
+        (cy + min_off[0] >= 0)
+        and (cy + max_off[0] < sy)
+        and (cx + min_off[1] >= 0)
+        and (cx + max_off[1] < sx)
+        and (cz + min_off[2] >= 0)
+        and (cz + max_off[2] < sz)
     )
 
-    valid_coords = np.column_stack((
-        strel_coords_y[valid_mask],
-        strel_coords_x[valid_mask],
-        strel_coords_z[valid_mask]
-    )).astype(np.int32)
-    
-    valid_offsets = offsets[valid_mask]
-    valid_linear = linear_offsets_full[valid_mask] + np.int64(current_linear)
+    if is_interior:
+        valid_coords = offsets + current_coord
+        valid_offsets = offsets
+        valid_linear = linear_offsets_full + np.int64(current_linear_int)
+        pointer_indices = pointer_indices_full
+        r_over_R = r_over_R_full
+        distance_microns = distance_lut_full
+        unit_vectors = unit_vectors_full
+    else:
+        strel_coords_y = cy + offsets[:, 0]
+        strel_coords_x = cx + offsets[:, 1]
+        strel_coords_z = cz + offsets[:, 2]
 
-    # Pointer indices are 1-based indices into the FULL LUT
-    pointer_indices = np.asarray(lut["pointer_indices"], dtype=np.uint64)[valid_mask]
+        valid_mask = (
+            (strel_coords_y >= 0)
+            & (strel_coords_y < sy)
+            & (strel_coords_x >= 0)
+            & (strel_coords_x < sx)
+            & (strel_coords_z >= 0)
+            & (strel_coords_z < sz)
+        )
+
+        valid_coords = np.column_stack(
+            (
+                strel_coords_y[valid_mask],
+                strel_coords_x[valid_mask],
+                strel_coords_z[valid_mask],
+            )
+        ).astype(np.int32)
+
+        valid_offsets = offsets[valid_mask]
+        valid_linear = linear_offsets_full[valid_mask] + np.int64(current_linear_int)
+        pointer_indices = pointer_indices_full[valid_mask]
+        r_over_R = r_over_R_full[valid_mask]
+        distance_microns = distance_lut_full[valid_mask]
+        unit_vectors = unit_vectors_full[valid_mask]
 
     return {
-        "current_coord": current_coord.astype(np.int32, copy=False),
+        "current_coord": current_coord,
         "coords": valid_coords,
         "offsets": valid_offsets,
         "linear_indices": valid_linear,
         "pointer_indices": pointer_indices,
-        "r_over_R": np.asarray(lut["r_over_R"], dtype=np.float64)[valid_mask],
-        "distance_microns": np.asarray(lut["distance_lut"], dtype=np.float64)[valid_mask],
-        "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float64)[valid_mask],
-        "lut_size": len(offsets),  # Store for debugging
+        "r_over_R": r_over_R,
+        "distance_microns": distance_microns,
+        "unit_vectors": unit_vectors,
+        "lut_size": len(offsets),
         "scale_label_clipped": current_scale_index + 1,
     }
 

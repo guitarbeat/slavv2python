@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from typing import Any, cast
 
 import numpy as np
@@ -27,11 +28,14 @@ from slavv_python.pipeline.edges.selection_payloads import (
 EXACT_ROUTE_CHOOSER_SEED = 0
 
 
-def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
-    """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
-    radii = np.asarray(radii, dtype=np.float32).reshape(3)
+@functools.lru_cache(maxsize=1024)
+def _construct_structuring_element_offsets_matlab_cached(
+    ry: float, rx: float, rz: float
+) -> np.ndarray:
+    """Construct MATLAB-shaped ellipsoid offsets using the original radius equation (cached)."""
+    radii = np.array([ry, rx, rz], dtype=np.float64)
     rounded = np.rint(radii).astype(np.int32)
-    safe_radii = np.maximum(radii.astype(np.float64), 1e-6)
+    safe_radii = np.maximum(radii, 1e-6)
 
     offsets = np.array(
         [
@@ -51,6 +55,14 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
     if kept.size == 0:
         return np.zeros((1, 3), dtype=np.int32)
     return cast("np.ndarray", kept.astype(np.int32, copy=False))
+
+
+def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
+    """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
+    r_arr = np.asarray(radii, dtype=np.float64).reshape(3)
+    return _construct_structuring_element_offsets_matlab_cached(
+        float(r_arr[0]), float(r_arr[1]), float(r_arr[2])
+    )
 
 
 def _offset_coords_matlab(

@@ -97,6 +97,24 @@ def _build_matlab_global_watershed_lut_cached(
         + local_subscripts[:, 1].astype(np.int64, copy=False) * int(cum_prod_image_dims[0])
         + local_subscripts[:, 2].astype(np.int64, copy=False) * int(cum_prod_image_dims[1])
     )
+    min_offsets = (
+        (
+            int(np.min(local_subscripts[:, 0])),
+            int(np.min(local_subscripts[:, 1])),
+            int(np.min(local_subscripts[:, 2])),
+        )
+        if len(local_subscripts) > 0
+        else (0, 0, 0)
+    )
+    max_offsets = (
+        (
+            int(np.max(local_subscripts[:, 0])),
+            int(np.max(local_subscripts[:, 1])),
+            int(np.max(local_subscripts[:, 2])),
+        )
+        if len(local_subscripts) > 0
+        else (0, 0, 0)
+    )
     return {
         "linear_offsets": linear_offsets.astype(np.int64, copy=False),
         "local_subscripts": local_subscripts,
@@ -104,6 +122,8 @@ def _build_matlab_global_watershed_lut_cached(
         "distance_lut": np.asarray(local_geometry["distance_lut"], dtype=np.float64),
         "r_over_R": np.asarray(local_geometry["r_over_R"], dtype=np.float64),
         "unit_vectors": np.asarray(local_geometry["unit_vectors"], dtype=np.float64),
+        "min_offsets": min_offsets,
+        "max_offsets": max_offsets,
     }
 
 

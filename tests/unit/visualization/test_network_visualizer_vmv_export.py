@@ -1,11 +1,11 @@
-import os
+from pathlib import Path
 
 import numpy as np
 
 from slavv_python.visualization import NetworkVisualizer
 
 
-def test_vmv_export():
+def test_network_visualizer_exports_vmv(tmp_path: Path) -> None:
     viz = NetworkVisualizer()
 
     # Mock data
@@ -46,9 +46,7 @@ def test_vmv_export():
 
     parameters = {"microns_per_voxel": [1.0, 1.0, 1.0]}
 
-    output_path = "test_export.vmv"
-    if os.path.exists(output_path):
-        os.remove(output_path)
+    output_path = tmp_path / "test_export.vmv"
 
     processing_results = {
         "vertices": vertices,
@@ -58,7 +56,7 @@ def test_vmv_export():
     }
 
     # Run export
-    viz.export_network_data(processing_results, output_path, format="vmv")
+    viz.export_network_data(processing_results, str(output_path), format="vmv")
 
     # Read and verify content
     with open(output_path) as f:
@@ -138,5 +136,5 @@ def test_vmv_export():
     assert len(strand_pts) == 4, f"Expected 4 points in strand, got {len(strand_pts)}"
 
     # Clean up
-    if os.path.exists(output_path):
-        os.remove(output_path)
+    if output_path.exists():
+        output_path.unlink()

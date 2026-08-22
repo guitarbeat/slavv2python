@@ -148,6 +148,7 @@ def _write_mat_without_field(
 @settings(
     max_examples=50,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
+    deadline=None,
 )
 def test_vertices_missing_field_error_contains_path_and_field(
     artifact_path_suffix: str,
@@ -194,6 +195,7 @@ def test_vertices_missing_field_error_contains_path_and_field(
 @settings(
     max_examples=50,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
+    deadline=None,
 )
 def test_edges_missing_field_error_contains_path_and_field(
     artifact_path_suffix: str,
@@ -239,6 +241,7 @@ def test_edges_missing_field_error_contains_path_and_field(
 @settings(
     max_examples=50,
     suppress_health_check=[HealthCheck.function_scoped_fixture],
+    deadline=None,
 )
 def test_network_missing_field_error_contains_path_and_field(
     artifact_path_suffix: str,

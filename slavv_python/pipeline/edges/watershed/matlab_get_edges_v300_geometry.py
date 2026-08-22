@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
-import os
-import math
 import logging
+import math
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+
+from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
+    build_matlab_local_strel_geometry,
+)
+from slavv_python.pipeline.edges.watershed.matlab_indexing import (
+    _matlab_watershed_min_candidate_energies,
+)
+
+if TYPE_CHECKING:
+    from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
 
 try:
     from numba import njit
@@ -22,16 +32,6 @@ _NUMBA_FAILURE_MESSAGE = (
 _NUMBA_ACCELERATION_ENABLED = _NUMBA_AVAILABLE
 
 logger = logging.getLogger(__name__)
-
-from slavv_python.pipeline.edges.watershed.matlab_calculate_linear_strel_range import (
-    build_matlab_local_strel_geometry,
-)
-from slavv_python.pipeline.edges.watershed.matlab_indexing import (
-    _matlab_watershed_min_candidate_energies,
-)
-
-if TYPE_CHECKING:
-    from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
@@ -344,10 +344,14 @@ def _matlab_frontier_adjusted_neighbor_energies(
             size_tolerance = _matlab_frontier_size_tolerance(
                 lumen_radius_microns, radius_tolerance=radius_tolerance
             )
-            use_scale_penalty = neighbor_scale_indices is not None and math.isfinite(size_tolerance) and size_tolerance > 0
+            use_scale_penalty = (
+                neighbor_scale_indices is not None
+                and math.isfinite(size_tolerance)
+                and size_tolerance > 0
+            )
             use_directional_penalty = current_forward_unit is not None
             use_neighbor_unit_vectors = neighbor_unit_vectors is not None
-            
+
             # Dummy arrays to satisfy numba static typing when None
             dummy_unit_vecs = neighbor_unit_vectors
             if not use_neighbor_unit_vectors:
@@ -358,7 +362,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
             dummy_scale = neighbor_scale_indices
             if not use_scale_penalty:
                 dummy_scale = np.zeros(1, dtype=np.float64)
-                
+
             return cast("np.ndarray", _numba_adjusted_energies(
                 np.asarray(raw_energies, dtype=np.float64),
                 np.asarray(neighbor_offsets, dtype=np.int32),

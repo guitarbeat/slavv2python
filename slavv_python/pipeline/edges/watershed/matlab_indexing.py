@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, cast
+import os
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from skimage.graph import route_through_array
@@ -15,6 +16,13 @@ from slavv_python.utils.matlab_order import matlab_linear_index_to_yxz, yxz_to_m
 
 if TYPE_CHECKING:
     from slavv_python.pipeline.edges.edge_types import Float64Array, Int32Array
+
+try:
+    from numba import njit
+except ImportError:
+    njit = None
+
+_NUMBA_AVAILABLE = njit is not None and os.environ.get("SLAVV_DISABLE_NUMBA", "0") != "1"
 
 
 def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]) -> int:
@@ -35,6 +43,59 @@ def _matlab_watershed_min_candidate_energies(energies: np.ndarray) -> np.ndarray
     return cast("np.ndarray", working)
 
 
+def _argmin_with_linear_index_tiebreak_python(
+    energy_values: np.ndarray,
+    linear_values: np.ndarray,
+) -> int:
+    """Pure Python scalar tie-breaking finding min energy with lowest Fortran linear index."""
+    n = len(energy_values)
+    best_idx = 0
+    best_energy = float(energy_values[0])
+    best_linear = int(linear_values[0])
+    for i in range(1, n):
+        e = float(energy_values[i])
+        if e < best_energy:
+            best_energy = e
+            best_linear = int(linear_values[i])
+            best_idx = i
+        elif e == best_energy:
+            lin = int(linear_values[i])
+            if lin < best_linear:
+                best_linear = lin
+                best_idx = i
+    return best_idx
+
+
+def _argmin_with_linear_index_tiebreak_numba_impl(
+    energy_values: np.ndarray,
+    linear_values: np.ndarray,
+) -> int:
+    n = len(energy_values)
+    best_idx = 0
+    best_energy = energy_values[0]
+    best_linear = linear_values[0]
+    for i in range(1, n):
+        e = energy_values[i]
+        if e < best_energy:
+            best_energy = e
+            best_linear = linear_values[i]
+            best_idx = i
+        elif e == best_energy:
+            lin = linear_values[i]
+            if lin < best_linear:
+                best_linear = lin
+                best_idx = i
+    return best_idx
+
+
+if _NUMBA_AVAILABLE:
+    _numba_argmin_tiebreak = cast(
+        "Any", njit(cache=False)(_argmin_with_linear_index_tiebreak_numba_impl)
+    )
+else:
+    _numba_argmin_tiebreak = None
+
+
 def _argmin_with_linear_index_tiebreak(
     energies: np.ndarray,
     linear_indices: np.ndarray,
@@ -44,11 +105,15 @@ def _argmin_with_linear_index_tiebreak(
     linear_values = np.asarray(linear_indices, dtype=np.int64).reshape(-1)
     if energy_values.size == 0:
         raise ValueError("energies must be non-empty")
-    min_energy = float(np.min(energy_values))
-    tied = np.flatnonzero(energy_values == min_energy)
-    if tied.size == 1:
-        return int(tied[0])
-    return int(tied[np.argmin(linear_values[tied])])
+
+    global _NUMBA_AVAILABLE
+    if _NUMBA_AVAILABLE and _numba_argmin_tiebreak is not None:
+        try:
+            return int(_numba_argmin_tiebreak(energy_values, linear_values))
+        except Exception:
+            _NUMBA_AVAILABLE = False
+
+    return _argmin_with_linear_index_tiebreak_python(energy_values, linear_values)
 
 
 def _path_coords_from_linear_indices(
