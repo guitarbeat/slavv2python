@@ -31,7 +31,7 @@ def show_home_page():
 
         - Multi-scale vessel sizes and optional PSF correction
         - Paper Path (`paper`) vs Exact Route (Watershed Discovery) on the same stages
-        - Optional ML / automatic / desktop curation of vertices and edges
+        - Manual, automatic, desktop, or model-assisted review of vertices and edges
         - 2D and 3D visualization
         - In-app exports: VMV, CASX, CSV zip, and a shareable HTML report
         """)
@@ -40,8 +40,8 @@ def show_home_page():
         st.markdown("""
         **Ready to get started?**
 
-        1. Navigate to **Image Processing** to upload and process your TIFF images
-        2. Use **ML Curation** to refine vertex and edge detection
+        1. Open **Processing** to upload and process a TIFF volume
+        2. Use **Curation** to review vertex and edge detections
         3. Explore results in **Visualization** and **Analysis** pages
         """)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -84,9 +84,8 @@ def show_home_page():
 
         st.markdown("### Workflow control")
         st.markdown("""
-            On **Image Processing**, Pipeline Target stops after Energy, Vertices, Edges,
-            or Network. Force Recalculation From ignores cached stage outputs from that
-            stage onward.
+            In **Processing**, **Run through** chooses the last stage to complete.
+            **Recalculate from** reruns the selected stage and every stage after it.
             """)
 
 

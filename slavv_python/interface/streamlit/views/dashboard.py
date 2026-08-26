@@ -1,347 +1,142 @@
+"""Live workflow dashboard for the connected Streamlit application."""
+
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
-import plotly.express as px
+import pandas as pd
 import streamlit as st
 
-from slavv_python.engine.state.status import target_stage_progress
-from slavv_python.interface.streamlit.services.dashboard import (
-    DASHBOARD_BREAKDOWN_SECTIONS,
-    DASHBOARD_PLACEHOLDER,
-    build_dashboard_backlog_frame,
-    build_dashboard_breakdown_frame,
-    build_dashboard_placeholder_trend,
-    build_dashboard_stage_frame,
-    filter_dashboard_breakdown,
-    render_run_dashboard,
-)
-from slavv_python.interface.streamlit.state.dashboard import (
-    DashboardContext,
-    load_dashboard_context,
-)
-from slavv_python.visualization import NetworkVisualizer
+from slavv_python.interface.streamlit.navigation import switch_to
+from slavv_python.interface.streamlit.state.curation import summarize_processing_counts
+from slavv_python.interface.streamlit.state.dashboard import load_dashboard_context
+from slavv_python.interface.streamlit.state.workflow import STAGE_ORDER, summarize_workflow
 
-if TYPE_CHECKING:
-    from slavv_python.engine.state import RunSnapshot
-
-DASHBOARD_ASSUMPTION = (
-    "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
-    "current network outputs, and share-report activity for the current session."
-)
-DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
 DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
+DASHBOARD_DOCS_URL = f"{DASHBOARD_REPO_URL}/blob/main/docs/README.md"
+DASHBOARD_CURATION_URL = (
+    f"{DASHBOARD_REPO_URL}/blob/main/docs/reference/workflow/MANUAL_CURATION_WORKFLOW.md"
+)
 
 
-def _render_run_dashboard(snapshot) -> None:
-    """Render an in-app dashboard for the current run snapshot."""
-    render_run_dashboard(snapshot)
-
-
-def _init_dashboard_state() -> None:
-    """Initialize local UI state for the dashboard shell."""
-    st.session_state.setdefault("dashboard_focus", "Overview")
-    st.session_state.setdefault("dashboard_sections", list(DASHBOARD_BREAKDOWN_SECTIONS))
-    st.session_state.setdefault("dashboard_show_placeholders", True)
-    st.session_state.setdefault("dashboard_auto_refresh", False)
-    st.session_state.setdefault("dashboard_feedback", None)
-    st.session_state.setdefault("dashboard_metric_requests", [])
-
-
-def _dashboard_context() -> DashboardContext:
-    """Load dashboard context from session state and run metadata."""
-    return load_dashboard_context(st.session_state)
-
-
-def _toast_dashboard_feedback() -> None:
-    """Acknowledge dashboard feedback in the current session."""
-    st.toast(
-        "Thanks. The dashboard feedback was captured for this session.", icon=":material/thumb_up:"
-    )
-
-
-@st.dialog("Plan Dashboard Metrics")
-def _open_dashboard_metric_dialog() -> None:
-    """Collect a lightweight backlog request for dashboard follow-up."""
-    with st.form("dashboard_metric_request", clear_on_submit=True):
-        metric_name = st.text_input("Metric name", placeholder="Example: Export success rate")
-        owner = st.selectbox(
-            "Primary owner",
-            ["Pipeline", "Operations", "Analysis", "Collaboration"],
-            index=0,
-        )
-        priority = st.selectbox("Priority", ["High", "Medium", "Low"], index=1)
-        notes = st.text_area(
-            "Why it matters",
-            placeholder="Describe the decision this metric should support.",
-        )
-        submitted = st.form_submit_button("Add backlog request")
-
-    if not submitted:
-        return
-    if not metric_name.strip():
-        st.warning("Add a metric name before submitting the request.")
-        return
-
-    requests = list(st.session_state.get("dashboard_metric_requests", []))
-    requests.append(
+def _workflow_rows(ready_stages: tuple[str, ...]) -> list[dict[str, str]]:
+    page_by_stage = {
+        "energy": "Processing",
+        "vertices": "Processing",
+        "edges": "Curation",
+        "network": "Visualization / Analysis",
+    }
+    return [
         {
-            "metric": metric_name.strip(),
-            "owner": owner,
-            "priority": priority,
-            "notes": notes.strip(),
-            "captured_at": datetime.now().isoformat(timespec="seconds"),
+            "Stage": stage.title(),
+            "Status": "Ready" if stage in ready_stages else "Not available",
+            "Used in": page_by_stage[stage],
         }
+        for stage in STAGE_ORDER
+    ]
+
+
+def _render_headline_metrics(results: Any | None) -> None:
+    if results is None:
+        counts = dict.fromkeys(("Vertices", "Edges", "Strands", "Bifurcations"), 0)
+    else:
+        counts = summarize_processing_counts(results)
+    columns = st.columns(4, gap="small")
+    for column, label in zip(columns, ("Vertices", "Edges", "Strands", "Bifurcations")):
+        column.metric(label, counts[label])
+
+
+def show_dashboard_page() -> None:
+    """Display live workflow state, readiness, and the next recommended action."""
+    st.session_state.setdefault("dashboard_focus", "Overview")
+    summary = summarize_workflow(st.session_state)
+    context = load_dashboard_context(st.session_state)
+    results = context["results"]
+    snapshot = context["snapshot"]
+
+    st.header("SLAVV workflow")
+    st.caption("Process, review, visualize, and analyze one vascular dataset.")
+    focus = st.segmented_control(
+        "Dashboard focus",
+        ("Overview", "Pipeline", "Network"),
+        key="dashboard_focus",
+        bind="query-params",
+        label_visibility="collapsed",
     )
-    st.session_state["dashboard_metric_requests"] = requests
-    st.toast(f"Added '{metric_name.strip()}' to the dashboard backlog.", icon=":material/task_alt:")
-    st.rerun()
 
+    status_col, action_col = st.columns([3, 1], gap="large", vertical_alignment="center")
+    with status_col:
+        st.subheader(summary.dataset_name)
+        source = {
+            "empty": "No active run",
+            "live": "Live processing run",
+            "reopened": "Reopened run",
+        }.get(summary.source_kind, summary.source_kind.title())
+        status_text = source + (" · read-only source" if summary.read_only else "")
+        st.caption(status_text)
+    with action_col:
+        if st.button(
+            summary.next_label,
+            type="primary",
+            icon=":material/arrow_forward:",
+            width="stretch",
+        ):
+            switch_to(summary.next_page)
 
-def _render_dashboard_surface() -> None:
-    """Render the core dashboard surface using the current session context."""
-    context = _dashboard_context()
-    run_dir = cast("str | None", context["run_dir"])
-    snapshot = cast("RunSnapshot | None", context["snapshot"])
-    results = cast("dict[str, Any] | None", context["results"])
-    share_metrics = cast("dict[str, object]", context["share_metrics"])
-    dataset_name = cast("str", context["dataset_name"])
-    stats = cast("dict[str, Any] | None", context["stats"])
-
-    source_mode = "Live run" if snapshot is not None else "Shell only"
-    data_mode = "Network loaded" if stats is not None else "Awaiting metrics"
-
-    badge_col, link_col = st.columns([3, 2], gap="large", vertical_alignment="center")
-    with badge_col:
-        st.badge("Streamlit 1.55")
-        st.badge(source_mode)
-        st.badge(data_mode)
-        st.caption(
-            f"Dataset: {dataset_name} | Sources: current run snapshot, session processing results, "
-            "share-report counters"
-        )
-    with link_col:
-        st.link_button("Release notes", DASHBOARD_RELEASE_URL, width="stretch")
-        st.link_button("Repository", DASHBOARD_REPO_URL, width="stretch")
-
-    st.space("small")
-
-    if snapshot is None and stats is None:
+    if not summary.ready_stages:
         st.info(
-            "No active run or completed network is loaded yet. Placeholder values stay visible so "
-            "this layout can be extended once the dashboard scope is finalized."
+            "Process an uploaded TIFF, choose a built-in sample in Processing, or open "
+            "an existing structured run."
         )
 
-    overall_pct = int(snapshot.overall_progress * 100) if snapshot is not None else 0
-    target_pct = int(target_stage_progress(snapshot) * 100) if snapshot is not None else 0
-    strands_value = (
-        DASHBOARD_PLACEHOLDER if stats is None else str(int(stats.get("num_strands", 0)))
-    )
-    total_length_value = (
-        DASHBOARD_PLACEHOLDER
-        if stats is None
-        else f"{float(stats.get('total_length', 0.0)):.1f} um"
-    )
+    if focus in (None, "Overview", "Network"):
+        _render_headline_metrics(results)
 
-    with st.container(border=True):
-        st.subheader("Headline KPIs")
-        col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
-        with col1:
-            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-            st.metric("Run Progress", f"{overall_pct}%")
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col2:
-            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-            st.metric("Target Progress", f"{target_pct}%")
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col3:
-            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-            st.metric("Strands", strands_value)
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col4:
-            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-            st.metric("Total Length", total_length_value)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    st.space("small")
-
-    with st.container(border=True):
-        st.subheader("Trends")
-        trend_col1, trend_col2 = st.columns(2, gap="large")
-
-        stage_frame = build_dashboard_stage_frame(snapshot, run_dir=run_dir)
-        stage_fig = px.line(stage_frame, x="Stage", y="Progress (%)", markers=True)
-        stage_fig.update_traces(line={"width": 3}, marker={"size": 10})
-        stage_fig.update_layout(
-            height=320,
-            margin={"l": 20, "r": 20, "t": 40, "b": 20},
-            xaxis_title="Pipeline stage",
-            yaxis_title="Completion %",
-            yaxis_range=[0, 100],
-            showlegend=False,
-        )
-        with trend_col1:
-            st.plotly_chart(stage_fig, width="stretch")
-            st.caption("Pipeline progress is derived from the resumable run snapshot.")
-
-        with trend_col2:
-            if stats is not None and results is not None:
-                try:
-                    depth_fig = NetworkVisualizer().plot_depth_statistics(
-                        results["vertices"],
-                        results["edges"],
-                        results.get("parameters", st.session_state.get("parameters", {})),
-                    )
-                    depth_fig.update_layout(
-                        height=320,
-                        margin={"l": 20, "r": 20, "t": 40, "b": 20},
-                    )
-                    st.plotly_chart(depth_fig, width="stretch")
-                    st.caption("Depth statistics reuse the existing analysis visualization.")
-                except Exception as exc:
-                    st.plotly_chart(build_dashboard_placeholder_trend(), width="stretch")
-                    st.caption(
-                        f"Depth trend placeholder shown because the live chart is unavailable: {exc}"
-                    )
-            else:
-                st.plotly_chart(build_dashboard_placeholder_trend(), width="stretch")
-                st.caption(
-                    "Placeholder trend slot for depth-resolved metrics once a complete network is available."
-                )
-
-    st.space("small")
-
-    filtered_breakdown = filter_dashboard_breakdown(
-        build_dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir),
-        focus=st.session_state.get("dashboard_focus", "Overview"),
-        selected_sections=st.session_state.get("dashboard_sections"),
-        show_placeholders=st.session_state.get("dashboard_show_placeholders", True),
-    )
-    with st.container(border=True):
-        st.subheader("Breakdown Table")
-        if filtered_breakdown.empty:
-            st.warning(
-                "The current filters hide all rows. Re-enable placeholders or broaden the section filter."
-            )
-        else:
-            st.dataframe(
-                filtered_breakdown,
-                width="stretch",
-                hide_index=True,
-                column_config={
-                    "Section": st.column_config.TextColumn("Section", width="small"),
-                    "Metric": st.column_config.TextColumn("Metric", width="medium"),
-                    "Progress": st.column_config.ProgressColumn(
-                        "Progress",
-                        min_value=0,
-                        max_value=100,
-                        format="%d%%",
-                    ),
-                    "Value": st.column_config.TextColumn("Value", width="small"),
-                    "Status": st.column_config.TextColumn("Status", width="small"),
-                    "Source": st.column_config.TextColumn("Source", width="medium"),
-                    "Notes": st.column_config.TextColumn("Notes", width="large"),
-                },
-            )
-
-    source_tab, backlog_tab = st.tabs(["Source wiring", "Extension backlog"])
-    with source_tab:
-        st.caption("Dashboard controls are query-bound so the current view is easy to share.")
-        st.json(dict(st.query_params))
-        with st.expander("Assumptions and wiring points", icon=":material/lan:"):
-            st.markdown(
-                "\n".join(
-                    [
-                        "- The current shell focuses on the active run, network outputs, and share activity.",
-                        "- `Pipeline` rows come from `99_Metadata/run_snapshot.json`.",
-                        "- `Network` rows come from `processing_results` via `compute_shareable_stats()`.",
-                        "- Placeholder rows mark the next data sources to wire once entities are finalized.",
-                    ]
-                )
-            )
-
-    with backlog_tab:
-        st.caption("Use this backlog to capture the next round of dashboard metrics and ownership.")
-        st.data_editor(
-            build_dashboard_backlog_frame(
-                st.session_state.get("dashboard_metric_requests", []),
-                repo_url=DASHBOARD_REPO_URL,
-                release_url=DASHBOARD_RELEASE_URL,
-            ),
-            key="dashboard_backlog_editor",
+    left, right = st.columns([3, 2], gap="large")
+    with left:
+        st.subheader("Pipeline readiness")
+        st.dataframe(
+            pd.DataFrame(_workflow_rows(summary.ready_stages)),
             hide_index=True,
             width="stretch",
-            num_rows="fixed",
             column_config={
-                "Metric": st.column_config.TextColumn("Metric", width="medium"),
-                "Owner": st.column_config.SelectboxColumn(
-                    "Owner",
-                    options=["Pipeline", "Operations", "Analysis", "Collaboration"],
-                    width="small",
-                ),
-                "Priority": st.column_config.SelectboxColumn(
-                    "Priority",
-                    options=["High", "Medium", "Low"],
-                    width="small",
-                ),
-                "Tracked": st.column_config.CheckboxColumn("Tracked"),
-                "Status": st.column_config.SelectboxColumn(
-                    "Status",
-                    options=["TODO", "Requested", "Ready"],
-                    width="small",
-                ),
-                "Reference": st.column_config.LinkColumn("Reference", display_text="Open"),
-                "Notes": st.column_config.TextColumn("Notes", width="large"),
+                "Stage": st.column_config.TextColumn(width="small"),
+                "Status": st.column_config.TextColumn(width="small"),
+                "Used in": st.column_config.TextColumn(width="medium"),
             },
-            disabled=["Metric", "Reference"],
         )
-        st.feedback("stars", key="dashboard_feedback", on_change=_toast_dashboard_feedback)
-
-
-@st.fragment(run_every="20s")
-def _render_dashboard_surface_fragment() -> None:
-    """Refresh the dashboard surface independently when auto-refresh is enabled."""
-    _render_dashboard_surface()
-
-
-def show_dashboard_page():
-    """Display an extendable dashboard shell for the current SLAVV session."""
-    st.markdown('<h2 class="section-header">Operations Dashboard</h2>', unsafe_allow_html=True)
-    st.info(DASHBOARD_ASSUMPTION)
-    _init_dashboard_state()
-
-    controls_col, action_col = st.columns([3, 1], gap="large", vertical_alignment="bottom")
-    with controls_col, st.popover("Dashboard controls", width="stretch"):
-        st.segmented_control(
-            "Focus",
-            ["Overview", "Pipeline", "Network"],
-            key="dashboard_focus",
-            bind="query-params",
+        if snapshot is not None and focus in (None, "Overview", "Pipeline"):
+            st.caption(
+                f"Saved run status: {snapshot.status} · requested through: "
+                f"{snapshot.target_stage} · current stage: {snapshot.current_stage or 'complete'}"
+            )
+    with right:
+        st.subheader("Session activity")
+        st.metric("Curation", summary.curation_mode or "Not applied")
+        share_metrics = cast("dict[str, Any]", context["share_metrics"])
+        st.metric(
+            "Share reports",
+            int(share_metrics.get("share_report_downloaded", 0)),
+            help="Reports downloaded in this browser session.",
         )
-        st.pills(
-            "Sections",
-            list(DASHBOARD_BREAKDOWN_SECTIONS),
-            key="dashboard_sections",
-            selection_mode="multi",
-            bind="query-params",
-        )
-        st.toggle(
-            "Show placeholder rows",
-            key="dashboard_show_placeholders",
-            bind="query-params",
-        )
-        st.toggle(
-            "Auto-refresh dashboard",
-            key="dashboard_auto_refresh",
-            bind="query-params",
-        )
-        st.caption("These controls sync with the URL so the current view is easy to share.")
-    with action_col:
-        if st.button("Plan metrics", width="stretch"):
-            _open_dashboard_metric_dialog()
+        if summary.run_dir:
+            st.caption("The full source path is available in the sidebar Run location section.")
 
-    if st.session_state.get("dashboard_auto_refresh", False):
-        _render_dashboard_surface_fragment()
-    else:
-        _render_dashboard_surface()
+    if st.session_state.get("curation_baseline_counts") and results is not None:
+        baseline = st.session_state["curation_baseline_counts"]
+        current = summarize_processing_counts(st.session_state["processing_results"])
+        st.subheader("Latest curation change")
+        curation_columns = st.columns(4, gap="small")
+        for column, label in zip(
+            curation_columns, ("Vertices", "Edges", "Strands", "Bifurcations")
+        ):
+            column.metric(label, current[label], delta=current[label] - baseline[label])
+
+    st.divider()
+    links = st.columns(3, gap="small")
+    links[0].link_button("Documentation", DASHBOARD_DOCS_URL, width="stretch")
+    links[1].link_button("Manual curation workflow", DASHBOARD_CURATION_URL, width="stretch")
+    links[2].link_button("Repository", DASHBOARD_REPO_URL, width="stretch")
+
+
+__all__ = ["DASHBOARD_REPO_URL", "show_dashboard_page"]

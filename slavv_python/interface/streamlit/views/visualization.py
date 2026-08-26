@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from slavv_python.interface.streamlit.empty_state import require_processing_results
+from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services import app as app_services
 from slavv_python.interface.streamlit.services.share_report import record_share_event
 from slavv_python.interface.streamlit.state.visualization import (
@@ -130,15 +131,14 @@ def show_visualization_page() -> None:
         st.warning("No visualizable results found in the current run.")
         return
 
-    viz_type = st.selectbox(
-        "Visualization type",
-        available_viz,
-        help="Choose the type of visualization to display",
-    )
-    col1, col2 = st.columns([3, 1], gap="large")
-
-    with col2:
-        st.markdown("### Display Options")
+    with st.sidebar:
+        st.divider()
+        st.subheader("Visualization controls")
+        viz_type = st.selectbox(
+            "Visualization type",
+            available_viz,
+            help="Choose the type of visualization to display",
+        )
         show_vertices = True
         show_edges = True
         show_bifurcations = True
@@ -198,58 +198,57 @@ def show_visualization_page() -> None:
                 )
 
     visualizer = NetworkVisualizer()
-    with col1:
-        st.markdown(f"### {viz_type}")
-        if viz_type == "2D Network":
-            fig = visualizer.plot_2d_network(
-                results["vertices"],
-                results["edges"],
-                results["network"],
-                results["parameters"],
-                color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices,
-                show_edges=show_edges,
-                show_bifurcations=show_bifurcations,
-            )
-            _apply_figure_display(fig, opacity=opacity)
-            st.plotly_chart(fig, width="stretch")
-        elif viz_type == "3D Network":
-            fig = visualizer.plot_3d_network(
-                results["vertices"],
-                results["edges"],
-                results["network"],
-                results["parameters"],
-                color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices,
-                show_edges=show_edges,
-                show_bifurcations=show_bifurcations,
-            )
-            _apply_figure_display(fig, opacity=opacity, camera=camera)
-            st.plotly_chart(fig, width="stretch")
-        elif viz_type == "Depth Projection":
-            fig = visualizer.plot_depth_statistics(
-                results["vertices"],
-                results["edges"],
-                results["parameters"],
-            )
-            _apply_figure_display(fig, opacity=opacity)
-            st.plotly_chart(fig, width="stretch")
-        elif viz_type == "Strand Analysis":
-            fig = visualizer.plot_strand_analysis(
-                results["network"],
-                results["vertices"],
-                results["parameters"],
-            )
-            _apply_figure_display(fig, opacity=opacity)
-            st.plotly_chart(fig, width="stretch")
-        elif viz_type == "Energy Field":
-            st.info("Energy Field is a 2D slice through the Energy volume.")
-            fig = visualizer.plot_energy_field(
-                results["energy_data"],
-                slice_axis=slice_axis,
-                slice_index=slice_index,
-            )
-            st.plotly_chart(fig, width="stretch")
+    st.markdown(f"### {viz_type}")
+    if viz_type == "2D Network":
+        fig = visualizer.plot_2d_network(
+            results["vertices"],
+            results["edges"],
+            results["network"],
+            results["parameters"],
+            color_by=color_scheme.lower().replace(" ", "_"),
+            show_vertices=show_vertices,
+            show_edges=show_edges,
+            show_bifurcations=show_bifurcations,
+        )
+        _apply_figure_display(fig, opacity=opacity)
+        st.plotly_chart(fig, width="stretch")
+    elif viz_type == "3D Network":
+        fig = visualizer.plot_3d_network(
+            results["vertices"],
+            results["edges"],
+            results["network"],
+            results["parameters"],
+            color_by=color_scheme.lower().replace(" ", "_"),
+            show_vertices=show_vertices,
+            show_edges=show_edges,
+            show_bifurcations=show_bifurcations,
+        )
+        _apply_figure_display(fig, opacity=opacity, camera=camera)
+        st.plotly_chart(fig, width="stretch")
+    elif viz_type == "Depth Projection":
+        fig = visualizer.plot_depth_statistics(
+            results["vertices"],
+            results["edges"],
+            results["parameters"],
+        )
+        _apply_figure_display(fig, opacity=opacity)
+        st.plotly_chart(fig, width="stretch")
+    elif viz_type == "Strand Analysis":
+        fig = visualizer.plot_strand_analysis(
+            results["network"],
+            results["vertices"],
+            results["parameters"],
+        )
+        _apply_figure_display(fig, opacity=opacity)
+        st.plotly_chart(fig, width="stretch")
+    elif viz_type == "Energy Field":
+        st.info("Energy Field is a 2D slice through the Energy volume.")
+        fig = visualizer.plot_energy_field(
+            results["energy_data"],
+            slice_axis=slice_axis,
+            slice_index=slice_index,
+        )
+        st.plotly_chart(fig, width="stretch")
 
     if not has_visualization_network(results):
         st.info("Complete the full network stage to unlock exports and the share report.")
@@ -323,3 +322,9 @@ def show_visualization_page() -> None:
         f"requested={share_metrics.get('share_report_requested', 0)}, "
         f"downloaded={share_metrics.get('share_report_downloaded', 0)}"
     )
+    if st.button(
+        "Open Analysis",
+        icon=":material/analytics:",
+        type="primary",
+    ):
+        switch_to("analysis")

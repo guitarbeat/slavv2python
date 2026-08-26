@@ -31,16 +31,7 @@ from slavv_python.interface.streamlit.shell import main
 from slavv_python.interface.streamlit.views.analysis import show_analysis_page
 from slavv_python.interface.streamlit.views.curation import show_ml_curation_page
 from slavv_python.interface.streamlit.views.dashboard import (
-    DASHBOARD_ASSUMPTION,
-    DASHBOARD_RELEASE_URL,
     DASHBOARD_REPO_URL,
-    DashboardContext,
-    _dashboard_context,
-    _init_dashboard_state,
-    _open_dashboard_metric_dialog,
-    _render_dashboard_surface,
-    _render_dashboard_surface_fragment,
-    _toast_dashboard_feedback,
     show_dashboard_page,
 )
 from slavv_python.interface.streamlit.views.processing import show_processing_page
@@ -57,7 +48,7 @@ warnings.filterwarnings("ignore")
 
 st.set_page_config(
     page_title="SLAVV - Vascular Vectorization",
-    page_icon="\U0001fac0",
+    page_icon=":material/hub:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -70,11 +61,12 @@ st.html(
         -moz-osx-font-smoothing: grayscale;
     }
     .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
+        font-size: 2.25rem;
+        font-weight: 680;
+        letter-spacing: -0.04em;
+        color: #163c38;
+        text-align: left;
+        margin-bottom: 0.35rem;
         text-wrap: balance;
     }
     .section-header {
@@ -131,6 +123,14 @@ st.html(
             0 4px 6px rgba(0,0,0,0.05),
             0 2px 4px rgba(0,0,0,0.1);
     }
+    div[data-testid="stPlotlyChart"] {
+        border-radius: 0.45rem;
+        overflow: hidden;
+        box-shadow: 0 12px 35px rgba(7, 17, 17, 0.12);
+    }
+    @media (prefers-color-scheme: dark) {
+        .main-header { color: #e3efed; }
+    }
     /* UI Polish: Tabular numbers for all tables */
     table {
         font-variant-numeric: tabular-nums;
@@ -160,6 +160,10 @@ st.html(
         }
         .metric-card {
             padding: 1rem;
+        }
+        .curation-intro {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
         }
     }
 </style>
@@ -192,26 +196,17 @@ def _render_export_download(
 
 
 __all__ = [
-    "DASHBOARD_ASSUMPTION",
     "DASHBOARD_BREAKDOWN_SECTIONS",
     "DASHBOARD_PLACEHOLDER",
-    "DASHBOARD_RELEASE_URL",
     "DASHBOARD_REPO_URL",
     "EXPORT_BUTTON_SPECS",
-    "DashboardContext",
     "_apply_curated_results",
     "_build_processing_run_dir",
-    "_dashboard_context",
     "_has_full_network_results",
-    "_init_dashboard_state",
     "_log_share_report_prepared_once",
-    "_open_dashboard_metric_dialog",
-    "_render_dashboard_surface",
-    "_render_dashboard_surface_fragment",
     "_render_export_download",
     "_render_run_dashboard",
     "_run_interactive_curator",
-    "_toast_dashboard_feedback",
     "_update_run_task",
     "build_dashboard_breakdown_frame",
     "build_dashboard_stage_frame",

@@ -126,7 +126,7 @@ def update_run_task(
     artifacts: dict[str, str] | None = None,
 ) -> None:
     """Attach optional task progress to the active run."""
-    if not run_dir:
+    if not run_dir or st.session_state.get("run_read_only", False):
         return
     context = RunContext.from_existing(run_dir)
     context.update_optional_task(

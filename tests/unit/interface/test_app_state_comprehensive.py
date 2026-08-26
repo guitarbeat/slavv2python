@@ -224,6 +224,7 @@ def test_apply_curated_session_results_updates_session_state():
         "processing_results": processing_results,
         "curation_baseline_counts": {"Vertices": 10},
         "share_report_prepared_signature": "signature-123",
+        "analysis_stats": {"total_length": 1.0},
     }
 
     apply_curated_session_results(
@@ -235,6 +236,7 @@ def test_apply_curated_session_results_updates_session_state():
 
     assert session_state["last_curation_mode"] == "Automatic (Rule-based)"
     assert "share_report_prepared_signature" not in session_state
+    assert "analysis_stats" not in session_state
 
 
 @pytest.mark.unit
@@ -358,6 +360,7 @@ def test_store_processing_session_state_persists_processing_outputs():
     )
 
     assert session_state["current_run_dir"] == "run-dir"
+    assert session_state["run_read_only"] is False
     assert "curation_baseline_counts" not in session_state
 
 

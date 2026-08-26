@@ -12,11 +12,16 @@ import streamlit as st
 
 from slavv_python.analytics import AutomaticCurator, MLCurator
 from slavv_python.interface.streamlit.empty_state import require_edges
+from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services import curation as curation_services
 from slavv_python.interface.streamlit.services.exports import update_run_task
 from slavv_python.interface.streamlit.state.curation import (
     build_curation_stats_rows,
     summarize_processing_counts,
+)
+from slavv_python.interface.streamlit.views.manual_curation import (
+    render_browser_manual_curation,
+    render_manual_empty_state,
 )
 
 
@@ -55,40 +60,55 @@ def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt
 
 
 def show_ml_curation_page():
-    """Display the ML curation page."""
-    st.markdown('<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True)
+    """Display manual, automatic, and model-based curation workflows."""
+    st.header("Review and curate the network")
+
+    if "processing_results" not in st.session_state:
+        render_manual_empty_state()
+        return
 
     results = require_edges()
     if results is None:
+        render_manual_empty_state()
         return
 
     st.markdown(
-        "Remove false-positive vertices and edges, then rebuild the Network. "
-        "Automatic and machine-learning modes stay in the browser. "
-        "The desktop curator opens a separate Qt or napari window."
+        "Review the MATLAB-style projection workspace in two stages—vertices, then "
+        "edges—and rebuild the shared network when the decisions are ready. The optional "
+        "Python desktop viewer remains available for exploratory 3D review."
     )
 
-    st.markdown("### Curation options")
-    curation_type = st.radio(
-        "Curation type",
-        (
-            "Desktop curator (Qt / napari)",
-            "Automatic (rule-based)",
-            "Machine Learning (model-based)",
-        ),
-        help="Desktop curator opens a window on this machine, not inside the browser tab.",
-    )
+    with st.sidebar:
+        st.subheader("Curation")
+        curation_type = st.radio(
+            "Workflow",
+            (
+                "MATLAB-style browser curator",
+                "Desktop manual review (MATLAB-style)",
+                "Automatic filtering",
+                "Model-assisted filtering",
+            ),
+            index=0,
+            help="The MATLAB-style curator stays in this tab. The desktop viewer opens a separate Qt or napari window.",
+        )
 
-    if curation_type == "Desktop curator (Qt / napari)":
+        if st.session_state.get("dataset_name"):
+            st.caption(f"Dataset: {st.session_state['dataset_name']}")
+
+    if curation_type == "MATLAB-style browser curator":
+        render_browser_manual_curation(results)
+
+    elif curation_type == "Desktop manual review (MATLAB-style)":
         st.markdown("#### Desktop 3D curator")
         st.info(
-            "This opens a **separate desktop window** (Qt/PyVista or napari). "
-            "It does not run inside this browser tab. Close that window to save and continue."
+            "This Python desktop interface reproduces the four-panel MATLAB GCI layout: "
+            "volume map, volume display, intensity histogram, and energy histogram. "
+            "It opens in a **separate window**; close it to save and continue."
         )
         if not desktop_curator_available():
             st.warning(
-                "Desktop curator is unavailable in this session (headless Linux, or "
-                "SLAVV_DISABLE_DESKTOP_CURATOR=1). Use Automatic or Machine Learning instead."
+                "The desktop interface is unavailable on this host. Use browser review or "
+                "automatic filtering instead."
             )
         curator_backend_label = st.selectbox(
             "Interactive curator backend",
@@ -174,12 +194,12 @@ def show_ml_curation_page():
                         )
                         st.markdown("</div>", unsafe_allow_html=True)
 
-    elif curation_type == "Automatic (rule-based)":
-        st.markdown("#### Automatic Curation Parameters")
+    elif curation_type == "Automatic filtering":
+        st.markdown("#### Automatic filtering rules")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             vertex_energy_threshold = st.number_input(
-                "Vertex Energy Threshold",
+                "Maximum vertex energy",
                 min_value=-10.0,
                 max_value=0.0,
                 value=-0.1,
@@ -187,7 +207,7 @@ def show_ml_curation_page():
                 help="Vertices with energy above this threshold will be removed.",
             )
             min_vertex_radius = st.number_input(
-                "Minimum Vertex Radius (um)",
+                "Minimum vertex radius (µm)",
                 min_value=0.1,
                 max_value=10.0,
                 value=0.5,
@@ -196,7 +216,7 @@ def show_ml_curation_page():
             )
         with col2:
             boundary_margin = st.number_input(
-                "Boundary Margin (voxels)",
+                "Image-boundary margin (voxels)",
                 min_value=0,
                 max_value=20,
                 value=5,
@@ -204,7 +224,7 @@ def show_ml_curation_page():
                 help="Vertices too close to image boundaries will be removed.",
             )
             contrast_threshold = st.number_input(
-                "Local Contrast Threshold",
+                "Minimum local contrast",
                 min_value=0.0,
                 max_value=1.0,
                 value=0.1,
@@ -212,7 +232,7 @@ def show_ml_curation_page():
                 help="Vertices in low-contrast regions will be removed.",
             )
             min_edge_length = st.number_input(
-                "Minimum Edge Length (um)",
+                "Minimum edge length (µm)",
                 min_value=0.1,
                 max_value=20.0,
                 value=2.0,
@@ -267,7 +287,7 @@ def show_ml_curation_page():
                     baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
-                        curation_mode="Automatic (rule-based)",
+                        curation_mode="Automatic filtering",
                     )
                 except Exception as exc:
                     update_run_task(
@@ -312,7 +332,7 @@ def show_ml_curation_page():
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
 
-    elif curation_type == "Machine Learning (model-based)":
+    elif curation_type == "Model-assisted filtering":
         st.markdown("#### Machine Learning Curation Parameters")
         st.info("Upload pre-trained models or provide CSV training data to train new classifiers.")
         col1, col2 = st.columns(2, gap="medium")
@@ -443,7 +463,7 @@ def show_ml_curation_page():
                     baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
-                        curation_mode="Machine Learning (model-based)",
+                        curation_mode="Model-assisted filtering",
                     )
                 except Exception as exc:
                     update_run_task(
@@ -514,3 +534,20 @@ def show_ml_curation_page():
                 barmode="group",
             )
             st.plotly_chart(fig, width="stretch")
+
+    if st.session_state.get("last_curation_mode"):
+        st.divider()
+        next_columns = st.columns(2, gap="small")
+        if next_columns[0].button(
+            "Inspect curated network",
+            type="primary",
+            icon=":material/view_in_ar:",
+            width="stretch",
+        ):
+            switch_to("visualization")
+        if next_columns[1].button(
+            "Open analysis",
+            icon=":material/analytics:",
+            width="stretch",
+        ):
+            switch_to("analysis")

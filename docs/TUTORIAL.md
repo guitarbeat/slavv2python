@@ -56,6 +56,10 @@ Open `my_plots.html` in a browser.
 slavv-app
 ```
 
+The app opens on **Dashboard**. Its sidebar connects **Processing → Curation → Visualization → Analysis**, shows which pipeline stages are ready, and recommends the next action. In **Processing**, upload a TIFF or select a generated sample TIFF; both choices enter the same TIFF loader and full SLAVV pipeline. Use **Open existing run** to load compatible structured checkpoints read-only.
+
+See the [manual-curation workflow](reference/workflow/MANUAL_CURATION_WORKFLOW.md) for browser review, desktop curation, and downstream rebuilding.
+
 ---
 
 For more details, see the [Reference Documentation](README.md).

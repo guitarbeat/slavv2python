@@ -38,6 +38,7 @@ Operator guides and contributor references:
 
 | Document | Purpose | Related Docs |
 |----------|---------|--------------|
+| [Manual Curation Workflow](workflow/MANUAL_CURATION_WORKFLOW.md) | Integrated real-data workflow, generated sample TIFFs, browser review, and read-only run reopening | [Napari Curator](backends/NAPARI_CURATOR.md) |
 | [Parity Pre-Gate](workflow/PARITY_PRE_GATE.md) | Three-tier parity testing (synthetic → crop → canonical) | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
 | [Random Component Parity Suite](workflow/PARITY_RANDOM_COMPONENT_SUITE.md) | Fast MATLAB/Python differential on seeded noise (linspace, interp3, Energy structure) | [ADR 0010](../adr/0010-random-component-parity-suite.md), [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md) |
 | [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md) | Step-by-step instructions for running mathematical proofs against MATLAB oracles | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_JOB_MONITORING.md](workflow/PARITY_JOB_MONITORING.md) |

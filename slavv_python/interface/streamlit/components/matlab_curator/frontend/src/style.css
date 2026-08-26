@@ -1,0 +1,459 @@
+.matlab-curator {
+  --mc-bg: #050b0b;
+  --mc-surface: #0a1313;
+  --mc-surface-2: #101d1c;
+  --mc-line: #213332;
+  --mc-ink: #e2ecea;
+  --mc-muted: #8ba19e;
+  --mc-accent: #35d0ba;
+  --mc-accent-soft: rgba(53, 208, 186, 0.16);
+  --mc-false: #ff565f;
+  --mc-warning: #ffbe5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.matlab-curator {
+  width: 100%;
+  min-width: 760px;
+  color: var(--mc-ink);
+  background: var(--mc-bg);
+  border: 1px solid var(--mc-line);
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: mc-enter 220ms ease-out both;
+}
+
+@keyframes mc-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button,
+select {
+  min-height: 32px;
+  border: 1px solid var(--mc-line);
+  border-radius: 7px;
+  color: var(--mc-ink);
+  background: var(--mc-surface-2);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+button:hover:not(:disabled),
+select:hover {
+  border-color: var(--mc-accent);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+button.active,
+button.primary {
+  border-color: var(--mc-accent);
+  background: var(--mc-accent-soft);
+  color: #9ff8eb;
+}
+
+button.primary {
+  background: var(--mc-accent);
+  color: #031110;
+  font-weight: 750;
+}
+
+.mc-header {
+  min-height: 76px;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) auto minmax(250px, 1fr);
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid var(--mc-line);
+  background: #07100f;
+}
+
+.mc-header h2 {
+  margin: 2px 0 0;
+  font-size: 21px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.mc-eyebrow {
+  color: var(--mc-accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mc-stage-switch {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--mc-line);
+  border-radius: 9px;
+}
+
+.mc-stage-switch button {
+  border-color: transparent;
+  background: transparent;
+  padding: 5px 12px;
+}
+
+.mc-counts {
+  justify-self: end;
+  display: flex;
+  gap: 15px;
+  color: var(--mc-muted);
+  font-size: 12px;
+}
+
+.mc-counts b {
+  color: var(--mc-ink);
+}
+
+.mc-counts .warning b {
+  color: var(--mc-false);
+}
+
+.mc-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 720px;
+}
+
+.mc-display {
+  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid var(--mc-line);
+  display: grid;
+  grid-template-rows: auto minmax(540px, 1fr) auto auto;
+  gap: 9px;
+}
+
+.mc-display-topbar,
+.mc-tool-ribbon,
+.mc-slice-controls,
+.mc-footer,
+.mc-histogram header,
+.mc-minimap header,
+.mc-histogram-footer {
+  display: flex;
+  align-items: center;
+}
+
+.mc-display-topbar {
+  justify-content: space-between;
+}
+
+.mc-axis-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.mc-axis-buttons button,
+.mc-quiet {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.mc-quiet {
+  color: var(--mc-muted);
+  background: transparent;
+}
+
+.mc-canvas-wrap {
+  position: relative;
+  min-height: 540px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #162524;
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+    #020707;
+  background-size: 18px 18px;
+}
+
+.mc-image-canvas,
+.mc-overlay-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.mc-image-canvas {
+  opacity: 0.96;
+}
+
+.mc-overlay-canvas {
+  touch-action: none;
+}
+
+.tool-view .mc-overlay-canvas { cursor: grab; }
+.tool-toggle .mc-overlay-canvas { cursor: crosshair; }
+.tool-add-vertex .mc-overlay-canvas,
+.tool-add-edge .mc-overlay-canvas { cursor: copy; }
+.tool-crop .mc-overlay-canvas { cursor: cell; }
+
+.mc-axis-label {
+  position: absolute;
+  z-index: 3;
+  color: var(--mc-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mc-axis-x { right: 10px; bottom: 8px; }
+.mc-axis-y { left: 10px; top: 8px; }
+
+.mc-canvas-status {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: var(--mc-muted);
+  background: rgba(3, 9, 9, 0.78);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.mc-slice-controls {
+  gap: 18px;
+  padding: 0 4px;
+}
+
+.mc-slice-controls label {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  color: var(--mc-muted);
+  font-size: 11px;
+}
+
+.mc-slice-controls b {
+  color: var(--mc-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--mc-accent);
+}
+
+.mc-tool-ribbon {
+  gap: 5px;
+  padding-top: 2px;
+}
+
+.mc-tool-ribbon button {
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+.mc-tool-ribbon select {
+  margin-left: auto;
+  padding: 4px 7px;
+  font-size: 11px;
+}
+
+.mc-context {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 265px minmax(210px, 1fr) minmax(230px, 1fr);
+  background: var(--mc-surface);
+}
+
+.mc-panel {
+  min-height: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--mc-line);
+}
+
+.mc-panel header {
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.mc-panel header span {
+  color: var(--mc-muted);
+  font-size: 10px;
+}
+
+.mc-minimap svg {
+  width: 100%;
+  height: 185px;
+}
+
+.mc-volume-wire {
+  fill: rgba(53, 208, 186, 0.035);
+  stroke: #7caaa4;
+  stroke-width: 1.2;
+}
+
+.mc-fov {
+  fill: rgba(255, 86, 95, 0.25);
+  stroke: var(--mc-false);
+  stroke-width: 1.2;
+  animation: mc-fov 180ms ease-out;
+}
+
+@keyframes mc-fov {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.mc-coordinates {
+  display: flex;
+  justify-content: space-between;
+  color: var(--mc-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-histogram {
+  display: grid;
+  grid-template-rows: auto minmax(90px, 1fr) auto;
+}
+
+.mc-bars {
+  min-height: 90px;
+  display: flex;
+  align-items: end;
+  gap: 1px;
+  padding-top: 5px;
+  border-bottom: 1px solid #536764;
+}
+
+.mc-bars i {
+  flex: 1;
+  min-width: 1px;
+  opacity: 0.78;
+}
+
+.mc-histogram-footer {
+  min-height: 48px;
+  justify-content: space-between;
+  gap: 7px;
+  padding-top: 8px;
+  color: var(--mc-muted);
+  font-size: 10px;
+}
+
+.mc-histogram-footer label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mc-histogram-footer input[type="number"] {
+  width: 58px;
+  height: 28px;
+  padding: 3px 5px;
+  border: 1px solid var(--mc-line);
+  border-radius: 5px;
+  color: var(--mc-ink);
+  background: #071111;
+}
+
+.mc-histogram-footer button {
+  min-height: 28px;
+  padding: 3px 7px;
+  font-size: 10px;
+}
+
+.mc-threshold {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.mc-threshold button {
+  grid-row: 2;
+}
+
+.mc-threshold button:first-of-type {
+  grid-column: 1 / 3;
+}
+
+.mc-threshold button:last-of-type {
+  grid-column: 3;
+}
+
+.mc-footer {
+  min-height: 60px;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--mc-line);
+  background: #07100f;
+}
+
+.mc-status {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+  font-size: 11px;
+}
+
+.mc-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mc-accent);
+  box-shadow: 0 0 0 5px rgba(53, 208, 186, 0.08);
+}
+
+.mc-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-status em {
+  grid-column: 2;
+  color: var(--mc-warning);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.mc-commit {
+  display: flex;
+  gap: 6px;
+}
+
+.mc-commit button {
+  padding: 6px 11px;
+}
+
+@media (max-width: 1040px) {
+  .matlab-curator { min-width: 680px; }
+  .mc-workspace { grid-template-columns: minmax(0, 1fr) 270px; }
+  .mc-header { grid-template-columns: 1fr auto; }
+  .mc-counts { display: none; }
+  .mc-tool-ribbon { flex-wrap: wrap; }
+}

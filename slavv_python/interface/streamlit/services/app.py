@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from io import BytesIO
+
 import streamlit as st
 
 from slavv_python.engine.state import load_run_snapshot
@@ -27,6 +29,12 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
+@st.cache_data(show_spinner=False)
+def cached_load_tiff_bytes(tiff_bytes: bytes):
+    """Load uploaded or generated TIFF bytes through the normal storage layer."""
+    return load_tiff_volume(BytesIO(tiff_bytes))
+
+
 _build_processing_run_dir = build_run_task_dir
 _has_full_network_results = has_full_network_results
 _log_share_report_prepared_once = log_share_report_prepared_once
@@ -41,6 +49,7 @@ __all__ = [
     "_update_run_task",
     "apply_curated_results",
     "build_run_task_dir",
+    "cached_load_tiff_bytes",
     "cached_load_tiff_volume",
     "generate_export_data",
     "generate_share_report_data",

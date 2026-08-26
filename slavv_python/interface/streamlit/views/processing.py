@@ -8,11 +8,16 @@ import numpy as np
 import streamlit as st
 
 from slavv_python.engine import SlavvPipeline
+from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services import app as app_services
 from slavv_python.interface.streamlit.state.processing import (
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
+)
+from slavv_python.interface.streamlit.state.sample_data import (
+    SAMPLE_TIFF_OPTIONS,
+    build_sample_tiff,
 )
 from slavv_python.utils import validate_parameters
 from slavv_python.workflows.profiles import PIPELINE_PROFILE_CHOICES, get_pipeline_profile_defaults
@@ -93,26 +98,68 @@ def _sync_processing_profile_defaults(profile: str) -> dict[str, object]:
 
 def show_processing_page() -> None:
     """Display the image processing page."""
-    st.markdown('<h2 class="section-header">Image Processing Pipeline</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-header">Process a TIFF volume</h2>', unsafe_allow_html=True)
 
-    st.markdown("### Upload Image")
-    uploaded_file = st.file_uploader(
-        "Choose a TIFF file",
-        type=["tif", "tiff"],
-        help="Upload a 3D grayscale TIFF image of vascular structures",
-    )
-
-    if uploaded_file is not None:
-        st.success(f"Uploaded: {uploaded_file.name}")
-        st.json(
-            {
-                "Filename": uploaded_file.name,
-                "File size": f"{uploaded_file.size / 1024 / 1024:.2f} MB",
-                "File type": uploaded_file.type,
-            }
+    with st.sidebar:
+        st.divider()
+        st.subheader("Processing input")
+        input_source = st.radio(
+            "Input source",
+            ("Upload your TIFF", "Use a built-in sample"),
+            key="processing_input_source",
         )
 
-    st.markdown('<h3 class="section-header">Processing Parameters</h3>', unsafe_allow_html=True)
+    input_bytes: bytes | None = None
+    dataset_name: str | None = None
+    sample_id = ""
+    if input_source == "Upload your TIFF":
+        st.subheader("Input TIFF")
+        uploaded_file = st.file_uploader(
+            "Choose a TIFF file",
+            type=["tif", "tiff"],
+            help="Upload a 3D grayscale TIFF image of vascular structures",
+        )
+        if uploaded_file is not None:
+            input_bytes = uploaded_file.getvalue()
+            dataset_name = uploaded_file.name
+            st.success(f"Loaded input: {dataset_name}")
+            st.caption(f"{len(input_bytes) / 1024 / 1024:.2f} MB · {uploaded_file.type}")
+    else:
+        with st.sidebar:
+            sample_id = st.selectbox(
+                "Sample geometry",
+                options=list(SAMPLE_TIFF_OPTIONS),
+                format_func=lambda value: SAMPLE_TIFF_OPTIONS[value],
+                key="processing_sample_id",
+            )
+        sample = build_sample_tiff(sample_id)
+        input_bytes = sample.tiff_bytes
+        dataset_name = sample.name
+        preview = app_services.cached_load_tiff_bytes(input_bytes)
+        preview_col, detail_col = st.columns([2, 1], gap="large", vertical_alignment="center")
+        with preview_col:
+            st.image(
+                np.max(preview, axis=2),
+                caption="Maximum-intensity projection of the sample volume",
+                width="stretch",
+                clamp=True,
+            )
+        with detail_col:
+            st.subheader("Built-in sample TIFF")
+            st.write(sample.description)
+            st.caption(
+                f"TIFF shape (Z, Y, X): {sample.shape_zyx[0]} x "
+                f"{sample.shape_zyx[1]} x {sample.shape_zyx[2]}"
+            )
+            st.download_button(
+                "Download sample TIFF",
+                data=input_bytes,
+                file_name=dataset_name,
+                mime="image/tiff",
+                icon=":material/download:",
+            )
+
+    st.markdown('<h3 class="section-header">Processing settings</h3>', unsafe_allow_html=True)
     with st.popover("Parameter tips", width=300):
         st.write(
             "Use the tabs below to adjust microscopy, vessel size, processing, "
@@ -122,6 +169,10 @@ def show_processing_page() -> None:
     pipeline_profile = st.selectbox(
         "Pipeline profile",
         options=list(PIPELINE_PROFILE_CHOICES),
+        format_func=lambda profile: {
+            "paper": "Standard Python workflow",
+            "matlab_compat": "MATLAB-compatible defaults",
+        }[profile],
         index=0,
         help=(
             "'paper' is the primary native Python workflow. "
@@ -130,25 +181,32 @@ def show_processing_page() -> None:
         key="processing_pipeline_profile",
     )
     _sync_processing_profile_defaults(pipeline_profile)
+    if input_source == "Use a built-in sample":
+        sample_defaults_key = f"{pipeline_profile}:{sample_id}"
+        if st.session_state.get("processing_sample_defaults_applied") != sample_defaults_key:
+            st.session_state["processing_radius_smallest"] = 1.0
+            st.session_state["processing_radius_largest"] = 5.0
+            st.session_state["processing_scales_per_octave"] = 1.0
+            st.session_state["processing_sample_defaults_applied"] = sample_defaults_key
     if pipeline_profile == "paper":
         st.caption(
-            "Paper Path: Tracing Discovery and paper-style Hessian projection. "
-            "This is the public GUI default."
+            "Standard Python workflow (Paper Path): uses tracing-based edge discovery "
+            "and the published Hessian projection. Recommended for routine processing."
         )
     else:
         st.caption(
-            "MATLAB-compatible defaults on the same Python pipeline. "
-            "Watershed Discovery (Exact Route) is under Advanced → Edge method."
+            "MATLAB-compatible parameter defaults on the same Python pipeline. "
+            "The MATLAB-faithful watershed method is available under Advanced → Edge method."
         )
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Microscopy", "Vessel Sizes", "Processing", "Advanced"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Microscopy", "Vessel sizes", "Processing", "Advanced"])
 
     with tab1:
-        st.markdown("#### Microscopy Parameters")
+        st.markdown("#### Microscopy settings")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             microns_per_voxel_y = st.number_input(
-                "Y voxel size (um)",
+                "Y voxel size (µm)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_y"]),
@@ -157,7 +215,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in Y dimension. (MATLAB: microns_per_voxel(1))",
             )
             microns_per_voxel_x = st.number_input(
-                "X voxel size (um)",
+                "X voxel size (µm)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_x"]),
@@ -166,7 +224,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in X dimension. (MATLAB: microns_per_voxel(2))",
             )
             microns_per_voxel_z = st.number_input(
-                "Z voxel size (um)",
+                "Z voxel size (µm)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_z"]),
@@ -176,14 +234,14 @@ def show_processing_page() -> None:
             )
         with col2:
             approximating_PSF = st.checkbox(
-                "Approximate PSF",
+                "Correct for microscope blur (PSF)",
                 value=bool(st.session_state["processing_approximating_psf"]),
                 key="processing_approximating_psf",
-                help="Account for microscope point spread function using Zipfel et al. model. (MATLAB: approximating_PSF)",
+                help="Account for the microscope point-spread function (PSF) using the Zipfel et al. model.",
             )
             if approximating_PSF:
                 numerical_aperture = st.number_input(
-                    "Numerical Aperture",
+                    "Numerical aperture",
                     min_value=0.1,
                     max_value=2.0,
                     value=float(st.session_state["processing_numerical_aperture"]),
@@ -192,18 +250,19 @@ def show_processing_page() -> None:
                     help="Numerical aperture of the microscope objective. (MATLAB: numerical_aperture)",
                 )
                 excitation_wavelength = st.number_input(
-                    "Excitation wavelength (um)",
+                    "Excitation wavelength (µm)",
                     min_value=0.4,
                     max_value=3.0,
                     value=float(st.session_state["processing_excitation_wavelength"]),
                     step=0.1,
                     key="processing_excitation_wavelength",
-                    help="Laser excitation wavelength. Typical range: 0.7-3.0 um for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
+                    help="Laser excitation wavelength. A typical two-photon range is 0.7-3.0 µm.",
                 )
                 if not (0.7 <= excitation_wavelength <= 3.0):
                     st.markdown('<div class="warning-box">', unsafe_allow_html=True)
                     st.warning(
-                        "Excitation wavelength outside typical range (0.7-3.0 um). This range is typical for two-photon microscopy. Please verify this value."
+                        "Excitation wavelength is outside the typical two-photon range "
+                        "(0.7-3.0 µm). Please verify this value."
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
                 sample_index_of_refraction = st.number_input(
@@ -217,11 +276,11 @@ def show_processing_page() -> None:
                 )
 
     with tab2:
-        st.markdown("#### Vessel Size Parameters")
+        st.markdown("#### Vessel size settings")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             radius_smallest = st.number_input(
-                "Smallest vessel radius (um)",
+                "Smallest vessel radius (µm)",
                 min_value=0.1,
                 max_value=100.0,
                 value=float(st.session_state["processing_radius_smallest"]),
@@ -230,7 +289,7 @@ def show_processing_page() -> None:
                 help="Radius of the smallest vessel to be detected in microns. (MATLAB: radius_of_smallest_vessel_in_microns)",
             )
             radius_largest = st.number_input(
-                "Largest vessel radius (um)",
+                "Largest vessel radius (µm)",
                 min_value=1.0,
                 max_value=500.0,
                 value=float(st.session_state["processing_radius_largest"]),
@@ -256,7 +315,7 @@ def show_processing_page() -> None:
                 st.info(f"This will generate approximately {n_scales} scales")
 
     with tab3:
-        st.markdown("#### Processing Parameters")
+        st.markdown("#### Processing options")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             energy_upper_bound = st.number_input(
@@ -316,7 +375,7 @@ def show_processing_page() -> None:
             )
 
     with tab4:
-        st.markdown("#### Advanced Parameters")
+        st.markdown("#### Advanced settings")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             gaussian_to_ideal_ratio = st.slider(
@@ -409,7 +468,7 @@ def show_processing_page() -> None:
                 help="Maximum energy threshold for edge tracing. (MATLAB: max_edge_energy)",
             )
             min_hair_length_in_microns = st.number_input(
-                "Min hair length (um)",
+                "Minimum terminal-branch length (µm)",
                 min_value=0.0,
                 max_value=1000.0,
                 value=float(st.session_state["processing_min_hair_length"]),
@@ -422,13 +481,13 @@ def show_processing_page() -> None:
     col1, col2 = st.columns([2, 1])
     with col1:
         stop_after_options = {
-            "Energy Field Only": "energy",
+            "Energy only": "energy",
             "Energy + Vertices": "vertices",
             "Energy + Vertices + Edges": "edges",
-            "Full Pipeline (Network)": "network",
+            "Full pipeline (Network)": "network",
         }
         stop_after_selection = st.selectbox(
-            "Pipeline Target",
+            "Run through",
             options=list(stop_after_options.keys()),
             index=3,
             help="Stop the pipeline early after completing this stage. Useful for tweaking parameters.",
@@ -437,14 +496,14 @@ def show_processing_page() -> None:
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
         force_rerun_options = {
-            "None (use cache)": None,
+            "Use available stage results": None,
             "Energy": "energy",
             "Vertices": "vertices",
             "Edges": "edges",
             "Network": "network",
         }
         force_rerun_selection = st.selectbox(
-            "Force Recalculation From:",
+            "Recalculate from",
             options=list(force_rerun_options.keys()),
             index=0,
             help="Ignore cached results and recalculate from this stage onward.",
@@ -458,8 +517,8 @@ def show_processing_page() -> None:
     if current_snapshot is not None:
         app_services._render_run_dashboard(current_snapshot)
 
-    if uploaded_file is not None:
-        if st.button("Start Processing", type="primary", width=250):
+    if input_bytes is not None and dataset_name is not None:
+        if st.button("Run processing", type="primary", width=250):
             parameters = {
                 "pipeline_profile": pipeline_profile,
                 "microns_per_voxel": [
@@ -497,13 +556,13 @@ def show_processing_page() -> None:
                 )
             try:
                 validated_params = validate_parameters(parameters)
-                st.success("Parameters validated successfully")
+                st.success("Settings validated")
 
                 with st.status("Processing image...", expanded=True) as status:
                     status.update(label="Loading image...", state="running")
                     try:
-                        image = app_services.cached_load_tiff_volume(uploaded_file)
-                        st.success(f"Image loaded successfully with shape: {image.shape}")
+                        image = app_services.cached_load_tiff_bytes(input_bytes)
+                        st.success(f"Image loaded · shape {image.shape}")
                     except ValueError as exc:
                         st.error(f"Error loading TIFF file: {exc}")
                         st.stop()
@@ -511,7 +570,7 @@ def show_processing_page() -> None:
                     processor = SlavvPipeline()
                     dashboard_placeholder = st.empty()
                     run_dir = app_services._build_processing_run_dir(
-                        uploaded_file.getvalue(),
+                        input_bytes,
                         validated_params,
                     )
 
@@ -534,7 +593,7 @@ def show_processing_page() -> None:
                     with dashboard_placeholder.container():
                         app_services._render_run_dashboard(final_snapshot)
                     status.update(
-                        label=f"Processing finished at target: {stop_after_val}",
+                        label=f"Processing complete through {stop_after_val.title()}",
                         state="complete",
                     )
 
@@ -543,24 +602,26 @@ def show_processing_page() -> None:
                     results=results,
                     validated_params=validated_params,
                     image_shape=image.shape,
-                    dataset_name=uploaded_file.name,
+                    dataset_name=dataset_name,
                     run_dir=run_dir,
                     final_snapshot=final_snapshot,
+                    original_volume=image,
                 )
                 app_services._render_run_dashboard(final_snapshot)
                 if stop_after_val != "network":
                     st.warning(
-                        f"Pipeline halted early at '{stop_after_val}'. Downstream results (if any) are not available."
+                        f"Processing stopped after {stop_after_val.title()}, as requested. "
+                        "Later workflow steps remain unavailable."
                     )
                 st.markdown('<div class="success-box">', unsafe_allow_html=True)
-                st.success("Processing stage completed successfully!")
+                st.success("Processing complete")
                 st.markdown("</div>", unsafe_allow_html=True)
                 processing_metrics = summarize_processing_metrics(results)
                 col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
                 with col1:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
-                        "Vertices Found",
+                        "Vertices",
                         processing_metrics["vertices"] if "vertices" in results else "N/A",
                         help="Total vertices detected in the volume",
                     )
@@ -568,7 +629,7 @@ def show_processing_page() -> None:
                 with col2:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
-                        "Edges Extracted",
+                        "Edges",
                         processing_metrics["edges"] if "edges" in results else "N/A",
                         help="Number of vessel segments traced",
                     )
@@ -576,7 +637,7 @@ def show_processing_page() -> None:
                 with col3:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
-                        "Network Strands",
+                        "Strands",
                         processing_metrics["strands"] if "network" in results else "N/A",
                         help="Connected components in the network",
                     )
@@ -589,7 +650,21 @@ def show_processing_page() -> None:
                         help="Detected branching points",
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
+                next_columns = st.columns(2, gap="small")
+                if "edges" in results and next_columns[0].button(
+                    "Review in Curation",
+                    type="primary",
+                    icon=":material/edit_note:",
+                    width="stretch",
+                ):
+                    switch_to("curation")
+                if "network" in results and next_columns[1].button(
+                    "Open Visualization",
+                    icon=":material/view_in_ar:",
+                    width="stretch",
+                ):
+                    switch_to("visualization")
             except Exception as exc:
                 st.error(f"Processing failed: {exc!s}")
     else:
-        st.info("Please upload a TIFF file to begin processing")
+        st.info("Upload a TIFF or choose a built-in sample to begin processing.")

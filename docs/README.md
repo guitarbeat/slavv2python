@@ -94,6 +94,7 @@ Other maintained guidance lives under `reference/` (workflow, core, backends).
 12. [Proposal / methods figures](../figures/README.md) — exact-parity standalone claim figures
 13. [Performance innovations catalog](investigations/PARITY_PRESERVED_PERFORMANCE_INNOVATIONS.md) — 9 verified mathematical and memory improvements
 14. [Translation paper manuscript](investigations/MATLAB_PYTHON_TRANSLATION_PAPER.md) — JORS/SoftwareX exact parity study
+15. [Manual curation workflow](reference/workflow/MANUAL_CURATION_WORKFLOW.md) — real TIFF processing, generated sample data, browser review, and read-only run reopening
 
 ---
 

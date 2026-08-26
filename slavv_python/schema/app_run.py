@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from slavv_python.schema.results import (
     EdgeSet,
@@ -22,6 +22,8 @@ class AppRunState(Mapping[str, Any]):
     image_shape: tuple[int, ...] | None = None
     dataset_name: str | None = None
     run_dir: str | None = None
+    source_kind: str = "live"
+    read_only: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -38,11 +40,13 @@ class AppRunState(Mapping[str, Any]):
             image_shape=self.image_shape,
             dataset_name=self.dataset_name,
             run_dir=self.run_dir,
+            source_kind=self.source_kind,
+            read_only=self.read_only,
             extra=dict(self.extra),
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return self.pipeline.to_dict()
+        return cast("dict[str, Any]", self.pipeline.to_dict())
 
     def __getitem__(self, key: str) -> Any:
         return self.pipeline.to_dict()[key]

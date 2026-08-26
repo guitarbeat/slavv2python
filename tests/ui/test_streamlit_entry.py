@@ -25,25 +25,14 @@ def test_entry_script_loads_and_renders_shell() -> None:
     at = AppTest.from_file(str(_ENTRY), default_timeout=30)
     at.run()
     assert not at.exception
-    nav = next(
-        (
-            box
-            for box in list(at.selectbox) + list(at.sidebar.selectbox)
-            if "Choose a page" in str(box.label)
-        ),
-        None,
-    )
-    assert nav is not None
-    markdown = [el.value for el in at.markdown if isinstance(getattr(el, "value", None), str)]
-    assert any("SLAVV" in value for value in markdown)
+    assert any(header.value == "SLAVV workflow" for header in at.header)
     for page in (
-        "Home",
-        "Image Processing",
-        "Curation",
-        "Visualization",
-        "Analysis",
-        "About",
+        "workspaces",
+        "processing",
+        "curation",
+        "visualization",
+        "analysis",
+        "about",
     ):
-        nav.select(page)
-        at.run()
+        at.switch_page(f"routes/{page}.py").run()
         assert not at.exception, page

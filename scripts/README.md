@@ -12,6 +12,7 @@ scripts/
 ├── ladder/       # Synthetic complexity ladder
 ├── monitor/      # Parity run health / throughput
 ├── docs/         # Docs integrity verifier
+├── curation/     # Interactive MATLAB comparison launchers
 └── profiling/    # Phase 2 baseline recorder
 ```
 
@@ -84,6 +85,18 @@ python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chu
 
 ```powershell
 python scripts\docs\verify_integrity.py
+```
+
+## curation/
+
+| Script | Role |
+|--------|------|
+| [`launch_matlab_curator_sample.m`](curation/launch_matlab_curator_sample.m) | Open the original MATLAB Vertex Curator on the preserved `y_junction_32` sample; saved edits stay in `workspace/scratch/` |
+
+From MATLAB R2019a with the repository as the working directory:
+
+```matlab
+run('scripts/curation/launch_matlab_curator_sample.m')
 ```
 
 ## profiling/

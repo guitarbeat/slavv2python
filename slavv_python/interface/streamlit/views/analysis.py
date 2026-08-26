@@ -27,13 +27,13 @@ def show_analysis_page() -> None:
     results = normalize_analysis_results(raw)
     if not has_analysis_network(results):
         st.warning(
-            "This step needs a complete Network. On Image Processing, set Pipeline Target "
-            "to Full Pipeline (Network)."
+            "This page needs a complete network. In Processing, set Run through to "
+            "Full pipeline (Network)."
         )
         return
 
     st.markdown(
-        "Length, radius, topology, and morphometry for the current Network. "
+        "Length, radius, topology, and morphometry for the current network. "
         "Download the statistics table as CSV."
     )
 
@@ -52,13 +52,13 @@ def show_analysis_page() -> None:
     with col1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
-            "Total Length", f"{stats.get('total_length', 0):.1f} um", help="Sum of all edge lengths"
+            "Total length", f"{stats.get('total_length', 0):.1f} µm", help="Sum of all edge lengths"
         )
         st.markdown("</div>", unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
-            "Volume Fraction",
+            "Volume fraction",
             f"{stats.get('volume_fraction', 0):.3f}",
             help="Fraction of volume occupied by vessels",
         )
@@ -66,7 +66,7 @@ def show_analysis_page() -> None:
     with col3:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
-            "Bifurcation Density",
+            "Bifurcation density",
             f"{stats.get('bifurcation_density', 0):.2f} /mm^3",
             help="Bifurcations per cubic millimeter",
         )
@@ -74,7 +74,7 @@ def show_analysis_page() -> None:
     with col4:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
-            "Mean Radius", f"{stats.get('mean_radius', 0):.2f} um", help="Average vessel radius"
+            "Mean radius", f"{stats.get('mean_radius', 0):.2f} µm", help="Average vessel radius"
         )
         st.markdown("</div>", unsafe_allow_html=True)
 

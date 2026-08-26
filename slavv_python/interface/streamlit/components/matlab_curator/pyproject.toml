@@ -1,0 +1,7 @@
+[project]
+name = "slavv-python"
+version = "0.1.0"
+
+[[tool.streamlit.component.components]]
+name = "matlab_curator"
+asset_dir = "frontend/build"

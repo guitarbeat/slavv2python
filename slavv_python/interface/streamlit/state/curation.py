@@ -59,6 +59,7 @@ def apply_curated_session_results(
     session_state["curation_baseline_counts"] = baseline_counts
     session_state["last_curation_mode"] = curation_mode
     session_state.pop("share_report_prepared_signature", None)
+    session_state.pop("analysis_stats", None)
     return baseline_counts, current_counts
 
 

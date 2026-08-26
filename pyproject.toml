@@ -44,6 +44,10 @@ dependencies = [
     "tabulate>=0.9.0",
 ]
 
+[[tool.streamlit.component.components]]
+name = "matlab_curator"
+asset_dir = "interface/streamlit/components/matlab_curator/frontend/build"
+
 [project.optional-dependencies]
 app = [
     "streamlit>=1.56.0",
@@ -119,6 +123,10 @@ include = ["slavv_python", "slavv_python.*"]
 
 [tool.setuptools.package-data]
 "slavv_python.pipeline.energy" = ["matlab_linspace_overrides.json"]
+"slavv_python.interface.streamlit.components.matlab_curator" = [
+    "pyproject.toml",
+    "frontend/build/**/*",
+]
 
 # â”€â”€ Ruff (linter + formatter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.ruff]

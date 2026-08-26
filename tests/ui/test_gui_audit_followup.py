@@ -14,6 +14,7 @@ from slavv_python.interface.streamlit.empty_state import (
     MSG_NEED_NETWORK,
     MSG_NO_RUN,
 )
+from slavv_python.interface.streamlit.navigation import PAGE_DEFINITIONS
 from slavv_python.interface.streamlit.shell import PAGE_HANDLERS
 from slavv_python.interface.streamlit.views.curation import desktop_curator_available
 from slavv_python.interface.streamlit.views.processing import available_public_energy_methods
@@ -22,8 +23,18 @@ from slavv_python.interface.streamlit.views.visualization import _apply_figure_d
 
 def test_nav_labels_are_plain_language() -> None:
     assert list(PAGE_HANDLERS) == [
-        "Home",
-        "Image Processing",
+        "dashboard",
+        "workspaces",
+        "processing",
+        "curation",
+        "visualization",
+        "analysis",
+        "about",
+    ]
+    assert [page.title for page in PAGE_DEFINITIONS] == [
+        "Dashboard",
+        "Workspaces",
+        "Processing",
         "Curation",
         "Visualization",
         "Analysis",
@@ -31,10 +42,10 @@ def test_nav_labels_are_plain_language() -> None:
     ]
 
 
-def test_empty_state_copy_points_at_image_processing() -> None:
-    assert "Image Processing" in MSG_NO_RUN
-    assert "Image Processing" in MSG_NEED_EDGES
-    assert "Image Processing" in MSG_NEED_NETWORK
+def test_empty_state_copy_points_at_processing() -> None:
+    assert "Processing" in MSG_NO_RUN
+    assert "Processing" in MSG_NEED_EDGES
+    assert "Processing" in MSG_NEED_NETWORK
 
 
 def test_cupy_energy_method_hidden_when_cupy_missing(monkeypatch: pytest.MonkeyPatch) -> None:

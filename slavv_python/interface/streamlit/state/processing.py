@@ -7,6 +7,8 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from slavv_python.engine.state.io import fingerprint_jsonable
 from slavv_python.schema.app_run import AppRunState
 from slavv_python.schema.results import PipelineResult, normalize_pipeline_result
@@ -58,6 +60,7 @@ def store_processing_session_state(
     dataset_name: str,
     run_dir: str | None,
     final_snapshot: RunSnapshot | None,
+    original_volume: np.ndarray | None = None,
 ) -> None:
     """Persist completed processing state and clear derived stale session keys."""
     pipeline = (
@@ -73,10 +76,21 @@ def store_processing_session_state(
     session_state["image_shape"] = image_shape
     session_state["dataset_name"] = dataset_name
     session_state["current_run_dir"] = run_dir
+    session_state["run_read_only"] = False
     session_state["run_snapshot"] = final_snapshot.to_dict() if final_snapshot is not None else None
+    if original_volume is not None:
+        session_state["curation_source_volume"] = np.asarray(original_volume)
+    else:
+        session_state.pop("curation_source_volume", None)
     session_state.pop("curation_baseline_counts", None)
     session_state.pop("last_curation_mode", None)
     session_state.pop("share_report_prepared_signature", None)
+    session_state.pop("analysis_stats", None)
+    session_state.pop("matlab_curator_session", None)
+    session_state.pop("matlab_curator_payload_cache", None)
+    session_state["matlab_curator_generation"] = (
+        int(session_state.get("matlab_curator_generation", 0)) + 1
+    )
 
 
 __all__ = [

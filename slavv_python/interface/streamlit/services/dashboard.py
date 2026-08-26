@@ -69,7 +69,7 @@ def render_run_dashboard(snapshot) -> None:
             }
         )
     if stage_rows:
-        st.dataframe(pd.DataFrame(stage_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(stage_rows), width="stretch", hide_index=True)
 
     if snapshot.optional_tasks:
         st.markdown("### Optional Tasks")
@@ -82,7 +82,7 @@ def render_run_dashboard(snapshot) -> None:
             }
             for name, task in sorted(snapshot.optional_tasks.items())
         ]
-        st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(task_rows), width="stretch", hide_index=True)
 
 
 def build_dashboard_placeholder_trend() -> go.Figure:
