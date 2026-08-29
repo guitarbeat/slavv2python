@@ -25,8 +25,8 @@ Citations: [papers/README.md](../papers/README.md).
 Run the pipeline, add features, use Streamlit. No Experiment Root required.
 
 ```powershell
-pip install -e ".[app]"
-slavv run -i volume.tif -o slavv_output --export json
+uv sync --extra app
+uv run slavv run -i volume.tif -o slavv_output --export json
 ```
 
 - [TUTORIAL.md](../../TUTORIAL.md) — first vascular extraction (Paper Path)
@@ -42,8 +42,8 @@ Prove MATLAB parity, run the exact route, operate dests. Need Experiment Root
 binaries on disk before `prove-exact` works.
 
 ```powershell
-pip install -e ".[app,workspace]"
-slavv parity inspect-experiment-root
+uv sync --extra app --extra workspace
+uv run slavv parity inspect-experiment-root
 ```
 
 - [PARITY_CERTIFICATION_GUIDE.md](../workflow/PARITY_CERTIFICATION_GUIDE.md) — how to run proofs (includes parity harness code tour)
@@ -129,7 +129,7 @@ Do not diff production parity against uncommitted local `.m` edits.
 
 ### 5. Tooling footguns
 
-- PowerShell-first; `.venv\Scripts\slavv.exe` after `pip install -e .`
+- PowerShell-first; `uv run slavv` after `uv sync`
 - `slavv jobs list` can hang; prefer `slavv monitor --once --run-dir …`
 - Long exact Energy: joblib `Done N tasks` log leads `resume_state.json`
 - Energy shape `(512,64,512)` on full volume = orientation bug, not float noise

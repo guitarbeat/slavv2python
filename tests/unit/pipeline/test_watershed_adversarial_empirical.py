@@ -201,12 +201,16 @@ def test_reset_join_locations_adversarial_duplicates_and_tail():
         return updated, is_clear
 
     # Edge cases: empty available_locations
-    res, is_clr = _matlab_global_watershed_reset_join_locations([], next_vertex_locations=np.array([1, 2]), is_current_location_clear=False)
+    res, is_clr = _matlab_global_watershed_reset_join_locations(
+        [], next_vertex_locations=np.array([1, 2]), is_current_location_clear=False
+    )
     assert res == []
     assert is_clr is True
 
     # Edge cases: empty targets with is_clear=False
-    res, is_clr = _matlab_global_watershed_reset_join_locations([10, 20, 30], next_vertex_locations=np.array([]), is_current_location_clear=False)
+    res, is_clr = _matlab_global_watershed_reset_join_locations(
+        [10, 20, 30], next_vertex_locations=np.array([]), is_current_location_clear=False
+    )
     assert res == [10, 20]
     assert is_clr is True
 
@@ -234,7 +238,6 @@ def test_structuring_element_offsets_caching_and_empty():
     res_zero = _construct_structuring_element_offsets_matlab(np.array([0.0, 0.0, 0.0]))
     assert res_zero.shape == (1, 3)
     assert np.array_equal(res_zero, np.zeros((1, 3), dtype=np.int32))
-
 
 
 # =========================================================================

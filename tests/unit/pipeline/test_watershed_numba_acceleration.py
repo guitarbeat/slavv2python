@@ -338,4 +338,3 @@ def test_structuring_element_offsets_memoization():
     info2 = _construct_structuring_element_offsets_matlab_cached.cache_info()
     assert info2.hits == 1
     assert np.array_equal(offsets1, offsets2)
-

@@ -231,9 +231,7 @@ def _normalize_display_volume(volume: np.ndarray) -> tuple[np.ndarray, tuple[flo
         upper = float(finite.max()) if finite.size else 1.0
     if upper <= lower:
         upper = lower + 1.0
-    normalized = np.nan_to_num(
-        (values - lower) / (upper - lower), nan=0.0, posinf=1.0, neginf=0.0
-    )
+    normalized = np.nan_to_num((values - lower) / (upper - lower), nan=0.0, posinf=1.0, neginf=0.0)
     return np.asarray(np.clip(normalized, 0.0, 1.0) * 255.0, dtype=np.uint8), (
         float(lower),
         float(upper),
@@ -303,9 +301,7 @@ def _prepare_curator_data(app_run: AppRunState, signature: str) -> dict[str, Any
     radii_microns = np.asarray(
         energy_payload.get("lumen_radius_microns", []), dtype=np.float32
     ).reshape(-1)
-    add_vertex_available = bool(
-        scale_available and radii_pixels.size and radii_microns.size
-    )
+    add_vertex_available = bool(scale_available and radii_pixels.size and radii_microns.size)
     spacing_raw = np.asarray(
         app_run.pipeline.parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
         dtype=float,
@@ -341,9 +337,7 @@ def _prepare_curator_data(app_run: AppRunState, signature: str) -> dict[str, Any
             "positions": np.asarray(vertices.get("positions", []), dtype=float)
             .reshape(-1, 3)
             .tolist(),
-            "energies": np.asarray(vertices.get("energies", []), dtype=float)
-            .reshape(-1)
-            .tolist(),
+            "energies": np.asarray(vertices.get("energies", []), dtype=float).reshape(-1).tolist(),
             "scales": np.asarray(vertices.get("scales", []), dtype=int).reshape(-1).tolist(),
             "radii_pixels": np.asarray(vertices.get("radii_pixels", []), dtype=float).tolist(),
             "radii_microns": np.asarray(vertices.get("radii_microns", []), dtype=float)
@@ -358,9 +352,7 @@ def _prepare_curator_data(app_run: AppRunState, signature: str) -> dict[str, Any
             "connections": np.asarray(edges.get("connections", []), dtype=int)
             .reshape(-1, 2)
             .tolist(),
-            "energies": np.asarray(edges.get("energies", []), dtype=float)
-            .reshape(-1)
-            .tolist(),
+            "energies": np.asarray(edges.get("energies", []), dtype=float).reshape(-1).tolist(),
         },
         "lumenRadiiPixels": radii_pixels.tolist(),
         "lumenRadiiMicrons": radii_microns.tolist(),
@@ -388,15 +380,9 @@ def render_browser_manual_curation(results: Mapping[str, Any] | AppRunState) -> 
     signature = build_curation_baseline_signature(
         payload["vertices"], payload["edges"], energy_shape
     )
-    baseline_vertex_count = len(
-        np.asarray(payload["vertices"].get("positions", [])).reshape(-1, 3)
-    )
-    baseline_edge_count = len(
-        np.asarray(payload["edges"].get("connections", [])).reshape(-1, 2)
-    )
-    dataset_name = app_run.dataset_name or str(
-        st.session_state.get("dataset_name", "Current run")
-    )
+    baseline_vertex_count = len(np.asarray(payload["vertices"].get("positions", [])).reshape(-1, 3))
+    baseline_edge_count = len(np.asarray(payload["edges"].get("connections", [])).reshape(-1, 2))
+    dataset_name = app_run.dataset_name or str(st.session_state.get("dataset_name", "Current run"))
 
     raw_session = st.session_state.get("matlab_curator_session")
     try:

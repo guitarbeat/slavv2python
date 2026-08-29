@@ -56,7 +56,9 @@ class WorkspaceRecord:
     is_active: bool = False
 
 
-def _record_for_run(run_dir: Path, source: str, active_run_dir: Path | None) -> WorkspaceRecord | None:
+def _record_for_run(
+    run_dir: Path, source: str, active_run_dir: Path | None
+) -> WorkspaceRecord | None:
     """Build one record without loading stage checkpoint payloads."""
     snapshot = load_run_snapshot(run_dir)
     if snapshot is None:

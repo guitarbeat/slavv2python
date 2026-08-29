@@ -64,28 +64,28 @@ Checked-in fixtures live under [`tests/support/fixtures/`](support/fixtures/):
 
 ```powershell
 # CI-safe: unit + fixture-backed parity (no workspace oracles)
-python -m pytest -m "unit and parity" tests/unit/pipeline/energy/test_matlab_linspace_table.py tests/unit/parity/test_parity_harness.py
+uv run pytest -m "unit and parity" tests/unit/pipeline/energy/test_matlab_linspace_table.py tests/unit/parity/test_parity_harness.py
 
 # Local crop harness: voxel probes (requires promoted 180709_E_crop_M oracle)
-python -m pytest -m "parity" tests/unit/pipeline/energy/test_voxel_probe.py tests/unit/pipeline/energy/test_voxel_probe_regression.py
+uv run pytest -m "parity" tests/unit/pipeline/energy/test_voxel_probe.py tests/unit/pipeline/energy/test_voxel_probe_regression.py
 
 # Integration pre-gate
-python -m pytest tests/integration/parity/
+uv run pytest tests/integration/parity/
 ```
 
 ### Script commands (local evaluation)
 
 ```powershell
 # Run checked-in voxel regression fixture against oracle
-python -m tests.support.parity_harness regression
+uv run python -m tests.support.parity_harness regression
 
 # Probe top prove-exact mismatch groups
-python -m tests.support.batch_energy_mismatch_probe --mode mismatch-groups `
+uv run python -m tests.support.batch_energy_mismatch_probe --mode mismatch-groups `
   --probe-requests workspace/runs/oracle_180709_E/crop_M_exact_v3/03_Analysis/energy_probe_requests.json
 
 # Export probes for MATLAB-side execution, then compare JSONL responses
-python -m tests.support.parity_harness export-jsonl --output workspace/scratch/python_probes.jsonl
-python -m tests.support.parity_harness compare-jsonl `
+uv run python -m tests.support.parity_harness export-jsonl --output workspace/scratch/python_probes.jsonl
+uv run python -m tests.support.parity_harness compare-jsonl `
   --matlab workspace/scratch/matlab_probes.jsonl `
   --python workspace/scratch/python_probes.jsonl
 ```
@@ -102,11 +102,11 @@ The suite is a fast diagnostic, not a synthetic certification claim. It writes s
 
 ```powershell
 $env:MATLAB_EXE = "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
-python -m tests.support.random_component_parity `
+uv run python -m tests.support.random_component_parity `
   --output-dir workspace\scratch\random_component_parity `
   --matlab-exe $env:MATLAB_EXE
 
-python -m tests.support.random_component_parity `
+uv run python -m tests.support.random_component_parity `
   --print-hessian-summary workspace\scratch\random_component_parity\random_component_parity_report.json
 ```
 

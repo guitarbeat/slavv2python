@@ -44,7 +44,7 @@ Requires MATLAB R2019a and `external/Vectorization-Public`.
 
 ```powershell
 $env:MATLAB_EXE = "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
-python -m tests.support.random_component_parity `
+uv run python -m tests.support.random_component_parity `
   --output-dir workspace\scratch\random_component_parity `
   --matlab-exe $env:MATLAB_EXE
 ```
@@ -65,14 +65,14 @@ Outputs under `<output-dir>`:
 Print advisory Hessian summary from a saved report:
 
 ```powershell
-python -m tests.support.random_component_parity `
+uv run python -m tests.support.random_component_parity `
   --print-hessian-summary workspace\scratch\random_component_parity\random_component_parity_report.json
 ```
 
 Unit tests (no MATLAB required):
 
 ```powershell
-python -m pytest tests/unit/parity/test_random_component_parity.py
+uv run pytest tests/unit/parity/test_random_component_parity.py
 ```
 
 ---
@@ -99,7 +99,7 @@ explicitly promote it.
 **Linspace** (from an existing MATLAB reference run):
 
 ```powershell
-python -m tests.support.export_random_linspace_overrides `
+uv run python -m tests.support.export_random_linspace_overrides `
   --manifest workspace\scratch\random_component_parity\manifest.json `
   --matlab-mat workspace\scratch\random_component_parity\matlab_reference.mat
 ```
@@ -107,9 +107,9 @@ python -m tests.support.export_random_linspace_overrides `
 **Matching kernels** (MATLAB R2019a export + Python merge):
 
 ```powershell
-python -m tests.support.random_component_parity --output-dir workspace\scratch\matching_export
+uv run python -m tests.support.random_component_parity --output-dir workspace\scratch\matching_export
 & $env:MATLAB_EXE -batch "addpath('tests/support/matlab'); export_random_matching_reference('workspace/scratch/matching_export/manifest.json','workspace/scratch/matching_export/matching_reference.mat')"
-python -m tests.support.export_random_matching_reference `
+uv run python -m tests.support.export_random_matching_reference `
   --matlab-mat workspace\scratch\matching_export\matching_reference.mat
 ```
 

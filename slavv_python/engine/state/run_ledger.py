@@ -132,6 +132,7 @@ class RunContext:
                 raise ValueError("force_rerun_from requires an explicit run_dir")
 
             import tempfile
+
             effective_dir = tempfile.mkdtemp(prefix="slavv_run_")
 
         # 2. Validate and fingerprint the caller's parameters before resume adoption.

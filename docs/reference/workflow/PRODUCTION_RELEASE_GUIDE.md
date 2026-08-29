@@ -47,9 +47,9 @@ version = "0.1.0" # Bump this
 ### Step 2: Final Quality Sweep
 Run the full local suite to ensure no last-minute regressions.
 ```powershell
-python -m ruff check slavv_python tests --fix
-python -m mypy
-python -m pytest tests/unit tests/integration/test_paper_profile_ci.py
+uv run ruff check slavv_python tests --fix
+uv run mypy
+uv run pytest tests/unit tests/integration/test_paper_profile_ci.py
 ```
 
 ### Step 3: Certification Promotion
@@ -74,7 +74,7 @@ git tag -a v0.1.0 -m "Vascular vectorization engine stable beta"
 ### Standalone Installation
 Users can install the release directly from the repository:
 ```powershell
-pip install git+https://github.com/UTFOIL/slavv2python.git@v0.1.0
+uv pip install git+https://github.com/UTFOIL/slavv2python.git@v0.1.0
 ```
 
 ### Research Deployment

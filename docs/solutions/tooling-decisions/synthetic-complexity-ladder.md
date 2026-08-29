@@ -64,7 +64,7 @@ Each rung dual-runs MATLAB Vectorization-Public (parameterized driver `scripts/l
 From the repo root (PowerShell):
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\ladder\run.py
+uv run python scripts/ladder/run.py
 ```
 
 Useful flags:
@@ -122,7 +122,7 @@ Do **not** use ladder outcomes to update ONE TRUTH, promote claim-run roots, dec
 ### Full ladder (operator)
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\ladder\run.py
+uv run python scripts/ladder/run.py
 ```
 
 Writes `workspace/experiments/synthetic_complexity_ladder/ladder_report.json`.
@@ -130,13 +130,13 @@ Writes `workspace/experiments/synthetic_complexity_ladder/ladder_report.json`.
 ### Smoke baseline rung only
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\ladder\run.py --rung y_junction_32
+uv run python scripts/ladder/run.py --rung y_junction_32
 ```
 
 ### Reuse artifacts while iterating report logic
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\ladder\run.py --skip-matlab --reuse-python
+uv run python scripts/ladder/run.py --skip-matlab --reuse-python
 ```
 
 ### Expected report shapes (from unit tests)

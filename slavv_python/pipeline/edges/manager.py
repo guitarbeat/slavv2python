@@ -293,7 +293,7 @@ class EdgeManager:
                     "discovery_seconds": discovery_elapsed,
                     "selection_seconds": selection_elapsed,
                     "total_seconds": discovery_elapsed + selection_elapsed,
-                }
+                },
             )
             from slavv_python.pipeline.edges.frontier_events import (
                 _build_frontier_candidate_lifecycle,

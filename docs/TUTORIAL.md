@@ -12,7 +12,7 @@ Quick walkthrough from setup to a processed vascular network.
 Python 3.11+ required. Install the package:
 
 ```powershell
-pip install -e ".[app]"
+uv sync --extra app
 ```
 
 ## 2. Generate Sample Data
@@ -31,7 +31,7 @@ tifffile.imwrite("sample_volume.tif", volume.astype('float32'))
 ## 3. Run the Pipeline
 
 ```powershell
-slavv run -i sample_volume.tif -o output_folder --export csv json
+uv run slavv run -i sample_volume.tif -o output_folder --export csv json
 ```
 
 Stages: Energy (Hessian enhancement) → Vertices (seed discovery) → Edges (watershed tracing) → Network (graph assembly).
@@ -39,13 +39,13 @@ Stages: Energy (Hessian enhancement) → Vertices (seed discovery) → Edges (wa
 ## 4. Analyze Results
 
 ```powershell
-slavv analyze -i output_folder/network.json
+uv run slavv analyze -i output_folder/network.json
 ```
 
 ## 5. Visualize
 
 ```powershell
-slavv plot -i output_folder/network.json -o my_plots.html
+uv run slavv plot -i output_folder/network.json -o my_plots.html
 ```
 
 Open `my_plots.html` in a browser.
@@ -53,7 +53,7 @@ Open `my_plots.html` in a browser.
 ## 6. Interactive Curation (Optional)
 
 ```powershell
-slavv-app
+uv run slavv-app
 ```
 
 The app opens on **Dashboard**. Its sidebar connects **Processing → Curation → Visualization → Analysis**, shows which pipeline stages are ready, and recommends the next action. In **Processing**, upload a TIFF or select a generated sample TIFF; both choices enter the same TIFF loader and full SLAVV pipeline. Use **Open existing run** to load compatible structured checkpoints read-only.

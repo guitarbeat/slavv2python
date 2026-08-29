@@ -4,9 +4,9 @@ Fixed four-rung fake-volume ladder reusing the tiny Y-junction dual-run pattern.
 Results are informative only — NOT Certification / NOT Phase 1.
 
 Usage (repo root):
-  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py
-  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py --rung y_junction_32
-  .\\.venv\\Scripts\\python.exe scripts\\ladder\\run.py --skip-matlab --reuse-python
+  uv run python scripts/ladder/run.py
+  uv run python scripts/ladder/run.py --rung y_junction_32
+  uv run python scripts/ladder/run.py --skip-matlab --reuse-python
 """
 
 from __future__ import annotations

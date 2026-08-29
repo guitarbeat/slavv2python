@@ -34,9 +34,9 @@ supports `.zarr` directories for the same resumable surfaces.
 The `slavv run` surface exposes the storage mode directly:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --energy-storage-format auto
-slavv run -i volume.tif -o slavv_output --energy-storage-format npy
-slavv run -i volume.tif -o slavv_output --energy-storage-format zarr
+uv run slavv run -i volume.tif -o slavv_output --energy-storage-format auto
+uv run slavv run -i volume.tif -o slavv_output --energy-storage-format npy
+uv run slavv run -i volume.tif -o slavv_output --energy-storage-format zarr
 ```
 
 Programmatic usage uses the validated `energy_storage_format` parameter:
@@ -67,7 +67,7 @@ run-state metadata flow.
 Zarr stays optional. Install it with the repo extra:
 
 ```powershell
-pip install -e ".[zarr]"
+uv sync --extra zarr
 ```
 
 If `energy_storage_format="zarr"` is selected without `zarr` installed, the

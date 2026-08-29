@@ -138,9 +138,7 @@ def test_curation_session_round_trip_materializes_additions_and_cascade() -> Non
         baseline_edge_count=2,
         image_shape=shape,
     )
-    vertices, edges = materialize_curation_session(
-        results["vertices"], results["edges"], replayed
-    )
+    vertices, edges = materialize_curation_session(results["vertices"], results["edges"], replayed)
 
     assert len(vertices["positions"]) == 3
     assert np.asarray(edges["connections"]).tolist() == [[0, 1], [0, 2]]
@@ -163,9 +161,7 @@ def test_curation_preserves_bridge_vertices_and_remaps_seed_endpoints() -> None:
     )
     session.vertex_truth[1] = False
 
-    vertices, curated_edges = materialize_curation_session(
-        results["vertices"], edges, session
-    )
+    vertices, curated_edges = materialize_curation_session(results["vertices"], edges, session)
 
     assert len(vertices["positions"]) == 2
     assert np.asarray(curated_edges["connections"]).tolist() == [[0, 2]]

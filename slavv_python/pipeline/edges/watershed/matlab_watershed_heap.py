@@ -139,15 +139,15 @@ def _claim_unowned_strel_arrays_numba_impl(
     lut_size: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     n = len(valid_linear)
-    vertices_of_current_strel = np.empty(n, dtype=np.uint32)
-    is_without_vertex = np.empty(n, dtype=np.bool_)
+    vertices_of_current_strel: np.ndarray = np.empty(n, dtype=np.uint32)
+    is_without_vertex: np.ndarray = np.empty(n, dtype=np.bool_)
 
     for i in range(n):
         idx = valid_linear[i]
         vert_idx = vertex_index_map_flat[idx]
         vertices_of_current_strel[i] = vert_idx
 
-        is_empty = (vert_idx == 0)
+        is_empty = vert_idx == 0
         is_without_vertex[i] = is_empty
 
         if is_empty:
@@ -191,20 +191,23 @@ def _claim_unowned_strel_arrays(
     global _NUMBA_AVAILABLE
     if _NUMBA_AVAILABLE and _numba_claim is not None:
         try:
-            return _numba_claim(
-                int(current_vertex_index),
-                int(current_scale_label),
-                float(current_d_over_r),
-                np.asarray(valid_linear, dtype=np.int64),
-                np.asarray(strel_pointer_indices, dtype=np.uint64),
-                np.asarray(strel_r_over_R, dtype=np.float64),
-                np.asarray(adjusted_energies, dtype=np.float64),
-                vertex_index_map_flat,
-                pointer_map_flat,
-                energy_map_flat,
-                d_over_r_map_flat,
-                size_map_flat,
-                int(lut_size),
+            return cast(
+                "tuple[np.ndarray, np.ndarray]",
+                _numba_claim(
+                    int(current_vertex_index),
+                    int(current_scale_label),
+                    float(current_d_over_r),
+                    np.asarray(valid_linear, dtype=np.int64),
+                    np.asarray(strel_pointer_indices, dtype=np.uint64),
+                    np.asarray(strel_r_over_R, dtype=np.float64),
+                    np.asarray(adjusted_energies, dtype=np.float64),
+                    vertex_index_map_flat,
+                    pointer_map_flat,
+                    energy_map_flat,
+                    d_over_r_map_flat,
+                    size_map_flat,
+                    int(lut_size),
+                ),
             )
         except Exception:
             _NUMBA_AVAILABLE = False

@@ -33,11 +33,11 @@ runtime energy provenance.
 The CLI exposes the same options through:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --energy-method hessian
-slavv run -i volume.tif -o slavv_output --energy-method frangi
-slavv run -i volume.tif -o slavv_output --energy-method sato
-slavv run -i volume.tif -o slavv_output --energy-method simpleitk_objectness
-slavv run -i volume.tif -o slavv_output --energy-method cupy_hessian
+uv run slavv run -i volume.tif -o slavv_output --energy-method hessian
+uv run slavv run -i volume.tif -o slavv_output --energy-method frangi
+uv run slavv run -i volume.tif -o slavv_output --energy-method sato
+uv run slavv run -i volume.tif -o slavv_output --energy-method simpleitk_objectness
+uv run slavv run -i volume.tif -o slavv_output --energy-method cupy_hessian
 ```
 
 Programmatic usage uses the same parameter key:
@@ -68,7 +68,7 @@ default. `matlab_compat` keeps the legacy MATLAB-shaped `matlab` projection.
 CLI example:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --energy-method hessian --energy-projection-mode paper
+uv run slavv run -i volume.tif -o slavv_output --energy-method hessian --energy-projection-mode paper
 ```
 
 ## Shared Parameters
@@ -124,13 +124,13 @@ Good fit:
 Installation:
 
 ```powershell
-pip install -e ".[sitk]"
+uv sync --extra sitk
 ```
 
 CLI:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --energy-method simpleitk_objectness
+uv run slavv run -i volume.tif -o slavv_output --energy-method simpleitk_objectness
 ```
 
 Array-order and spacing notes:
@@ -173,16 +173,16 @@ Good fit:
 Installation:
 
 ```powershell
-pip install cupy-cuda12x
+uv pip install cupy-cuda12x
 ```
 
-The repo also declares a generic `.[cupy]` extra, but in practice most GPU
+The repo also declares a generic `[cupy]` extra (`uv sync --extra cupy`), but in practice most GPU
 machines should install the CUDA-matched CuPy package explicitly.
 
 CLI:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --energy-method cupy_hessian
+uv run slavv run -i volume.tif -o slavv_output --energy-method cupy_hessian
 ```
 
 GPU coverage in the current implementation:

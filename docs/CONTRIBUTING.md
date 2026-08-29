@@ -14,15 +14,13 @@ Setup, workflow, and PR guidelines for contributors.
 2. **Create a virtual environment and install dependencies**
   
    ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   pip install -e ".[app,workspace]"
+   uv sync --extra app --extra workspace
    pre-commit install
    ```
 3. **Run tests before submitting a PR**
 
    ```powershell
-   python -m pytest -m "unit or integration"
+   uv run pytest -m "unit or integration"
    ```
 
 
@@ -30,10 +28,10 @@ Setup, workflow, and PR guidelines for contributors.
 
 ### Quality Gate
 Before submitting a PR:
-- **Linting**: `python -m ruff check slavv_python tests` passes (or auto-fixes).
-- **Formatting**: `python -m ruff format slavv_python tests` is applied.
-- **Type Checking**: `python -m mypy` is green.
-- **Tests**: `python -m pytest` passes.
+- **Linting**: `uv run ruff check slavv_python tests` passes (or auto-fixes).
+- **Formatting**: `uv run ruff format slavv_python tests` is applied.
+- **Type Checking**: `uv run mypy` is green.
+- **Tests**: `uv run pytest` passes.
 
 ```powershell
 pre-commit run --all-files
@@ -44,14 +42,14 @@ When modifying core vascular discovery logic (e.g. `matlab_get_edges_by_watershe
 
 1.  **Preflight**: Prepare a parity experiment directory.
     ```powershell
-    slavv parity preflight-exact `
+    uv run slavv parity preflight-exact `
       --source-run-root workspace/runs/<last_known_good> `
       --oracle-root workspace/oracles/<dataset_id> `
       --dest-run-root workspace/runs/my_fix_trial
     ```
 2.  **Prove**: Compare your changes against the oracle.
     ```powershell
-    slavv parity prove-exact `
+    uv run slavv parity prove-exact `
       --source-run-root workspace/runs/my_fix_trial `
       --oracle-root workspace/oracles/<dataset_id> `
       --dest-run-root workspace/runs/my_fix_trial `

@@ -233,9 +233,9 @@ def _matlab_global_watershed_current_strel(
     distance_lut_full = lut["distance_lut"]
     unit_vectors_full = lut["unit_vectors"]
 
-    min_off = lut.get("min_offsets")
-    max_off = lut.get("max_offsets")
-    if min_off is None:
+    min_off_raw = lut.get("min_offsets")
+    max_off_raw = lut.get("max_offsets")
+    if min_off_raw is None or max_off_raw is None:
         min_off = (
             int(np.min(offsets[:, 0])),
             int(np.min(offsets[:, 1])),
@@ -246,6 +246,9 @@ def _matlab_global_watershed_current_strel(
             int(np.max(offsets[:, 1])),
             int(np.max(offsets[:, 2])),
         )
+    else:
+        min_off = (int(min_off_raw[0]), int(min_off_raw[1]), int(min_off_raw[2]))
+        max_off = (int(max_off_raw[0]), int(max_off_raw[1]), int(max_off_raw[2]))
 
     is_interior = (
         (cy + min_off[0] >= 0)
@@ -265,9 +268,9 @@ def _matlab_global_watershed_current_strel(
         distance_microns = distance_lut_full
         unit_vectors = unit_vectors_full
     else:
-        strel_coords_y = cy + offsets[:, 0]
-        strel_coords_x = cx + offsets[:, 1]
-        strel_coords_z = cz + offsets[:, 2]
+        strel_coords_y: np.ndarray = cy + offsets[:, 0]
+        strel_coords_x: np.ndarray = cx + offsets[:, 1]
+        strel_coords_z: np.ndarray = cz + offsets[:, 2]
 
         valid_mask = (
             (strel_coords_y >= 0)

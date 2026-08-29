@@ -30,7 +30,7 @@ Refactored `_interp3_matlab_linear_inf` to accept a tuple of sparse 1D arrays an
 
 ## Verification
 ```powershell
-python -m pytest tests/unit/pipeline/energy/ -v
+uv run pytest tests/unit/pipeline/energy/ -v
 ```
 All tests passed (13/13). Memory footprint dropped by >400MB per chunk without any floating-point or parity drift on the exact endpoints.
 

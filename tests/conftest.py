@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures.
 
 Ensures the slavv package is importable when running tests from the repo root,
-whether or not `pip install -e .` has been run.
+whether or not `uv sync` / editable install has been run.
 """
 
 from __future__ import annotations

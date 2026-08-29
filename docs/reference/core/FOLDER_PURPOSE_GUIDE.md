@@ -27,7 +27,7 @@ The **repo root** stays a short front door: `README.md`, `AGENTS.md`, `STRATEGY.
 
 ## slavv_python/ — The Product
 
-**Purpose:** The installable Python package that end users get when they run `pip install slavv`.
+**Purpose:** The installable Python package that end users get when they install `slavv` (`uv pip install slavv` or `pip install slavv`).
 
 **Contains:**
 - `engine/` — Pipeline orchestration and run lifecycle
@@ -47,8 +47,8 @@ The **repo root** stays a short front door: `README.md`, `AGENTS.md`, `STRATEGY.
 from slavv_python import SlavvPipeline, load_tiff_volume
 ```
 ```powershell
-slavv run -i volume.tif -o output
-slavv-app
+uv run slavv run -i volume.tif -o output
+uv run slavv-app
 ```
 
 ---
@@ -68,8 +68,8 @@ slavv-app
 
 **Run Via:**
 ```powershell
-python -m pytest tests/
-python -m pytest -m "unit or integration"
+uv run pytest tests/
+uv run pytest -m "unit or integration"
 ```
 
 ---

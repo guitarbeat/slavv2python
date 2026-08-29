@@ -272,7 +272,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 > **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/`.
 
 **Top-level folders** (plus vendored `external/` third-party source):
-- **`slavv_python/`** — Production package code (installed via pip)
+- **`slavv_python/`** — Production package code (installed via uv / pip)
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Experiment Root (Oracles, live dests, datasets on disk/USB; scratch gitignored)
 - **`docs/`** — Maintained reference docs and archival investigation notes
@@ -281,7 +281,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 
 ```text
 slavv2python/
-├── slavv_python/                       # PRODUCTION PACKAGE (pip installable)
+├── slavv_python/                       # PRODUCTION PACKAGE (uv / pip installable)
 │   ├── engine/                         # Pipeline orchestration & lifecycle
 │   │   └── state/                      # Run tracking, snapshots, resume
 │   │       ├── run_ledger.py           # RunContext implementation
@@ -406,23 +406,19 @@ Read these first when working on relevant surfaces:
 ## Setup & Installation
 
 ```powershell
-# Create and activate virtual environment
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+# Create environment and sync dependencies
+uv sync                                # Core package only
+uv sync --extra app                    # With Streamlit app dependencies
+uv sync --extra app --extra workspace  # Full developer environment (recommended)
 
 # MATLAB source (clone-required). neurovasc-db stays a local D:/db catalog.
 git submodule update --init -- external/Vectorization-Public
-
-# Install dependency set matching your task
-pip install -e .                       # Core package only
-pip install -e ".[app]"                # With Streamlit app dependencies
-pip install -e ".[app,workspace]"      # Full developer environment (recommended)
 
 # Install pre-commit hooks
 pre-commit install
 ```
 
-After clone, copy Experiment Root binaries (oracles, live dests, datasets) by USB/rsync if they are not already on disk. Then `slavv parity inspect-experiment-root`.
+After clone, copy Experiment Root binaries (oracles, live dests, datasets) by USB/rsync if they are not already on disk. Then `uv run slavv parity inspect-experiment-root`.
 
 ---
 
@@ -430,29 +426,29 @@ After clone, copy Experiment Root binaries (oracles, live dests, datasets) by US
 
 ### Formatting & Linting
 ```powershell
-python -m ruff format slavv_python tests
-python -m ruff check slavv_python tests --fix
+uv run ruff format slavv_python tests
+uv run ruff check slavv_python tests --fix
 ```
 
 ### Type Checking
 ```powershell
-python -m mypy
+uv run mypy
 ```
 
 ### Running Tests
 ```powershell
-python -m pytest tests/
-python -m pytest -m "unit or integration"
+uv run pytest tests/
+uv run pytest -m "unit or integration"
 ```
 
 ### Full Regression Gate
 Run before substantial changes:
 ```powershell
-python -m compileall slavv_python scripts
-python -m ruff format --check slavv_python tests
-python -m ruff check slavv_python tests
-python -m mypy
-python -m pytest -m "unit or integration"
+uv run python -m compileall slavv_python scripts
+uv run ruff format --check slavv_python tests
+uv run ruff check slavv_python tests
+uv run mypy
+uv run pytest -m "unit or integration"
 ```
 
 ---
@@ -461,18 +457,18 @@ python -m pytest -m "unit or integration"
 
 ### Core CLI
 ```powershell
-slavv info
-slavv run -i volume.tif -o slavv_output --export csv json
-slavv run -i volume.tif -o slavv_output --profile matlab_compat --export json
-slavv analyze -i slavv_output/network.json
-slavv plot -i slavv_output/network.json -o plots.html
+uv run slavv info
+uv run slavv run -i volume.tif -o slavv_output --export csv json
+uv run slavv run -i volume.tif -o slavv_output --profile matlab_compat --export json
+uv run slavv analyze -i slavv_output/network.json
+uv run slavv plot -i slavv_output/network.json -o plots.html
 ```
 
 ### Advanced Options
 ```powershell
-slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a
-slavv run -i volume.tif -o slavv_output --stop-after edges
-slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
+uv run slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a
+uv run slavv run -i volume.tif -o slavv_output --stop-after edges
+uv run slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 ```
 
 > [!NOTE]
@@ -480,9 +476,9 @@ slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 
 ### Run Operations Console
 ```powershell
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
-slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3 --once
-slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
+uv run slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
+uv run slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3 --once
+uv run slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact_v3
 ```
 
 `slavv monitor` is the primary run-watching surface for structured pipeline and
@@ -494,9 +490,9 @@ parity watcher.
 over tailing the harness log.
 ```powershell
 # One-shot verdict (RUNNING/STALLED/COMPLETED/FAILED) + liveness + stage, run-dir only:
-python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
+uv run python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
 # Live energy chunk rate + ETA (needs the run log with joblib "Done N tasks"):
-python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
+uv run python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
 ```
 Interpretation rules (learned the hard way):
 - **Liveness = heartbeat *age*** (`resume_state.heartbeat_at` / `run_snapshot.updated_at`), **not** `started_at` — start-time clocks go stale across restarts.
@@ -527,8 +523,8 @@ progress shows in the joblib `Done N tasks` log, not `resume_state.json`. See
 
 ### Streamlit App
 ```powershell
-slavv-app
-python -m streamlit run slavv_python/interface/streamlit/app.py
+uv run slavv-app
+uv run streamlit run slavv_python/interface/streamlit/app.py
 ```
 
 ---

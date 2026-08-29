@@ -16,8 +16,7 @@ MSG_NEED_EDGES = (
     "Energy + Vertices + Edges (or the full network)."
 )
 MSG_NEED_NETWORK = (
-    "This page needs a complete network. In Processing, set Run through to "
-    "Full pipeline (Network)."
+    "This page needs a complete network. In Processing, set Run through to Full pipeline (Network)."
 )
 
 

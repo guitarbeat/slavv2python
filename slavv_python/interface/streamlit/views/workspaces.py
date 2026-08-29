@@ -153,7 +153,7 @@ def _render_summary(records: tuple[WorkspaceRecord, ...]) -> None:
             </div>
             <div class="ws-summary-item active">
                 <div class="ws-summary-label">Active session</div>
-                <div class="ws-summary-value">{active or 'None'}</div>
+                <div class="ws-summary-value">{active or "None"}</div>
             </div>
         </div>
         """
@@ -364,11 +364,15 @@ def show_workspaces_page() -> None:
     with st.sidebar:
         st.divider()
         st.subheader("Workspace filters")
-        query = st.text_input(
-            "Search",
-            placeholder="Name, run ID, or path",
-            key="workspace_search",
-        ).strip().casefold()
+        query = (
+            st.text_input(
+                "Search",
+                placeholder="Name, run ID, or path",
+                key="workspace_search",
+            )
+            .strip()
+            .casefold()
+        )
         state_filter = (
             st.segmented_control(
                 "Run state",

@@ -8,7 +8,7 @@ reliable live signal for the energy stage.
 
 Usage::
 
-    python scripts/monitor/throughput.py --run-dir <run> [--log <logfile>]
+    uv run python scripts/monitor/throughput.py --run-dir <run> [--log <logfile>]
 """
 
 from __future__ import annotations

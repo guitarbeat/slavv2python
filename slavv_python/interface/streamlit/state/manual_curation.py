@@ -137,9 +137,7 @@ def _validate_added_vertex(value: Any, *, index: int, shape: Sequence[int]) -> d
     if not np.isfinite(energy) or not np.isfinite(radius_microns) or radius_microns < 0:
         raise CurationSessionError(f"added_vertices[{index}] has non-finite attributes")
     if radius_pixels.size not in {1, 3} or not np.isfinite(radius_pixels).all():
-        raise CurationSessionError(
-            f"added_vertices[{index}].radii_pixels must have 1 or 3 values"
-        )
+        raise CurationSessionError(f"added_vertices[{index}].radii_pixels must have 1 or 3 values")
     return {
         "position": position,
         "energy": energy,
@@ -317,9 +315,7 @@ def _append_vertices(payload: dict[str, Any], added: Sequence[Mapping[str, Any]]
     positions = np.asarray([item["position"] for item in added], dtype=np.float32)
     energies = np.asarray([item["energy"] for item in added], dtype=np.float32)
     scales = np.asarray([item["scale"] for item in added], dtype=np.int16)
-    radii_microns = np.asarray(
-        [item["radius_microns"] for item in added], dtype=np.float32
-    )
+    radii_microns = np.asarray([item["radius_microns"] for item in added], dtype=np.float32)
     existing_radii = np.asarray(result.get("radii_pixels", []), dtype=np.float32)
     radii_width = existing_radii.shape[1] if existing_radii.ndim == 2 else 1
     radii_rows = []
@@ -405,9 +401,7 @@ def materialize_curation_session(
         edge_keep &= np.all(endpoint_keep[safe_connections], axis=1)
 
     vertex_map = np.full(endpoint_count, -1, dtype=np.int64)
-    vertex_map[np.flatnonzero(vertex_keep)] = np.arange(
-        int(vertex_keep.sum()), dtype=np.int64
-    )
+    vertex_map[np.flatnonzero(vertex_keep)] = np.arange(int(vertex_keep.sum()), dtype=np.int64)
     if bridge_count:
         vertex_map[vertex_count:] = np.arange(
             int(vertex_keep.sum()), int(vertex_keep.sum()) + bridge_count, dtype=np.int64
@@ -463,9 +457,7 @@ def curate_manual_selection(
 
 def serialize_curation_session(session: CurationSessionV1) -> bytes:
     """Serialize a validated session using stable, readable JSON."""
-    return json.dumps(
-        session.to_dict(), indent=2, sort_keys=True, allow_nan=False
-    ).encode("utf-8")
+    return json.dumps(session.to_dict(), indent=2, sort_keys=True, allow_nan=False).encode("utf-8")
 
 
 __all__ = [

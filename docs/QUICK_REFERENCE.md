@@ -24,22 +24,20 @@ Do **not** rerun the crop Energy writer. Readable leftover: [crop-energy-stretch
 
 ```powershell
 # Setup
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[app,workspace]"
+uv sync --extra app --extra workspace
 
 # Run pipeline
-slavv run -i volume.tif -o output --export csv json
+uv run slavv run -i volume.tif -o output --export csv json
 
 # Monitor jobs
-slavv jobs list
-slavv jobs history
+uv run slavv jobs list
+uv run slavv jobs history
 
 # Quality checks
-python -m pytest -m "unit or integration"
-python -m ruff format slavv_python tests
-python -m ruff check slavv_python tests --fix
-python -m mypy
+uv run pytest -m "unit or integration"
+uv run ruff format slavv_python tests
+uv run ruff check slavv_python tests --fix
+uv run mypy
 ```
 
 ---
@@ -78,29 +76,29 @@ duplicate them here.
 
 ### Pipeline
 ```powershell
-slavv run -i volume.tif -o output --export csv json
-slavv run -i volume.tif -o output --profile matlab_compat
-slavv analyze -i output/network.json
-slavv plot -i output/network.json -o plots.html
-slavv-app  # Launch Streamlit
+uv run slavv run -i volume.tif -o output --export csv json
+uv run slavv run -i volume.tif -o output --profile matlab_compat
+uv run slavv analyze -i output/network.json
+uv run slavv plot -i output/network.json -o plots.html
+uv run slavv-app  # Launch Streamlit
 ```
 
 ### Monitoring
 ```powershell
-slavv jobs list                              # Active jobs
-slavv jobs history --run-dir workspace/runs  # Job history
-slavv jobs kill <job-id>                     # Kill job
-slavv jobs daemon status                     # Daemon status
-slavv monitor --run-dir <run_root>          # Watch run
+uv run slavv jobs list                              # Active jobs
+uv run slavv jobs history --run-dir workspace/runs  # Job history
+uv run slavv jobs kill <job-id>                     # Kill job
+uv run slavv jobs daemon status                     # Daemon status
+uv run slavv monitor --run-dir <run_root>          # Watch run
 ```
 
 ### Quality
 ```powershell
-python -m ruff format slavv_python tests     # Format
-python -m ruff check slavv_python tests --fix  # Lint
-python -m mypy                               # Type check
-python -m pytest tests/                      # All tests
-python -m pytest -m "unit or integration"    # Fast tests
+uv run ruff format slavv_python tests     # Format
+uv run ruff check slavv_python tests --fix  # Lint
+uv run mypy                               # Type check
+uv run pytest tests/                      # All tests
+uv run pytest -m "unit or integration"    # Fast tests
 ```
 
 ### Git Workflow

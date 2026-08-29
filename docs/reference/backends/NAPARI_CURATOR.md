@@ -58,7 +58,7 @@ launching the interactive curator to open the prototype instead.
 Install the optional dependency with:
 
 ```powershell
-pip install -e ".[napari]"
+uv sync --extra napari
 ```
 
 If the prototype is selected without `napari` installed, SLAVV raises a runtime

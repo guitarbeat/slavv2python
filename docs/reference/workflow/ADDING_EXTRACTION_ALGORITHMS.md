@@ -127,7 +127,7 @@ For a new algorithm mode, aim to add:
 - one direct pipeline test
 - one resumable-path test if the stage has resumable support
 - regression coverage for any new diagnostics or persisted artifacts
-- `python -m mypy` coverage if you widen the typed surface
+- `uv run mypy` coverage if you widen the typed surface
 
 Use the folder rules in `tests/README.md` and the repo-local `tmp_path`
 fixture from `tests/conftest.py`.
@@ -138,9 +138,9 @@ Run the smallest set that matches your change scope, then expand to the
 boundary-crossing gate when needed:
 
 ```powershell
-python -m ruff check slavv_python tests
-python -m mypy
-python -m pytest -m "unit or integration"
+uv run ruff check slavv_python tests
+uv run mypy
+uv run pytest -m "unit or integration"
 ```
 
 ## Documentation Checklist

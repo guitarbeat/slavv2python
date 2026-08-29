@@ -88,8 +88,8 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
 
 ## Usage
 
-> On Windows, activate `.venv` before using these commands. For direct Python
-> invocations use `./.venv/Scripts/python.exe`; the ambient `python` executable
+> On Windows, use uv commands. For direct Python
+> invocations use `uv run python`; the ambient `python` executable
 > is not a supported parity-test runner.
 
 ### Starting a Monitored Job
@@ -376,7 +376,7 @@ slavv parity resume-exact-run \
 **Symptoms:** Daemon running but no desktop notifications
 
 **Check:**
-1. Is `win10toast` installed? `pip show win10toast`
+1. Is `win10toast` installed? `uv pip show win10toast`
 2. Are Windows notifications enabled? Settings → System → Notifications
 3. Check daemon logs for notification attempts:
    ```powershell

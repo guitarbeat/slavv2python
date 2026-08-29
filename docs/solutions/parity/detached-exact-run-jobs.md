@@ -49,7 +49,7 @@ Use run-local artifacts first: `99_Metadata/parity_job.json`, `parity_job.pid`, 
 Unit coverage passed for the detached launcher and monitor discovery:
 
 ```powershell
-python -m pytest tests/unit/interface/test_monitor_service.py tests/unit/parity/test_parity_experiment_comprehensive.py -q
+uv run pytest tests/unit/interface/test_monitor_service.py tests/unit/parity/test_parity_experiment_comprehensive.py -q
 ```
 
 Result: `13 passed`.
@@ -82,8 +82,8 @@ RuntimeError: Run directory has active writer lease (PID 30528). Use --force-kil
 5. Start the writer with `Start-Process` on `resume-exact-run` (not `launch-exact-run`). `--force-kill` is fine; add `--monitor` only after the lease PID is the new live process.
 
 ```powershell
-Start-Process -FilePath .\.venv\Scripts\python.exe -ArgumentList @(
-  "-m","slavv_python.interface.cli.parity","resume-exact-run",
+Start-Process -FilePath uv -ArgumentList @(
+  "run","python","-m","slavv_python.interface.cli.parity","resume-exact-run",
   "--dest-run-root","workspace/runs/oracle_180709_E/canonical_full_v18",
   "--dataset-root","workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
   "--oracle-root","workspace/oracles/180709_E_full_v2",

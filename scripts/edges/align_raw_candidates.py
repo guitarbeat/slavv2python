@@ -4,7 +4,7 @@ oracle/Python canonical vertex indexing via the verified coordinate transform
 MATLAB's emission order of the tied crop pair (4043,6281)/(4212,6281) with Python's.
 
 Run:
-  .venv\\Scripts\\python.exe scripts/edges/align_raw_candidates.py
+  uv run python scripts/edges/align_raw_candidates.py
 """
 
 from __future__ import annotations

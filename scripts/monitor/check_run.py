@@ -10,8 +10,8 @@ n_jobs>1 -- use scripts/monitor/throughput.py --log for the real chunk rate.
 
 Usage::
 
-    python scripts/monitor/check_run.py --run-dir workspace/runs/oracle_180709_E/canonical_full_v3
-    python scripts/monitor/check_run.py --run-dir <run> --stall-min 20
+    uv run python scripts/monitor/check_run.py --run-dir workspace/runs/oracle_180709_E/canonical_full_v3
+    uv run python scripts/monitor/check_run.py --run-dir <run> --stall-min 20
 """
 
 from __future__ import annotations

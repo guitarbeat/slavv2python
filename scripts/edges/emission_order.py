@@ -16,12 +16,12 @@ MATLAB emission order is read from a fresh ``raw_watershed_candidates.mat``
 
 Usage:
     # Python-only (fast):
-    python scripts/edges/emission_order.py \
+    uv run python scripts/edges/emission_order.py \
         --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 \
         --target-vertices 6281
 
     # With a fresh MATLAB raw candidates .mat:
-    python scripts/edges/emission_order.py \
+    uv run python scripts/edges/emission_order.py \
         --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 \
         --target-vertices 6281 \
         --matlab-raw-candidates workspace/scratch/matlab_edge_dump/raw_watershed_candidates.mat

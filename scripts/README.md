@@ -32,7 +32,7 @@ Crop / full-volume watershed and Edge Selection probes. Run from the repo root.
 | [`align_raw_candidates.py`](edges/align_raw_candidates.py) | Align MATLAB raw candidates onto Python vertex indexing |
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\edges\frontier_diff.py `
+uv run python scripts/edges/frontier_diff.py `
   --run-dir workspace/runs/oracle_180709_E/crop_M_exact_v3 `
   --oracle-root workspace/oracles/180709_E_crop_M_v2 `
   --regenerate-python
@@ -62,7 +62,7 @@ host addpaths this folder.
 | [`vectorize_ladder_rung.m`](ladder/vectorize_ladder_rung.m) | MATLAB driver (function name stays `vectorize_ladder_rung`) |
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\ladder\run.py
+uv run python scripts/ladder/run.py
 ```
 
 ## monitor/
@@ -73,8 +73,8 @@ host addpaths this folder.
 | [`throughput.py`](monitor/throughput.py) | Joblib `Done N tasks` chunk rate + ETA |
 
 ```powershell
-python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
-python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
+uv run python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
+uv run python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
 ```
 
 ## docs/
@@ -84,7 +84,7 @@ python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chu
 | [`verify_integrity.py`](docs/verify_integrity.py) | Authority, banners, wiring, and relative-link checks |
 
 ```powershell
-python scripts\docs\verify_integrity.py
+uv run python scripts\docs\verify_integrity.py
 ```
 
 ## curation/

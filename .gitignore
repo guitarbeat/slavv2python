@@ -8,7 +8,8 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+/build/
+!slavv_python/**/frontend/build/
 develop-eggs/
 dist/
 downloads/
@@ -182,7 +183,6 @@ workspace/**/candidate_audit.json
 .agents/
 agent-tools/
 terminals/
-uv.lock
 AUDIT_REPORT.md
 TEST_INFRA.md
 TEST_READY.md

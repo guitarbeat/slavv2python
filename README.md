@@ -12,11 +12,9 @@ The public workflow is **Paper Path** first: `slavv run` with the default `paper
 ## Quick start
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[app,workspace]"
-slavv info
-slavv run -i volume.tif -o slavv_output --export csv json
+uv sync --extra app --extra workspace
+uv run slavv info
+uv run slavv run -i volume.tif -o slavv_output --export csv json
 ```
 
 ```python

@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "slavv_python"
@@ -114,19 +114,8 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 slavv-app = "slavv_python.interface.streamlit.launcher:main"
 slavv = "slavv_python.interface.cli:main"
 
-[tool.setuptools]
-license-files = ["LICENSE"]
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["slavv_python", "slavv_python.*"]
-
-[tool.setuptools.package-data]
-"slavv_python.pipeline.energy" = ["matlab_linspace_overrides.json"]
-"slavv_python.interface.streamlit.components.matlab_curator" = [
-    "pyproject.toml",
-    "frontend/build/**/*",
-]
+[tool.hatch.build.targets.wheel]
+packages = ["slavv_python"]
 
 # â”€â”€ Ruff (linter + formatter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.ruff]
