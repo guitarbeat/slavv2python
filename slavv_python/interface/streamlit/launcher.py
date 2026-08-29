@@ -43,7 +43,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if util.find_spec("streamlit") is None:
         print(
             "slavv-app requires the optional Streamlit dependency. "
-            'Install it with `uv sync --extra app` (or `pip install -e ".[app]"`).',
+            "Install it with `uv sync --extra app`.",
             file=sys.stderr,
         )
         return 1

@@ -39,18 +39,14 @@ logger = logging.getLogger(__name__)
 
 _SIMPLEITK_INSTALL_HINT = (
     "SimpleITK is required for energy_method='simpleitk_objectness'. "
-    'Install it with `pip install -e ".[sitk]"`, `pip install slavv[sitk]`, '
-    "or `pip install SimpleITK>=2.4.0`."
+    "Install it with `uv sync --extra sitk`."
 )
 _CUPY_INSTALL_HINT = (
     "CuPy with a matching CUDA build is required for energy_method='cupy_hessian'. "
-    "Install a compatible package such as `pip install cupy-cuda12x` or add an "
-    "appropriate CuPy wheel for the target GPU runtime."
+    "Install it with `uv sync --extra cupy` or configure an appropriate CuPy wheel for the target GPU runtime."
 )
 _ZARR_INSTALL_HINT = (
-    "Zarr is required for energy_storage_format='zarr'. "
-    'Install it with `pip install -e ".[zarr]"`, `pip install slavv[zarr]`, '
-    "or `pip install zarr>=2.12.0`."
+    "Zarr is required for energy_storage_format='zarr'. Install it with `uv sync --extra zarr`."
 )
 _CUPY_PARAMETER_WARNING = (
     "CuPy Hessian backend accelerates the Gaussian/Hessian derivative work; "

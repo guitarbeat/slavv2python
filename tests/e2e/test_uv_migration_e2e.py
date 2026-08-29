@@ -612,6 +612,15 @@ class TestTier2Boundary5DocsAndErrorResilience:
         proc = run_cmd(["uv", "run", "completely_nonexistent_cli_cmd_99999"])
         assert proc.returncode != 0
 
+    def test_t2_b5_no_deprecated_pip_install_in_source_tree(self) -> None:
+        """Verify slavv_python source tree contains zero deprecated pip install strings."""
+        pkg_dir = REPO_ROOT / "slavv_python"
+        for py_file in pkg_dir.rglob("*.py"):
+            content = py_file.read_text(encoding="utf-8")
+            assert "pip install" not in content, (
+                f"Deprecated 'pip install' found in {py_file.relative_to(REPO_ROOT)}"
+            )
+
 
 # ==============================================================================
 # TIER 3: CROSS-FEATURE COMBINATIONS (Pairwise Interactions)

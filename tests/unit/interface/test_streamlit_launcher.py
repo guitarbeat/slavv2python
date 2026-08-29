@@ -16,7 +16,6 @@ def test_main_reports_missing_streamlit(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "uv sync --extra app" in captured.err
-    assert 'pip install -e ".[app]"' in captured.err
 
 
 def test_main_delegates_to_streamlit_cli(monkeypatch):

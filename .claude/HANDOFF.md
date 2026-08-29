@@ -73,7 +73,7 @@ Phase 1 ranking residual is **closed** (Claimed Trace Energy / ADR 0013 on the c
 Current operator loop is [true zero-tolerance stretch](../docs/reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1): crop Energy last-digit leftover is still open (`blocked_float_path`). Inspect the existing v2 proof; do not relaunch v2. Cheap next probe (not a writer): two tiles on a tiny volume — see the isolation note.
 
 ```powershell
-.\.venv\Scripts\pip.exe install -e .
+uv sync --extra all
 slavv parity inspect-proof --path workspace\runs\oracle_180709_E\crop_M_stretch_engine_v2\03_Analysis\exact_proof_energy.json
 ```
 

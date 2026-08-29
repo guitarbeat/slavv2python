@@ -22,9 +22,9 @@ def is_tui_available() -> bool:
 def run_monitor_if_supported(run_dir: str | None = None) -> bool | None:
     """Launches the textual pipeline monitor if textual is installed."""
     if not is_tui_available():
-        logger.warning("TUI dependencies are not installed. Run 'pip install -e .[tui]' to enable.")
+        logger.warning("TUI dependencies are not installed. Run 'uv sync --extra tui' to enable.")
         print("Error: TUI dependency 'textual' is not installed.")
-        print('Please run: pip install -e ".[tui]"')
+        print("Please run: uv sync --extra tui")
         return None
     from .runner_app import SLAVVPipelineApp
 

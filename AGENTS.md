@@ -272,7 +272,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 > **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `workspace/` vs `figures/`.
 
 **Top-level folders** (plus vendored `external/` third-party source):
-- **`slavv_python/`** — Production package code (installed via uv / pip)
+- **`slavv_python/`** — Production package code (installed via uv)
 - **`tests/`** — Automated test suite (runs in CI)
 - **`workspace/`** — Experiment Root (Oracles, live dests, datasets on disk/USB; scratch gitignored)
 - **`docs/`** — Maintained reference docs and archival investigation notes
@@ -281,7 +281,7 @@ _Avoid_: Treating a green random-component run as crop or canonical `prove-exact
 
 ```text
 slavv2python/
-├── slavv_python/                       # PRODUCTION PACKAGE (uv / pip installable)
+├── slavv_python/                       # PRODUCTION PACKAGE (uv installable)
 │   ├── engine/                         # Pipeline orchestration & lifecycle
 │   │   └── state/                      # Run tracking, snapshots, resume
 │   │       ├── run_ledger.py           # RunContext implementation

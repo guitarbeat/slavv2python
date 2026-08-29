@@ -153,7 +153,7 @@ Failure handling:
 ## Prerequisites
 
 - [ ] Virtual environment activated
-- [ ] Dependencies installed: `pip install -e ".[app,workspace]"`
+- [ ] Dependencies installed: `uv sync --extra app --extra workspace`
 - [ ] No uncommitted changes (or stash first)
 - [ ] On appropriate branch
 ```

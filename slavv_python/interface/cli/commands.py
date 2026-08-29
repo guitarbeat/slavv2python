@@ -180,7 +180,7 @@ def _handle_monitor_command(args) -> None:
 
     if not is_tui_available():
         print("Error: TUI dependency 'textual' is not installed.")
-        print('Please run: pip install -e ".[tui]"')
+        print("Please run: uv sync --extra tui")
         print("Printing monitor snapshot instead.")
         _print_snapshot()
         sys.exit(1 if view.snapshot is None else 0)

@@ -45,7 +45,7 @@ def cmd_list(args: argparse.Namespace) -> None:
         from tabulate import tabulate
     except ImportError:
         print("Error: tabulate library not installed", file=sys.stderr)
-        print("Install with: pip install tabulate", file=sys.stderr)
+        print("Install with: uv sync", file=sys.stderr)
         sys.exit(1)
 
     registry = JobRegistry()
@@ -89,7 +89,7 @@ def cmd_history(args: argparse.Namespace) -> None:
         from tabulate import tabulate
     except ImportError:
         print("Error: tabulate library not installed", file=sys.stderr)
-        print("Install with: pip install tabulate", file=sys.stderr)
+        print("Install with: uv sync", file=sys.stderr)
         sys.exit(1)
 
     registry = JobRegistry()
