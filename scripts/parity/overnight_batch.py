@@ -199,6 +199,8 @@ def start(*, resume: bool = False) -> int:
         root.mkdir(parents=True, exist_ok=True)
         log_path = root / "batch.log"
         entry.update({"status": "running", "started_utc": entry.get("started_utc", utc()), "pid": None})
+        entry.pop("returncode", None)
+        entry.pop("finished_utc", None)
         save_manifest(manifest)
         cmd = entry["command"]
         wrapped = ["caffeinate", "-dims", *cmd] if sys.platform == "darwin" else cmd
