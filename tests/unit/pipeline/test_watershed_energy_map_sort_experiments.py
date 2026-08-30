@@ -1,4 +1,12 @@
-"""Cheap experiments for the residual-hub energy-map / sort_edges hypothesis.
+"""Portfolio residual falsifiers E1-E3 (claimed energy_map / sort_edges).
+
+Portfolio IDs (plan 2026-08-14-001):
+- **E1** — Claimed ``energy_map`` max ranking vs original-field traces
+- **E2** — Degree-excess keeps earlier row under resampled-max tie
+- **E3** — Crop raw Candidate Set undirected pairs match (same-class only)
+
+**R2 non-claim:** These experiments are measurement / regression guards.
+They are **not** Phase 1 Certification and do not close Network ADR 0012.
 
 The full-volume 180709_E pair (26444, 38584) vs (34897, 38584) is slow to
 re-emit. These experiments use a 3x3x3 claim map, a 3-edge toy hub, and the
@@ -16,11 +24,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pytest
 
 from slavv_python.analytics.parity.experiments import (
     ArtifactClass,
+    ArtifactClassError,
     compare_same_class_pair_sets,
     load_edge_artifact,
 )
@@ -34,19 +44,27 @@ from slavv_python.pipeline.edges.watershed.matlab_get_edges_by_watershed import 
     _matlab_global_watershed_finalize_edge_trace,
 )
 from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import VoxelClaimMap
+from slavv_python.utils.safe_unpickle import safe_load
 
 _REPO = Path(__file__).resolve().parents[3]
 _CROP_PY = _REPO / "workspace/runs/oracle_180709_E/crop_M_exact_v3/04_Edges/candidates.pkl"
 _CROP_MAT = _REPO / "workspace/scratch/matlab_edge_dump/raw_watershed_candidates.mat"
 
+# Explicit R2 banner for cold readers / operator ladder citations.
+R2_NON_CLAIM = (
+    "Not Certification; does not close Network ADR 0012. "
+    "Evaluated ADR 0012 proofs remain the Phase 1 ship gate."
+)
+
 
 @pytest.mark.unit
-def test_experiment_traces_must_sample_claimed_energy_map_not_original() -> None:
-    """Same voxels, two maps: original max stays deep; claimed map max is 0.
+def test_e1_traces_must_sample_claimed_energy_map_not_original() -> None:
+    """E1: Same voxels, two maps — original max stays deep; claimed map max is 0.
 
     Miniature of the residual traces: identical path, MATLAB L846 samples the
     map that received the L445 penalized write.
     """
+    assert "Not Certification" in R2_NON_CLAIM
     shape = (3, 3, 3)
     original = np.full(shape, -9.24, dtype=np.float64, order="F")
     original[1, 1, 1] = -42.0
@@ -79,13 +97,14 @@ def test_experiment_traces_must_sample_claimed_energy_map_not_original() -> None
 
 
 @pytest.mark.unit
-def test_experiment_raw_max_rank_not_resampled_tie_decides_degree_excess() -> None:
-    """Toy hub: extra emitted first, worse raw max, equal resampled max.
+def test_e2_raw_max_rank_not_resampled_tie_decides_degree_excess() -> None:
+    """E2: Toy hub — extra emitted first, worse raw max, equal resampled max.
 
     Degree-excess (max degree 2, three incident edges) must drop the extra
     after MATLAB ``sort_edges`` + ``clean_edge_pairs``, matching the full
     residual mechanism without a 84k-candidate volume.
     """
+    assert "Not Certification" in R2_NON_CLAIM
     extra, oracle, keeper = 1, 2, 4
     hub = 3
     connections = np.array(
@@ -125,8 +144,8 @@ def test_experiment_raw_max_rank_not_resampled_tie_decides_degree_excess() -> No
 
 
 @pytest.mark.unit
-def test_experiment_original_field_sort_keeps_the_extra() -> None:
-    """Control: ranking the original-field maxes inverts the survivor."""
+def test_e1_original_field_sort_keeps_the_extra() -> None:
+    """E1 control: ranking the original-field maxes inverts the survivor."""
     extra, oracle, hub = 1, 2, 3
     connections = np.array([[extra, hub], [oracle, hub]], dtype=np.int32)
     original_field_traces = [
@@ -150,10 +169,15 @@ def _load_matlab_crop_pairs() -> np.ndarray:
 
 @pytest.mark.unit
 @pytest.mark.skipif(
-    not _CROP_PY.is_file() or not _CROP_MAT.is_file(), reason="crop artifacts absent"
+    not _CROP_PY.is_file() or not _CROP_MAT.is_file(),
+    reason="E3 blocked: crop raw artifacts absent (KTD4 — not falsified)",
 )
-def test_experiment_crop_raw_pair_sets_already_match() -> None:
-    """Crop-scale check of the full-volume discovery claim: pair sets match."""
+def test_e3_crop_raw_pair_sets_already_match() -> None:
+    """E3: Crop-scale check of the full-volume discovery claim — pair sets match.
+
+    Compare raw↔raw only (never MATLAB finals vs Python raw).
+    """
+    assert "Not Certification" in R2_NON_CLAIM
     report = compare_same_class_pair_sets(
         load_edge_artifact(_CROP_PY).connections,
         _load_matlab_crop_pairs(),
@@ -231,20 +255,30 @@ def test_experiment_claimed_raw_max_ranks_oracle_ahead_of_extra() -> None:
 
 
 @pytest.mark.unit
+def test_e3_refuses_mixed_class_pair_set_compare() -> None:
+    """E3 / KTD6: finals vs raw must raise, not silently compare."""
+    connections = np.array([[1, 2], [3, 4]], dtype=np.int32)
+    with pytest.raises(ArtifactClassError, match="refuse mixed-class"):
+        compare_same_class_pair_sets(
+            connections,
+            connections,
+            left_class=ArtifactClass.RAW_CANDIDATE_SET,
+            right_class=ArtifactClass.EDGE_SET,
+        )
+
+
+@pytest.mark.unit
 @pytest.mark.skipif(
-    not _CROP_PY.is_file() or not _CROP_MAT.is_file(), reason="crop artifacts absent"
+    not _CROP_PY.is_file() or not _CROP_MAT.is_file(),
+    reason="E3 blocked: crop raw artifacts absent (KTD4 — not falsified)",
 )
-def test_experiment_crop_stored_python_max_is_not_matlab_claimed_max() -> None:
+def test_e3_crop_stored_python_max_is_not_matlab_claimed_max() -> None:
     """Stored crop traces still look like the original field, not L846.
 
     After a crop Edges regen with ``claim_map.energy_map`` sampling this
     disagreement should shrink; until then it is the cheap crop reproduction
     of the full-volume energy-source bug.
     """
-    import h5py
-
-    from slavv_python.utils.safe_unpickle import safe_load
-
     python = safe_load(_CROP_PY)
     py_conn = np.asarray(python["connections"], dtype=np.int64)
     py_energy = python["energy_traces"]
