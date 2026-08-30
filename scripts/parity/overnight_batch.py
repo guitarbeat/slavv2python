@@ -103,16 +103,34 @@ def validate_catalog() -> dict[str, dict[str, Any]]:
     return rows
 
 
+def ensure_exact_dataset_surface(record: dict[str, Any]) -> Path:
+    """Create a scratch manifest that points at the verified DB TIFF in place."""
+    root = BATCH_ROOT / "dataset_180709_E"
+    metadata = root / "99_Metadata"
+    metadata.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "dataset_hash": record["sha256"],
+        "dataset_root": str(root),
+        "input_bytes": record["bytes"],
+        "input_filename": "180709_E.tif",
+        "kind": "dataset",
+        "manifest_version": 1,
+        "stored_input_file": record["path"],
+    }
+    (metadata / "dataset_manifest.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return root
+
+
 def run_root(name: str) -> Path:
     return BATCH_ROOT / "runs" / name
 
 
-def command_for(name: str, record: dict[str, Any]) -> list[str]:
+def command_for(name: str, record: dict[str, Any], *, dataset_root: Path | None = None) -> list[str]:
     destination = run_root(name)
     if name == "180709_E":
         return [
             "uv", "run", "slavv", "parity", "init-exact-run",
-            "--dataset-root", str(DATASET_ROOT), "--oracle-root", str(ORACLE_ROOT),
+            "--dataset-root", str(dataset_root or DATASET_ROOT), "--oracle-root", str(ORACLE_ROOT),
             "--dest-run-root", str(destination), "--stop-after", "network", "--resume",
         ]
     return [
@@ -137,13 +155,14 @@ def save_manifest(payload: dict[str, Any]) -> None:
 def start(*, resume: bool = False) -> int:
     BATCH_ROOT.mkdir(parents=True, exist_ok=True)
     records = validate_catalog()
+    exact_dataset_root = ensure_exact_dataset_surface(records["180709_E"])
     manifest = load_manifest() if resume and MANIFEST.is_file() else {
         "created_utc": utc(), "batch_root": str(BATCH_ROOT), "runs": {}, "status": "pending"
     }
     for name in RUNS:
         entry = manifest["runs"].setdefault(name, {})
         entry.update({"file": records[name], "mode": "exact" if name == "180709_E" else "baseline",
-                      "run_root": str(run_root(name)), "command": command_for(name, records[name]),
+                      "run_root": str(run_root(name)), "command": command_for(name, records[name], dataset_root=exact_dataset_root),
                       "log": str(run_root(name) / "batch.log")})
     manifest["status"] = "running"
     manifest["started_utc"] = manifest.get("started_utc", utc())
