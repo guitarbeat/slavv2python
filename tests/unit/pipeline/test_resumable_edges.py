@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import joblib
 import numpy as np
 
@@ -126,6 +128,15 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
     assert stage_controller.artifact_path("candidates.pkl").is_file()
     assert stage_controller.artifact_path("chosen_edges.pkl").is_file()
     assert stage_controller.artifact_path("candidate_audit.json").is_file()
+    timing = json.loads(
+        stage_controller.artifact_path("phase2_edges_split.json").read_text(encoding="utf-8")
+    )
+    assert timing["stage"] == "edges"
+    assert timing["writer_authorized"] is True
+    assert timing["discovery_strategy"] == "tracing"
+    assert timing["candidate_count"] == 1
+    assert timing["edge_count"] == 1
+    assert stage_controller.artifact_path("phase2_edges_split.json.sha256").is_file()
 
 
 def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_path, monkeypatch):

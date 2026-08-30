@@ -221,6 +221,10 @@ class EdgeManager:
         discovery_elapsed = t_discovery_end - t_discovery_start
         logger.info("Edge discovery completed in %.2f seconds", discovery_elapsed)
         if resumable:
+            from slavv_python.analytics.performance.edge_timing import (
+                build_edge_timing_payload,
+                write_edge_timing,
+            )
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
 
             if use_watershed:
@@ -287,14 +291,15 @@ class EdgeManager:
         if resumable:
             from slavv_python.engine.state.io import atomic_joblib_dump, atomic_write_json
 
-            atomic_write_json(
-                handle.artifact_path("phase2_edges_split.json"),
-                {
-                    "discovery_seconds": discovery_elapsed,
-                    "selection_seconds": selection_elapsed,
-                    "total_seconds": discovery_elapsed + selection_elapsed,
-                },
+            timing_payload = build_edge_timing_payload(
+                discovery_seconds=discovery_elapsed,
+                selection_seconds=selection_elapsed,
+                candidate_count=len(manifest.connections),
+                edge_count=len(chosen_dict.get("traces", [])),
+                exact_route=use_watershed,
+                writer_authorized=resumable,
             )
+            write_edge_timing(handle.artifact_path("phase2_edges_split.json"), timing_payload)
             from slavv_python.pipeline.edges.frontier_events import (
                 _build_frontier_candidate_lifecycle,
             )
