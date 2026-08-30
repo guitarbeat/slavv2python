@@ -121,6 +121,10 @@ def ensure_exact_dataset_surface(record: dict[str, Any]) -> Path:
     return root
 
 
+def exact_oracle_ready() -> bool:
+    return (ORACLE_ROOT / "01_Input/matlab_results").is_dir()
+
+
 def run_root(name: str) -> Path:
     return BATCH_ROOT / "runs" / name
 
@@ -161,9 +165,17 @@ def start(*, resume: bool = False) -> int:
     }
     for name in RUNS:
         entry = manifest["runs"].setdefault(name, {})
-        entry.update({"file": records[name], "mode": "exact" if name == "180709_E" else "baseline",
+        exact = name == "180709_E" and exact_oracle_ready()
+        entry.update({"file": records[name], "mode": "exact" if exact else ("baseline_blocked_exact" if name == "180709_E" else "baseline"),
                       "run_root": str(run_root(name)), "command": command_for(name, records[name], dataset_root=exact_dataset_root),
                       "log": str(run_root(name) / "batch.log")})
+        if name == "180709_E" and not exact:
+            entry["oracle_block_reason"] = "matching oracle MATLAB results directory is unavailable"
+            entry["command"] = [
+                "uv", "run", "slavv", "run", "--input", records[name]["path"],
+                "--run-dir", str(run_root(name)), "--profile", "matlab_compat", "--n-jobs", "1",
+                "--stop-after", "network",
+            ]
     manifest["status"] = "running"
     manifest["started_utc"] = manifest.get("started_utc", utc())
     save_manifest(manifest)
@@ -246,6 +258,7 @@ def preflight() -> int:
         "exact_dataset_root": str(DATASET_ROOT),
         "exact_oracle_root": str(ORACLE_ROOT),
         "matlab_available": bool(__import__("shutil").which("matlab")),
+        "oracle_ready": exact_oracle_ready(),
         "n_jobs": 1,
         "protected_roots_untouched": True,
     }
