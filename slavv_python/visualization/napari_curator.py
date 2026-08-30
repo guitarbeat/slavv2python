@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 _NAPARI_INSTALL_HINT = (
     "napari is required for the experimental napari curator. "
-    "Install it with `uv sync --extra napari`."
+    "Install it with `uv sync --extra napari` (slavv[napari])."
 )
 
 

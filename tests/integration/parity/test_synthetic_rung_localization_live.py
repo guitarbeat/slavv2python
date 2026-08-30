@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-LADDER_SCRIPT = REPO_ROOT / "scripts" / "run_synthetic_complexity_ladder.py"
+LADDER_SCRIPT = REPO_ROOT / "scripts" / "ladder" / "run.py"
 
 
 def _load_ladder_module():
