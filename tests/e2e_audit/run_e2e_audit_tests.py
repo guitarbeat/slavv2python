@@ -95,12 +95,14 @@ def run_tier_tests(tier_num: int, tier_name: str, test_class: type) -> TierTestR
             error_msg = "{}: {}".format(type(e).__name__, str(e))
 
         test_duration = time.time() - test_start
-        result.test_details.append({
-            "method": method_name,
-            "status": status,
-            "duration": round(test_duration, 4),
-            "error": error_msg,
-        })
+        result.test_details.append(
+            {
+                "method": method_name,
+                "status": status,
+                "duration": round(test_duration, 4),
+                "error": error_msg,
+            }
+        )
 
     result.duration_seconds = time.time() - start_time
     return result
@@ -111,9 +113,11 @@ def print_summary_table(results: List[TierTestResult], total_duration: float) ->
     print("\n" + "=" * 78)
     print("  E2E MATLAB-to-Python Differential Audit Test Suite Results")
     print("=" * 78)
-    print("{:<8} {:<38} {:>7} {:>7} {:>7} {:>8}".format(
-        "Tier", "Description", "Total", "Pass", "Fail", "Status"
-    ))
+    print(
+        "{:<8} {:<38} {:>7} {:>7} {:>7} {:>8}".format(
+            "Tier", "Description", "Total", "Pass", "Fail", "Status"
+        )
+    )
     print("-" * 78)
 
     grand_total = 0
@@ -122,27 +126,31 @@ def print_summary_table(results: List[TierTestResult], total_duration: float) ->
 
     for r in results:
         status_str = "[PASS]" if (r.failed == 0 and r.errors == 0) else "[FAIL]"
-        print("{:<8} {:<38} {:>7} {:>7} {:>7} {:>8}".format(
-            "Tier {}".format(r.tier_num),
-            r.name.split(": ")[-1],
-            r.total,
-            r.passed,
-            r.failed + r.errors,
-            status_str,
-        ))
+        print(
+            "{:<8} {:<38} {:>7} {:>7} {:>7} {:>8}".format(
+                "Tier {}".format(r.tier_num),
+                r.name.split(": ")[-1],
+                r.total,
+                r.passed,
+                r.failed + r.errors,
+                status_str,
+            )
+        )
         grand_total += r.total
         grand_passed += r.passed
-        grand_failed += (r.failed + r.errors)
+        grand_failed += r.failed + r.errors
 
     print("-" * 78)
     overall_status = "ALL PASSED" if grand_failed == 0 else "FAILURES DETECTED"
-    print("{:<47} {:>7} {:>7} {:>7} {:>8}".format(
-        "TOTAL (Duration: {:.2f}s)".format(total_duration),
-        grand_total,
-        grand_passed,
-        grand_failed,
-        "[{}]".format(overall_status),
-    ))
+    print(
+        "{:<47} {:>7} {:>7} {:>7} {:>8}".format(
+            "TOTAL (Duration: {:.2f}s)".format(total_duration),
+            grand_total,
+            grand_passed,
+            grand_failed,
+            "[{}]".format(overall_status),
+        )
+    )
     print("=" * 78 + "\n")
 
     # Print failure details if any
@@ -156,7 +164,9 @@ def print_summary_table(results: List[TierTestResult], total_duration: float) ->
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run E2E differential audit tests.")
-    parser.add_argument("--tier", type=int, choices=[1, 2, 3, 4], help="Run tests for a specific tier only")
+    parser.add_argument(
+        "--tier", type=int, choices=[1, 2, 3, 4], help="Run tests for a specific tier only"
+    )
     parser.add_argument("--json-output", type=str, help="Path to write JSON summary results")
     args = parser.parse_args()
 

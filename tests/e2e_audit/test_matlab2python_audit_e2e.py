@@ -67,6 +67,7 @@ CORE_STAGE_FILES = {
 # Contract Validation Helpers
 # ============================================================================
 
+
 def validate_manifest_schema(manifest_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     """Validate transpilation manifest structure per PROJECT.md interface contract."""
     errors = []
@@ -93,7 +94,11 @@ def validate_manifest_schema(manifest_data: Dict[str, Any]) -> Tuple[bool, List[
         if missing:
             errors.append("Module {} missing keys: {}".format(mod.get("matlab_file", idx), missing))
         if mod.get("stage") not in PIPELINE_STAGES:
-            errors.append("Module {} has invalid stage: {}".format(mod.get("matlab_file", idx), mod.get("stage")))
+            errors.append(
+                "Module {} has invalid stage: {}".format(
+                    mod.get("matlab_file", idx), mod.get("stage")
+                )
+            )
     return len(errors) == 0, errors
 
 
@@ -123,9 +128,15 @@ def validate_ast_matrix_schema(matrix_data: Dict[str, Any]) -> Tuple[bool, List[
             continue
         missing = required_keys - set(comp.keys())
         if missing:
-            errors.append("Comparison {} missing keys: {}".format(comp.get("matlab_module", idx), missing))
+            errors.append(
+                "Comparison {} missing keys: {}".format(comp.get("matlab_module", idx), missing)
+            )
         if comp.get("stage") not in PIPELINE_STAGES:
-            errors.append("Comparison {} has invalid stage: {}".format(comp.get("matlab_module", idx), comp.get("stage")))
+            errors.append(
+                "Comparison {} has invalid stage: {}".format(
+                    comp.get("matlab_module", idx), comp.get("stage")
+                )
+            )
     return len(errors) == 0, errors
 
 
@@ -156,13 +167,18 @@ def validate_results_schema(results_data: Dict[str, Any]) -> Tuple[bool, List[st
         if missing:
             errors.append("Result {} missing keys: {}".format(res.get("test_name", idx), missing))
         if res.get("stage") not in PIPELINE_STAGES:
-            errors.append("Result {} has invalid stage: {}".format(res.get("test_name", idx), res.get("stage")))
+            errors.append(
+                "Result {} has invalid stage: {}".format(
+                    res.get("test_name", idx), res.get("stage")
+                )
+            )
     return len(errors) == 0, errors
 
 
 # ============================================================================
 # Minimal In-Memory Differ & Pipeline Emulators (Self-Contained Fixtures)
 # ============================================================================
+
 
 class ASTFeatureExtractor(ast.NodeVisitor):
     """Extracts structural features from Python AST."""
@@ -209,14 +225,16 @@ def build_synthetic_manifest() -> Dict[str, Any]:
     for stage, files in CORE_STAGE_FILES.items():
         for f in files:
             mod_name = os.path.splitext(f)[0]
-            modules.append({
-                "matlab_file": f,
-                "stage": stage,
-                "transpiled_raw": "raw_transpiled/{}/{}.py".format(stage, mod_name),
-                "transpiled_cleaned": "cleaned_transpiled/{}/{}.py".format(stage, mod_name),
-                "python_counterpart": "slavv_python/pipeline/{}/{}.py".format(stage, mod_name),
-                "status": "verified",
-            })
+            modules.append(
+                {
+                    "matlab_file": f,
+                    "stage": stage,
+                    "transpiled_raw": "raw_transpiled/{}/{}.py".format(stage, mod_name),
+                    "transpiled_cleaned": "cleaned_transpiled/{}/{}.py".format(stage, mod_name),
+                    "python_counterpart": "slavv_python/pipeline/{}/{}.py".format(stage, mod_name),
+                    "status": "verified",
+                }
+            )
     return {"modules": modules}
 
 
@@ -227,17 +245,29 @@ def build_synthetic_ast_matrix() -> Dict[str, Any]:
         for f in files:
             mod_name = os.path.splitext(f)[0]
             # Introduce sample diffs for key modules to simulate genuine and benign cases
-            has_coord_diff = mod_name in ["get_energy_V202", "get_vertices_V200", "get_edges_by_watershed"]
-            comparisons.append({
-                "matlab_module": f,
-                "python_module": "{}.py".format(mod_name),
-                "stage": stage,
-                "branch_diffs": ["Checked NaN condition"] if mod_name == "choose_vertices_V200" else [],
-                "loop_diffs": [],
-                "math_diffs": ["Eigenvalue sign convention"] if mod_name == "energy_filter_V200" else [],
-                "coord_diffs": ["Fortran [Y, X, Z] order vs C [Z, Y, X]"] if has_coord_diff else [],
-                "severity": "HIGH" if has_coord_diff else "LOW",
-            })
+            has_coord_diff = mod_name in [
+                "get_energy_V202",
+                "get_vertices_V200",
+                "get_edges_by_watershed",
+            ]
+            comparisons.append(
+                {
+                    "matlab_module": f,
+                    "python_module": "{}.py".format(mod_name),
+                    "stage": stage,
+                    "branch_diffs": ["Checked NaN condition"]
+                    if mod_name == "choose_vertices_V200"
+                    else [],
+                    "loop_diffs": [],
+                    "math_diffs": ["Eigenvalue sign convention"]
+                    if mod_name == "energy_filter_V200"
+                    else [],
+                    "coord_diffs": ["Fortran [Y, X, Z] order vs C [Z, Y, X]"]
+                    if has_coord_diff
+                    else [],
+                    "severity": "HIGH" if has_coord_diff else "LOW",
+                }
+            )
     return {"comparisons": comparisons}
 
 
@@ -265,7 +295,10 @@ def build_synthetic_validation_results() -> Dict[str, Any]:
         {
             "stage": "vertices",
             "test_name": "test_vertex_local_minima_selection",
-            "target_modules": ["choose_vertices_V200.m", "slavv_python/pipeline/vertices/detection.py"],
+            "target_modules": [
+                "choose_vertices_V200.m",
+                "slavv_python/pipeline/vertices/detection.py",
+            ],
             "passed": True,
             "max_diff": 0.0,
             "divergence_detected": False,
@@ -274,7 +307,10 @@ def build_synthetic_validation_results() -> Dict[str, Any]:
         {
             "stage": "edges",
             "test_name": "test_watershed_catchment_basin_connectivity",
-            "target_modules": ["get_edges_by_watershed.m", "slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py"],
+            "target_modules": [
+                "get_edges_by_watershed.m",
+                "slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py",
+            ],
             "passed": True,
             "max_diff": 0.0,
             "divergence_detected": False,
@@ -293,7 +329,9 @@ def build_synthetic_validation_results() -> Dict[str, Any]:
     return {"test_results": test_results}
 
 
-def render_audit_report(manifest: Dict[str, Any], matrix: Dict[str, Any], results: Dict[str, Any]) -> str:
+def render_audit_report(
+    manifest: Dict[str, Any], matrix: Dict[str, Any], results: Dict[str, Any]
+) -> str:
     """Render a comprehensive AUDIT_REPORT.md matching R4 specifications."""
     lines = [
         "# Comprehensive MATLAB-to-Python Transpilation & Differential Audit Report",
@@ -307,53 +345,65 @@ def render_audit_report(manifest: Dict[str, Any], matrix: Dict[str, Any], result
         "|---|---|---|---|",
     ]
     for mod in manifest.get("modules", []):
-        lines.append("| {} | `{}` | `{}` | {} |".format(
-            mod.get("stage"), mod.get("matlab_file"), mod.get("python_counterpart"), mod.get("status")
-        ))
+        lines.append(
+            "| {} | `{}` | `{}` | {} |".format(
+                mod.get("stage"),
+                mod.get("matlab_file"),
+                mod.get("python_counterpart"),
+                mod.get("status"),
+            )
+        )
 
-    lines.extend([
-        "",
-        "## 2. Verified Genuine Code Defects & Discrepancies",
-        "The following findings represent genuine algorithmic or coordinate mapping deviations:",
-        "",
-        "### Finding D1: Fortran Coordinate Ordering [Y, X, Z] Alignment",
-        "- **Impacted Modules**: `get_energy_V202.m` (lines 45-60) vs `slavv_python/pipeline/energy/`",
-        "- **Root Cause**: MATLAB uses 1-based Fortran column-major index alignment `[Y, X, Z]` for 3D grids.",
-        "- **Actionable Remediation**: Ensure all energy scale tensors and watershed candidate traces maintain Fortran memory layout.",
-        "",
-        "## 3. Filtered-Out Transpiler Artifacts",
-        "The following differences were analyzed and classified as benign framework/syntax differences:",
-        "- `isempty(x)` vs `len(x) == 0` or `x is None` (benign)",
-        "- 1-based loop indexing translated to `range(0, N)` (benign)",
-        "- Struct property access translated to Python class attributes (benign)",
-        "",
-        "## 4. Production Probe Results (Synthetic Fixtures)",
-        "| Stage | Test Name | Target Modules | Passed | Max Diff | Divergence |",
-        "|---|---|---|---|---|---|",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 2. Verified Genuine Code Defects & Discrepancies",
+            "The following findings represent genuine algorithmic or coordinate mapping deviations:",
+            "",
+            "### Finding D1: Fortran Coordinate Ordering [Y, X, Z] Alignment",
+            "- **Impacted Modules**: `get_energy_V202.m` (lines 45-60) vs `slavv_python/pipeline/energy/`",
+            "- **Root Cause**: MATLAB uses 1-based Fortran column-major index alignment `[Y, X, Z]` for 3D grids.",
+            "- **Actionable Remediation**: Ensure all energy scale tensors and watershed candidate traces maintain Fortran memory layout.",
+            "",
+            "## 3. Filtered-Out Transpiler Artifacts",
+            "The following differences were analyzed and classified as benign framework/syntax differences:",
+            "- `isempty(x)` vs `len(x) == 0` or `x is None` (benign)",
+            "- 1-based loop indexing translated to `range(0, N)` (benign)",
+            "- Struct property access translated to Python class attributes (benign)",
+            "",
+            "## 4. Production Probe Results (Synthetic Fixtures)",
+            "| Stage | Test Name | Target Modules | Passed | Max Diff | Divergence |",
+            "|---|---|---|---|---|---|",
+        ]
+    )
     for res in results.get("test_results", []):
-        lines.append("| {} | `{}` | `{}` | {} | {:.2e} | {} |".format(
-            res.get("stage"),
-            res.get("test_name"),
-            ", ".join(res.get("target_modules", [])),
-            "PASS" if res.get("passed") else "FAIL",
-            res.get("max_diff", 0.0),
-            "YES" if res.get("divergence_detected") else "NO",
-        ))
+        lines.append(
+            "| {} | `{}` | `{}` | {} | {:.2e} | {} |".format(
+                res.get("stage"),
+                res.get("test_name"),
+                ", ".join(res.get("target_modules", [])),
+                "PASS" if res.get("passed") else "FAIL",
+                res.get("max_diff", 0.0),
+                "YES" if res.get("divergence_detected") else "NO",
+            )
+        )
 
-    lines.extend([
-        "",
-        "## 5. Remediation Plan & Next Steps",
-        "1. Maintain `[Y, X, Z]` internal coordinate conventions.",
-        "2. Keep lowest linear index priority for energy extrema tie-breaking.",
-        "3. Preserve watershed candidate ownership boundary calculations.",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 5. Remediation Plan & Next Steps",
+            "1. Maintain `[Y, X, Z]` internal coordinate conventions.",
+            "2. Keep lowest linear index priority for energy extrema tie-breaking.",
+            "3. Preserve watershed candidate ownership boundary calculations.",
+        ]
+    )
     return "\n".join(lines)
 
 
 # ============================================================================
 # Tier 1: Feature Coverage Tests
 # ============================================================================
+
 
 class TestTier1FeatureCoverage:
     """Tier 1: Verify core functional capabilities across all 5 stages (R1..R4)."""
@@ -364,10 +414,14 @@ class TestTier1FeatureCoverage:
         for stage in PIPELINE_STAGES:
             assert stage in CORE_STAGE_FILES
             expected_files = CORE_STAGE_FILES[stage]
-            assert len(expected_files) >= 3, "Stage {} must have at least 3 core files".format(stage)
+            assert len(expected_files) >= 3, "Stage {} must have at least 3 core files".format(
+                stage
+            )
             for fname in expected_files:
                 fpath = os.path.join(EXTERNAL_SOURCE_DIR, fname)
-                assert os.path.isfile(fpath), "Core MATLAB file {} must exist in {}".format(fname, EXTERNAL_SOURCE_DIR)
+                assert os.path.isfile(fpath), "Core MATLAB file {} must exist in {}".format(
+                    fname, EXTERNAL_SOURCE_DIR
+                )
 
     def test_transpiled_python_syntax_validity(self) -> None:
         """Verify that generated and transpiled Python code parses cleanly into valid Python AST."""
@@ -499,7 +553,10 @@ def python_pipeline_step(img, sigma):
 
         report_md = render_audit_report(manifest, matrix, results)
         assert len(report_md) > 200
-        assert "# Comprehensive MATLAB-to-Python Transpilation & Differential Audit Report" in report_md
+        assert (
+            "# Comprehensive MATLAB-to-Python Transpilation & Differential Audit Report"
+            in report_md
+        )
         assert "## 1. Inventory of Transpiled Modules vs Python Modules" in report_md
         assert "## 2. Verified Genuine Code Defects & Discrepancies" in report_md
         assert "## 3. Filtered-Out Transpiler Artifacts" in report_md
@@ -509,6 +566,7 @@ def python_pipeline_step(img, sigma):
 # ============================================================================
 # Tier 2: Boundary & Corner Cases Tests
 # ============================================================================
+
 
 class TestTier2BoundaryAndCornerCases:
     """Tier 2: Verify resilience against extreme, malformed, and topological edge cases."""
@@ -557,11 +615,13 @@ class TestTier2BoundaryAndCornerCases:
 
     def test_isolated_vertices_and_zero_degree_nodes(self) -> None:
         """Verify graph building handles isolated vertices (0 edges) and single-vertex graphs."""
-        vertices = np.array([
-            [10.0, 20.0, 30.0],
-            [15.0, 25.0, 35.0],
-            [100.0, 200.0, 300.0],  # Isolated vertex
-        ])
+        vertices = np.array(
+            [
+                [10.0, 20.0, 30.0],
+                [15.0, 25.0, 35.0],
+                [100.0, 200.0, 300.0],  # Isolated vertex
+            ]
+        )
         # Edges only between vertex 0 and 1
         edges = [(0, 1)]
 
@@ -587,8 +647,11 @@ class TestTier2BoundaryAndCornerCases:
         # Component 1: 0 - 1 - 2 (line)
         # Component 2: 3 - 4 - 5 - 3 (triangle cycle)
         edges = [
-            (0, 1), (1, 2),
-            (3, 4), (4, 5), (5, 3),
+            (0, 1),
+            (1, 2),
+            (3, 4),
+            (4, 5),
+            (5, 3),
         ]
 
         adjacency: Dict[int, List[int]] = {}
@@ -621,12 +684,12 @@ class TestTier2BoundaryAndCornerCases:
         """Verify indexing translation and coordinate permutation [Y, X, Z] Fortran vs [Z, Y, X] C."""
         # MATLAB shape [ny, nx, nz] in Fortran order
         ny, nx, nz = 10, 20, 30
-        grid_matlab_yxz = np.zeros((ny, nx, nz), order='F')
+        grid_matlab_yxz = np.zeros((ny, nx, nz), order="F")
         grid_matlab_yxz[4, 9, 14] = 42.0
 
         # Linear index in Fortran order
-        flat_idx_f = np.ravel_multi_index((4, 9, 14), (ny, nx, nz), order='F')
-        unraveled_f = np.unravel_index(flat_idx_f, (ny, nx, nz), order='F')
+        flat_idx_f = np.ravel_multi_index((4, 9, 14), (ny, nx, nz), order="F")
+        unraveled_f = np.unravel_index(flat_idx_f, (ny, nx, nz), order="F")
         assert unraveled_f == (4, 9, 14)
 
         # AST coordinate access pattern detection
@@ -646,6 +709,7 @@ def sample_indexing(vol, y, x, z):
 # ============================================================================
 # Tier 3: Cross-Feature Combinations & Data Flow Continuity Tests
 # ============================================================================
+
 
 class TestTier3CrossFeatureCombinations:
     """Tier 3: Verify end-to-end data flow continuity and interface contracts between all modules."""
@@ -676,7 +740,9 @@ class TestTier3CrossFeatureCombinations:
         # Cross-check that every module in manifest has a comparison in matrix
         manifest_files = {m["matlab_file"] for m in manifest["modules"]}
         matrix_files = {c["matlab_module"] for c in matrix["comparisons"]}
-        assert manifest_files == matrix_files, "Every module in manifest must have an AST comparison entry"
+        assert manifest_files == matrix_files, (
+            "Every module in manifest must have an AST comparison entry"
+        )
 
     def test_dataflow_continuity_matrix_to_synthetic_validator(self) -> None:
         """Verify synthetic validator targets modules identified in AST comparison matrix."""
@@ -733,6 +799,7 @@ class TestTier3CrossFeatureCombinations:
 # Tier 4: Real-World Scenarios Tests
 # ============================================================================
 
+
 class TestTier4RealWorldScenarios:
     """Tier 4: Verify full pipeline execution, report fidelity, and line number accuracy."""
 
@@ -777,11 +844,13 @@ class TestTier4RealWorldScenarios:
         report_text = render_audit_report(manifest, matrix, results)
 
         # Regex search for MATLAB source references
-        matlab_refs = re.findall(r'`([a-zA-Z0-9_\-]+\.m)`', report_text)
+        matlab_refs = re.findall(r"`([a-zA-Z0-9_\-]+\.m)`", report_text)
         assert len(matlab_refs) > 0, "Report must reference MATLAB .m files"
         for m_file in matlab_refs:
             full_path = os.path.join(EXTERNAL_SOURCE_DIR, m_file)
-            assert os.path.isfile(full_path), "Referenced MATLAB file {} must exist in external source".format(m_file)
+            assert os.path.isfile(full_path), (
+                "Referenced MATLAB file {} must exist in external source".format(m_file)
+            )
 
     def test_actionable_remediations_and_defect_classification(self) -> None:
         """Verify report classifies genuine defects vs benign artifacts with actionable remediations."""
@@ -803,9 +872,13 @@ class TestTier4RealWorldScenarios:
         """Verify that all core MATLAB source files in external/Vectorization-Public/source are audited."""
         all_external_files = os.listdir(EXTERNAL_SOURCE_DIR)
         matlab_files = [f for f in all_external_files if f.endswith(".m")]
-        assert len(matlab_files) > 50, "Expected >50 MATLAB files in external/Vectorization-Public/source"
+        assert len(matlab_files) > 50, (
+            "Expected >50 MATLAB files in external/Vectorization-Public/source"
+        )
 
         # Ensure top core files from each stage are present in external directory
         for stage, files in CORE_STAGE_FILES.items():
             for f in files:
-                assert f in matlab_files, "Stage {} core file {} missing from source dir".format(stage, f)
+                assert f in matlab_files, "Stage {} core file {} missing from source dir".format(
+                    stage, f
+                )

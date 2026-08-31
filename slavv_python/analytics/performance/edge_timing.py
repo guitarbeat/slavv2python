@@ -30,6 +30,9 @@ def build_edge_timing_payload(
     """Build the stable, JSON-safe timing contract for an Edges execution."""
     discovery = max(0.0, float(discovery_seconds))
     selection = max(0.0, float(selection_seconds))
+    discovery_span_key = (
+        "watershed_discovery_seconds" if exact_route else "tracing_discovery_seconds"
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "stage": "edges",
@@ -46,7 +49,7 @@ def build_edge_timing_payload(
         "selection_seconds": selection,
         "total_seconds": discovery + selection,
         "spans": {
-            "watershed_discovery_seconds" if exact_route else "tracing_discovery_seconds": discovery,
+            discovery_span_key: discovery,
             "edge_selection_seconds": selection,
         },
     }
