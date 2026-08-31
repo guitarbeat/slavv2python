@@ -12,9 +12,10 @@ import json
 import os
 import re
 import tempfile
-from typing import Any, Dict, List, Optional, Set, Tuple
-import pytest
+from typing import Any
+
 import numpy as np
+import pytest
 
 # Repository paths
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -68,7 +69,7 @@ CORE_STAGE_FILES = {
 # ============================================================================
 
 
-def validate_manifest_schema(manifest_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+def validate_manifest_schema(manifest_data: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate transpilation manifest structure per PROJECT.md interface contract."""
     errors = []
     if not isinstance(manifest_data, dict):
@@ -88,7 +89,7 @@ def validate_manifest_schema(manifest_data: Dict[str, Any]) -> Tuple[bool, List[
     }
     for idx, mod in enumerate(manifest_data["modules"]):
         if not isinstance(mod, dict):
-            errors.append("Module at index {} is not a dictionary".format(idx))
+            errors.append(f"Module at index {idx} is not a dictionary")
             continue
         missing = required_keys - set(mod.keys())
         if missing:
@@ -102,7 +103,7 @@ def validate_manifest_schema(manifest_data: Dict[str, Any]) -> Tuple[bool, List[
     return len(errors) == 0, errors
 
 
-def validate_ast_matrix_schema(matrix_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+def validate_ast_matrix_schema(matrix_data: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate AST comparison matrix structure per PROJECT.md interface contract."""
     errors = []
     if not isinstance(matrix_data, dict):
@@ -124,7 +125,7 @@ def validate_ast_matrix_schema(matrix_data: Dict[str, Any]) -> Tuple[bool, List[
     }
     for idx, comp in enumerate(matrix_data["comparisons"]):
         if not isinstance(comp, dict):
-            errors.append("Comparison at index {} is not a dict".format(idx))
+            errors.append(f"Comparison at index {idx} is not a dict")
             continue
         missing = required_keys - set(comp.keys())
         if missing:
@@ -140,7 +141,7 @@ def validate_ast_matrix_schema(matrix_data: Dict[str, Any]) -> Tuple[bool, List[
     return len(errors) == 0, errors
 
 
-def validate_results_schema(results_data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+def validate_results_schema(results_data: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate synthetic validation results structure per PROJECT.md interface contract."""
     errors = []
     if not isinstance(results_data, dict):
@@ -161,7 +162,7 @@ def validate_results_schema(results_data: Dict[str, Any]) -> Tuple[bool, List[st
     }
     for idx, res in enumerate(results_data["test_results"]):
         if not isinstance(res, dict):
-            errors.append("Test result at index {} is not a dict".format(idx))
+            errors.append(f"Test result at index {idx} is not a dict")
             continue
         missing = required_keys - set(res.keys())
         if missing:
@@ -184,11 +185,11 @@ class ASTFeatureExtractor(ast.NodeVisitor):
     """Extracts structural features from Python AST."""
 
     def __init__(self) -> None:
-        self.functions: List[str] = []
-        self.branches: List[str] = []
-        self.loops: List[str] = []
-        self.math_ops: List[str] = []
-        self.coord_slices: List[str] = []
+        self.functions: list[str] = []
+        self.branches: list[str] = []
+        self.loops: list[str] = []
+        self.math_ops: list[str] = []
+        self.coord_slices: list[str] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.functions.append(node.name)
@@ -201,11 +202,11 @@ class ASTFeatureExtractor(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         target_str = ast.dump(node.target)
-        self.loops.append("For({})".format(target_str))
+        self.loops.append(f"For({target_str})")
         self.generic_visit(node)
 
     def visit_While(self, node: ast.While) -> None:
-        self.loops.append("While({})".format(ast.dump(node.test)))
+        self.loops.append(f"While({ast.dump(node.test)})")
         self.generic_visit(node)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:
@@ -219,7 +220,7 @@ class ASTFeatureExtractor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def build_synthetic_manifest() -> Dict[str, Any]:
+def build_synthetic_manifest() -> dict[str, Any]:
     """Generate a valid synthetic manifest containing all 5 pipeline stages."""
     modules = []
     for stage, files in CORE_STAGE_FILES.items():
@@ -229,16 +230,16 @@ def build_synthetic_manifest() -> Dict[str, Any]:
                 {
                     "matlab_file": f,
                     "stage": stage,
-                    "transpiled_raw": "raw_transpiled/{}/{}.py".format(stage, mod_name),
-                    "transpiled_cleaned": "cleaned_transpiled/{}/{}.py".format(stage, mod_name),
-                    "python_counterpart": "slavv_python/pipeline/{}/{}.py".format(stage, mod_name),
+                    "transpiled_raw": f"raw_transpiled/{stage}/{mod_name}.py",
+                    "transpiled_cleaned": f"cleaned_transpiled/{stage}/{mod_name}.py",
+                    "python_counterpart": f"slavv_python/pipeline/{stage}/{mod_name}.py",
                     "status": "verified",
                 }
             )
     return {"modules": modules}
 
 
-def build_synthetic_ast_matrix() -> Dict[str, Any]:
+def build_synthetic_ast_matrix() -> dict[str, Any]:
     """Generate a valid synthetic AST comparison matrix across stages."""
     comparisons = []
     for stage, files in CORE_STAGE_FILES.items():
@@ -253,7 +254,7 @@ def build_synthetic_ast_matrix() -> Dict[str, Any]:
             comparisons.append(
                 {
                     "matlab_module": f,
-                    "python_module": "{}.py".format(mod_name),
+                    "python_module": f"{mod_name}.py",
                     "stage": stage,
                     "branch_diffs": ["Checked NaN condition"]
                     if mod_name == "choose_vertices_V200"
@@ -271,7 +272,7 @@ def build_synthetic_ast_matrix() -> Dict[str, Any]:
     return {"comparisons": comparisons}
 
 
-def build_synthetic_validation_results() -> Dict[str, Any]:
+def build_synthetic_validation_results() -> dict[str, Any]:
     """Generate valid synthetic differential execution validation results."""
     test_results = [
         {
@@ -330,7 +331,7 @@ def build_synthetic_validation_results() -> Dict[str, Any]:
 
 
 def render_audit_report(
-    manifest: Dict[str, Any], matrix: Dict[str, Any], results: Dict[str, Any]
+    manifest: dict[str, Any], matrix: dict[str, Any], results: dict[str, Any]
 ) -> str:
     """Render a comprehensive AUDIT_REPORT.md matching R4 specifications."""
     lines = [
@@ -414,13 +415,11 @@ class TestTier1FeatureCoverage:
         for stage in PIPELINE_STAGES:
             assert stage in CORE_STAGE_FILES
             expected_files = CORE_STAGE_FILES[stage]
-            assert len(expected_files) >= 3, "Stage {} must have at least 3 core files".format(
-                stage
-            )
+            assert len(expected_files) >= 3, f"Stage {stage} must have at least 3 core files"
             for fname in expected_files:
                 fpath = os.path.join(EXTERNAL_SOURCE_DIR, fname)
-                assert os.path.isfile(fpath), "Core MATLAB file {} must exist in {}".format(
-                    fname, EXTERNAL_SOURCE_DIR
+                assert os.path.isfile(fpath), (
+                    f"Core MATLAB file {fname} must exist in {EXTERNAL_SOURCE_DIR}"
                 )
 
     def test_transpiled_python_syntax_validity(self) -> None:
@@ -493,7 +492,7 @@ def get_network(edges, vertices):
                 assert isinstance(parsed_tree, ast.Module)
                 assert len(parsed_tree.body) > 0
             except SyntaxError as e:
-                pytest.fail("Python syntax error in transpiled snippet #{}: {}".format(idx, e))
+                pytest.fail(f"Python syntax error in transpiled snippet #{idx}: {e}")
 
     def test_ast_differ_execution_and_matrix_emission(self) -> None:
         """Verify AST differ extracts structural elements and produces valid comparison matrix."""
@@ -527,7 +526,7 @@ def python_pipeline_step(img, sigma):
         # Verify matrix construction and schema
         matrix = build_synthetic_ast_matrix()
         valid, errors = validate_ast_matrix_schema(matrix)
-        assert valid, "AST comparison matrix schema validation failed: {}".format(errors)
+        assert valid, f"AST comparison matrix schema validation failed: {errors}"
         assert len(matrix["comparisons"]) > 0
 
     def test_synthetic_validator_execution_and_results(self) -> None:
@@ -542,7 +541,7 @@ def python_pipeline_step(img, sigma):
 
         results = build_synthetic_validation_results()
         valid, errors = validate_results_schema(results)
-        assert valid, "Validation results schema validation failed: {}".format(errors)
+        assert valid, f"Validation results schema validation failed: {errors}"
         assert len(results["test_results"]) == 5
 
     def test_audit_report_generation(self) -> None:
@@ -607,7 +606,8 @@ class TestTier2BoundaryAndCornerCases:
 
         has_nan = np.isnan(vol_with_nan)
         has_inf = np.isinf(vol_with_nan)
-        assert np.any(has_nan) and np.any(has_inf)
+        assert np.any(has_nan)
+        assert np.any(has_inf)
 
         # Sanitization check
         cleaned = np.nan_to_num(vol_with_nan, nan=0.0, posinf=1.0, neginf=-1.0)
@@ -626,7 +626,7 @@ class TestTier2BoundaryAndCornerCases:
         edges = [(0, 1)]
 
         # Degrees computation
-        degrees = {i: 0 for i in range(len(vertices))}
+        degrees = dict.fromkeys(range(len(vertices)), 0)
         for u, v in edges:
             degrees[u] += 1
             degrees[v] += 1
@@ -654,13 +654,13 @@ class TestTier2BoundaryAndCornerCases:
             (5, 3),
         ]
 
-        adjacency: Dict[int, List[int]] = {}
+        adjacency: dict[int, list[int]] = {}
         for u, v in edges:
             adjacency.setdefault(u, []).append(v)
             adjacency.setdefault(v, []).append(u)
 
         # Connected component traversal
-        visited: Set[int] = set()
+        visited: set[int] = set()
         components = []
         for node in list(adjacency.keys()):
             if node not in visited:
@@ -718,7 +718,7 @@ class TestTier3CrossFeatureCombinations:
         """Verify transpiler outputs correctly serialize into transpilation_manifest.json."""
         manifest = build_synthetic_manifest()
         valid, errors = validate_manifest_schema(manifest)
-        assert valid, "Manifest validation error: {}".format(errors)
+        assert valid, f"Manifest validation error: {errors}"
 
         # Verify all 5 stages are present in manifest
         stages_in_manifest = {m["stage"] for m in manifest["modules"]}
@@ -735,7 +735,7 @@ class TestTier3CrossFeatureCombinations:
         matrix = build_synthetic_ast_matrix()
 
         valid, errors = validate_ast_matrix_schema(matrix)
-        assert valid, "AST matrix validation error: {}".format(errors)
+        assert valid, f"AST matrix validation error: {errors}"
 
         # Cross-check that every module in manifest has a comparison in matrix
         manifest_files = {m["matlab_file"] for m in manifest["modules"]}
@@ -746,11 +746,11 @@ class TestTier3CrossFeatureCombinations:
 
     def test_dataflow_continuity_matrix_to_synthetic_validator(self) -> None:
         """Verify synthetic validator targets modules identified in AST comparison matrix."""
-        matrix = build_synthetic_ast_matrix()
+        build_synthetic_ast_matrix()
         results = build_synthetic_validation_results()
 
         valid, errors = validate_results_schema(results)
-        assert valid, "Validation results error: {}".format(errors)
+        assert valid, f"Validation results error: {errors}"
 
         # Verify all results map to valid pipeline stages
         for res in results["test_results"]:
@@ -849,7 +849,7 @@ class TestTier4RealWorldScenarios:
         for m_file in matlab_refs:
             full_path = os.path.join(EXTERNAL_SOURCE_DIR, m_file)
             assert os.path.isfile(full_path), (
-                "Referenced MATLAB file {} must exist in external source".format(m_file)
+                f"Referenced MATLAB file {m_file} must exist in external source"
             )
 
     def test_actionable_remediations_and_defect_classification(self) -> None:
@@ -879,6 +879,4 @@ class TestTier4RealWorldScenarios:
         # Ensure top core files from each stage are present in external directory
         for stage, files in CORE_STAGE_FILES.items():
             for f in files:
-                assert f in matlab_files, "Stage {} core file {} missing from source dir".format(
-                    stage, f
-                )
+                assert f in matlab_files, f"Stage {stage} core file {f} missing from source dir"

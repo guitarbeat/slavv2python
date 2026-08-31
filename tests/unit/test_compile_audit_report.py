@@ -21,7 +21,7 @@ if not _COMPILER_TOOL.is_file():
         allow_module_level=True,
     )
 
-from workspace.experiments.matlab2python_audit.tools.compile_audit_report import (
+from workspace.experiments.matlab2python_audit.tools.compile_audit_report import (  # noqa: E402
     classification_for_comparison,
     load_json,
     main,
@@ -31,7 +31,7 @@ from workspace.experiments.matlab2python_audit.tools.compile_audit_report import
     write_reports,
 )
 
-from tests.e2e_audit.test_matlab2python_audit_e2e import (
+from tests.e2e_audit.test_matlab2python_audit_e2e import (  # noqa: E402
     build_synthetic_ast_matrix,
     build_synthetic_manifest,
     build_synthetic_validation_results,

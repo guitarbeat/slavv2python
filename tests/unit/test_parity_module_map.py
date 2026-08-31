@@ -14,7 +14,7 @@ if not _MAP_MODULE.is_file():
         allow_module_level=True,
     )
 
-from workspace.experiments.matlab2python_audit.tools.parity_module_map import (
+from workspace.experiments.matlab2python_audit.tools.parity_module_map import (  # noqa: E402
     classify_and_resolve,
     resolve_python_counterpart,
     rewrite_manifest_counterparts,

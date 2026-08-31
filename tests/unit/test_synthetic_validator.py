@@ -29,7 +29,7 @@ if not _SYNTHETIC_VALIDATOR_TOOL.is_file():
         allow_module_level=True,
     )
 
-from workspace.experiments.matlab2python_audit.tools.synthetic_validator import (
+from workspace.experiments.matlab2python_audit.tools.synthetic_validator import (  # noqa: E402
     TAXONOMY_BENIGN_OPTIMIZATION,
     TAXONOMY_FILTERED_AUXILIARY,
     TAXONOMY_GENUINE_DIVERGENCE,
@@ -49,7 +49,7 @@ from workspace.experiments.matlab2python_audit.tools.synthetic_validator import 
     sanitize_json_value,
 )
 
-from tests.e2e_audit.test_matlab2python_audit_e2e import validate_results_schema
+from tests.e2e_audit.test_matlab2python_audit_e2e import validate_results_schema  # noqa: E402
 
 # ============================================================================
 # Test 1: Synthetic Fixture Factory

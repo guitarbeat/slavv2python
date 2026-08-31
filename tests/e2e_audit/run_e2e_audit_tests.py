@@ -14,14 +14,14 @@ import os
 import sys
 import time
 import unittest
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 # Ensure repository root is on sys.path
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from tests.e2e_audit.test_matlab2python_audit_e2e import (
+from tests.e2e_audit.test_matlab2python_audit_e2e import (  # noqa: E402
     TestTier1FeatureCoverage,
     TestTier2BoundaryAndCornerCases,
     TestTier3CrossFeatureCombinations,
@@ -47,9 +47,9 @@ class TierTestResult:
         self.failed = 0
         self.errors = 0
         self.duration_seconds = 0.0
-        self.test_details: List[Dict[str, Any]] = []
+        self.test_details: list[dict[str, Any]] = []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "tier": self.tier_num,
             "name": self.name,
@@ -66,7 +66,7 @@ class TierTestResult:
 def run_tier_tests(tier_num: int, tier_name: str, test_class: type) -> TierTestResult:
     """Run all test methods on a given tier test class."""
     result = TierTestResult(tier_num, tier_name)
-    suite = unittest.TestSuite()
+    unittest.TestSuite()
 
     # Discover test methods
     test_methods = [m for m in dir(test_class) if m.startswith("test_")]
@@ -92,7 +92,7 @@ def run_tier_tests(tier_num: int, tier_name: str, test_class: type) -> TierTestR
         except Exception as e:
             result.errors += 1
             status = "ERROR"
-            error_msg = "{}: {}".format(type(e).__name__, str(e))
+            error_msg = f"{type(e).__name__}: {e!s}"
 
         test_duration = time.time() - test_start
         result.test_details.append(
@@ -108,7 +108,7 @@ def run_tier_tests(tier_num: int, tier_name: str, test_class: type) -> TierTestR
     return result
 
 
-def print_summary_table(results: List[TierTestResult], total_duration: float) -> None:
+def print_summary_table(results: list[TierTestResult], total_duration: float) -> None:
     """Print clean formatted ASCII summary table."""
     print("\n" + "=" * 78)
     print("  E2E MATLAB-to-Python Differential Audit Test Suite Results")
@@ -128,7 +128,7 @@ def print_summary_table(results: List[TierTestResult], total_duration: float) ->
         status_str = "[PASS]" if (r.failed == 0 and r.errors == 0) else "[FAIL]"
         print(
             "{:<8} {:<38} {:>7} {:>7} {:>7} {:>8}".format(
-                "Tier {}".format(r.tier_num),
+                f"Tier {r.tier_num}",
                 r.name.split(": ")[-1],
                 r.total,
                 r.passed,
@@ -144,11 +144,11 @@ def print_summary_table(results: List[TierTestResult], total_duration: float) ->
     overall_status = "ALL PASSED" if grand_failed == 0 else "FAILURES DETECTED"
     print(
         "{:<47} {:>7} {:>7} {:>7} {:>8}".format(
-            "TOTAL (Duration: {:.2f}s)".format(total_duration),
+            f"TOTAL (Duration: {total_duration:.2f}s)",
             grand_total,
             grand_passed,
             grand_failed,
-            "[{}]".format(overall_status),
+            f"[{overall_status}]",
         )
     )
     print("=" * 78 + "\n")
@@ -171,12 +171,12 @@ def main() -> int:
     args = parser.parse_args()
 
     selected_tiers = [args.tier] if args.tier else [1, 2, 3, 4]
-    results: List[TierTestResult] = []
+    results: list[TierTestResult] = []
 
     overall_start = time.time()
     for tier_num in selected_tiers:
         name, test_class = TIER_CLASSES[tier_num]
-        print("[*] Running {}...".format(name))
+        print(f"[*] Running {name}...")
         res = run_tier_tests(tier_num, name, test_class)
         results.append(res)
 
@@ -192,7 +192,7 @@ def main() -> int:
         }
         with open(args.json_output, "w", encoding="utf-8") as f:
             json.dump(out_data, f, indent=2)
-        print("[+] JSON summary written to {}".format(args.json_output))
+        print(f"[+] JSON summary written to {args.json_output}")
 
     all_passed = all(r.failed == 0 and r.errors == 0 for r in results)
     return 0 if all_passed else 1
