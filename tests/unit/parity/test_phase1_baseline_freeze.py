@@ -35,6 +35,9 @@ _PROOF_FILES = (
     "exact_proof_vertices.json",
 )
 _CHECKPOINT_KEYS = ("energy", "vertices", "edges", "network")
+# Git tracks compact proof summaries (~1-2 KiB). The freeze hashes the original
+# dest proofs, which are much larger and usually live only on Experiment Root disks.
+_COMPACT_PROOF_MAX_BYTES = 16_384
 
 
 def _sha256(path: Path) -> str:
@@ -78,7 +81,7 @@ def test_freeze_proof_hashes_match_disk_if_present() -> None:
     missing = []
     for name, digest in payload["proof_file_sha256"].items():
         path = runs / roots[name] / name
-        if not path.is_file():
+        if not path.is_file() or path.stat().st_size <= _COMPACT_PROOF_MAX_BYTES:
             missing.append(str(path))
             continue
         assert _sha256(path) == digest, f"hash mismatch for {path}"
