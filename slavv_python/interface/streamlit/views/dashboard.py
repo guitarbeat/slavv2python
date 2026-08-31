@@ -8,6 +8,10 @@ import pandas as pd
 import streamlit as st
 
 from slavv_python.interface.streamlit.navigation import switch_to
+from slavv_python.interface.streamlit.services.run_monitor import (
+    render_run_ops_panel,
+    render_stage_unit_bars,
+)
 from slavv_python.interface.streamlit.state.curation import summarize_processing_counts
 from slavv_python.interface.streamlit.state.dashboard import load_dashboard_context
 from slavv_python.interface.streamlit.state.workflow import STAGE_ORDER, summarize_workflow
@@ -110,6 +114,14 @@ def show_dashboard_page() -> None:
                 f"Saved run status: {snapshot.status} · requested through: "
                 f"{snapshot.target_stage} · current stage: {snapshot.current_stage or 'complete'}"
             )
+            if focus in (None, "Pipeline"):
+                render_stage_unit_bars(snapshot)
+            if context["run_dir"]:
+                render_run_ops_panel(
+                    context["run_dir"],
+                    snapshot=snapshot,
+                    expanded=focus in (None, "Pipeline"),
+                )
     with right:
         st.subheader("Session activity")
         st.metric("Curation", summary.curation_mode or "Not applied")

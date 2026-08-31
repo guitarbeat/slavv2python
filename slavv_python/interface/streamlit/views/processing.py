@@ -170,13 +170,14 @@ def show_processing_page() -> None:
         "Pipeline profile",
         options=list(PIPELINE_PROFILE_CHOICES),
         format_func=lambda profile: {
-            "paper": "Standard Python workflow",
-            "matlab_compat": "MATLAB-compatible defaults",
+            "paper": "Paper Path — tracing discovery (recommended)",
+            "matlab_compat": "MATLAB-compat defaults — watershed in Advanced",
         }[profile],
         index=0,
         help=(
-            "'paper' is the primary native Python workflow. "
-            "'matlab_compat' keeps the legacy MATLAB-shaped defaults."
+            "Paper Path uses tracing-based edge discovery for routine processing. "
+            "MATLAB-compat keeps legacy defaults; choose Watershed Discovery under "
+            "Advanced for Exact Route / certification-style runs."
         ),
         key="processing_pipeline_profile",
     )
@@ -515,7 +516,10 @@ def show_processing_page() -> None:
         snapshot_loader=app_services.load_run_snapshot,
     )
     if current_snapshot is not None:
-        app_services._render_run_dashboard(current_snapshot)
+        app_services._render_run_dashboard(
+            current_snapshot,
+            run_dir=st.session_state.get("current_run_dir"),
+        )
 
     if input_bytes is not None and dataset_name is not None:
         if st.button("Run processing", type="primary", width=250):
@@ -579,7 +583,7 @@ def show_processing_page() -> None:
                         label = event.detail or f"{event.stage} {int(event.stage_progress * 100)}%"
                         status.update(label=label, state=state)
                         with dashboard_placeholder.container():
-                            app_services._render_run_dashboard(event.snapshot)
+                            app_services._render_run_dashboard(event.snapshot, run_dir=run_dir)
 
                     results = processor.run(
                         image,
@@ -591,7 +595,7 @@ def show_processing_page() -> None:
                     )
                     final_snapshot = app_services.load_run_snapshot(run_dir) if run_dir else None
                     with dashboard_placeholder.container():
-                        app_services._render_run_dashboard(final_snapshot)
+                        app_services._render_run_dashboard(final_snapshot, run_dir=run_dir)
                     status.update(
                         label=f"Processing complete through {stop_after_val.title()}",
                         state="complete",
@@ -607,7 +611,7 @@ def show_processing_page() -> None:
                     final_snapshot=final_snapshot,
                     original_volume=image,
                 )
-                app_services._render_run_dashboard(final_snapshot)
+                app_services._render_run_dashboard(final_snapshot, run_dir=run_dir)
                 if stop_after_val != "network":
                     st.warning(
                         f"Processing stopped after {stop_after_val.title()}, as requested. "

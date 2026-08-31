@@ -614,3 +614,26 @@ For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages
 | **Line Counting** | PowerShell `Measure-Object -Line` silently drops blank lines and undercounts. Use Git Bash `wc -l` for file line counts, and re-verify a count before claiming a line-count change. |
 | **Parity Metric** | Do not claim edge/network parity from raw **edge-pair overlap** — it can be inflated by coincidental wrong-grid matches. Use the spatial bars: voxel **ownership-map** agreement (edges) and **endpoint-pair / bifurcation multisets** + sub-voxel trace tolerance (network) per [ADR 0012](docs/adr/0012-edge-watershed-parity-bar.md). |
 
+
+
+---
+
+## Learned User Preferences
+
+- When asked to resume prior agent/Codex work, continue that work inline in the current session—do not launch Codex or a separate tooling session unless explicitly asked.
+- Overnight MATLAB↔Python parity outranks parallel Streamlit GUI work; GUI loops should use longer intervals and must not compete for RAM/CPU with live parity writers.
+- Keep Experiment Root artifacts (oracles, runs, datasets, MATLAB batches) on `/Volumes/LoveSSD`, not the Mac internal disk.
+- Do not overwrite protected historical claim/oracle roots (`180709_E_crop_M_v2`, `180709_E_full_v2`, `crop_M_exact_v3`, `canonical_full_v18`); use new Mac R2024b ids/dests instead.
+- Long MATLAB/Python parity jobs should run detached (PPID 1 / double-fork) so they survive Cursor disconnects.
+- Never promote incomplete or segfault-aborted MATLAB batches; promote only when stage `vectors/` are complete.
+- Under RAM pressure from MATLAB Energy FFT, prefer pausing the Python writer (SIGSTOP) until past the danger zone or vectors appear, then CONT—rather than killing healthy MATLAB.
+- Commit Streamlit/UI and other incidental changes only when explicitly asked.
+
+## Learned Workspace Facts
+
+- On this Mac, MATLAB R2024b for oracle generation is at `/Volumes/LoveSSD/Applications/MATLAB_R2024b.app/bin/matlab`.
+- Canonical full `180709_E` TIFF path used here: `/Volumes/LoveSSD/neurovasc-db/data/raw/scans/180709_E.tif`.
+- Mac R2024b parity naming: oracle ids `180709_E_crop_M_r2024b` / `180709_E_full_r2024b`; run dests `crop_M_r2024b` / `canonical_full_r2024b`.
+- R2024b MATLAB Energy on this 8 GB host has segfaulted in FFT (`libmwmfl_fft`); stable recovery uses serialized `maxNumCompThreads(1)`.
+- Mac R2024b oracle/proof work is a local parity lineage distinct from the frozen Windows claim roots until both crop and full evaluated prove-exact pass and an explicit decision updates the official record.
+- Some Experiment Root binaries on this checkout may be hash stubs; verify with `slavv parity inspect-experiment-root` before treating them as real payloads.

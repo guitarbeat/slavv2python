@@ -54,6 +54,12 @@ class WorkspaceRecord:
     loadable: bool
     error_count: int
     is_active: bool = False
+    is_parity_job: bool = False
+
+
+def is_parity_run_dir(run_dir: str | Path) -> bool:
+    """Return True when the run has a parity job manifest under 99_Metadata."""
+    return (Path(run_dir).expanduser() / "99_Metadata" / "parity_job.json").is_file()
 
 
 def _record_for_run(
@@ -66,6 +72,7 @@ def _record_for_run(
     layout = resolve_run_layout(run_dir=run_dir)
     ready_stages = tuple(stage for stage in STAGE_ORDER if layout.checkpoint_path(stage).is_file())
     parameters_available = (run_dir / "99_Metadata" / "validated_params.json").is_file()
+    is_parity_job = is_parity_run_dir(run_dir)
     raw_shape = snapshot.provenance.get("image_shape")
     image_shape = (
         tuple(int(value) for value in raw_shape)
@@ -103,6 +110,7 @@ def _record_for_run(
         loadable=parameters_available and bool(ready_stages),
         error_count=len(snapshot.errors),
         is_active=active_run_dir is not None and resolved == active_run_dir,
+        is_parity_job=is_parity_job,
     )
 
 
@@ -157,4 +165,5 @@ __all__ = [
     "WorkspaceRecord",
     "WorkspaceStage",
     "discover_workspaces",
+    "is_parity_run_dir",
 ]

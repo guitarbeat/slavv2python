@@ -184,3 +184,32 @@ def test_workspace_discovery_reports_metadata_only_run(tmp_path: Path) -> None:
     assert len(records) == 1
     assert not records[0].loadable
     assert records[0].ready_stages == ()
+    assert not records[0].is_parity_job
+
+
+def test_workspace_discovery_flags_parity_job_runs(tmp_path: Path) -> None:
+    from slavv_python.interface.streamlit.state.workspaces import is_parity_run_dir
+
+    plain = _materialize_run(tmp_path / "runs" / "plain-run", ("energy",))
+    parity = _materialize_run(tmp_path / "runs" / "parity-run", ("energy",))
+    (parity / "99_Metadata" / "parity_job.json").write_text("{}", encoding="utf-8")
+
+    assert not is_parity_run_dir(plain)
+    assert is_parity_run_dir(parity)
+
+    records = discover_workspaces((("Test runs", tmp_path / "runs"),))
+    by_name = {record.name: record for record in records}
+    assert not by_name["plain-run"].is_parity_job
+    assert by_name["parity-run"].is_parity_job
+
+
+def test_resolve_workspace_refresh_seconds_clamps_choices() -> None:
+    from slavv_python.interface.streamlit.views.workspaces import (
+        resolve_workspace_refresh_seconds,
+    )
+
+    assert resolve_workspace_refresh_seconds(30) == 30
+    assert resolve_workspace_refresh_seconds(45) == 45
+    assert resolve_workspace_refresh_seconds(60) == 60
+    assert resolve_workspace_refresh_seconds(15) == 45
+    assert resolve_workspace_refresh_seconds("nope") == 45

@@ -3,16 +3,42 @@
 from __future__ import annotations
 
 import html
-import subprocess
-import sys
+import time
+from datetime import timedelta
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
+from slavv_python.engine.state import load_run_snapshot
 from slavv_python.interface.streamlit.navigation import switch_to
+from slavv_python.interface.streamlit.services.host_paths import (
+    file_manager_action_label,
+    reveal_run_directory,
+)
+from slavv_python.interface.streamlit.services.run_monitor import (
+    cached_run_monitor_view,
+    infer_pipeline_route,
+    render_run_ops_panel,
+)
 from slavv_python.interface.streamlit.state.workflow import install_loaded_run, load_persisted_run
 from slavv_python.interface.streamlit.state.workspaces import WorkspaceRecord, discover_workspaces
+
+_WORKSPACE_AUTO_REFRESH_CHOICES = (30, 45, 60)
+_WORKSPACE_AUTO_REFRESH_DEFAULT = 45
+_WORKSPACE_AUTO_REFRESH_GUARD_SECONDS = 2.0
+_WORKSPACE_AUTO_REFRESH_LAST_KEY = "_workspace_auto_refresh_last"
+
+
+def resolve_workspace_refresh_seconds(value: object) -> int:
+    """Clamp a UI refresh selection to the supported 30/45/60 second set."""
+    try:
+        seconds = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return _WORKSPACE_AUTO_REFRESH_DEFAULT
+    if seconds in _WORKSPACE_AUTO_REFRESH_CHOICES:
+        return seconds
+    return _WORKSPACE_AUTO_REFRESH_DEFAULT
 
 
 @st.cache_data(ttl=5, show_spinner=False)
@@ -112,6 +138,7 @@ def _workspace_table(records: tuple[WorkspaceRecord, ...]) -> pd.DataFrame:
         [
             {
                 "Workspace": f"● {record.name}" if record.is_active else record.name,
+                "Route": infer_pipeline_route(record.run_dir),
                 "State": _workspace_state(record),
                 "Progress": record.progress,
                 "Through": (
@@ -122,13 +149,6 @@ def _workspace_table(records: tuple[WorkspaceRecord, ...]) -> pd.DataFrame:
             for record in records
         ]
     )
-
-
-def _open_folder(run_dir: str) -> None:
-    path = Path(run_dir).resolve(strict=True)
-    if not path.is_dir():
-        raise ValueError("The workspace directory is unavailable.")
-    subprocess.Popen(["explorer.exe", str(path)], close_fds=True)
 
 
 def _render_summary(records: tuple[WorkspaceRecord, ...]) -> None:
@@ -246,6 +266,8 @@ def _render_inspector(record: WorkspaceRecord) -> None:
         st.badge(state, color=color)
         if record.is_active:
             st.badge("Active session", icon=":material/radio_button_checked:", color="blue")
+        route = infer_pipeline_route(record.run_dir, load_run_snapshot(record.run_dir))
+        st.badge(route, color="violet")
         if record.error_count:
             st.badge(
                 f"{record.error_count} recorded error{'s' if record.error_count != 1 else ''}",
@@ -267,21 +289,30 @@ def _render_inspector(record: WorkspaceRecord) -> None:
     )
     facts[3].metric("Pipeline progress", f"{record.progress:.0%}")
 
-    detail_tab, files_tab = st.tabs(["Stage details", "Run location"])
+    detail_tab, ops_tab, files_tab = st.tabs(["Stage details", "Run operations", "Run location"])
     with detail_tab:
         _render_stage_details(record)
+    with ops_tab:
+        render_run_ops_panel(
+            record.run_dir,
+            snapshot=load_run_snapshot(record.run_dir),
+            expanded=True,
+        )
     with files_tab:
         st.caption("The source remains unchanged when opened in this application.")
         st.code(record.run_dir, language=None)
-        if sys.platform == "win32" and st.button(
-            "Open in Explorer",
+        reveal_label = file_manager_action_label()
+        if reveal_label is not None and st.button(
+            reveal_label,
             icon=":material/folder:",
-            key="workspace_open_explorer",
+            key="workspace_open_file_manager",
         ):
             try:
-                _open_folder(record.run_dir)
+                reveal_run_directory(record.run_dir)
             except (OSError, ValueError) as exc:
                 st.error(str(exc))
+        elif reveal_label is None:
+            st.caption("Copy the path above to open it on this host.")
 
     if record.is_active:
         _render_active_actions(record)
@@ -396,11 +427,35 @@ def show_workspaces_page() -> None:
         )
         only_loadable = st.toggle(
             "Only compatible runs",
-            value=True,
+            value=False,
             help="Require validated settings and at least one typed stage checkpoint.",
+        )
+        only_parity = st.toggle(
+            "Parity runs only",
+            value=False,
+            help="Show only runs with 99_Metadata/parity_job.json (Exact Route writers).",
+            key="workspace_parity_only",
+        )
+        auto_refresh = st.toggle(
+            "Auto-refresh running runs",
+            value=False,
+            help="When any listed run is Running, reload this page on the chosen interval.",
+            key="workspace_auto_refresh",
+        )
+        refresh_seconds = resolve_workspace_refresh_seconds(
+            st.selectbox(
+                "Refresh interval",
+                options=_WORKSPACE_AUTO_REFRESH_CHOICES,
+                index=_WORKSPACE_AUTO_REFRESH_CHOICES.index(_WORKSPACE_AUTO_REFRESH_DEFAULT),
+                format_func=lambda seconds: f"{seconds}s",
+                disabled=not auto_refresh,
+                help="How often to reload while a listed run is Running.",
+                key="workspace_auto_refresh_seconds",
+            )
         )
         if st.button("Refresh list", icon=":material/refresh:", width="stretch"):
             _cached_workspaces.clear()
+            cached_run_monitor_view.clear()
             st.rerun()
 
     filtered = tuple(
@@ -408,6 +463,7 @@ def show_workspaces_page() -> None:
         for record in records
         if record.source in selected_sources
         and (not only_loadable or record.loadable)
+        and (not only_parity or record.is_parity_job)
         and (state_filter == "All" or _workspace_state(record) == state_filter)
         and (
             not query
@@ -426,6 +482,12 @@ def show_workspaces_page() -> None:
     _render_summary(filtered)
     if not filtered:
         st.info("No compatible workspaces match these filters.")
+        if auto_refresh:
+            st.caption(
+                f"Auto-refresh armed ({refresh_seconds}s) · waiting for a Running workspace "
+                "in this list."
+            )
+            st.session_state.pop(_WORKSPACE_AUTO_REFRESH_LAST_KEY, None)
         return
 
     heading, count = st.columns([4, 1], vertical_alignment="bottom")
@@ -441,6 +503,7 @@ def show_workspaces_page() -> None:
         key="workspace_inventory",
         column_config={
             "Workspace": st.column_config.TextColumn(width="medium"),
+            "Route": st.column_config.TextColumn(width="small"),
             "State": st.column_config.TextColumn(width="small"),
             "Progress": st.column_config.ProgressColumn(min_value=0.0, max_value=1.0),
             "Through": st.column_config.TextColumn(width="small"),
@@ -453,5 +516,34 @@ def show_workspaces_page() -> None:
     st.divider()
     _render_inspector(filtered[selected_index])
 
+    has_running = any(_workspace_state(record) == "Running" for record in filtered)
+    if auto_refresh and has_running:
 
-__all__ = ["show_workspaces_page"]
+        @st.fragment(run_every=timedelta(seconds=refresh_seconds))
+        def _auto_refresh_running_runs() -> None:
+            now = time.monotonic()
+            last = float(st.session_state.get(_WORKSPACE_AUTO_REFRESH_LAST_KEY, 0.0))
+            st.caption(
+                f"Auto-refresh on · updating every {refresh_seconds}s while runs are active."
+            )
+            # First mount after a full script run only arms the timer.
+            if last == 0.0 or (now - last) < _WORKSPACE_AUTO_REFRESH_GUARD_SECONDS:
+                st.session_state[_WORKSPACE_AUTO_REFRESH_LAST_KEY] = now
+                return
+            st.session_state[_WORKSPACE_AUTO_REFRESH_LAST_KEY] = now
+            _cached_workspaces.clear()
+            cached_run_monitor_view.clear()
+            st.rerun()
+
+        _auto_refresh_running_runs()
+    elif auto_refresh:
+        st.caption(
+            f"Auto-refresh armed ({refresh_seconds}s) · waiting for a Running workspace "
+            "in this list."
+        )
+        st.session_state.pop(_WORKSPACE_AUTO_REFRESH_LAST_KEY, None)
+    else:
+        st.session_state.pop(_WORKSPACE_AUTO_REFRESH_LAST_KEY, None)
+
+
+__all__ = ["resolve_workspace_refresh_seconds", "show_workspaces_page"]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -10,6 +11,11 @@ import streamlit as st
 
 from slavv_python.engine.constants import TRACKED_RUN_STAGES
 from slavv_python.engine.state.status import target_stage_progress
+from slavv_python.interface.cli.monitor_service import format_duration
+from slavv_python.interface.streamlit.services.run_monitor import (
+    render_run_ops_panel,
+    render_stage_unit_bars,
+)
 
 DASHBOARD_STAGE_ORDER = TRACKED_RUN_STAGES
 DASHBOARD_BREAKDOWN_SECTIONS = {
@@ -20,7 +26,7 @@ DASHBOARD_BREAKDOWN_SECTIONS = {
 DASHBOARD_PLACEHOLDER = "---"
 
 
-def render_run_dashboard(snapshot) -> None:
+def render_run_dashboard(snapshot, *, run_dir: str | Path | None = None) -> None:
     """Render an in-app dashboard for the current run snapshot."""
     if snapshot is None:
         return
@@ -46,6 +52,10 @@ def render_run_dashboard(snapshot) -> None:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Stage", current_stage)
         st.markdown("</div>", unsafe_allow_html=True)
+    if snapshot.current_detail:
+        st.caption(snapshot.current_detail)
+    if snapshot.eta_seconds is not None:
+        st.caption(f"Estimated time remaining: {format_duration(float(snapshot.eta_seconds))}")
     st.progress(overall_pct, text=f"Overall pipeline progress: {overall_pct}%")
     st.progress(
         target_pct,
@@ -59,17 +69,24 @@ def render_run_dashboard(snapshot) -> None:
             continue
         badge = "resumed" if stage_snapshot.resumed else "computed"
         detail = stage_snapshot.detail or stage_snapshot.substage or ""
+        units = (
+            f"{stage_snapshot.units_completed}/{stage_snapshot.units_total}"
+            if stage_snapshot.units_total
+            else "—"
+        )
         stage_rows.append(
             {
                 "Stage": stage_name,
                 "Status": stage_snapshot.status,
                 "Progress": f"{int(stage_snapshot.progress * 100)}%",
+                "Units": units,
                 "Mode": badge,
                 "Detail": detail,
             }
         )
     if stage_rows:
         st.dataframe(pd.DataFrame(stage_rows), width="stretch", hide_index=True)
+    render_stage_unit_bars(snapshot)
 
     if snapshot.optional_tasks:
         st.markdown("### Optional Tasks")
@@ -83,6 +100,9 @@ def render_run_dashboard(snapshot) -> None:
             for name, task in sorted(snapshot.optional_tasks.items())
         ]
         st.dataframe(pd.DataFrame(task_rows), width="stretch", hide_index=True)
+
+    if run_dir:
+        render_run_ops_panel(run_dir, snapshot=snapshot, expanded=False, show_log_hint=False)
 
 
 def build_dashboard_placeholder_trend() -> go.Figure:
