@@ -1,0 +1,167 @@
+name: parity-loop-tuning
+description: >
+  Tune Mac R2024b parity scratch automation loops (poll intervals, RAM CONT
+  thresholds, watcher consolidation) to minimize time-to-CONT after MATLAB exit
+  and time-to-crop-prove after CONT, without breaking prove-exact bars or
+  touching frozen claim roots.
+
+metric:
+  primary:
+    type: hard
+    name: primary_metric_value
+    direction: minimize
+  phase_aware_primary:
+    pre_octave3:
+      name: minutes_blocked_before_octave3
+      role: informational
+      note: >
+        Long-wait while MATLAB octave < 3; tier-2 CONT during MATLAB life is not
+        expected on 8 GB (free_mb ~16 << tier-2 floor 50). Do not optimize this
+        phase for sub-minute latency.
+    post_matlab_exit:
+      name: minutes_to_cont_after_matlab_exit
+      role: optimize_target
+      target: "< 1"
+      note: >
+        Primary optimization target once full MATLAB vectorize_180709_E_full exits.
+        Tier-3 must SIGCONT crop in the same orchestrator tick that detects
+        matlab_dead — not defer to the next 300s poll.
+    post_cont:
+      name: minutes_since_last_crop_prove_activity
+      role: optimize_target
+      note: >
+        After CONT clears intentional_stop; minimize until CROP_PROVE_DONE.flag.
+  degenerate_gates:
+    - name: watcher_alive
+      check: "== 1"
+      description: parity_orchestrator.sh loop (or once) must be running; legacy watchers retired
+    - name: matlab_segfault_recent
+      check: "== 0"
+      description: Reject configs that correlate with recent MATLAB FFT segfaults
+    - name: duplicate_resume_exact_run
+      check: "== 0"
+      description: Must not spawn duplicate crop resume-exact-run writers
+  diagnostics:
+    - name: primary_metric_name
+    - name: intentional_stop
+    - name: matlab_octave
+    - name: matlab_alive
+    - name: checkpoints_ready
+    - name: minutes_since_cont_attempt
+    - name: minutes_since_matlab_dead_cont
+    - name: minutes_since_prove_activity
+    - name: crop_stat
+
+measurement:
+  command: "bash workspace/scratch/parity_loop_measure.sh"
+  timeout_seconds: 60
+  working_directory: "."
+  stability:
+    mode: stable
+    noise_threshold: 5.0
+  log_sources:
+    orchestrator: workspace/scratch/parity_orchestrator.log
+    prove: workspace/scratch/PROVE_CROP_R2024B_WHEN_READY.log
+    deprecated:
+      - workspace/scratch/octave3_cont_watch.log
+      - workspace/scratch/dual_parity_resume_watcher.log
+  notes: |
+    Harness reads parity_orchestrator.log for CONT eval/HOLD/SIGCONT and
+    matlab_dead_immediate events (ISO timestamps). Legacy octave3_cont_watch.log
+    and dual_parity_resume_watcher.log are retired — do not use for primary metric.
+    Experiment 2 wires measure harness to orchestrator log (mutable in scope).
+
+scope:
+  mutable:
+    - "workspace/scratch/dual_parity_resume_watcher.sh"
+    - "workspace/scratch/octave3_cont_watch.sh"
+    - "workspace/scratch/parity_advance_30m_loop.sh"
+    - "workspace/scratch/parity_orchestrator.sh"
+    - "workspace/scratch/parity_loop_measure.sh"
+    - "workspace/scratch/PYTHON_STOP_CONT_POLICY.json"
+    - "workspace/scratch/GOAL_AGENT_THROTTLE.json"
+    - "workspace/scratch/goal_idle_mode.json"
+    - "workspace/scratch/STREAMLIT_GUI_LOOP.json"
+    - "workspace/scratch/streamlit_gui_heartbeat.sh"
+    - "workspace/scratch/GOAL_PIPELINE_STATUS.md"
+  immutable:
+    - "workspace/scratch/parity_orchestrator.log"
+    - "workspace/scratch/PROVE_CROP_R2024B_WHEN_READY.sh"
+    - "workspace/scratch/PROMOTE_AND_PROVE_FULL_R2024B_WHEN_READY.sh"
+    - "workspace/oracles/180709_E_crop_M_r2024b"
+    - "workspace/oracles/180709_E_full_r2024b"
+    - "workspace/runs/oracle_180709_E/crop_M_r2024b"
+    - "workspace/runs/oracle_180709_E/canonical_full_r2024b"
+    - "workspace/runs/oracle_180709_E/crop_M_exact_v3"
+    - "workspace/runs/oracle_180709_E/canonical_full_v18"
+    - "slavv_python/analytics/parity"
+
+execution:
+  mode: serial
+  backend: worktree
+  max_concurrent: 1
+
+parallel:
+  port_strategy: none
+  exclusive_resources:
+    - "matlab_energy_fft"
+    - "crop_writer_lease"
+
+dependencies:
+  approved: []
+
+constraints:
+  - "Do not kill running MATLAB (PID 27486) or crop writers during tuning"
+  - "Do not promote oracles or overwrite frozen claim roots"
+  - "Do not mark Cursor goal complete"
+  - "CONT must remain sigcont_in_process only; never resume-exact-run on CONT"
+  - "Prove-exact ADR 0011/0012 bars are unchanged"
+  - "Prefer scratch-first changes; package hooks only if orchestrator needs shared helpers"
+  - "Poll consolidation complete; do not reintroduce legacy watchers (octave3_cont_watch, parity_advance_30m_loop, dual_parity_resume_watcher loop)"
+  - "Tier-2 CONT during MATLAB life not expected on 8GB host; optimize tier-3 post-MATLAB-exit latency instead of tier-2 RAM floors"
+
+stopping:
+  max_iterations: 4
+  max_hours: 4
+  plateau_iterations: 2
+  target_reached: false
+
+max_runner_up_merges_per_batch: 0
+
+baseline_measurement:
+  approach: |
+    1. Capture current config snapshot from RESUME_LIVE_STATUS.json,
+       PYTHON_STOP_CONT_POLICY.json, and orchestrator PID.
+    2. Run `bash workspace/scratch/parity_loop_measure.sh` once for baseline JSON.
+    3. Record poll intervals: orchestrator POLL_SEC=300; legacy watchers retired.
+    4. From parity_orchestrator.log, grep CONT eval|HOLD|SIGCONT|matlab_dead
+       timestamps to compute historical minutes_to_cont_after_matlab_exit.
+    5. Store baseline in
+       .context/compound-engineering/ce-optimize/parity-loop-tuning/baseline.json
+       after first measure run.
+  primary_interpretation: |
+    Phase-aware primary (see metric.phase_aware_primary):
+      - pre_octave3: minutes_blocked_before_octave3 (informational only).
+      - post_matlab_exit: minimize minutes_to_cont_after_matlab_exit (target < 1 min).
+      - post_cont: minimize minutes_since_last_crop_prove_activity until CROP_PROVE_DONE.flag.
+    While intentional_stop=true and crop stat=T before MATLAB exit, tier-3 is the
+    expected unlock path on 8GB; tier-2 may stay blocked until MATLAB exit.
+
+tuning_candidates:
+  - id: poll-consolidation
+    description: Retire octave3_cont_watch + parity_advance_30m_loop; single orchestrator at 300s
+    status: completed
+  - id: cont-tier-octave-only
+    description: After octave>=3, allow CONT when free_mb>50 even if free_pct<45 (8GB host)
+  - id: goal-idle-900s
+    description: Set GOAL_AGENT_THROTTLE and goal_idle_mode recommended_agent_poll_interval_sec=900
+  - id: dashboard-refresh-hook
+    description: Regenerate GOAL_PIPELINE_STATUS.md from RESUME_LIVE_STATUS on each orchestrator tick
+  - id: tier3-same-tick-cont
+    description: On matlab_dead detection, SIGCONT crop in same orchestrator tick; adaptive sleep=0 until CONT applied
+  - id: orchestrator-log-harness
+    description: parity_loop_measure.sh reads parity_orchestrator.log for CONT events
+  - id: resume-status-metadata
+    description: RESUME_LIVE_STATUS.json references orchestrator not retired watchers
+  - id: post-cont-auto-prove
+    description: Orchestrator invokes PROVE_CROP_R2024B_WHEN_READY.sh when checkpoints gate opens

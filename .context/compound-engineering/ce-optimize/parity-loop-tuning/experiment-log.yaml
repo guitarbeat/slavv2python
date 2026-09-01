@@ -1,0 +1,159 @@
+spec: parity-loop-tuning
+run_id: "2026-09-01T06:17:18Z-ce-optimize"
+started_at: "2026-09-01T06:17:18Z"
+completed_at: "2026-09-01T06:20:30Z"
+
+baseline:
+  timestamp: "2026-09-01T06:17:18Z"
+  gates:
+    watcher_alive: 1
+    matlab_segfault_recent: 0
+    duplicate_resume_exact_run: 0
+  diagnostics:
+    primary_metric_name: minutes_blocked_before_octave3
+    primary_metric_value: 0.0
+    intentional_stop: 1
+    matlab_octave: 2
+    matlab_alive: 1
+    checkpoints_ready: 0
+    minutes_since_cont_attempt: null
+    minutes_since_matlab_dead_cont: 41.71
+    minutes_since_prove_activity: null
+    crop_stat: "T"
+  notes: |
+    Long-wait phase: MATLAB octave 2/6, crop SIGSTOP 25/821, orchestrator PID 95824.
+    Legacy watchers retired; tier-2 CONT cannot fire (free_mb ~16 << 50MB floor).
+    Primary optimization target shifts to minutes_to_cont_after_matlab_exit once MATLAB exits.
+
+experiments:
+  - iteration: 1
+    hypothesis: "Tier-3 same-tick CONT — adaptive sleep=0 on matlab_dead, 30s while waiting"
+    category: parameter-tuning
+    timestamp: "2026-09-01T06:19:27Z"
+    changes:
+      - workspace/scratch/parity_orchestrator.sh
+      - workspace/scratch/dual_parity_resume_watcher.sh
+    measure:
+      primary_metric_name: minutes_blocked_before_octave3
+      primary_metric_value: 0.0
+      gates:
+        watcher_alive: 1
+        matlab_segfault_recent: 0
+        duplicate_resume_exact_run: 0
+    outcome: kept
+    notes: |
+      Added compute_next_sleep_sec: 30s poll while intentional_stop+crop T+matlab alive
+      (was 300s max latency to tier-3); sleep=0 when matlab dead for immediate CONT retry.
+      TIER3 matlab_dead_immediate log lines for harness. Requires orchestrator restart.
+
+  - iteration: 2
+    hypothesis: "Orchestrator log → measure harness wiring"
+    category: signal-extraction
+    timestamp: "2026-09-01T06:19:58Z"
+    changes:
+      - workspace/scratch/parity_loop_measure.sh
+    measure:
+      primary_metric_name: minutes_blocked_before_octave3
+      primary_metric_value: 0.0
+      gates:
+        watcher_alive: 1
+        matlab_segfault_recent: 0
+        duplicate_resume_exact_run: 0
+      measure_log_source: workspace/scratch/parity_orchestrator.log
+      minutes_since_cont_attempt: 0.02
+    outcome: kept
+    notes: |
+      Harness now reads parity_orchestrator.log (not stale octave3/dual watcher logs).
+      minutes_since_matlab_dead_cont null until tier-3 fires (expected pre-exit).
+
+  - iteration: 3
+    hypothesis: "RESUME_LIVE_STATUS metadata fix — orchestrator not dead watchers"
+    category: data-handling
+    timestamp: "2026-09-01T06:19:58Z"
+    changes:
+      - workspace/scratch/dual_parity_resume_watcher.sh
+    measure:
+      primary_metric_name: minutes_blocked_before_octave3
+      primary_metric_value: 0.0
+      gates:
+        watcher_alive: 1
+        matlab_segfault_recent: 0
+        duplicate_resume_exact_run: 0
+    outcome: kept
+    notes: |
+      write_status under ORCHESTRATOR_PRIMARY sets orchestrator block, nulls advance_loop,
+      watcher.script=parity_orchestrator.sh, legacy_retired list. Verified via once pass.
+
+  - iteration: 4
+    hypothesis: "Post-CONT auto-prove wiring in orchestrator tick"
+    category: architecture
+    timestamp: "2026-09-01T06:19:58Z"
+    changes:
+      - workspace/scratch/parity_orchestrator.sh
+    measure:
+      primary_metric_name: minutes_blocked_before_octave3
+      primary_metric_value: 0.0
+      gates:
+        watcher_alive: 1
+        matlab_segfault_recent: 0
+        duplicate_resume_exact_run: 0
+    outcome: kept
+    notes: |
+      run_once invokes PROVE_CROP_R2024B_WHEN_READY.sh each tick (idempotent; WAIT until ck).
+      Log line post-cont prove gate check. Requires orchestrator restart for live loop.
+
+  - iteration: 5
+    hypothesis: "Idle poll 900s — goal_idle_mode recommended_agent_poll_interval_sec"
+    category: parameter-tuning
+    timestamp: "2026-09-01T06:20:00Z"
+    changes:
+      - workspace/scratch/goal_idle_mode.json
+      - workspace/scratch/GOAL_AGENT_THROTTLE.json
+      - workspace/scratch/parity_orchestrator.sh
+    measure:
+      primary_metric_name: minutes_blocked_before_octave3
+      primary_metric_value: 0.0
+      gates:
+        watcher_alive: 1
+        matlab_segfault_recent: 0
+        duplicate_resume_exact_run: 0
+    outcome: kept
+    notes: |
+      recommended_agent_poll_interval_sec 1800→900 in goal_idle_mode, throttle, update_goal_idle_mode.
+
+best:
+  iteration: 1
+  primary_metric_name: minutes_blocked_before_octave3
+  primary_metric_value: 0.0
+  gates:
+    watcher_alive: 1
+    matlab_segfault_recent: 0
+    duplicate_resume_exact_run: 0
+  diagnostics:
+    intentional_stop: 1
+    matlab_octave: 2
+    matlab_alive: 1
+    crop_stat: "T"
+  notes: |
+    Pre-octave-3 phase: primary informational at 0.0. Tier-3 latency improvement (30s vs 300s
+    poll while waiting for MATLAB exit) not yet measurable until post_matlab_exit phase.
+    All five experiments kept; orchestrator restart required for loop changes (iter 1, 4).
+
+hypothesis_backlog:
+  - description: "Add octave-progress wake hint in goal_idle_mode when matlab_octave transitions 2→3"
+    category: architecture
+    priority: medium
+    dep_status: approved
+  - description: "Tier-2b: allow CONT at octave>=3 when free_mb>15 AND chunk rate declining"
+    category: parameter-tuning
+    priority: medium
+    dep_status: approved
+    note: "Experimental — only if tier-3 latency insufficient; RAM risk on 8GB"
+  - description: "Orchestrator poll backoff: 300s while idle pre-octave-3, 120s after octave>=3 until CONT"
+    category: parameter-tuning
+    priority: medium
+    dep_status: approved
+  - description: "Fix PYTHON_STOP_CONT_POLICY watcher_must_read stale PID reference"
+    category: data-handling
+    priority: low
+    dep_status: approved
