@@ -43,7 +43,7 @@ def _render_run_loader() -> None:
         if quick_paths:
             quick_pick = st.selectbox(
                 "Recent workspace runs",
-                options=[""] + quick_paths,
+                options=["", *quick_paths],
                 format_func=lambda value: (
                     "Type or browse a path below"
                     if not value

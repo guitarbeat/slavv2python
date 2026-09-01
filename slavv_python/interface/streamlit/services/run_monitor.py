@@ -5,12 +5,11 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import streamlit as st
 
 from slavv_python.engine.constants import PIPELINE_STAGES
-from slavv_python.engine.state import RunSnapshot
 from slavv_python.interface.cli.monitor_service import (
     EnergyProgress,
     compute_energy_progress,
@@ -21,6 +20,9 @@ from slavv_python.interface.cli.monitor_service import (
     status_style,
     tail_log_lines,
 )
+
+if TYPE_CHECKING:
+    from slavv_python.engine.state import RunSnapshot
 
 _STATUS_BADGE_COLORS = {
     "green": "green",

@@ -407,9 +407,12 @@ Read these first when working on relevant surfaces:
 
 ```powershell
 # Create environment and sync dependencies
-uv sync                                # Core package only
-uv sync --extra app                    # With Streamlit app dependencies
-uv sync --extra app --extra workspace  # Full developer environment (recommended)
+uv sync --no-dev                       # Core package only (no pytest/ruff/mypy)
+uv sync --extra app                    # Streamlit app + default dev tools (recommended)
+
+# Project work uses uv run (locked .venv). Do not use uvx for slavv, pytest, mypy, or ruff.
+# uvx is for one-shot CLIs isolated from this repo, or an install without cloning:
+# uvx --from git+https://github.com/UTFOIL/slavv2python.git slavv run -i volume.tif -o out
 
 # MATLAB source (clone-required). neurovasc-db stays a local D:/db catalog.
 git submodule update --init -- external/Vectorization-Public

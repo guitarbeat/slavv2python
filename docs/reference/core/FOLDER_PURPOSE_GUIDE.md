@@ -27,7 +27,7 @@ The **repo root** stays a short front door: `README.md`, `AGENTS.md`, `STRATEGY.
 
 ## slavv_python/ — The Product
 
-**Purpose:** The installable Python package that end users get when they install `slavv` (`uv sync` or `uv pip install slavv`).
+**Purpose:** The installable Python package that end users get when they install `slavv` (`uv sync` in a clone, or `uvx --from git+https://github.com/UTFOIL/slavv2python.git slavv` without cloning).
 
 **Contains:**
 - `engine/` — Pipeline orchestration and run lifecycle

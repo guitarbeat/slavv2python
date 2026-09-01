@@ -5,7 +5,6 @@ from __future__ import annotations
 import html
 import time
 from datetime import timedelta
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st

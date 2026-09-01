@@ -173,11 +173,14 @@ Good fit:
 Installation:
 
 ```powershell
-uv pip install cupy-cuda12x
+uv sync --extra cupy
 ```
 
-The repo also declares a generic `[cupy]` extra (`uv sync --extra cupy`), but in practice most GPU
-machines should install the CUDA-matched CuPy package explicitly.
+For a CUDA-matched wheel, pass it as a one-off package instead of mutating the project environment with `uv pip install`:
+
+```powershell
+uv run --with cupy-cuda12x slavv run -i volume.tif -o slavv_output --energy-method cupy_hessian
+```
 
 CLI:
 

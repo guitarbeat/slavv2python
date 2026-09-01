@@ -141,8 +141,8 @@ class TestTier1Feature1BuildSystem:
                 f"Base dependency {base} missing from project.dependencies"
             )
 
-    def test_t1_f1_optional_dependency_groups_12_intact(self) -> None:
-        """Verify all 12 optional dependency groups are defined in project.optional-dependencies."""
+    def test_t1_f1_optional_dependency_groups_intact(self) -> None:
+        """Verify published extras remain in project.optional-dependencies."""
         pyproject = load_pyproject()
         opt_deps = pyproject.get("project", {}).get("optional-dependencies", {})
         expected_groups = [
@@ -155,10 +155,12 @@ class TestTier1Feature1BuildSystem:
             "zarr",
             "napari",
             "accel",
-            "workspace",
             "tui",
             "all",
         ]
+        assert "workspace" not in opt_deps, (
+            "workspace extra moved to [dependency-groups] dev; do not republish it"
+        )
         for group in expected_groups:
             assert group in opt_deps, (
                 f"Optional dependency group '{group}' missing from pyproject.toml"
@@ -166,6 +168,21 @@ class TestTier1Feature1BuildSystem:
             assert len(opt_deps[group]) > 0, (
                 f"Optional dependency group '{group}' must not be empty"
             )
+
+    def test_t1_f1_dev_dependency_group_declared(self) -> None:
+        """Verify local-only pytest/ruff/mypy live in PEP 735 dependency-groups.dev."""
+        pyproject = load_pyproject()
+        dev = pyproject.get("dependency-groups", {}).get("dev", [])
+        assert dev, "Missing [dependency-groups] dev"
+        joined = " ".join(dev)
+        for name in ("pytest", "ruff", "mypy", "pre-commit"):
+            assert name in joined, f"{name} missing from dependency-groups.dev"
+
+    def test_t1_f1_python_version_file_pins_311(self) -> None:
+        """Verify .python-version pins the CI interpreter."""
+        version_path = REPO_ROOT / ".python-version"
+        assert version_path.is_file(), ".python-version is missing"
+        assert version_path.read_text(encoding="utf-8").strip() == "3.11"
 
     def test_t1_f1_project_scripts_and_hatch_config(self) -> None:
         """Verify [project.scripts] and [tool.hatch.build.targets.wheel] configuration."""
@@ -237,18 +254,16 @@ class TestTier1Feature3SyncWithExtras:
             f"uv sync --dry-run --extra app failed: {proc.stderr}\n{proc.stdout}"
         )
 
-    def test_t1_f3_uv_sync_dry_run_extra_workspace(self) -> None:
-        """Verify uv sync --dry-run --extra workspace exits with code 0."""
-        proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "workspace"])
+    def test_t1_f3_uv_sync_dry_run_dev_group(self) -> None:
+        """Verify uv sync --dry-run includes the default PEP 735 dev group."""
+        proc = run_cmd(["uv", "sync", "--dry-run", "--group", "dev"])
         assert proc.returncode == 0, (
-            f"uv sync --dry-run --extra workspace failed: {proc.stderr}\n{proc.stdout}"
+            f"uv sync --dry-run --group dev failed: {proc.stderr}\n{proc.stdout}"
         )
 
     def test_t1_f3_uv_sync_dry_run_multi_extras(self) -> None:
         """Verify uv sync --dry-run with multiple extras exits with code 0."""
-        proc = run_cmd(
-            ["uv", "sync", "--dry-run", "--extra", "app", "--extra", "workspace", "--extra", "zarr"]
-        )
+        proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "app", "--extra", "zarr"])
         assert proc.returncode == 0, f"uv sync multi-extras failed: {proc.stderr}\n{proc.stdout}"
 
     def test_t1_f3_uv_sync_dry_run_all_extras(self) -> None:
@@ -322,6 +337,8 @@ class TestTier1Feature5CIWorkflows:
             wf_path = REPO_ROOT / ".github" / "workflows" / wf_name
             content = wf_path.read_text(encoding="utf-8")
             assert "uv sync" in content, f"{wf_name} does not use uv sync"
+            assert "uv sync --locked" in content, f"{wf_name} must pin the lockfile with --locked"
+            assert "astral-sh/setup-uv@v9" in content, f"{wf_name} must use setup-uv@v9"
 
     def test_t1_f5_ci_workflows_use_uv_run(self) -> None:
         """Verify CI workflows execute test and quality steps via uv run."""
@@ -489,8 +506,6 @@ class TestTier2Boundary3SyncExtrasAndErrors:
                 "--extra",
                 "zarr",
                 "--extra",
-                "workspace",
-                "--extra",
                 "tui",
             ]
         )
@@ -574,6 +589,8 @@ class TestTier2Boundary5DocsAndErrorResilience:
         """Verify README.md setup instructions use uv rather than bare pip install."""
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         assert "uv sync" in readme, "README.md must instruct users to run uv sync"
+        assert "uv run slavv" in readme, "README.md must use uv run for project commands"
+        assert "uvx --from" in readme, "README.md must document the git uvx --from one-liner"
         assert "pip install -e" not in readme, (
             "README.md must not instruct users with bare pip install -e"
         )
@@ -582,6 +599,9 @@ class TestTier2Boundary5DocsAndErrorResilience:
         """Verify AGENTS.md setup & quality sections use uv sync / uv run."""
         agents_md = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
         assert "uv sync" in agents_md, "AGENTS.md must instruct users to run uv sync"
+        assert "Do not use uvx for slavv" in agents_md, (
+            "AGENTS.md must tell agents not to replace uv run with uvx"
+        )
 
     def test_t2_b5_scripts_readme_uses_uv_run(self) -> None:
         """Verify scripts/README.md references uv run python."""
@@ -596,8 +616,6 @@ class TestTier2Boundary5DocsAndErrorResilience:
             [
                 "uv",
                 "run",
-                "--extra",
-                "workspace",
                 "pytest",
                 "tests/unit/interface/test_streamlit_launcher.py",
                 "-q",
@@ -630,9 +648,9 @@ class TestTier2Boundary5DocsAndErrorResilience:
 class TestTier3CrossFeatureCombinations:
     """Tier 3: Pairwise cross-feature interactions."""
 
-    def test_t3_pairwise_sync_workspace_and_ruff_check(self) -> None:
-        """Pairwise: uv sync --extra workspace + uv run ruff check slavv_python."""
-        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "workspace"])
+    def test_t3_pairwise_sync_dev_and_ruff_check(self) -> None:
+        """Pairwise: uv sync --group dev + uv run ruff check slavv_python."""
+        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--group", "dev"])
         assert sync_proc.returncode == 0
         ruff_proc = run_cmd(["uv", "run", "ruff", "check", "slavv_python"])
         assert ruff_proc.returncode == 0
@@ -644,16 +662,14 @@ class TestTier3CrossFeatureCombinations:
         build_proc = run_cmd(["uv", "build", "--out-dir", str(tmp_path / "pairwise_dist")])
         assert build_proc.returncode == 0
 
-    def test_t3_pairwise_sync_workspace_and_pytest(self) -> None:
-        """Pairwise: uv sync --extra workspace + uv run pytest on interface launcher."""
-        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "workspace", "--extra", "app"])
+    def test_t3_pairwise_sync_dev_and_pytest(self) -> None:
+        """Pairwise: uv sync --group dev + uv run pytest on interface launcher."""
+        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--group", "dev", "--extra", "app"])
         assert sync_proc.returncode == 0
         test_proc = run_cmd(
             [
                 "uv",
                 "run",
-                "--extra",
-                "workspace",
                 "--extra",
                 "app",
                 "pytest",
@@ -664,10 +680,8 @@ class TestTier3CrossFeatureCombinations:
         assert test_proc.returncode == 0
 
     def test_t3_pairwise_sync_ci_extras_and_ci_gate_sequence(self) -> None:
-        """Pairwise: uv sync (app,workspace,zarr) + ruff check + mypy."""
-        sync_proc = run_cmd(
-            ["uv", "sync", "--dry-run", "--extra", "app", "--extra", "workspace", "--extra", "zarr"]
-        )
+        """Pairwise: uv sync (app,zarr) + ruff check + mypy."""
+        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "app", "--extra", "zarr"])
         assert sync_proc.returncode == 0
 
         lint_proc = run_cmd(["uv", "run", "ruff", "check", "slavv_python"])
@@ -713,7 +727,7 @@ class TestTier4RealWorldScenarios:
         pyproj = load_pyproject()
         assert pyproj["build-system"]["build-backend"] == "hatchling.build"
         # 3. Perform sync dry-run with recommended developer extras
-        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "app", "--extra", "workspace"])
+        sync_proc = run_cmd(["uv", "sync", "--dry-run", "--extra", "app"])
         assert sync_proc.returncode == 0
         # 4. Run CLI info command
         info_proc = run_cmd(["uv", "run", "slavv", "info"])
@@ -734,9 +748,9 @@ class TestTier4RealWorldScenarios:
         data = parse_yaml_file(wf_path)
         assert data is not None
 
-        # Step 2: Simulate `uv sync --extra app --extra workspace --extra zarr`
+        # Step 2: Simulate `uv sync --locked --extra app --extra zarr`
         sync_proc = run_cmd(
-            ["uv", "sync", "--dry-run", "--extra", "app", "--extra", "workspace", "--extra", "zarr"]
+            ["uv", "sync", "--dry-run", "--locked", "--extra", "app", "--extra", "zarr"]
         )
         assert sync_proc.returncode == 0
 

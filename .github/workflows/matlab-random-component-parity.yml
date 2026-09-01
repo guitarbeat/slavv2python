@@ -57,14 +57,14 @@ jobs:
         with:
           submodules: recursive
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v9
         with:
           enable-cache: true
           python-version: "3.11"
       - name: Install test dependencies
         shell: pwsh
         run: |
-          uv sync --extra workspace
+          uv sync --locked
       - name: Verify MATLAB R2019a and vectorization source
         shell: pwsh
         run: |

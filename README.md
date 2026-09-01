@@ -12,9 +12,15 @@ The public workflow is **Paper Path** first: `slavv run` with the default `paper
 ## Quick start
 
 ```powershell
-uv sync --extra app --extra workspace
+uv sync --extra app
 uv run slavv info
 uv run slavv run -i volume.tif -o slavv_output --export csv json
+```
+
+Project work uses `uv run` (locked `.venv`). Do not use `uvx` for `slavv`, pytest, mypy, or ruff — those need this repo installed. `uvx` is for one-shot CLIs isolated from the project, or an install without cloning:
+
+```powershell
+uvx --from git+https://github.com/UTFOIL/slavv2python.git slavv run -i volume.tif -o slavv_output
 ```
 
 ```python

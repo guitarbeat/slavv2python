@@ -79,15 +79,6 @@ napari = [
 accel = [
     "numba>=0.58.0",
 ]
-workspace = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "hypothesis>=6.0.0",
-    "ruff>=0.4.0",
-    "mypy>=1.8.0",
-    "pre-commit>=3.0.0",
-    "win10toast>=0.9; sys_platform == 'win32'",
-]
 tui = [
     "textual>=0.50.0",
 ]
@@ -98,12 +89,18 @@ all = [
     "ipykernel>=6.0.0",
     "notebook>=6.4.0",
     "ipywidgets>=8.0.0",
+    "textual>=0.50.0",
+]
+
+[dependency-groups]
+dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "hypothesis>=6.0.0",
     "ruff>=0.4.0",
     "mypy>=1.8.0",
-    "textual>=0.50.0",
+    "pre-commit>=3.0.0",
+    "win10toast>=0.9; sys_platform == 'win32'",
 ]
 
 [project.urls]

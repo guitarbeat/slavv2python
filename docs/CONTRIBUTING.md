@@ -14,7 +14,7 @@ Setup, workflow, and PR guidelines for contributors.
 2. **Create a virtual environment and install dependencies**
   
    ```powershell
-   uv sync --extra app --extra workspace
+   uv sync --extra app
    pre-commit install
    ```
 3. **Run tests before submitting a PR**

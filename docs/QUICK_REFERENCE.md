@@ -24,7 +24,7 @@ Do **not** rerun the crop Energy writer. Readable leftover: [crop-energy-stretch
 
 ```powershell
 # Setup
-uv sync --extra app --extra workspace
+uv sync --extra app
 
 # Run pipeline
 uv run slavv run -i volume.tif -o output --export csv json

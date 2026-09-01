@@ -153,7 +153,7 @@ Failure handling:
 ## Prerequisites
 
 - [ ] Virtual environment activated
-- [ ] Dependencies installed: `uv sync --extra app --extra workspace`
+- [ ] Dependencies installed: `uv sync --extra app`
 - [ ] No uncommitted changes (or stash first)
 - [ ] On appropriate branch
 ```

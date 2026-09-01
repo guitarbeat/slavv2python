@@ -42,7 +42,7 @@ Prove MATLAB parity, run the exact route, operate dests. Need Experiment Root
 binaries on disk before `prove-exact` works.
 
 ```powershell
-uv sync --extra app --extra workspace
+uv sync --extra app
 uv run slavv parity inspect-experiment-root
 ```
 
