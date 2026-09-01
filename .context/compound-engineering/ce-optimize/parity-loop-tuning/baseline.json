@@ -1,0 +1,17 @@
+{
+  "primary_metric_name": "minutes_blocked_before_octave3",
+  "primary_metric_value": 0.0,
+  "watcher_alive": 1,
+  "matlab_segfault_recent": 0,
+  "duplicate_resume_exact_run": 0,
+  "intentional_stop": 1,
+  "matlab_octave": 2,
+  "crop_stat": "T",
+  "matlab_alive": 1,
+  "checkpoints_ready": 0,
+  "minutes_since_cont_attempt": null,
+  "minutes_since_matlab_dead_cont": 41.71,
+  "minutes_since_prove_activity": null,
+  "sampled_at": "2026-09-01T06:17:18Z",
+  "phase_note": "Pre-octave-3 long-wait; tier-3 CONT on MATLAB exit is the expected unlock path on 8GB host (free_mb ~16 << tier-2 floor 50)"
+}
