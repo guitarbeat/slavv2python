@@ -11,6 +11,10 @@ import plotly.express as px
 import streamlit as st
 
 from slavv_python.analytics import AutomaticCurator, MLCurator
+from slavv_python.interface.streamlit.curation_trust_labels import (
+    BROWSER_TRUST_WORKFLOW,
+    DESKTOP_REVIEW_WORKFLOW,
+)
 from slavv_python.interface.streamlit.empty_state import require_edges
 from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services import curation as curation_services
@@ -73,9 +77,9 @@ def show_ml_curation_page():
         return
 
     st.markdown(
-        "Review the MATLAB-style projection workspace in two stages—vertices, then "
-        "edges—and rebuild the shared network when the decisions are ready. The optional "
-        "Python desktop viewer remains available for exploratory 3D review."
+        "Review the Trust-path browser curator in two stages—vertices, then "
+        "edges—and rebuild the shared network when the decisions are ready. An optional "
+        "desktop viewer remains available for exploratory 3D review (not a Trust claim)."
     )
 
     with st.sidebar:
@@ -83,26 +87,30 @@ def show_ml_curation_page():
         curation_type = st.radio(
             "Workflow",
             (
-                "MATLAB-style browser curator",
-                "Desktop manual review (MATLAB-style)",
+                BROWSER_TRUST_WORKFLOW,
+                DESKTOP_REVIEW_WORKFLOW,
                 "Automatic filtering",
                 "Model-assisted filtering",
             ),
             index=0,
-            help="The MATLAB-style curator stays in this tab. The desktop viewer opens a separate Qt or napari window.",
+            help=(
+                "The Trust MATLAB-familiar path stays in this tab (ADR 0014). "
+                "The desktop viewer opens a separate Qt or napari window for experimental review."
+            ),
         )
 
         if st.session_state.get("dataset_name"):
             st.caption(f"Dataset: {st.session_state['dataset_name']}")
 
-    if curation_type == "MATLAB-style browser curator":
+    if curation_type == BROWSER_TRUST_WORKFLOW:
         render_browser_manual_curation(results)
 
-    elif curation_type == "Desktop manual review (MATLAB-style)":
+    elif curation_type == DESKTOP_REVIEW_WORKFLOW:
         st.markdown("#### Desktop 3D curator")
         st.info(
-            "This Python desktop interface reproduces the four-panel MATLAB GCI layout: "
+            "This Python desktop interface offers a four-panel exploratory layout: "
             "volume map, volume display, intensity histogram, and energy histogram. "
+            "It is **not** the Trust MATLAB-familiar claim surface (ADR 0014). "
             "It opens in a **separate window**; close it to save and continue."
         )
         if not desktop_curator_available():

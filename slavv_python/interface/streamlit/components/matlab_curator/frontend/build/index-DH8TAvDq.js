@@ -28322,7 +28322,7 @@ function y_({ data: t, setTriggerValue: e }) {
   return /* @__PURE__ */ ue.jsxs("main", { className: "matlab-curator", children: [
     /* @__PURE__ */ ue.jsxs("header", { className: "mc-header", children: [
       /* @__PURE__ */ ue.jsxs("div", { children: [
-        /* @__PURE__ */ ue.jsx("span", { className: "mc-eyebrow", children: "SLAVV graphical curator" }),
+        /* @__PURE__ */ ue.jsx("span", { className: "mc-eyebrow", children: t.showTrustClaim ? "Trust path · MATLAB-familiar" : "SLAVV graphical curator (degraded — Trust claim suppressed)" }),
         /* @__PURE__ */ ue.jsx("h2", { children: r.stage === "vertices" ? "Vertex Curator" : "Edge Curator" })
       ] }),
       /* @__PURE__ */ ue.jsxs("div", { className: "mc-stage-switch", "aria-label": "Curation stage", children: [

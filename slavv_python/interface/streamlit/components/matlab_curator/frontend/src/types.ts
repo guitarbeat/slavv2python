@@ -88,6 +88,7 @@ export interface CuratorData {
   originalAvailable: boolean;
   addVertexAvailable: boolean;
   degradedReason?: string;
+  showTrustClaim?: boolean;
   vertices: CuratorVertices;
   edges: CuratorEdges;
   lumenRadiiPixels: number[] | number[][];

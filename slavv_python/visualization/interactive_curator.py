@@ -1,6 +1,9 @@
 """
-Comprehensive Interactive Graphical Curator Interface (GCI) using PyQt5, PyVista, and PyQtGraph.
-Achieves 1:1 feature parity with the MATLAB GCI:
+Interactive Graphical Curator Interface (GCI) using PyQt5, PyVista, and PyQtGraph.
+
+Desktop / experimental review surface — not the Trust MATLAB-familiar claim
+path (see ADR 0014). Goals include:
+
   - 4-panel layout (Volume Map, Volume Display, Intensity Histogram, Energy Histogram)
   - Depth/Thickness sliders with X/Y/Z orthogonal projection switching
   - Blue (True) / Red (False) state toggling for vertices AND edges
@@ -87,7 +90,7 @@ class InteractiveCurator(QMainWindow):
     #  UI CONSTRUCTION                                                     #
     # ================================================================== #
     def _init_ui(self):
-        """Build the 4-panel layout that mirrors the MATLAB GCI."""
+        """Build the 4-panel desktop GCI layout (experimental; not ADR 0014 Trust claim)."""
         root = QWidget()
         self.setCentralWidget(root)
         root_layout = QVBoxLayout(root)

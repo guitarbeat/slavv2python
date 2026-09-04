@@ -10,8 +10,10 @@ curator, and not a parity proof.
 This note documents the experimental `napari`-based curator prototype that now
 exists alongside the maintained Qt/PyVista curator.
 
-The current production curator still lives in
-`slavv_python/visualization/interactive_curator.py`. The new prototype lives in
+The current **desktop** curator lives in
+`slavv_python/visualization/interactive_curator.py` (experimental / exploratory
+review — **not** the Trust MATLAB-familiar claim surface; see
+[ADR 0014](../adr/0014-curator-trust-claim-matrix.md)). The new prototype lives in
 `slavv_python/visualization/napari_curator.py` and is intended as a lower-code
 surface for image + point + path review.
 
@@ -40,8 +42,8 @@ Today the `napari` curator supports:
 - returning the same curated `(vertices, edges)` result shape as the current
   curator after the viewer closes
 
-It does not yet attempt to recreate the full four-panel MATLAB-style UI from
-the current Qt/PyVista implementation.
+It does not attempt to recreate a Trust-certified MATLAB-familiar four-panel UI.
+The Trust claim surface is the browser curator (ADR 0014).
 
 ## How To Launch It
 

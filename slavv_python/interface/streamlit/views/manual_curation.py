@@ -12,6 +12,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from slavv_python.interface.streamlit.components.matlab_curator import matlab_curator
+from slavv_python.interface.streamlit.curation_trust_labels import (
+    trust_claim_chrome_visible,
+)
 from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services.curation import apply_curated_results
 from slavv_python.interface.streamlit.state.manual_curation import (
@@ -333,6 +336,7 @@ def _prepare_curator_data(app_run: AppRunState, signature: str) -> dict[str, Any
         "originalAvailable": original_available,
         "addVertexAvailable": add_vertex_available,
         "degradedReason": degraded_reason,
+        "showTrustClaim": trust_claim_chrome_visible(degraded_reason),
         "vertices": {
             "positions": np.asarray(vertices.get("positions", []), dtype=float)
             .reshape(-1, 3)

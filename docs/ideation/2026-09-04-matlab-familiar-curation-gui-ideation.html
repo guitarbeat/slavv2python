@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ideation — MATLAB-familiar curation GUI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1c2420;
+      --muted: #5a655c;
+      --card: #fffdf8;
+      --line: #d4cdc0;
+      --accent: #0f6b5c;
+      --accent-soft: #d8efe9;
+      --warn: #8a4b12;
+      --reject: #6b2f2f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, #e4f2ee 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, #efe6d4 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    header.meta {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    header.meta h1 {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.6rem, 3vw, 2.15rem);
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 1rem;
+      font-size: 0.95rem;
+    }
+    .meta-grid dt { color: var(--muted); font-weight: 500; }
+    .meta-grid dd { margin: 0; }
+    nav.toc {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 1rem 1.15rem;
+      margin-bottom: 2rem;
+    }
+    nav.toc strong { display: block; margin-bottom: 0.5rem; }
+    nav.toc a { color: var(--accent); text-decoration: none; }
+    nav.toc a:hover { text-decoration: underline; }
+    nav.toc ol { margin: 0; padding-left: 1.25rem; }
+    h2 {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 1.35rem;
+      margin: 2.25rem 0 0.85rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.35rem;
+    }
+    h3 { font-size: 1.05rem; margin: 1.25rem 0 0.4rem; }
+    .prose p, .prose li { color: var(--ink); }
+    .prose ul { padding-left: 1.2rem; }
+    .axes {
+      display: flex; flex-wrap: wrap; gap: 0.45rem;
+      margin: 0.75rem 0 0;
+      padding: 0; list-style: none;
+    }
+    .axes li {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+    }
+    .jump {
+      display: flex; flex-wrap: wrap; gap: 0.5rem 1rem;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.9rem;
+    }
+    .jump a { color: var(--accent); }
+    .idea {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      padding: 1.1rem 1.2rem 1.25rem;
+      margin: 0 0 1.15rem;
+    }
+    .idea h3 { margin-top: 0; font-size: 1.15rem; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.35rem 0 0.85rem; }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      background: #ece7dc;
+      color: var(--muted);
+    }
+    .badge.axis { background: var(--accent-soft); color: var(--accent); }
+    .label { font-weight: 600; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .idea .block { margin: 0.65rem 0 0; }
+    .diagram {
+      margin: 1rem 0 0.25rem;
+      background: #f7f4ec;
+      border: 1px dashed var(--line);
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    table.reject {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      background: var(--card);
+    }
+    table.reject th, table.reject td {
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.reject th { background: #ebe6da; }
+    .cut { color: var(--reject); }
+    footer.composition-signal {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    code { font-size: 0.9em; background: #ebe6da; padding: 0.05em 0.3em; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="meta">
+      <h1>MATLAB-familiar curation GUI — ideation</h1>
+      <dl class="meta-grid">
+        <dt>Date</dt><dd><time datetime="2026-09-04">2026-09-04</time></dd>
+        <dt>Topic</dt><dd>matlab-familiar-curation-gui</dd>
+        <dt>Focus</dt><dd>Trust-track curation UI: screens, keybindings, and review workflow match to MATLAB</dd>
+        <dt>Mode</dt><dd>repo-grounded</dd>
+      </dl>
+    </header>
+
+    <nav class="toc" aria-label="Document sections">
+      <strong>Sections</strong>
+      <ol>
+        <li><a href="#grounding">Grounding Context</a></li>
+        <li><a href="#axes">Topic Axes</a></li>
+        <li><a href="#ranked">Ranked Ideas</a></li>
+        <li><a href="#rejection">Rejection Summary</a></li>
+      </ol>
+    </nav>
+
+    <section id="grounding" class="prose">
+      <h2>Grounding Context</h2>
+      <h3>Codebase context</h3>
+      <ul>
+        <li><code>STRATEGY.md</code> places curation GUI under Trust: operators should not relearn screens, keys, or review ritual versus MATLAB.</li>
+        <li>Three Python surfaces diverge: Streamlit <code>matlab_curator</code> (sidebar + XY projection, Escape / Ctrl+Z, Vertex→Edge→Apply, <code>.slavv-curation.json</code>); Qt <code>interactive_curator.py</code> (claims classical 2×2, almost no keyboard); napari (experimental, not four-panel).</li>
+        <li>MATLAB curator <code>.m</code> sources are often missing on this checkout; <code>scripts/curation/launch_matlab_curator_sample.m</code> still expects them.</li>
+        <li>Apply is destructive human mutation; no shared keymap module; browser is the only surface that encodes the documented two-stage ritual.</li>
+      </ul>
+      <h3>Past learnings</h3>
+      <p><code>docs/solutions/</code> has almost no GUI notes; nearest related learning is rank-ramp curated energies (science path), not curator interaction parity.</p>
+      <h3>External context</h3>
+      <ul>
+        <li>Streamlit iframe / rerun patterns limit native key capture and layout fidelity.</li>
+        <li>Qt and napari are stronger for desktop muscle memory; still incomplete vs STRATEGY claim language.</li>
+        <li>Prior art: QuPath, REAVER, MIB, OHIF — multi-view review tools with explicit interaction contracts.</li>
+      </ul>
+      <h3>Evidence dossiers (scratch)</h3>
+      <p>Axis dossiers under run <code>3a4ef517</code>: layout-fidelity, keybindings, review-workflow, surface-choice, trust-verification.</p>
+    </section>
+
+    <section id="axes" class="prose">
+      <h2>Topic Axes</h2>
+      <ul class="axes">
+        <li>layout-fidelity</li>
+        <li>keybindings</li>
+        <li>review-workflow</li>
+        <li>surface-choice</li>
+        <li>trust-verification</li>
+      </ul>
+    </section>
+
+    <section id="ranked" class="prose">
+      <h2>Ranked Ideas</h2>
+      <p>~38 raw candidates across six frames; 7 survivors after critique (basis verifier + arbitration). Jump list:</p>
+      <div class="jump">
+        <a href="#idea-1">1. Sole Trust claim surface</a>
+        <a href="#idea-2">2. Claim-matrix ADR</a>
+        <a href="#idea-3">3. Shared keymap grammar</a>
+        <a href="#idea-4">4. One ritual + session JSON</a>
+        <a href="#idea-5">5. Fidelity ladder</a>
+        <a href="#idea-6">6. Pin MATLAB .m sources</a>
+        <a href="#idea-7">7. Interaction golden suite</a>
+      </div>
+
+      <article class="idea" id="idea-1">
+        <h3>1. Freeze the browser as the sole Trust “MATLAB-style” claim surface</h3>
+        <div class="badge-row">
+          <span class="badge axis">surface-choice</span>
+          <span class="badge">Confidence 88%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Declare Streamlit <code>matlab_curator</code> the only surface allowed to market MATLAB-familiar Trust. Qt and napari stay as experimental / power-user tools with honest labels. Degraded single-view modes must not inherit the MATLAB-style Trust badge.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> only the browser path owns the documented Vertex→Edge→Apply ritual, Escape/Ctrl+Z, and session JSON; Qt claims “1:1” while lacking keys. <strong>reasoned:</strong> Trust language collapses if three hosts each half-claim fidelity.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Stops marketing inflation and forces investment onto one operator path—the same move science Trust made with a single claim run root.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Desktop users who prefer Qt lose the Trust badge; may reopen “which host?” politics until the claim matrix lands.</p>
+        </div>
+        <div class="diagram" aria-label="Surface claim diagram">
+          <svg viewBox="0 0 520 140" xmlns="http://www.w3.org/2000/svg" role="img">
+            <rect x="10" y="30" width="150" height="70" fill="#d8efe9" stroke="#0f6b5c" stroke-width="2"/>
+            <text x="85" y="60" text-anchor="middle" font-size="13" font-family="IBM Plex Sans, sans-serif" fill="#1c2420">Browser</text>
+            <text x="85" y="80" text-anchor="middle" font-size="11" font-family="IBM Plex Sans, sans-serif" fill="#0f6b5c">Trust claim</text>
+            <rect x="185" y="30" width="150" height="70" fill="#f7f4ec" stroke="#a89880" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="260" y="60" text-anchor="middle" font-size="13" font-family="IBM Plex Sans, sans-serif" fill="#5a655c">Qt</text>
+            <text x="260" y="80" text-anchor="middle" font-size="11" font-family="IBM Plex Sans, sans-serif" fill="#5a655c">experimental</text>
+            <rect x="360" y="30" width="150" height="70" fill="#f7f4ec" stroke="#a89880" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="435" y="60" text-anchor="middle" font-size="13" font-family="IBM Plex Sans, sans-serif" fill="#5a655c">napari</text>
+            <text x="435" y="80" text-anchor="middle" font-size="11" font-family="IBM Plex Sans, sans-serif" fill="#5a655c">experimental</text>
+          </svg>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-2">
+        <h3>2. Curator Trust claim-matrix ADR — ban “1:1 MATLAB” until green</h3>
+        <div class="badge-row">
+          <span class="badge axis">trust-verification</span>
+          <span class="badge">Confidence 90%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Write an ADR that lists checkable cells: layout regions, keybindings, stage ritual, Apply semantics, degraded-mode labeling. Marketing and doc strings may say “MATLAB-familiar” only when the matrix is green for the claim surface. Mirrors how Energy/Edges refuse unproven certification language.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> Qt already claims 1:1 without a gate; STRATEGY expanded Trust to screens/keys/workflow without a curator proof surface. <strong>reasoned:</strong> science Trust already uses evaluated proofs—GUI Trust needs an analogous bar.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Turns a fuzzy strategy sentence into a falsifiable product contract before any large UI rewrite.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Up-front ADR work; temporary silence on “1:1” may feel like a regression in docs.</p>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-3">
+        <h3>3. Shared interaction grammar / keymap-as-data</h3>
+        <div class="badge-row">
+          <span class="badge axis">keybindings</span>
+          <span class="badge">Confidence 86%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Extract Escape, undo, tool toggles, and stage Continue into a single keymap / grammar module consumed by browser (and optionally Qt later). Treat the keymap as the API of familiarity—not scattered React handlers.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> keys live only in the React curator; Qt is button-only. <strong>external:</strong> desktop imaging tools (QuPath-class) treat accelerators as first-class. <strong>reasoned:</strong> STRATEGY’s “without relearning” fails if grammar differs by host.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Highest leverage on the keybindings axis and unlocks cross-host convergence without forcing layout clones first.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Streamlit iframe limits may force a hybrid capture story; Qt/napari adapters are extra work.</p>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-4">
+        <h3>4. One Vertex→Edge→Apply ritual + <code>.slavv-curation.json</code> interchange</h3>
+        <div class="badge-row">
+          <span class="badge axis">review-workflow</span>
+          <span class="badge">Confidence 85%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Make the browser session contract the interchange for all hosts: same stages, same Continue gates, same Apply rebuild semantics. Qt/napari either speak that session or stop implying MATLAB ritual parity.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> <code>CurationSessionV1</code> / <code>.slavv-curation.json</code> already exist on the browser path; other hosts bypass them. <strong>reasoned:</strong> workflow match is the STRATEGY third pillar—layout alone is insufficient.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Unifies the operator story operators actually remember: stage order and Apply cliff.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Porting session I/O into Qt/napari is non-trivial; may delay layout work.</p>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-5">
+        <h3>5. Fidelity ladder: grammar first, then optional classical 2×2 lock</h3>
+        <div class="badge-row">
+          <span class="badge axis">layout-fidelity</span>
+          <span class="badge">Confidence 78%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Do not treat pixel 2×2 as the first Trust bar. Sequence: (1) shared tools/keys/stages, (2) named layout-region contract, (3) optional classical GCI 2×2 when a host can prove it. Browser may stay sidebar+projection if grammar and ritual pass.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> browser already prioritizes workflow over 2×2; Qt’s 2×2 without keys fails “without relearning.” <strong>reasoned:</strong> layout lock without grammar recreates today’s Qt trap.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Resolves the 2×2 vs sidebar fight with an ordered ladder instead of a false binary.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Operators who equate MATLAB with the literal four-panel glass may reject grammar-first as incomplete.</p>
+        </div>
+        <div class="diagram" aria-label="Fidelity ladder">
+          <svg viewBox="0 0 520 120" xmlns="http://www.w3.org/2000/svg" role="img">
+            <rect x="20" y="40" width="140" height="50" fill="#0f6b5c"/>
+            <text x="90" y="70" text-anchor="middle" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif">1 Grammar</text>
+            <path d="M165 65 H185" stroke="#1c2420" stroke-width="2"/>
+            <rect x="190" y="40" width="140" height="50" fill="#3d8f7f"/>
+            <text x="260" y="70" text-anchor="middle" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif">2 Regions</text>
+            <path d="M335 65 H355" stroke="#1c2420" stroke-width="2"/>
+            <rect x="360" y="40" width="140" height="50" fill="#d8efe9" stroke="#0f6b5c"/>
+            <text x="430" y="70" text-anchor="middle" fill="#0f6b5c" font-size="12" font-family="IBM Plex Sans, sans-serif">3 Optional 2×2</text>
+          </svg>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-6">
+        <h3>6. Pin / restore MATLAB curator <code>.m</code> sources + compare harness</h3>
+        <div class="badge-row">
+          <span class="badge axis">trust-verification</span>
+          <span class="badge">Confidence 84%</span>
+          <span class="badge">Complexity Medium</span>
+        </div>
+        <p>Treat missing <code>vertex_curator.m</code> / edge curator sources as a Trust infrastructure defect. Restore or pin them, and wire <code>launch_matlab_curator_sample.m</code> as the live reference for screenshot and keybinding diffs.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> sample launcher hard-requires sources that are absent on this checkout. <strong>reasoned:</strong> without MATLAB UI truth, Python “familiar” claims are unfalsifiable.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Same role oracles play for science Trust—reference payload must exist on disk.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Submodule / licensing / path hygiene; not every machine will run MATLAB.</p>
+        </div>
+      </article>
+
+      <article class="idea" id="idea-7">
+        <h3>7. Screenshot + interaction-transcript golden suite</h3>
+        <div class="badge-row">
+          <span class="badge axis">trust-verification</span>
+          <span class="badge">Confidence 80%</span>
+          <span class="badge">Complexity High</span>
+        </div>
+        <p>Build a GUI parity harness: captured interaction transcripts and layout screenshots that can run without MATLAB on every CI host, while still being regenerable from MATLAB when sources are present. Analogous to prove-exact, but for curator interaction.</p>
+        <div class="block"><span class="label">Basis</span>
+          <p><strong>direct:</strong> no GUI parity harness today; .m often missing. <strong>external:</strong> golden-master UI testing is standard for interaction-critical tools. <strong>reasoned:</strong> claim-matrix cells need automated checks, not vibes.</p>
+        </div>
+        <div class="block"><span class="label">Rationale</span>
+          <p>Makes idea 2 enforceable and closes the “can’t prove without MATLAB” gap.</p>
+        </div>
+        <div class="block"><span class="label">Downsides</span>
+          <p>Highest build cost; flaky visual diffs; needs careful fixture discipline.</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="rejection" class="prose">
+      <h2>Rejection Summary</h2>
+      <p>~31 candidates cut. Representative cuts:</p>
+      <table class="reject">
+        <thead>
+          <tr><th>Idea</th><th>Reason</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="cut">Auto-cascade Vertex→Edge→Apply</td><td>Weak — removes the documented Continue checkpoint that is part of the MATLAB-equivalent ritual.</td></tr>
+          <tr><td class="cut">Gate Apply behind prove-exact Network green</td><td>Refuted — Apply is intentional human mutation on arbitrary runs; science cert must not block curation.</td></tr>
+          <tr><td class="cut">Duplicate “lock classical 2×2 first” variants</td><td>Subsumed by fidelity ladder (#5); layout-first recreates Qt’s empty 2×2 trap.</td></tr>
+          <tr><td class="cut">Fighting-game / ATC / CNC analogies as products</td><td>Useful metaphors only; folded into grammar / type-rating framing, not standalone ships.</td></tr>
+          <tr><td class="cut">Singularity one-host deployment</td><td>Scope overrun — ops packaging, not curator familiarity.</td></tr>
+          <tr><td class="cut">Intensity-or-refuse as sole product</td><td>Sound as a claim-matrix row; kept inside #1/#2 rather than a separate top idea.</td></tr>
+          <tr><td class="cut">Shadow Network preview alone</td><td>Interesting Apply-cliff UX; better as a brainstorm variant under ritual (#4).</td></tr>
+        </tbody>
+      </table>
+      <p>Axis coverage: all five axes represented in the survivor set. No deliberate axis gap.</p>
+    </section>
+
+    <footer class="composition-signal">
+      Composed 2026-09-04 by ce-ideate (run 3a4ef517) from session focus on MATLAB-familiar curation GUI;
+      upstream grounding also in <code>docs/brainstorms/2026-09-04-matlab-curation-gui-grounding.md</code>.
+    </footer>
+  </div>
+</body>
+</html>

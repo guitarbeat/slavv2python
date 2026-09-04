@@ -1,6 +1,6 @@
 ---
 name: SLAVV Python
-last_updated: 2026-08-17
+last_updated: 2026-09-01
 ---
 
 # SLAVV Python Strategy
@@ -30,9 +30,9 @@ Certify a MATLAB-faithful exact route against preserved oracles with defined per
 
 ### Trust / equivalence
 
-Keep Python scientifically equivalent to MATLAB: exact-route stretch (bit-equal Energy, then discrete) and paper-profile certification.
+Keep Python scientifically equivalent to MATLAB: exact-route stretch (bit-equal Energy, then discrete) and paper-profile certification. Also make the Python curation GUI a MATLAB-familiar operator surface — same screens and interaction (layout, keybindings, review workflow) — so a MATLAB curator can work without relearning. Curator Trust claim language is gated by [ADR 0014](docs/adr/0014-curator-trust-claim-matrix.md) (browser sole claim surface; no “1:1” until the matrix is green).
 
-_Why it serves the approach:_ Without a frozen, proved baseline, speed and C++ work cannot be trusted.
+_Why it serves the approach:_ Without a frozen, proved baseline, speed and C++ work cannot be trusted. The MATLAB-familiar operator surface is part of that same trust: a curator should not have to relearn screens to use Python.
 
 ### Performance and native speed
 
@@ -42,7 +42,7 @@ _Why it serves the approach:_ The certified route is correct-enough but compute-
 
 ### Breadth
 
-Additional real volumes (`neurovasc-db`) and later packaging/UX, after the exact route is trusted.
+Additional real volumes (`neurovasc-db`) and later packaging, after the exact route is trusted. Curation GUI is not “later UX”; it lives under Trust.
 
 _Why it serves the approach:_ One canonical volume is the cert surface, not the whole scientific claim.
 

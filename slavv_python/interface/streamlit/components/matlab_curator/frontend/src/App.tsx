@@ -711,7 +711,11 @@ export function App({ data, setTriggerValue }: { data: CuratorData; setTriggerVa
     <main className="matlab-curator">
       <header className="mc-header">
         <div>
-          <span className="mc-eyebrow">SLAVV graphical curator</span>
+          <span className="mc-eyebrow">
+            {data.showTrustClaim
+              ? "Trust path · MATLAB-familiar"
+              : "SLAVV graphical curator (degraded — Trust claim suppressed)"}
+          </span>
           <h2>{session.stage === "vertices" ? "Vertex Curator" : "Edge Curator"}</h2>
         </div>
         <div className="mc-stage-switch" aria-label="Curation stage">
