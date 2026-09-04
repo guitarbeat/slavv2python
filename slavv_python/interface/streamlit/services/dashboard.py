@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -16,6 +15,9 @@ from slavv_python.interface.streamlit.services.run_monitor import (
     render_run_ops_panel,
     render_stage_unit_bars,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DASHBOARD_STAGE_ORDER = TRACKED_RUN_STAGES
 DASHBOARD_BREAKDOWN_SECTIONS = {
