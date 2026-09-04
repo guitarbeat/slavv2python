@@ -38,7 +38,7 @@ from slavv_python.pipeline.edges.candidate_manifest import (
 )
 from slavv_python.pipeline.energy.provenance import is_watershed_allowed_energy_origin
 from slavv_python.pipeline.policy import PipelinePolicy
-from slavv_python.pipeline.vertices.painting import paint_vertex_image
+from slavv_python.pipeline.vertices.painting import paint_vertex_center_image, paint_vertex_image
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -106,6 +106,48 @@ class EdgeDiscoveryContext:
     lumen_radius_pixels_axes: np.ndarray
     microns_per_voxel: np.ndarray
     heartbeat: Callable[[int, int], None] | None = None
+
+
+def prepare_edge_discovery_context(
+    energy_data: EnergyResult,
+    vertices: VertexSet,
+    params: dict[str, Any],
+    *,
+    stage_controller: StageController,
+    heartbeat: Callable[[int, int], None] | None = None,
+) -> EdgeDiscoveryContext:
+    """Prepare the shared, parity-sensitive inputs for Edge Discovery.
+
+    Both the candidate-only probe and the production EdgeManager path must
+    construct the same context.  Keeping precision, lumen-radius conversion,
+    and painted center coordinates here prevents a read-only probe from
+    silently drifting from the writer path.  In particular, the Exact Route
+    policy remains responsible for ``float64`` and MATLAB ``[Y, X, Z]``
+    alignment; this helper does not reshape or reorder any arrays.
+    """
+    policy = PipelinePolicy.from_params(params)
+    microns_per_voxel = np.array(
+        params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+        dtype=policy.precision,
+    )
+    lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
+        energy_data,
+        microns_per_voxel,
+        policy=policy,
+    )
+    vertex_center_image = paint_vertex_center_image(
+        vertices.positions, energy_data.energy.shape
+    )
+    return EdgeDiscoveryContext(
+        energy_data=energy_data,
+        vertices=vertices,
+        params=params,
+        stage_controller=stage_controller,
+        vertex_center_image=vertex_center_image,
+        lumen_radius_pixels_axes=lumen_radius_pixels_axes,
+        microns_per_voxel=microns_per_voxel,
+        heartbeat=heartbeat,
+    )
 
 
 class EdgeDiscovery(Protocol):
@@ -238,6 +280,7 @@ __all__ = [
     "candidate_as_payload",
     "frontier_origin_counts",
     "frontier_origin_counts_from_diagnostics",
+    "prepare_edge_discovery_context",
     "resolve_lumen_radius_pixels_axes",
     "select_edge_discovery",
 ]

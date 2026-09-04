@@ -14,6 +14,7 @@ from slavv_python.interface.streamlit.services.exports import has_full_network_r
 
 from ..services.share_report import compute_shareable_stats
 from . import normalize_state_results
+from .workspace_view import WorkspaceRunView, workspace_view_from_session
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -28,6 +29,7 @@ class DashboardContext(TypedDict):
     share_metrics: dict[str, Any]
     dataset_name: str
     stats: dict[str, Any] | None
+    workspace: WorkspaceRunView
 
 
 def normalize_dashboard_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
@@ -70,6 +72,10 @@ def load_dashboard_context(
         "share_metrics": share_metrics,
         "dataset_name": dataset_name,
         "stats": stats,
+        "workspace": workspace_view_from_session(
+            session_state,
+            snapshot_loader=lambda _run_dir: snapshot,
+        ),
     }
 
 

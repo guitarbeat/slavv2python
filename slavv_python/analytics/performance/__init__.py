@@ -6,6 +6,7 @@ from slavv_python.analytics.performance.edge_timing import (
     SCHEMA_VERSION as EDGE_TIMING_SCHEMA_VERSION,
 )
 from slavv_python.analytics.performance.edge_timing import (
+    EdgeTimingRecord,
     build_edge_timing_payload,
     write_edge_timing,
 )
@@ -26,6 +27,7 @@ from slavv_python.analytics.performance.phase2_baseline import (
 __all__ = [
     "EDGE_TIMING_SCHEMA_VERSION",
     "PIPELINE_STAGES",
+    "EdgeTimingRecord",
     "StageTiming",
     "baseline_payload",
     "bottleneck_measured",

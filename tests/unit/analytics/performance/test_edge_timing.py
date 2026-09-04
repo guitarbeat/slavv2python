@@ -4,9 +4,30 @@ import json
 
 from slavv_python.analytics.performance.edge_timing import (
     SCHEMA_VERSION,
+    EdgeTimingRecord,
     build_edge_timing_payload,
     write_edge_timing,
 )
+
+
+def test_edge_timing_record_preserves_execution_timestamps() -> None:
+    record = EdgeTimingRecord(
+        discovery_seconds=1.25,
+        selection_seconds=0.5,
+        candidate_count=8,
+        edge_count=3,
+        exact_route=True,
+        writer_authorized=True,
+        started_at="2026-09-04T01:00:00Z",
+        completed_at="2026-09-04T01:00:02Z",
+    )
+
+    payload = record.to_payload()
+
+    assert payload["started_at"] == "2026-09-04T01:00:00Z"
+    assert payload["completed_at"] == "2026-09-04T01:00:02Z"
+    assert payload["spans"]["watershed_discovery_seconds"] == 1.25
+    assert payload["spans"]["edge_selection_seconds"] == 0.5
 
 
 def test_edge_timing_payload_splits_discovery_and_selection() -> None:

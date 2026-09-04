@@ -55,8 +55,9 @@ def show_dashboard_page() -> None:
     st.session_state.setdefault("dashboard_focus", "Overview")
     summary = summarize_workflow(st.session_state)
     context = load_dashboard_context(st.session_state)
+    workspace = context["workspace"]
     results = context["results"]
-    snapshot = context["snapshot"]
+    snapshot = workspace.snapshot
 
     st.header("SLAVV workflow")
     st.caption("Process, review, visualize, and analyze one vascular dataset.")
@@ -116,9 +117,9 @@ def show_dashboard_page() -> None:
             )
             if focus in (None, "Pipeline"):
                 render_stage_unit_bars(snapshot)
-            if context["run_dir"]:
+            if workspace.has_run:
                 render_run_ops_panel(
-                    context["run_dir"],
+                    workspace.run_dir,
                     snapshot=snapshot,
                     expanded=focus in (None, "Pipeline"),
                 )
@@ -131,7 +132,7 @@ def show_dashboard_page() -> None:
             int(share_metrics.get("share_report_downloaded", 0)),
             help="Reports downloaded in this browser session.",
         )
-        if summary.run_dir:
+        if workspace.has_run:
             st.caption("The full source path is available in the sidebar Run location section.")
 
     if st.session_state.get("curation_baseline_counts") and results is not None:

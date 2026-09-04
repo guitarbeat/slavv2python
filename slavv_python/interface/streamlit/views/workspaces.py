@@ -9,7 +9,6 @@ from datetime import timedelta
 import pandas as pd
 import streamlit as st
 
-from slavv_python.engine.state import load_run_snapshot
 from slavv_python.interface.streamlit.navigation import switch_to
 from slavv_python.interface.streamlit.services.host_paths import (
     file_manager_action_label,
@@ -21,6 +20,7 @@ from slavv_python.interface.streamlit.services.run_monitor import (
     render_run_ops_panel,
 )
 from slavv_python.interface.streamlit.state.workflow import install_loaded_run, load_persisted_run
+from slavv_python.interface.streamlit.state.workspace_view import workspace_view_from_record
 from slavv_python.interface.streamlit.state.workspaces import WorkspaceRecord, discover_workspaces
 
 _WORKSPACE_AUTO_REFRESH_CHOICES = (30, 45, 60)
@@ -255,6 +255,7 @@ def _render_active_actions(record: WorkspaceRecord) -> None:
 
 
 def _render_inspector(record: WorkspaceRecord) -> None:
+    workspace = workspace_view_from_record(record)
     heading, location = st.columns([3, 2], gap="large", vertical_alignment="bottom")
     with heading:
         st.subheader(record.name)
@@ -265,7 +266,7 @@ def _render_inspector(record: WorkspaceRecord) -> None:
         st.badge(state, color=color)
         if record.is_active:
             st.badge("Active session", icon=":material/radio_button_checked:", color="blue")
-        route = infer_pipeline_route(record.run_dir, load_run_snapshot(record.run_dir))
+        route = infer_pipeline_route(workspace.run_dir, workspace.snapshot)
         st.badge(route, color="violet")
         if record.error_count:
             st.badge(
@@ -293,13 +294,13 @@ def _render_inspector(record: WorkspaceRecord) -> None:
         _render_stage_details(record)
     with ops_tab:
         render_run_ops_panel(
-            record.run_dir,
-            snapshot=load_run_snapshot(record.run_dir),
+            workspace.run_dir,
+            snapshot=workspace.snapshot,
             expanded=True,
         )
     with files_tab:
         st.caption("The source remains unchanged when opened in this application.")
-        st.code(record.run_dir, language=None)
+        st.code(workspace.run_dir, language=None)
         reveal_label = file_manager_action_label()
         if reveal_label is not None and st.button(
             reveal_label,

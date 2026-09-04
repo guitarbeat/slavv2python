@@ -6,7 +6,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from slavv_python.engine.state import load_run_snapshot
 from slavv_python.interface.streamlit.services.host_paths import (
     file_manager_action_label,
     reveal_run_directory,
@@ -15,6 +14,7 @@ from slavv_python.interface.streamlit.services.run_monitor import render_sidebar
 
 from .navigation import register_pages, switch_to
 from .state.workflow import install_loaded_run, load_persisted_run, summarize_workflow
+from .state.workspace_view import workspace_view_from_session
 from .state.workspaces import DEFAULT_WORKSPACE_ROOTS, discover_workspaces
 
 PAGE_HANDLERS = {
@@ -86,6 +86,7 @@ def _render_run_loader() -> None:
 def _render_sidebar_context() -> None:
     """Show shared dataset and workflow status beneath primary navigation."""
     summary = summarize_workflow(st.session_state)
+    workspace = workspace_view_from_session(st.session_state, summary=summary)
     st.sidebar.divider()
     st.sidebar.caption("CURRENT WORKSPACE")
     st.sidebar.markdown(f"**{summary.dataset_name}**")
@@ -122,18 +123,18 @@ def _render_sidebar_context() -> None:
         switch_to(summary.next_page)
 
     _render_run_loader()
-    if summary.run_dir:
+    if workspace.has_run:
         render_sidebar_run_pulse(
-            summary.run_dir,
-            snapshot=load_run_snapshot(summary.run_dir),
+            workspace.run_dir,
+            snapshot=workspace.snapshot,
         )
         with st.sidebar.expander("Run location"):
-            st.code(summary.run_dir, language=None)
+            st.code(workspace.run_dir, language=None)
             reveal_label = file_manager_action_label()
             if reveal_label is not None:
                 if st.button(reveal_label, icon=":material/folder:", width="stretch"):
                     try:
-                        reveal_run_directory(summary.run_dir)
+                        reveal_run_directory(workspace.run_dir)
                     except (OSError, ValueError) as exc:
                         st.error(str(exc))
             else:

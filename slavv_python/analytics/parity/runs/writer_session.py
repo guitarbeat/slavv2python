@@ -30,16 +30,14 @@ from slavv_python.analytics.parity.runs.launch_prepare import (
     LaunchPreparationError,
     prepare_detached_exact_run_launch,
 )
-from slavv_python.analytics.parity.runs.parity_job_lifecycle import (
-    finalize_parity_job,
-    mark_parity_job_running,
-)
+from slavv_python.analytics.parity.runs.parity_job_lifecycle import finalize_parity_job
 from slavv_python.analytics.parity.runs.process_utils import (
     ensure_monitor_daemon_running,
     is_process_alive,
     is_python_process,
     kill_process_tree,
 )
+from slavv_python.analytics.parity.runs.supervision import ParityRunSupervisor
 from slavv_python.analytics.parity.runs.writer_lease import (
     claim_writer_lease,
     finalize_writer_lease,
@@ -156,8 +154,8 @@ def resume_writer_session(
         )
 
     claim_writer_lease(dest_run_root, command=command, stage=stage)
-    mark_parity_job_running(
-        dest_run_root,
+    supervisor = ParityRunSupervisor(dest_run_root)
+    supervisor.start(
         pid=os.getpid(),
         command=argv,
         stage=stage,
@@ -177,7 +175,7 @@ def resume_writer_session(
             status="completed",
             stage=stop_after or "all",
         )
-        finalize_parity_job(dest_run_root, status="succeeded", exit_code=0)
+        supervisor.finish(status="succeeded", exit_code=0)
     except Exception as exc:
         if monitor and job_id is not None and registry is not None:
             registry.update_job(
@@ -188,8 +186,7 @@ def resume_writer_session(
                 metadata={"error": str(exc)},
             )
         finalize_writer_lease(dest_run_root, status="failed")
-        finalize_parity_job(
-            dest_run_root,
+        supervisor.finish(
             status="failed",
             exit_code=1,
             reason=str(exc),
