@@ -25,7 +25,19 @@ class ProofRecord:
     passed: bool | None
     stages: tuple[str, ...]
     adr0012_evaluated: bool | None
+    pairing_mode: str
     payload: dict[str, Any]
+
+
+def _repo_relative_parity_path(value: str | Path) -> str | None:
+    """Return a stable Experiment Root suffix across Windows and POSIX hosts."""
+    normalized = str(value).replace("\\", "/").rstrip("/")
+    lowered = normalized.lower()
+    for marker in ("/workspace/runs/", "/workspace/reports/"):
+        offset = lowered.find(marker)
+        if offset >= 0:
+            return normalized[offset + 1 :]
+    return None
 
 
 def run_root_from_proof_path(path: Path) -> Path:
@@ -59,9 +71,17 @@ def load_proof_record(
     dest_raw = payload.get("dest_run_root")
     if not isinstance(dest_raw, str) or not dest_raw:
         raise ProofRecordError(f"proof JSON missing dest_run_root: {resolved}")
-    dest_run_root = Path(dest_raw).expanduser().resolve()
-    if dest_run_root != run_root:
-        raise ProofRecordError(f"dest_run_root {dest_run_root} does not match folder {run_root}")
+    embedded_dest_run_root = Path(dest_raw).expanduser().resolve()
+    pairing_mode = "absolute"
+    if embedded_dest_run_root != run_root:
+        embedded_relative = _repo_relative_parity_path(dest_raw)
+        opened_relative = _repo_relative_parity_path(run_root)
+        if embedded_relative is None or embedded_relative != opened_relative:
+            raise ProofRecordError(
+                f"dest_run_root {embedded_dest_run_root} does not match folder {run_root}"
+            )
+        pairing_mode = "portable_repo_relative"
+    dest_run_root = run_root
     if expected_run_root is not None and expected_run_root.expanduser().resolve() != run_root:
         raise ProofRecordError(f"expected run root {expected_run_root} does not match {run_root}")
 
@@ -96,6 +116,7 @@ def load_proof_record(
         passed=None if passed is None else bool(passed),
         stages=stages,
         adr0012_evaluated=evaluated,
+        pairing_mode=pairing_mode,
         payload=payload,
     )
 

@@ -58,10 +58,13 @@ docs: update all path references after package reorganization
 # ❌ Bad
 def process():
     import numpy as np
+
     return np.array([1, 2, 3])
+
 
 # ✅ Good
 import numpy as np
+
 
 def process():
     return np.array([1, 2, 3])
@@ -164,6 +167,7 @@ def process(data):
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 def process(data: int) -> int:
     """Process data by incrementing."""

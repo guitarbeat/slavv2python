@@ -9,11 +9,11 @@ Run:
 
 from __future__ import annotations
 
-import scipy.io
 from pathlib import Path
 
 import h5py
 import numpy as np
+import scipy.io
 
 from slavv_python.utils.safe_unpickle import safe_load
 
@@ -76,7 +76,6 @@ def main() -> None:
     py_e2v = np.asarray(py["connections"], dtype=np.int64)
     print(f"Python crop candidates: {py_e2v.shape[0]} edges")
 
-    target = 6281
     py_order = [tuple(sorted([int(a), int(b)])) for a, b in py_e2v]
     mat_order = [tuple(sorted([int(a), int(b)])) for a, b in remapped]
 

@@ -135,9 +135,7 @@ def prepare_edge_discovery_context(
         microns_per_voxel,
         policy=policy,
     )
-    vertex_center_image = paint_vertex_center_image(
-        vertices.positions, energy_data.energy.shape
-    )
+    vertex_center_image = paint_vertex_center_image(vertices.positions, energy_data.energy.shape)
     return EdgeDiscoveryContext(
         energy_data=energy_data,
         vertices=vertices,

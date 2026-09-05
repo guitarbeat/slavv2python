@@ -128,9 +128,7 @@ def _view(
         target_stage=snapshot.target_stage if snapshot is not None else "network",
         current_stage=snapshot.current_stage if snapshot is not None else "",
         progress=(
-            max(0.0, min(float(snapshot.overall_progress), 1.0))
-            if snapshot is not None
-            else 0.0
+            max(0.0, min(float(snapshot.overall_progress), 1.0)) if snapshot is not None else 0.0
         ),
         image_shape=image_shape,
         is_active=is_active,

@@ -56,7 +56,7 @@ Make resume reorient **identically to init** — self-correcting, so it can neve
 desync from the orientation init computed (`slavv_python/analytics/parity/resume.py`):
 
 ```python
-image = load_tiff_volume(str(input_file))                      # transpose_to_yxz=True
+image = load_tiff_volume(str(input_file))  # transpose_to_yxz=True
 image, _oracle_size, _perm = _reorient_exact_input_volume(image, oracle_surface)
 ```
 

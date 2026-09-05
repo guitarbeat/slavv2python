@@ -12,6 +12,7 @@ from slavv_python.analytics.performance.edge_timing import (
 
 def test_edge_timing_record_preserves_execution_timestamps() -> None:
     record = EdgeTimingRecord(
+        initialization_seconds=0.25,
         discovery_seconds=1.25,
         selection_seconds=0.5,
         candidate_count=8,
@@ -26,12 +27,14 @@ def test_edge_timing_record_preserves_execution_timestamps() -> None:
 
     assert payload["started_at"] == "2026-09-04T01:00:00Z"
     assert payload["completed_at"] == "2026-09-04T01:00:02Z"
+    assert payload["spans"]["initialization_seconds"] == 0.25
     assert payload["spans"]["watershed_discovery_seconds"] == 1.25
     assert payload["spans"]["edge_selection_seconds"] == 0.5
 
 
 def test_edge_timing_payload_splits_discovery_and_selection() -> None:
     payload = build_edge_timing_payload(
+        initialization_seconds=0.5,
         discovery_seconds=2.5,
         selection_seconds=0.75,
         candidate_count=12,
@@ -48,8 +51,9 @@ def test_edge_timing_payload_splits_discovery_and_selection() -> None:
     assert payload["precision"] == "float64"
     assert payload["candidate_count"] == 12
     assert payload["edge_count"] == 4
-    assert payload["total_seconds"] == 3.25
+    assert payload["total_seconds"] == 3.75
     assert payload["spans"] == {
+        "initialization_seconds": 0.5,
         "watershed_discovery_seconds": 2.5,
         "edge_selection_seconds": 0.75,
     }
@@ -58,6 +62,7 @@ def test_edge_timing_payload_splits_discovery_and_selection() -> None:
 def test_edge_timing_persists_hash_sidecar(tmp_path) -> None:
     path = tmp_path / "phase2_edges_split.json"
     payload = build_edge_timing_payload(
+        initialization_seconds=0,
         discovery_seconds=1,
         selection_seconds=2,
         candidate_count=3,
@@ -71,3 +76,27 @@ def test_edge_timing_persists_hash_sidecar(tmp_path) -> None:
     sidecar = path.with_name(f"{path.name}.sha256")
     assert sidecar.is_file()
     assert len(sidecar.read_text(encoding="utf-8").strip()) == 64
+
+
+def test_edge_timing_payload_represents_durable_discovery_boundary() -> None:
+    payload = build_edge_timing_payload(
+        initialization_seconds=0.5,
+        discovery_seconds=2.5,
+        selection_seconds=None,
+        candidate_count=12,
+        edge_count=None,
+        exact_route=True,
+        writer_authorized=True,
+        started_at="2026-08-30T01:00:00Z",
+        discovery_completed_at="2026-08-30T01:00:03Z",
+    )
+
+    assert payload["status"] == "discovery_complete"
+    assert payload["completed_at"] is None
+    assert payload["edge_count"] is None
+    assert payload["total_seconds"] == 3.0
+    assert payload["spans"] == {
+        "initialization_seconds": 0.5,
+        "watershed_discovery_seconds": 2.5,
+        "edge_selection_seconds": None,
+    }

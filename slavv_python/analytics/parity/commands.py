@@ -173,7 +173,10 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
                 help="Stage for --require-evaluated when the filename does not name it.",
             ),
         ),
-        help="Cite a proof JSON only if dest_run_root matches the folder.",
+        help=(
+            "Cite a proof JSON only if dest_run_root matches the folder "
+            "absolutely or by portable Experiment Root suffix."
+        ),
     ),
     CommandSpec(
         "inspect-experiment-root",

@@ -15,9 +15,16 @@ class EdgeExecutionArtifacts:
     public Edges interface, while checkpoint names and payloads stay unchanged.
     """
 
-    def __init__(self, artifact_path: Any, *, authorized: bool) -> None:
+    def __init__(
+        self,
+        artifact_path: Any,
+        *,
+        authorized: bool,
+        timing_authorized: bool = False,
+    ) -> None:
         self._artifact_path = artifact_path
         self.authorized = authorized
+        self.timing_authorized = timing_authorized
 
     def write_candidates(self, manifest: CandidateManifest, audit: dict[str, Any]) -> None:
         """Persist the Candidate Set and its audit when the writer is authorized."""
@@ -31,7 +38,7 @@ class EdgeExecutionArtifacts:
 
     def write_timing(self, payload: dict[str, Any]) -> None:
         """Persist the durable split timing artifact."""
-        if self.authorized:
+        if self.timing_authorized:
             from slavv_python.analytics.performance.edge_timing import write_edge_timing
 
             write_edge_timing(self._artifact_path("phase2_edges_split.json"), payload)

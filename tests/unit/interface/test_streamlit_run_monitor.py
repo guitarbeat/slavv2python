@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,6 +14,9 @@ from slavv_python.interface.streamlit.services.run_monitor import (
     infer_pipeline_route,
     load_run_ops_payload,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _write_snapshot(root: Path, *, updated_at: str) -> None:

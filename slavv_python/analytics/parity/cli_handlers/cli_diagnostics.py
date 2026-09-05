@@ -276,6 +276,7 @@ def handle_inspect_proof(args: argparse.Namespace) -> None:
                 "stages": list(record.stages),
                 "adr0012_evaluated": record.adr0012_evaluated,
                 "paired": True,
+                "pairing_mode": record.pairing_mode,
             },
             indent=2,
             sort_keys=True,

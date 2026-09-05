@@ -25,7 +25,7 @@ from slavv_python.utils.synthetic import generate_synthetic_vessel_volume
 
 # Create a 64x64x64 volume with a central vessel
 volume = generate_synthetic_vessel_volume(shape=(64, 64, 64), vessel_radius=5.0)
-tifffile.imwrite("sample_volume.tif", volume.astype('float32'))
+tifffile.imwrite("sample_volume.tif", volume.astype("float32"))
 ```
 
 ## 3. Run the Pipeline

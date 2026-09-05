@@ -41,6 +41,19 @@ def test_supervisor_rejects_resurrection_of_completed_run(tmp_path):
 
 
 @pytest.mark.unit
+def test_supervisor_allows_retry_after_failed_attempt(tmp_path):
+    run = ParityRunSupervisor(tmp_path / "run")
+    run.start(pid=123, command="resume", stage="energy")
+    run.finish(status="failed", exit_code=1, reason="worker stopped")
+
+    restarted = run.start(pid=456, command="resume", stage="energy")
+
+    assert restarted["status"] == "running"
+    assert restarted["pid"] == 456
+    assert restarted["reason"] is None
+
+
+@pytest.mark.unit
 def test_supervisor_observation_exposes_checkpoint_alias(tmp_path):
     run = ParityRunSupervisor(tmp_path / "run")
     run.start(pid=123, command="resume", stage="edges")

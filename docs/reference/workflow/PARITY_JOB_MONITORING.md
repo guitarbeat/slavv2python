@@ -298,21 +298,21 @@ Each job record contains:
 
 ```python
 {
-    "job_id": "a3f2-41bd-9c8e-7d1f",         # UUID
-    "pid": 25248,                             # Process ID
+    "job_id": "a3f2-41bd-9c8e-7d1f",  # UUID
+    "pid": 25248,  # Process ID
     "run_dir": "workspace/runs/.../crop_M_exact_v3",
     "oracle_root": "workspace/oracles/180709_E_crop_M_v2",
-    "stage": "energy",                        # 'energy', 'vertices', 'edges', 'network', 'sequence'
-    "command": "resume-exact-run ...",        # Full CLI command
-    "started_at": "2026-06-09T08:30:15",     # ISO 8601
-    "last_seen_at": "2026-06-09T12:45:30",   # Updated every 30s
-    "completed_at": "2026-06-09T12:42:27",   # When job finished
-    "exit_code": 0,                           # Process exit code
-    "status": "running",                      # 'running', 'completed', 'failed', 'killed'
-    "metadata": {                             # Extra context
+    "stage": "energy",  # 'energy', 'vertices', 'edges', 'network', 'sequence'
+    "command": "resume-exact-run ...",  # Full CLI command
+    "started_at": "2026-06-09T08:30:15",  # ISO 8601
+    "last_seen_at": "2026-06-09T12:45:30",  # Updated every 30s
+    "completed_at": "2026-06-09T12:42:27",  # When job finished
+    "exit_code": 0,  # Process exit code
+    "status": "running",  # 'running', 'completed', 'failed', 'killed'
+    "metadata": {  # Extra context
         "flags": ["--force-rerun-from", "--monitor"],
-        "stop_after": "network"
-    }
+        "stop_after": "network",
+    },
 }
 ```
 
@@ -451,7 +451,7 @@ toaster.show_toast(
     title="...",
     msg="...",
     duration=10,  # Change to desired seconds
-    threaded=True
+    threaded=True,
 )
 ```
 
@@ -558,7 +558,7 @@ Get-Content workspace/scratch/job_registry.jsonl | Select-Object -Last 100 | Set
 Uses `fasteners.InterProcessLock` for atomic JSONL operations:
 
 ```python
-lock_path = registry_path.with_suffix('.lock')
+lock_path = registry_path.with_suffix(".lock")
 with InterProcessLock(lock_path):
     # Read or write registry
     ...
@@ -575,7 +575,7 @@ def is_process_alive(pid: int) -> bool:
     try:
         proc = psutil.Process(pid)
         # Validate process name contains 'python'
-        if 'python' not in proc.name().lower():
+        if "python" not in proc.name().lower():
             return False
         return proc.is_running()
     except psutil.NoSuchProcess:

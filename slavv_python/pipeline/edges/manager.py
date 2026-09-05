@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from pathlib import Path  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
@@ -31,6 +32,27 @@ if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
 
 logger = logging.getLogger(__name__)
+
+
+def _timing_writer_authorized(stage_controller: StageController | None) -> bool:
+    """Return whether the current process owns the parity writer lease.
+
+    A ``StageController`` permits normal resumable artifact persistence, but it
+    is not itself proof that this process is the authorized parity writer.  The
+    split timing artifact is certification metadata, so require the hardened
+    run-local lease and an exact PID match.
+    """
+    if stage_controller is None:
+        return False
+    from slavv_python.analytics.parity.runs.writer_lease import load_writer_lease
+
+    lease = load_writer_lease(stage_controller.run_context.run_root)
+    if not lease or lease.get("status") != "running":
+        return False
+    try:
+        return int(lease["pid"]) == os.getpid()
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 class _NullStageController:
@@ -115,9 +137,7 @@ class EdgeManager:
             stage_controller=cast("StageController", _NullStageController()),
             heartbeat=heartbeat,
         )
-        return discovery.discover(
-            context
-        )
+        return discovery.discover(context)
 
     @classmethod
     def _run_tracing(
@@ -135,6 +155,7 @@ class EdgeManager:
         artifacts = EdgeExecutionArtifacts(
             handle.artifact_path,
             authorized=stage_controller is not None,
+            timing_authorized=_timing_writer_authorized(stage_controller),
         )
 
         vertex_positions = vertices.positions
@@ -177,7 +198,7 @@ class EdgeManager:
         from slavv_python.analytics.performance.edge_timing import EdgeTimingRecord
 
         execution_started_at = now_iso()
-        t_discovery_start = time.perf_counter()
+        t_initialization_start = time.perf_counter()
         context = prepare_edge_discovery_context(
             energy_data,
             vertices,
@@ -185,13 +206,14 @@ class EdgeManager:
             stage_controller=cast("StageController", handle),
             heartbeat=heartbeat,
         )
+        initialization_elapsed = time.perf_counter() - t_initialization_start
         logger.info("Vertex center lookup image created")
-        manifest = discovery.discover(
-            context
-        )
+        t_discovery_start = time.perf_counter()
+        manifest = discovery.discover(context)
         t_discovery_end = time.perf_counter()
         discovery_elapsed = t_discovery_end - t_discovery_start
         logger.info("Edge discovery completed in %.2f seconds", discovery_elapsed)
+        discovery_completed_at = now_iso()
         if resumable:
             if use_watershed:
                 frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
@@ -212,6 +234,24 @@ class EdgeManager:
                 },
             )
             artifacts.write_candidates(manifest, candidate_audit)
+
+            # Persist the expensive Discovery boundary before Selection starts.
+            # If Selection is interrupted, the completed Discovery measurement
+            # remains available and the Candidate Set remains resumable.
+            artifacts.write_timing(
+                EdgeTimingRecord(
+                    initialization_seconds=initialization_elapsed,
+                    discovery_seconds=discovery_elapsed,
+                    selection_seconds=None,
+                    candidate_count=len(manifest.connections),
+                    edge_count=None,
+                    exact_route=use_watershed,
+                    writer_authorized=artifacts.timing_authorized,
+                    started_at=execution_started_at,
+                    discovery_completed_at=discovery_completed_at,
+                    completed_at=None,
+                ).to_payload()
+            )
 
             handle.update(
                 units_total=3,
@@ -254,13 +294,15 @@ class EdgeManager:
 
         if resumable:
             timing_payload = EdgeTimingRecord(
+                initialization_seconds=initialization_elapsed,
                 discovery_seconds=discovery_elapsed,
                 selection_seconds=selection_elapsed,
                 candidate_count=len(manifest.connections),
                 edge_count=len(chosen_dict.get("traces", [])),
                 exact_route=use_watershed,
-                writer_authorized=resumable,
+                writer_authorized=artifacts.timing_authorized,
                 started_at=execution_started_at,
+                discovery_completed_at=discovery_completed_at,
                 completed_at=now_iso(),
             ).to_payload()
             artifacts.write_timing(timing_payload)

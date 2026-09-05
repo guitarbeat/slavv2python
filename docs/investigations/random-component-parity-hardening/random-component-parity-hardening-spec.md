@@ -153,6 +153,7 @@ class StructuralGate:
     first_difference: Optional[dict] = None
     ...
 
+
 @dataclass(frozen=True)
 class HessianDiagnostics:
     collected: bool
@@ -165,10 +166,10 @@ The final JSON report can still be produced by a `to_dict()` or builder for comp
 
 ```python
 manifest = materialize_corpus(...)
-py = python_reference(manifest, include_hessian=(mode=="diagnostics"))
+py = python_reference(manifest, include_hessian=(mode == "diagnostics"))
 mat = load_matlab_reference(...)
 
-gate = compare_structural(py, mat, manifest=manifest)   # pure, no hessian work
+gate = compare_structural(py, mat, manifest=manifest)  # pure, no hessian work
 hess = collect_hessian_diagnostics(py, mat) if mode == "diagnostics" else empty
 
 report = assemble_report(gate, hess, mode=mode)

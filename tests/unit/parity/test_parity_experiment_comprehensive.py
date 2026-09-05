@@ -292,14 +292,19 @@ def test_launch_exact_run_job_writes_manifest_and_pid(tmp_path, monkeypatch):
     assert manifest["pid"] == 24680
     assert (run_root / "99_Metadata" / "parity_job.pid").read_text(encoding="utf-8") == "24680\n"
     assert (run_root / "99_Metadata" / "parity_job.json").is_file()
-    assert launched[0].command[:4] == [
+    expected_command = [
         str(python_exe),
         "-m",
         "slavv_python.interface.cli.parity",
         "resume-exact-run",
     ]
+    offset = 2 if jobs.sys.platform == "darwin" else 0
+    assert launched[0].command[offset : offset + 4] == expected_command
     assert "--n-jobs" in launched[0].command
     assert launched[0].kwargs["stdin"] == subprocess.DEVNULL
+    if jobs.sys.platform == "darwin":
+        assert launched[0].command[:2] == ["caffeinate", "-dims"]
+        assert launched[0].kwargs["start_new_session"] is True
 
 
 # ==============================================================================

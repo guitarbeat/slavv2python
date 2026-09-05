@@ -115,6 +115,8 @@ def launch_exact_run_job(
         energy_float_backend=energy_float_backend,
         python_executable=python_executable,
     )
+    if sys.platform == "darwin":
+        command = ["caffeinate", "-dims", *command]
 
     creationflags = 0
     if os.name == "nt":
@@ -131,6 +133,7 @@ def launch_exact_run_job(
             stderr=stderr_handle,
             close_fds=True,
             creationflags=creationflags,
+            start_new_session=os.name != "nt",
         )
 
     atomic_write_text(pid_path, f"{process.pid}\n")

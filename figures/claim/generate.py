@@ -541,7 +541,7 @@ def draw_agreement(ax: plt.Axes) -> None:
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{a.label}\n{a.note}" for a in audits], fontsize=5.6, linespacing=1.02)
-    ax.set_ylabel("Python − MATLAB", labelpad=2)
+    ax.set_ylabel("Python - MATLAB", labelpad=2)
     ax.set_xlim(-0.50, len(audits) - 0.25)
     ax.set_ylim(y_lo, y_hi)
     ax.legend(

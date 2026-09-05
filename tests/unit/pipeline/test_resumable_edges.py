@@ -5,6 +5,7 @@ import json
 import joblib
 import numpy as np
 
+from slavv_python.analytics.parity.runs.writer_lease import claim_writer_lease
 from slavv_python.engine.state import RunContext
 from slavv_python.pipeline.edges.edges import extract_edges_resumable
 from slavv_python.pipeline.edges.manager import EdgeManager
@@ -14,6 +15,7 @@ from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, monkeypatch):
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     stage_controller = run_context.stage("edges")
+    claim_writer_lease(run_context.run_root, command="pytest", stage="edges")
 
     energy_data = EnergyResult.from_dict(
         {

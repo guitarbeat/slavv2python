@@ -55,18 +55,18 @@
 ```python
 @dataclass
 class ParityJobRecord:
-    job_id: str                    # UUID
+    job_id: str  # UUID
     pid: int
     run_dir: Path
     oracle_root: Path
-    stage: str                     # 'energy', 'vertices', 'edges', 'network', 'sequence'
-    command: str                   # Full CLI command
+    stage: str  # 'energy', 'vertices', 'edges', 'network', 'sequence'
+    command: str  # Full CLI command
     started_at: datetime
     last_seen_at: datetime
     completed_at: Optional[datetime]
     exit_code: Optional[int]
-    status: str                    # 'running', 'completed', 'failed', 'killed'
-    metadata: Dict[str, Any]       # Extra context (params, flags, etc.)
+    status: str  # 'running', 'completed', 'failed', 'killed'
+    metadata: Dict[str, Any]  # Extra context (params, flags, etc.)
 ```
 
 **Storage**: `workspace/scratch/job_registry.jsonl` (append-only, one JSON object per line)

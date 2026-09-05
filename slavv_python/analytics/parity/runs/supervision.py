@@ -23,7 +23,7 @@ _ALLOWED: dict[str | None, frozenset[str]] = {
     "launched": frozenset({"running", "failed", "interrupted"}),
     "running": frozenset({"succeeded", "failed", "interrupted"}),
     "succeeded": frozenset({"succeeded"}),
-    "failed": frozenset({"failed"}),
+    "failed": frozenset({"failed", "running"}),
     "interrupted": frozenset({"interrupted", "running"}),
 }
 
@@ -63,8 +63,7 @@ class ParityRunSupervisor:
         current = self.observe().status
         if status not in _ALLOWED.get(current, frozenset()):
             raise InvalidParityJobTransitionError(
-                f"cannot transition parity job {current!r} -> {status!r} "
-                f"for {self.run_dir}"
+                f"cannot transition parity job {current!r} -> {status!r} for {self.run_dir}"
             )
         return lifecycle.update_parity_job_manifest(self.run_dir, status=status, **updates)
 
@@ -76,7 +75,7 @@ class ParityRunSupervisor:
             return existing or lifecycle.mark_parity_job_running(
                 self.run_dir, pid=pid, command=command, stage=stage
             )
-        if current not in (None, "interrupted", "launched"):
+        if current not in (None, "interrupted", "launched", "failed"):
             raise InvalidParityJobTransitionError(
                 f"cannot transition parity job {current!r} -> 'running' for {self.run_dir}"
             )
@@ -84,7 +83,9 @@ class ParityRunSupervisor:
             self.run_dir, pid=pid, command=command, stage=stage
         )
 
-    def finish(self, *, status: str, exit_code: int | None = None, reason: str = "") -> dict[str, Any]:
+    def finish(
+        self, *, status: str, exit_code: int | None = None, reason: str = ""
+    ) -> dict[str, Any]:
         """Enter an idempotent terminal state with durable completion metadata."""
         if status not in lifecycle.TERMINAL_STATUSES:
             raise ValueError(f"unsupported terminal parity job status: {status}")
@@ -111,4 +112,9 @@ if TYPE_CHECKING:
 
 InvalidParityJobTransition = InvalidParityJobTransitionError
 
-__all__ = ["InvalidParityJobTransition", "InvalidParityJobTransitionError", "ParityRunObservation", "ParityRunSupervisor"]
+__all__ = [
+    "InvalidParityJobTransition",
+    "InvalidParityJobTransitionError",
+    "ParityRunObservation",
+    "ParityRunSupervisor",
+]

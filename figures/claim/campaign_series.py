@@ -240,7 +240,7 @@ AGREEMENT_CLAIM = "Edges match; Network multiset PASS (Phase 1 closed)"
 AGREEMENT_FOOTNOTE = (
     f"Canonical full {ORACLE_FULL_VOLUME} audits "
     f"(MATLAB edges = {CANONICAL_MATLAB_EDGES:,}; strands = {CANONICAL_MATLAB_STRANDS:,}). "
-    "v15/v16 edge residual 0 with Network −1 strand (historical); "
+    "v15/v16 edge residual 0 with Network -1 strand (historical); "
     "v18 Claimed Trace Energy bake closes Network ADR 0012."
 )
 

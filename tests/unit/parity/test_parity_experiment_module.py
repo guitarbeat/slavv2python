@@ -126,6 +126,22 @@ def test_load_proof_record_accepts_matching_dest(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_load_proof_record_accepts_same_repo_relative_root_from_windows(tmp_path: Path) -> None:
+    run_root = tmp_path / "workspace/runs/oracle_180709_E/canonical_full_v18"
+    path = _write_proof(
+        run_root,
+        Path(r"D:\2P_Data\Aaron\slavv2python\workspace\runs\oracle_180709_E\canonical_full_v18"),
+        evaluated=True,
+    )
+
+    record = load_proof_record(path)
+
+    assert record.run_root == run_root.resolve()
+    assert record.dest_run_root == run_root.resolve()
+    assert record.pairing_mode == "portable_repo_relative"
+
+
+@pytest.mark.unit
 def test_load_proof_record_refuses_unpaired_dest(tmp_path: Path) -> None:
     opened = tmp_path / "crop_M_exact_v3"
     foreign = tmp_path / "crop_M_exact"
