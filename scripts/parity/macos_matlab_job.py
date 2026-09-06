@@ -1,0 +1,959 @@
+#!/usr/bin/env python3
+# ruff: noqa: UP045
+"""Launch and supervise long MATLAB jobs independently of the Codex desktop app.
+
+The operator CLI installs a small stdlib-only copy of this file under the
+user's Application Support directory. A user LaunchAgent runs that local copy,
+so the supervisor and its MATLAB child have a launchd-owned process coalition
+instead of inheriting the Codex/ChatGPT application lifetime.
+
+Run from the repository root::
+
+    uv run python scripts/parity/macos_matlab_job.py install
+    uv run python scripts/parity/macos_matlab_job.py start
+    uv run python scripts/parity/macos_matlab_job.py status
+    uv run python scripts/parity/macos_matlab_job.py pause
+    uv run python scripts/parity/macos_matlab_job.py resume
+
+The default job is the isolated R2024b full-volume ``180709_E`` reproduction.
+It writes only below ``workspace/scratch/matlab_full_batches``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+import plistlib
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+import uuid
+from contextlib import suppress
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Optional
+
+REPO = Path(__file__).resolve().parents[2]
+DEFAULT_JOB_ID = "180709-e-r2024b-full"
+LABEL_PREFIX = "org.utfoil.slavv2python.matlab"
+SUPPORT_ROOT = Path.home() / "Library/Application Support/slavv2python/matlab-jobs"
+LAUNCH_AGENTS_ROOT = Path.home() / "Library/LaunchAgents"
+SYSTEM_PYTHON = Path("/usr/bin/python3")
+DEFAULT_MATLAB = Path("/Volumes/LoveSSD/Applications/MATLAB_R2024b.app/bin/matlab")
+DEFAULT_DRIVER = REPO / "workspace/scratch/matlab/vectorize_180709_E_full_resume.m"
+DEFAULT_SOURCE = Path("/Volumes/LoveSSD/neurovasc-db/data/raw/scans/180709_E.tif")
+DEFAULT_SOURCE_SHA256 = "771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353"
+DEFAULT_BATCH_ROOT = REPO / "workspace/scratch/matlab_full_batches/batch_260831-211917"
+DEFAULT_STATE_ROOT = REPO / "workspace/scratch/matlab_full_batches/launchd_180709_E_full_r2024b"
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with temporary.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    temporary.replace(path)
+    directory_fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _pid_alive(value: Any) -> bool:
+    try:
+        pid = int(value)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _validate_job_id(job_id: str) -> str:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", job_id):
+        raise ValueError("job id must contain only lowercase letters, digits, and hyphens")
+    return job_id
+
+
+def _installed_paths(job_id: str) -> dict[str, Path]:
+    job_id = _validate_job_id(job_id)
+    label = f"{LABEL_PREFIX}.{job_id}"
+    support = SUPPORT_ROOT / job_id
+    return {
+        "support": support,
+        "runtime": support / "runtime",
+        "config": support / "config.json",
+        "runner": support / "macos_matlab_job.py",
+        "wrapper": support / "matlab_driver_wrapper.m",
+        "launchd_out": support / "launchd.out.log",
+        "launchd_err": support / "launchd.err.log",
+        "plist": LAUNCH_AGENTS_ROOT / f"{label}.plist",
+    }
+
+
+def _matlab_run_expression(driver: Path) -> str:
+    escaped = str(driver).replace("'", "''")
+    return f"run('{escaped}')"
+
+
+def _matlab_function_expression(wrapper: Path) -> str:
+    parent = str(wrapper.parent).replace("'", "''")
+    return f"addpath('{parent}'); {wrapper.stem}"
+
+
+def _matlab_app_path(matlab: Path) -> Path:
+    resolved = matlab.resolve()
+    for candidate in (resolved, *resolved.parents):
+        if candidate.suffix == ".app":
+            return candidate
+    raise RuntimeError(f"MATLAB executable is not inside an application bundle: {matlab}")
+
+
+def _matlab_string(value: Path) -> str:
+    return str(value).replace("'", "''")
+
+
+def _matlab_wrapper(*, driver: Path, runtime: Path) -> str:
+    driver_value = _matlab_string(driver.resolve())
+    runtime_value = _matlab_string(runtime.resolve())
+    return f"""function matlab_driver_wrapper
+% Generated by scripts/parity/macos_matlab_job.py. Do not edit.
+runtimeRoot = '{runtime_value}';
+pidPath = fullfile(runtimeRoot, 'matlab.pid');
+resultPath = fullfile(runtimeRoot, 'matlab_result.json');
+resultTempPath = [resultPath '.tmp'];
+noncePath = fullfile(runtimeRoot, 'attempt_nonce.txt');
+attemptNonce = strtrim(fileread(noncePath));
+if isfile(resultTempPath), delete(resultTempPath); end
+if isfile(resultPath), delete(resultPath); end
+fid = fopen(pidPath, 'w');
+assert(fid ~= -1, 'slavv:supervisor:PidFile', 'Could not open MATLAB PID file.');
+fprintf(fid, '%d\\n', feature('getpid'));
+fclose(fid);
+pidCleanup = onCleanup(@() cleanupPidFile(pidPath)); %#ok<NASGU>
+try
+    evalin('base', 'run(''{driver_value}'')');
+    writeResult(resultTempPath, resultPath, attemptNonce, 'completed', '');
+catch exception
+    writeResult(resultTempPath, resultPath, attemptNonce, 'failed', ...
+        getReport(exception, 'extended', 'hyperlinks', 'off'));
+    rethrow(exception);
+end
+end
+
+function cleanupPidFile(pidPath)
+if isfile(pidPath), delete(pidPath); end
+end
+
+function writeResult(tempPath, resultPath, attemptNonce, status, message)
+payload = struct('status', status, 'message', message, ...
+    'attempt_nonce', attemptNonce, 'matlab_pid', feature('getpid'), ...
+    'written_at_posix', posixtime(datetime('now')));
+fid = fopen(tempPath, 'w');
+assert(fid ~= -1, 'slavv:supervisor:ResultFile', 'Could not open result file.');
+fwrite(fid, jsonencode(payload), 'char');
+fclose(fid);
+movefile(tempPath, resultPath, 'f');
+end
+"""
+
+
+def _validate_inputs(config: dict[str, Any], *, validate_external_source: bool = False) -> None:
+    command = config.get("command")
+    if (
+        not isinstance(command, list)
+        or not command
+        or not all(isinstance(part, str) and part for part in command)
+    ):
+        raise RuntimeError("configured command must be a non-empty string list")
+    cwd = Path(config["cwd"])
+    if not cwd.is_dir():
+        raise RuntimeError(f"working directory is unavailable: {cwd}")
+    executable = Path(command[0])
+    if executable.is_absolute() and not executable.is_file():
+        raise RuntimeError(f"command executable is unavailable: {executable}")
+    source_value = config.get("source_tiff")
+    expected_hash = config.get("source_sha256")
+    if validate_external_source and source_value:
+        source = Path(source_value)
+        if not source.is_file():
+            raise RuntimeError(f"source TIFF is unavailable: {source}")
+        if expected_hash:
+            actual_hash = _sha256(source)
+            if actual_hash != expected_hash:
+                raise RuntimeError(
+                    f"source TIFF SHA-256 mismatch: {actual_hash} != {expected_hash}"
+                )
+
+
+def build_config(
+    *,
+    job_id: str,
+    matlab: Path,
+    driver: Path,
+    source_tiff: Optional[Path],
+    source_sha256: Optional[str],
+    state_root: Path,
+    batch_root: Path,
+) -> dict[str, Any]:
+    """Build the durable configuration consumed by the local supervisor."""
+    job_id = _validate_job_id(job_id)
+    paths = _installed_paths(job_id)
+    support = paths["support"].resolve()
+    runtime = paths["runtime"].resolve()
+    state_root = state_root.resolve()
+    batch_root = batch_root.resolve()
+    matlab_app = _matlab_app_path(matlab)
+    matlab_log = runtime / "matlab.log"
+    wrapper = paths["wrapper"].resolve()
+    wrapper_text = _matlab_wrapper(driver=driver, runtime=runtime)
+    return {
+        "schema_version": 2,
+        "job_id": job_id,
+        "label": f"{LABEL_PREFIX}.{job_id}",
+        "command": [
+            "/usr/bin/caffeinate",
+            "-dims",
+            "/usr/bin/open",
+            "-W",
+            "-n",
+            "-a",
+            str(matlab_app),
+            "--args",
+            "-logfile",
+            str(matlab_log),
+            "-batch",
+            _matlab_function_expression(wrapper),
+        ],
+        "cwd": str(support),
+        "state_path": str(runtime / "state.json"),
+        "supervisor_log_path": str(runtime / "supervisor.log"),
+        "matlab_log_path": str(matlab_log),
+        "log_path": str(runtime / "supervisor.log"),
+        "pause_path": str(runtime / "PAUSE"),
+        "matlab_pid_path": str(runtime / "matlab.pid"),
+        "matlab_pid_command_fragment": str(support),
+        "matlab_process_fragment": str(matlab_app / "Contents/MacOS/MATLAB"),
+        "matlab_result_path": str(runtime / "matlab_result.json"),
+        "attempt_nonce_path": str(runtime / "attempt_nonce.txt"),
+        "wrapper_path": str(wrapper),
+        "driver_path": str(driver.resolve()),
+        "driver_sha256": _sha256(driver),
+        "wrapper_sha256": hashlib.sha256(wrapper_text.encode("utf-8")).hexdigest(),
+        "matlab_startup_timeout_seconds": 180.0,
+        "heartbeat_seconds": 5.0,
+        "source_tiff": str(source_tiff.resolve()) if source_tiff else None,
+        "source_sha256": source_sha256,
+        "preflight": {
+            "source_verified_at": utc_now() if source_tiff else None,
+            "source_sha256": source_sha256,
+        },
+        "requested_state_root": str(state_root),
+        "progress_root": str(batch_root / "data"),
+        "progress_glob": "energy_*_180709_E_chunks_octave_*",
+        "progress_access": "operator_only",
+        "installed_at": utc_now(),
+        "epistemic_label": "optional MATLAB R2024b cross-version reproduction",
+        "protected_roots": [
+            str(REPO / "workspace/oracles/180709_E_full_v2"),
+            str(REPO / "workspace/runs/oracle_180709_E/canonical_full_v18"),
+        ],
+    }
+
+
+def _launchd_plist(config: dict[str, Any], paths: dict[str, Path]) -> dict[str, Any]:
+    return {
+        "Label": config["label"],
+        "ProgramArguments": [
+            str(SYSTEM_PYTHON),
+            str(paths["runner"]),
+            "_supervise",
+            str(paths["config"]),
+        ],
+        "RunAtLoad": False,
+        "ProcessType": "Background",
+        "ExitTimeOut": 120,
+        "StandardOutPath": str(paths["launchd_out"]),
+        "StandardErrorPath": str(paths["launchd_err"]),
+        "WorkingDirectory": str(paths["support"]),
+    }
+
+
+def _launchctl_domain() -> str:
+    return f"gui/{os.getuid()}"
+
+
+def _run_launchctl(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["/bin/launchctl", *arguments],
+        check=check,
+        text=True,
+        capture_output=True,
+    )
+
+
+def install_job(
+    *,
+    job_id: str,
+    matlab: Path,
+    driver: Path,
+    source_tiff: Optional[Path],
+    source_sha256: Optional[str],
+    state_root: Path,
+    batch_root: Path,
+    bootstrap: bool = True,
+) -> dict[str, Any]:
+    """Install but do not start a launchd-owned MATLAB job."""
+    if sys.platform != "darwin":
+        raise RuntimeError("the macOS MATLAB LaunchAgent is available only on macOS")
+    if not SYSTEM_PYTHON.is_file():
+        raise RuntimeError(f"system Python is unavailable: {SYSTEM_PYTHON}")
+    if not matlab.is_file():
+        raise RuntimeError(f"MATLAB executable is unavailable: {matlab}")
+    if not driver.is_file():
+        raise RuntimeError(f"MATLAB driver is unavailable: {driver}")
+
+    paths = _installed_paths(job_id)
+    state_path = paths["runtime"] / "state.json"
+    if state_path.is_file():
+        state = _load_json(state_path)
+        if any(
+            _pid_alive(state.get(name)) for name in ("supervisor_pid", "worker_pid", "matlab_pid")
+        ):
+            raise RuntimeError("refusing to replace configuration while the job is alive")
+
+    if source_tiff:
+        source_config = {
+            "command": [str(SYSTEM_PYTHON)],
+            "cwd": str(Path.cwd()),
+            "source_tiff": str(source_tiff.resolve()),
+            "source_sha256": source_sha256,
+        }
+        _validate_inputs(source_config, validate_external_source=True)
+
+    paths["support"].mkdir(parents=True, exist_ok=True)
+    paths["runtime"].mkdir(parents=True, exist_ok=True)
+    LAUNCH_AGENTS_ROOT.mkdir(parents=True, exist_ok=True)
+    config = build_config(
+        job_id=job_id,
+        matlab=matlab,
+        driver=driver,
+        source_tiff=source_tiff,
+        source_sha256=source_sha256,
+        state_root=state_root,
+        batch_root=batch_root,
+    )
+    _validate_inputs(config)
+    shutil.copy2(Path(__file__).resolve(), paths["runner"])
+    paths["runner"].chmod(0o755)
+    paths["wrapper"].write_text(
+        _matlab_wrapper(driver=driver, runtime=paths["runtime"]), encoding="utf-8"
+    )
+    _atomic_json(paths["config"], config)
+    with paths["plist"].open("wb") as handle:
+        plistlib.dump(_launchd_plist(config, paths), handle, sort_keys=True)
+
+    if bootstrap:
+        target = f"{_launchctl_domain()}/{config['label']}"
+        _run_launchctl("bootout", target, check=False)
+        result = _run_launchctl("bootstrap", _launchctl_domain(), str(paths["plist"]), check=False)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"launchctl bootstrap failed ({result.returncode}): {result.stderr.strip()}"
+            )
+
+    return {
+        "job_id": job_id,
+        "label": config["label"],
+        "config_path": str(paths["config"]),
+        "runner_path": str(paths["runner"]),
+        "plist_path": str(paths["plist"]),
+        "state_path": config["state_path"],
+        "status": "installed",
+    }
+
+
+def _progress(config: dict[str, Any]) -> dict[str, Any]:
+    root_value = config.get("progress_root")
+    pattern = config.get("progress_glob")
+    if not root_value or not pattern:
+        return {"artifact_count": 0, "latest_artifact": None, "latest_artifact_at": None}
+    root = Path(root_value)
+    try:
+        directories = (
+            [path for path in root.glob(pattern) if path.is_dir()] if root.is_dir() else []
+        )
+        if not directories:
+            return {"artifact_count": 0, "latest_artifact": None, "latest_artifact_at": None}
+        newest_directory = max(directories, key=lambda path: path.stat().st_mtime)
+        artifacts = [path for path in newest_directory.rglob("*") if path.is_file()]
+        newest_artifact = (
+            max(artifacts, key=lambda path: path.stat().st_mtime) if artifacts else None
+        )
+        return {
+            "directory": str(newest_directory),
+            "artifact_count": len(artifacts),
+            "latest_artifact": str(newest_artifact) if newest_artifact else None,
+            "latest_artifact_at": (
+                datetime.fromtimestamp(newest_artifact.stat().st_mtime, timezone.utc).isoformat()
+                if newest_artifact
+                else None
+            ),
+        }
+    except OSError as exc:
+        return {
+            "artifact_count": None,
+            "latest_artifact": None,
+            "latest_artifact_at": None,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
+def _pid_command(pid: int) -> str:
+    result = subprocess.run(
+        ["/bin/ps", "-p", str(pid), "-o", "command="],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def _discover_matlab_pids(config: dict[str, Any]) -> list[int]:
+    fragment = config.get("matlab_pid_command_fragment")
+    process_fragment = config.get("matlab_process_fragment")
+    if not fragment:
+        return []
+    result = subprocess.run(
+        ["/bin/ps", "-axo", "pid=,ppid=,stat=,command="],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    matches: list[int] = []
+    if result.returncode != 0:
+        return matches
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(None, 3)
+        if len(parts) != 4:
+            continue
+        pid_value, parent_value, status, command = parts
+        if (
+            parent_value != "1"
+            or status.startswith("Z")
+            or str(fragment) not in command
+            or (process_fragment and str(process_fragment) not in command)
+        ):
+            continue
+        with suppress(ValueError):
+            matches.append(int(pid_value))
+    return matches
+
+
+def _matched_matlab_pid(config: dict[str, Any]) -> Optional[int]:
+    pid_path_value = config.get("matlab_pid_path")
+    fragment = config.get("matlab_pid_command_fragment")
+    if not pid_path_value or not fragment:
+        return None
+    pid_path = Path(pid_path_value)
+    try:
+        pid = int(pid_path.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        pid = None
+    if pid is not None and _pid_alive(pid):
+        command = _pid_command(pid)
+        if str(fragment) in command and (
+            not config.get("matlab_process_fragment")
+            or str(config["matlab_process_fragment"]) in command
+        ):
+            return pid
+    discovered = _discover_matlab_pids(config)
+    return discovered[0] if len(discovered) == 1 else None
+
+
+def _terminate_matlab_pid(config: dict[str, Any], timeout: float = 30.0) -> Optional[int]:
+    pid = _matched_matlab_pid(config)
+    if pid is None:
+        return None
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return pid
+    except PermissionError:
+        if _pid_alive(pid) and str(config["matlab_pid_command_fragment"]) in _pid_command(pid):
+            raise
+        return pid
+    deadline = time.monotonic() + timeout
+    while _pid_alive(pid) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    if _pid_alive(pid):
+        with suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+    deadline = time.monotonic() + 5.0
+    while _pid_alive(pid) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    if _pid_alive(pid):
+        raise RuntimeError(f"matched MATLAB PID {pid} survived termination")
+    return pid
+
+
+def _local_progress() -> dict[str, Any]:
+    return {
+        "access": "operator-status-only",
+        "artifact_count": None,
+        "latest_artifact": None,
+        "latest_artifact_at": None,
+    }
+
+
+def _terminate_process_group(process: subprocess.Popen[Any], timeout: float = 30.0) -> int:
+    returncode = process.poll()
+    if returncode is not None:
+        return int(returncode)
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        returncode = process.poll()
+        if returncode is not None:
+            return int(returncode)
+        raise
+    try:
+        return process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        return process.wait()
+
+
+def _stop_attempt(
+    config: dict[str, Any], process: subprocess.Popen[Any]
+) -> tuple[int, Optional[int]]:
+    matlab_pid = _matched_matlab_pid(config)
+    if config.get("matlab_pid_command_fragment") and matlab_pid is None:
+        deadline = time.monotonic() + float(config.get("matlab_startup_timeout_seconds", 180.0))
+        while process.poll() is None and time.monotonic() < deadline:
+            matlab_pid = _matched_matlab_pid(config)
+            if matlab_pid is not None:
+                break
+            time.sleep(0.1)
+    if matlab_pid is not None:
+        _terminate_matlab_pid(config)
+    returncode = _terminate_process_group(process)
+    for discovered_pid in _discover_matlab_pids(config):
+        _terminate_matlab_pid(config)
+        matlab_pid = matlab_pid or discovered_pid
+    if _discover_matlab_pids(config):
+        raise RuntimeError("matched MATLAB process survived pause")
+    return returncode, matlab_pid
+
+
+def _read_matlab_result(config: dict[str, Any], attempt_nonce: str) -> tuple[bool, Any]:
+    result_value = config.get("matlab_result_path")
+    if not result_value:
+        return True, None
+    result_path = Path(result_value)
+    if not result_path.is_file():
+        return False, "MATLAB completion marker is missing"
+    try:
+        result = _load_json(result_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return False, f"MATLAB completion marker is unreadable: {exc}"
+    if result.get("attempt_nonce") != attempt_nonce:
+        return False, "MATLAB completion marker has the wrong attempt nonce"
+    if result.get("status") != "completed":
+        message = result.get("message") or "MATLAB reported failure"
+        return False, message
+    return True, result
+
+
+def supervise(config_path: Path) -> int:
+    """Own one MATLAB attempt and atomically finalize its durable state."""
+    config = _load_json(config_path)
+    _validate_inputs(config)
+    state_path = Path(config["state_path"])
+    log_path = Path(config["log_path"])
+    pause_path = Path(config["pause_path"])
+    lock_path = config_path.with_suffix(".lock")
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return 73
+        prior = _load_json(state_path) if state_path.is_file() else {}
+        attempt = int(prior.get("attempt") or 0) + 1
+        base_state = {
+            "schema_version": 2,
+            "job_id": config["job_id"],
+            "label": config["label"],
+            "attempt": attempt,
+            "command": config["command"],
+            "cwd": config["cwd"],
+            "log_path": str(log_path),
+            "pause_path": str(pause_path),
+            "source_tiff": config.get("source_tiff"),
+            "source_sha256": config.get("source_sha256"),
+            "preflight": config.get("preflight"),
+            "driver_path": config.get("driver_path"),
+            "driver_sha256": config.get("driver_sha256"),
+            "wrapper_path": config.get("wrapper_path"),
+            "wrapper_sha256": config.get("wrapper_sha256"),
+            "epistemic_label": config.get("epistemic_label"),
+            "protected_roots": config.get("protected_roots", []),
+        }
+        if pause_path.exists():
+            _atomic_json(
+                state_path,
+                {
+                    **base_state,
+                    "status": "paused",
+                    "supervisor_pid": None,
+                    "worker_pid": None,
+                    "matlab_pid": None,
+                    "heartbeat_at": utc_now(),
+                    "progress": _local_progress(),
+                },
+            )
+            return 0
+
+        started_at = utc_now()
+        attempt_nonce = uuid.uuid4().hex
+        live_matlab_pid = _matched_matlab_pid(config)
+        if live_matlab_pid is not None:
+            raise RuntimeError(
+                f"refusing to start while matched MATLAB PID {live_matlab_pid} is alive"
+            )
+        for marker_name in ("matlab_pid_path", "matlab_result_path"):
+            marker_value = config.get(marker_name)
+            if marker_value:
+                Path(marker_value).unlink(missing_ok=True)
+        nonce_path_value = config.get("attempt_nonce_path")
+        if nonce_path_value:
+            nonce_path = Path(nonce_path_value)
+            nonce_path.write_text(f"{attempt_nonce}\n", encoding="utf-8")
+        state = {
+            **base_state,
+            "status": "starting",
+            "started_at": started_at,
+            "ended_at": None,
+            "exit_code": None,
+            "signal": None,
+            "attempt_nonce": attempt_nonce,
+            "supervisor_pid": os.getpid(),
+            "worker_pid": None,
+            "matlab_pid": None,
+            "heartbeat_at": started_at,
+            "progress": _local_progress(),
+        }
+        _atomic_json(state_path, state)
+        requested_signal: list[int] = []
+
+        def request_stop(signum: int, _frame: Any) -> None:
+            if not requested_signal:
+                requested_signal.append(signum)
+
+        previous_handlers: dict[int, Any] = {}
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers[signum] = signal.signal(signum, request_stop)
+
+        process: Optional[subprocess.Popen[Any]] = None
+        try:
+            with log_path.open("a", encoding="utf-8", buffering=1) as log:
+                log.write(f"\n[{started_at}] ATTEMPT {attempt} START\n")
+                log.write(f"[{started_at}] COMMAND {json.dumps(config['command'])}\n")
+                process = subprocess.Popen(
+                    config["command"],
+                    cwd=config["cwd"],
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                )
+                state.update(status="running", worker_pid=process.pid)
+                _atomic_json(state_path, state)
+                heartbeat_seconds = max(float(config.get("heartbeat_seconds", 5.0)), 0.05)
+                while process.poll() is None:
+                    matlab_pid = _matched_matlab_pid(config)
+                    if matlab_pid is not None and state.get("matlab_pid") != matlab_pid:
+                        state.update(matlab_pid=matlab_pid)
+                    if pause_path.exists() or requested_signal:
+                        returncode, stopped_matlab_pid = _stop_attempt(config, process)
+                        paused = pause_path.exists()
+                        signum = requested_signal[0] if requested_signal else signal.SIGTERM
+                        ended_at = utc_now()
+                        state.update(
+                            status="paused" if paused else "interrupted",
+                            ended_at=ended_at,
+                            exit_code=returncode,
+                            signal=signal.Signals(signum).name,
+                            supervisor_pid=None,
+                            worker_pid=None,
+                            matlab_pid=None,
+                            last_matlab_pid=stopped_matlab_pid or state.get("matlab_pid"),
+                            heartbeat_at=ended_at,
+                            progress=_local_progress(),
+                        )
+                        _atomic_json(state_path, state)
+                        log.write(f"[{ended_at}] {state['status'].upper()} exit={returncode}\n")
+                        return 0 if paused else 128 + signum
+                    state.update(heartbeat_at=utc_now())
+                    _atomic_json(state_path, state)
+                    time.sleep(heartbeat_seconds)
+
+                returncode = int(process.returncode or 0)
+                ended_at = utc_now()
+                remaining_matlab = _discover_matlab_pids(config)
+                if remaining_matlab:
+                    _terminate_matlab_pid(config)
+                    returncode = returncode or 1
+                marker_ok, matlab_result = _read_matlab_result(config, attempt_nonce)
+                completed = returncode == 0 and marker_ok
+                state.update(
+                    status="completed" if completed else "failed",
+                    ended_at=ended_at,
+                    exit_code=returncode if completed or returncode else 1,
+                    signal=(signal.Signals(-returncode).name if returncode < 0 else None),
+                    supervisor_pid=None,
+                    worker_pid=None,
+                    last_matlab_pid=state.get("matlab_pid"),
+                    matlab_pid=None,
+                    heartbeat_at=ended_at,
+                    progress=_local_progress(),
+                )
+                if matlab_result is not None:
+                    state["matlab_result"] = matlab_result
+                if not marker_ok:
+                    state["failure"] = str(matlab_result)
+                _atomic_json(state_path, state)
+                log.write(f"[{ended_at}] EXIT {returncode}\n")
+                if not completed and returncode == 0:
+                    return 1
+                return returncode if returncode >= 0 else 128 - returncode
+        except BaseException as exc:
+            if process is not None and process.poll() is None:
+                _stop_attempt(config, process)
+            ended_at = utc_now()
+            state.update(
+                status="supervisor-failed",
+                ended_at=ended_at,
+                exit_code=1,
+                failure=f"{type(exc).__name__}: {exc}",
+                supervisor_pid=None,
+                worker_pid=None,
+                matlab_pid=None,
+                heartbeat_at=ended_at,
+                progress=_local_progress(),
+            )
+            _atomic_json(state_path, state)
+            raise
+        finally:
+            for signum, handler in previous_handlers.items():
+                signal.signal(signum, handler)
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def print_status(state_path: Path, *, config: Optional[dict[str, Any]] = None) -> int:
+    if not state_path.is_file():
+        print(json.dumps({"status": "not-started", "state_path": str(state_path)}, indent=2))
+        return 1
+    state = _load_json(state_path)
+    supervisor_alive = _pid_alive(state.get("supervisor_pid"))
+    worker_alive = _pid_alive(state.get("worker_pid"))
+    configured_matlab_pid = _matched_matlab_pid(config) if config else None
+    recorded_matlab_pid = state.get("matlab_pid")
+    matlab_alive = bool(configured_matlab_pid or (not config and _pid_alive(recorded_matlab_pid)))
+    effective = state.get("status", "unknown")
+    if effective in {"starting", "running"} and not supervisor_alive and matlab_alive:
+        effective = "orphaned-matlab"
+    elif effective in {"starting", "running"} and not supervisor_alive:
+        effective = "stale-running"
+    observed = {
+        **state,
+        "effective_status": effective,
+        "supervisor_pid_alive": supervisor_alive,
+        "worker_pid_alive": worker_alive,
+        "matlab_pid_alive": matlab_alive,
+    }
+    if configured_matlab_pid:
+        observed["observed_matlab_pid"] = configured_matlab_pid
+    if config:
+        observed["observed_progress"] = _progress(config)
+    print(json.dumps(observed, indent=2, sort_keys=True))
+    return 0 if effective in {"completed", "paused", "running", "starting"} else 1
+
+
+def _load_installed_config(job_id: str) -> tuple[dict[str, Any], dict[str, Path]]:
+    paths = _installed_paths(job_id)
+    if not paths["config"].is_file():
+        raise RuntimeError(f"job is not installed: {job_id}; run install first")
+    return _load_json(paths["config"]), paths
+
+
+def start_installed(job_id: str, *, resume: bool = False) -> dict[str, Any]:
+    config, _paths = _load_installed_config(job_id)
+    state_path = Path(config["state_path"])
+    pause_path = Path(config["pause_path"])
+    live_matlab_pid = _matched_matlab_pid(config)
+    if live_matlab_pid is not None:
+        raise RuntimeError(f"refusing duplicate writer: MATLAB PID {live_matlab_pid} is alive")
+    if state_path.is_file():
+        state = _load_json(state_path)
+        if any(_pid_alive(state.get(name)) for name in ("supervisor_pid", "worker_pid")):
+            raise RuntimeError("refusing duplicate writer: installed job is still alive")
+        if state.get("status") == "completed" and not resume:
+            raise RuntimeError("job already completed; use resume only for an intentional rerun")
+    if resume:
+        pause_path.unlink(missing_ok=True)
+    elif pause_path.exists():
+        raise RuntimeError("pause sentinel exists; use resume to clear it")
+    _validate_inputs(config, validate_external_source=True)
+    result = _run_launchctl("kickstart", f"{_launchctl_domain()}/{config['label']}", check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"launchctl kickstart failed: {result.stderr.strip()}")
+    return {"job_id": job_id, "status": "launch-requested", "state_path": str(state_path)}
+
+
+def pause_installed(job_id: str) -> dict[str, Any]:
+    config, _paths = _load_installed_config(job_id)
+    pause_path = Path(config["pause_path"])
+    pause_path.parent.mkdir(parents=True, exist_ok=True)
+    pause_path.write_text(f"requested_at={utc_now()}\n", encoding="utf-8")
+    state_path = Path(config["state_path"])
+    state = _load_json(state_path) if state_path.is_file() else {}
+    rescued_pid = None
+    if not _pid_alive(state.get("supervisor_pid")):
+        rescued_pid = _terminate_matlab_pid(config)
+        if rescued_pid is not None:
+            ended_at = utc_now()
+            state.update(
+                status="paused",
+                ended_at=ended_at,
+                heartbeat_at=ended_at,
+                supervisor_pid=None,
+                worker_pid=None,
+                matlab_pid=None,
+                last_matlab_pid=rescued_pid,
+                signal="SIGTERM",
+                pause_rescue=True,
+            )
+            _atomic_json(state_path, state)
+    return {
+        "job_id": job_id,
+        "status": "paused" if rescued_pid else "pause-requested",
+        "pause_path": str(pause_path),
+        "rescued_matlab_pid": rescued_pid,
+    }
+
+
+def uninstall_job(job_id: str) -> dict[str, Any]:
+    config, paths = _load_installed_config(job_id)
+    state_path = Path(config["state_path"])
+    if state_path.is_file():
+        state = _load_json(state_path)
+        if any(
+            _pid_alive(state.get(name)) for name in ("supervisor_pid", "worker_pid")
+        ) or _matched_matlab_pid(config):
+            raise RuntimeError("pause the live job before uninstalling")
+    target = f"{_launchctl_domain()}/{config['label']}"
+    _run_launchctl("bootout", target, check=False)
+    quarantine = SUPPORT_ROOT / "quarantine" / f"{job_id}-{int(time.time())}"
+    quarantine.mkdir(parents=True, exist_ok=True)
+    for path in (
+        paths["plist"],
+        paths["runner"],
+        paths["config"],
+        paths["launchd_out"],
+        paths["launchd_err"],
+    ):
+        if path.exists():
+            shutil.move(str(path), str(quarantine / path.name))
+    return {"job_id": job_id, "status": "uninstalled", "quarantine": str(quarantine)}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="action", required=True)
+    install = subparsers.add_parser("install", help="install but do not start the job")
+    install.add_argument("--job-id", default=DEFAULT_JOB_ID)
+    install.add_argument("--matlab", type=Path, default=DEFAULT_MATLAB)
+    install.add_argument("--driver", type=Path, default=DEFAULT_DRIVER)
+    install.add_argument("--source-tiff", type=Path, default=DEFAULT_SOURCE)
+    install.add_argument("--source-sha256", default=DEFAULT_SOURCE_SHA256)
+    install.add_argument("--state-root", type=Path, default=DEFAULT_STATE_ROOT)
+    install.add_argument("--batch-root", type=Path, default=DEFAULT_BATCH_ROOT)
+    install.add_argument("--no-bootstrap", action="store_true")
+    for action in ("start", "resume", "pause", "status", "uninstall"):
+        command = subparsers.add_parser(action)
+        command.add_argument("--job-id", default=DEFAULT_JOB_ID)
+    supervise_parser = subparsers.add_parser("_supervise")
+    supervise_parser.add_argument("config", type=Path)
+    return parser
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    args = build_parser().parse_args(argv)
+    try:
+        if args.action == "install":
+            payload = install_job(
+                job_id=args.job_id,
+                matlab=args.matlab,
+                driver=args.driver,
+                source_tiff=args.source_tiff,
+                source_sha256=args.source_sha256,
+                state_root=args.state_root,
+                batch_root=args.batch_root,
+                bootstrap=not args.no_bootstrap,
+            )
+        elif args.action == "start":
+            payload = start_installed(args.job_id)
+        elif args.action == "resume":
+            payload = start_installed(args.job_id, resume=True)
+        elif args.action == "pause":
+            payload = pause_installed(args.job_id)
+        elif args.action == "status":
+            config, _paths = _load_installed_config(args.job_id)
+            return print_status(Path(config["state_path"]), config=config)
+        elif args.action == "uninstall":
+            payload = uninstall_job(args.job_id)
+        else:
+            return supervise(args.config)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

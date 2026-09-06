@@ -13,6 +13,7 @@ scripts/
 ├── monitor/      # Parity run health / throughput
 ├── docs/         # Docs integrity verifier
 ├── curation/     # Interactive MATLAB comparison launchers
+├── parity/       # Parity lifecycle/operator helpers
 └── profiling/    # Phase 2 baseline recorder
 ```
 
@@ -75,6 +76,26 @@ uv run python scripts/ladder/run.py
 ```powershell
 uv run python scripts\monitor\check_run.py --run-dir workspace\runs\oracle_180709_E\canonical_full_v3
 uv run python scripts\monitor\throughput.py --run-dir <run> --log <run-log> --total-chunks <N>
+```
+
+## parity/
+
+| Script | Role |
+|--------|------|
+| [`macos_matlab_job.py`](parity/macos_matlab_job.py) | Install and control a launchd-owned, pause-safe MATLAB batch on macOS |
+
+The macOS supervisor stores operational state under `~/Library/Application
+Support/slavv2python/matlab-jobs/`. That local boundary is intentional:
+LaunchAgent Python may not have permission to traverse an external volume.
+MATLAB is opened through LaunchServices and writes a PID plus nonce-matched
+completion marker locally; experiment outputs remain under `workspace/scratch/`.
+
+```bash
+uv run python scripts/parity/macos_matlab_job.py install
+uv run python scripts/parity/macos_matlab_job.py start
+uv run python scripts/parity/macos_matlab_job.py status
+uv run python scripts/parity/macos_matlab_job.py pause
+uv run python scripts/parity/macos_matlab_job.py resume
 ```
 
 ## docs/

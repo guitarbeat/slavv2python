@@ -92,6 +92,34 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
 > invocations use `uv run python`; the ambient `python` executable
 > is not a supported parity-test runner.
 
+### macOS: launchd-owned MATLAB batches
+
+Use `scripts/parity/macos_matlab_job.py` for a long MATLAB process that must
+survive terminal or Codex desktop restarts. The installed LaunchAgent starts a
+local stdlib-only supervisor, then opens MATLAB through LaunchServices. Runtime
+state, logs, the pause sentinel, MATLAB PID, and the attempt-nonce result marker
+live under `~/Library/Application Support/slavv2python/matlab-jobs/`; source and
+experiment outputs can remain on an external volume.
+
+`pause` writes the sentinel, verifies the exact MATLAB command identity,
+terminates that MATLAB instance, and preserves existing MATLAB checkpoints.
+`resume` clears the sentinel and reuses the configured experiment root. A zero
+exit from `open -W` is never accepted by itself; the supervisor requires
+MATLAB's matching result marker. The operator process verifies the external
+TIFF hash before each start because LaunchAgent Python may not have
+external-volume permission.
+
+```bash
+uv run python scripts/parity/macos_matlab_job.py install
+uv run python scripts/parity/macos_matlab_job.py start
+uv run python scripts/parity/macos_matlab_job.py status
+uv run python scripts/parity/macos_matlab_job.py pause
+uv run python scripts/parity/macos_matlab_job.py resume
+```
+
+Closing a laptop lid or powering it off still stops computation. `caffeinate`
+protects against idle sleep only while the machine remains powered and awake.
+
 ### Starting a Monitored Job
 
 On Windows, start the writer with `Start-Process` + `resume-exact-run`, not
