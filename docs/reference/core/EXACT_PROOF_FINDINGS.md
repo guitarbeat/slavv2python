@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Authority map](../../README.md#documentation-authority-map-one-concept--one-home) · [HANDOFF](../../../.claude/HANDOFF.md) · [TODO](../../TODO.md)
 
-**Last Updated:** 2026-08-18  
+**Last Updated:** 2026-09-06
 **Role:** **Only** live source of truth for exact-route MATLAB↔Python parity status (runs, proofs, blockers, residual claim).  
 **Not here:** task checkboxes ([TODO](../../TODO.md)), operator commands ([HANDOFF](../../../.claude/HANDOFF.md)), figure paint constants ([campaign_series.py](../../../figures/claim/campaign_series.py) — mirror KPIs only), investigation diary ([archive](../../investigations/exact-proof-findings-diary/README.md)).
 
@@ -36,6 +36,42 @@
 - Final edges on `v18`: has oracle `(34897, 38584)`, lacks extra `(26444, 38584)`. Contrast `v16` finals: had extra, lacked oracle.
 - `v18` candidate traces for residual hub: claimed maxes **0.0** (extra) and **−0.238…** (oracle) — match MATLAB L846 claimed map; `v16` candidates still show original-field **−9.24 / −7.73**.
 - Energy/Vertices stage JSON archived from `canonical_full_v4` (lineage seed); checkpoints carried into `v18`.
+
+### R2024b cross-version reproduction (non-claim)
+
+> **Boundary:** this run is an optional reproducibility check against the
+> already-certified full `180709_E` surface. It does not reopen Phase 1 and is
+> not a new parity claim until MATLAB vectors finish, are promoted to a fresh
+> R2024b oracle root, and all four evaluated proofs pass on a fresh Python run.
+
+**Live checkpoint (2026-09-06 13:23 CDT):** launchd job
+`180709-e-r2024b-full` is running MATLAB R2024b Update 9 in **Energy** against
+source SHA-256
+`771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353`.
+The active MATLAB PID was `86473`; the fresh stream was
+`energy_260906-131602_180709_E_chunks_octave_2_of_6` with 15 durable artifacts.
+Refresh rather than reusing this PID/count:
+
+```bash
+uv run python scripts/parity/macos_matlab_job.py status
+```
+
+The writer resumes `batch_260831-211917` serially (one process worker). Runtime
+control state and logs are local under
+`~/Library/Application Support/slavv2python/matlab-jobs/180709-e-r2024b-full/`;
+MATLAB output remains under `workspace/scratch/matlab_full_batches/`. Protected
+roots `workspace/oracles/180709_E_full_v2` and
+`workspace/runs/oracle_180709_E/canonical_full_v18` are never write targets.
+
+**Why launchd:** the earlier direct MATLAB process was terminated when the Dock
+force-quit the ChatGPT application coalition. Its stale JSON continued to say
+`running`, so a PID file alone was not reliable. The replacement LaunchAgent
+owns an independent supervisor and opens MATLAB through LaunchServices. Pause
+tracks the exact MATLAB PID, success requires a MATLAB-written result marker
+with the current attempt nonce, and operator-side status alone traverses the
+external volume. The pause-during-startup and same-root resume integration
+probes passed before this full writer launched. Runbook:
+[macos-launchd-matlab-batches.md](../../solutions/parity/macos-launchd-matlab-batches.md).
 
 ### Frozen Phase 1 baseline (2026-08-17)
 
@@ -153,6 +189,7 @@ Curated index of solved problems under `docs/solutions/`. Search via YAML frontm
 |-------|-----|
 | MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
 | Detached exact-run jobs (Windows: use `Start-Process resume-exact-run`, not `launch-exact-run`) | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
+| Pause-safe MATLAB batches on macOS (launchd + LaunchServices + nonce result) | [macos-launchd-matlab-batches.md](../../solutions/parity/macos-launchd-matlab-batches.md) |
 | Run/proof evidence template | [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) |
 | Sparse Meshgrid Memory Optimization | [sparse-meshgrid-memory-optimization.md](../../solutions/parity/sparse-meshgrid-memory-optimization.md) |
 | MATLAB Stride Phase Lead | [matlab-stride-phase-lead.md](../../solutions/parity/matlab-stride-phase-lead.md) |

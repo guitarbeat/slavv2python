@@ -57,6 +57,8 @@ Former residual was Edge Selection Ranking Residual ([ADR 0013](adr/0013-claimed
 - [ ] **Phase 2 Fortran-order unwind** — needs an explicit Phase 2 ADR before production code changes.
 - [ ] **Paper-profile certification** — phase-1-spec F2 / R7 (volume + oracle TBD).
 - [ ] **neurovasc-db** — additional volumes after Phase 1 closed.
+- [x] **macOS MATLAB overnight supervisor** — launchd owns the supervisor; LaunchServices owns MATLAB; local PID/nonce/result state survives terminal or Codex restarts. Pause-during-startup + same-root resume probes passed; full suite green. See [runbook](solutions/parity/macos-launchd-matlab-batches.md).
+- [ ] **R2024b full-volume reproduction (optional, active)** — MATLAB writer is running serially against full `180709_E` in the preserved scratch batch. After completion, validate vectors, promote to fresh R2024b oracle/run roots, and execute evaluated four-stage proofs. This does not reopen Phase 1 or replace `canonical_full_v18`.
 - [ ] **Stretch Energy (extra 100% bar)** — crop is ~90% bit-identical; leftover last-digit diffs are not 100%. Tiny photos matching does not unlock crop. Live status: [findings stretch subsection](reference/core/EXACT_PROOF_FINDINGS.md#true-zero-tolerance-stretch-separate-from-phase-1). Readable diagnosis: [crop-energy-stretch-float-isolation.md](solutions/parity/crop-energy-stretch-float-isolation.md). Do not relaunch v2.
 - [ ] **Strict-field stretch (optional)** — exact connections / order-sensitive fields on crop after Energy unlock.
 

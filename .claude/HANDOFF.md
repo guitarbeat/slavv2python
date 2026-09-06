@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-08-18 (Phase 1 CLOSED + frozen baseline; workspace volumes lightened; stretch `blocked_float_path`)
+**Last synthesized:** 2026-09-06 (Phase 1 CLOSED; optional R2024b full reproduction running under launchd)
 
 This is the operator brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -29,6 +29,7 @@ status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md
 - **Frozen baseline:** [phase1-baseline-freeze.json](../docs/reference/core/phase1-baseline-freeze.json). Do not overwrite freeze JSON `do_not_overwrite` / `LIVE_DEST_NAMES` (`canonical_full_v18`, `crop_M_exact_v3`, `crop_M_stretch_engine_v2`). Writer blocklist `PROTECTED_DEST_NAMES` also includes historical `canonical_full_v16`.
 - Former Network one-strand fail was Edge Selection Ranking Residual; Claimed Trace Energy bake ([ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md)) fixed Edge Set ranking and Network followed.
 - **Crop = regression guard.** Historical `v16` proofs are archived (volume removed 2026-08-18). **Do not claim `v17`.**
+- **Optional R2024b reproduction:** a launchd-owned MATLAB full-volume writer is running against `180709_E`. This is non-claim work and does not change the certified `v18` answer. Live state and exact commands are in [findings](../docs/reference/core/EXACT_PROOF_FINDINGS.md#r2024b-cross-version-reproduction-non-claim) and [the macOS runbook](../docs/solutions/parity/macos-launchd-matlab-batches.md).
 - Cite proofs with `slavv parity inspect-proof --path <json> --require-evaluated`. Do not read the [findings diary](../docs/investigations/exact-proof-findings-diary/README.md) as status.
 
 ### Do not
@@ -103,7 +104,36 @@ Phase 1 already closed on `canonical_full_v18`. Do **not** resurrect `v4`…`v16
   slavv parity inspect-proof --path workspace/runs/oracle_180709_E/canonical_full_v18/03_Analysis/exact_proof_network.json --require-evaluated
   ```
 
-### D. Cold start
+### D. Optional R2024b full-volume reproduction (active)
+
+This is a cross-version reproduction, not a Phase 1 prerequisite. The source
+TIFF, preserved oracle, and `canonical_full_v18` must remain read-only. Do not
+use a direct MATLAB child of Codex/ChatGPT and do not infer success from
+`open -W` returning zero.
+
+```bash
+# Read-only live status; safe from a later terminal or Codex session.
+uv run python scripts/parity/macos_matlab_job.py status
+
+# Cooperative process pause: preserves batch checkpoints.
+uv run python scripts/parity/macos_matlab_job.py pause
+
+# Revalidate the source hash, clear the sentinel, and reuse the same batch.
+uv run python scripts/parity/macos_matlab_job.py resume
+```
+
+Operational state is local under `~/Library/Application
+Support/slavv2python/matlab-jobs/180709-e-r2024b-full/` because launchd's system
+Python may not be authorized to traverse LoveSSD. MATLAB itself writes the
+external experiment output. A valid terminal success requires
+`runtime/matlab_result.json` with an `attempt_nonce` matching `state.json`.
+
+After MATLAB completes: validate its vectors, promote only to a **fresh**
+R2024b oracle root, launch one fresh Python exact-route run with `n_jobs=1`, and
+run evaluated Energy → Vertices → Edges → Network proofs. Preserve the label
+“optional R2024b cross-version reproduction” until those proofs finish.
+
+### E. Cold start
 
 1. Read [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk).
 2. No concurrent writer: read `writer_lease.json` and test the PID. Do not block on `slavv jobs list`.
