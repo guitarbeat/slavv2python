@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 REPO = Path(__file__).resolve().parents[2]
-DB_ROOT = Path(os.environ.get("NEUROVASC_DB_ROOT", "/Volumes/LoveSSD/neurovasc-db"))
+DB_ROOT = Path(os.environ.get("NEUROVASC_DB_ROOT", "/Volumes/LoveSSD/NeuroVASC/repos/neurovasc-db"))
 CATALOG = DB_ROOT / "data/metadata/neurovasc_catalog.sqlite"
 BATCH_ROOT = REPO / "workspace/scratch/overnight_parity_batch"
 MANIFEST = BATCH_ROOT / "batch_manifest.json"

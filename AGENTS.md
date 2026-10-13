@@ -621,12 +621,14 @@ For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages
 ## Learned User Preferences
 
 - When asked to resume prior agent/Codex work, continue that work inline in the current session—do not launch Codex or a separate tooling session unless explicitly asked.
-- Overnight MATLAB↔Python parity outranks parallel Streamlit GUI work; GUI loops should use longer intervals and must not compete for RAM/CPU with live parity writers.
+- Overnight MATLAB↔Python parity outranks parallel Streamlit GUI work; GUI loops should use longer intervals, stay read/code/test-only during live Energy, avoid launching the Streamlit app or other heavy processes under RAM pressure, and must not compete for RAM/CPU with live parity writers.
 - Keep Experiment Root artifacts (oracles, runs, datasets, MATLAB batches) on `/Volumes/LoveSSD`, not the Mac internal disk.
 - Do not overwrite protected historical claim/oracle roots (`180709_E_crop_M_v2`, `180709_E_full_v2`, `crop_M_exact_v3`, `canonical_full_v18`); use new Mac R2024b ids/dests instead.
 - Long MATLAB/Python parity jobs should run detached (PPID 1 / double-fork) so they survive Cursor disconnects.
 - Never promote incomplete or segfault-aborted MATLAB batches; promote only when stage `vectors/` are complete.
 - Under RAM pressure from MATLAB Energy FFT, prefer pausing the Python writer (SIGSTOP) until past the danger zone or vectors appear, then CONT—rather than killing healthy MATLAB.
+- When the laptop must close, prefer resumable pause (SIGTERM writers, write a `workspace/scratch` checklist) over destructive kills; honor an explicit pause and do not auto-restart writers until asked to resume.
+- When reloading patched parity automation, restart only the orchestrator/watchers—never kill live MATLAB or intentional-SIGSTOP crop writers.
 - Commit Streamlit/UI and other incidental changes only when explicitly asked.
 
 ## Learned Workspace Facts
@@ -637,3 +639,5 @@ For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages
 - R2024b MATLAB Energy on this 8 GB host has segfaulted in FFT (`libmwmfl_fft`); stable recovery uses serialized `maxNumCompThreads(1)`.
 - Mac R2024b oracle/proof work is a local parity lineage distinct from the frozen Windows claim roots until both crop and full evaluated prove-exact pass and an explicit decision updates the official record.
 - Some Experiment Root binaries on this checkout may be hash stubs; verify with `slavv parity inspect-experiment-root` before treating them as real payloads.
+- Mac R2024b dual-parity automation centers on `workspace/scratch/parity_orchestrator.sh` with CONT policy in `PYTHON_STOP_CONT_POLICY.json` / `_parity_cont_eval.py`; prefer bash double-fork detach over Python detach loops that can hang on first spawn.
+- Crop `crop_M_r2024b` must resume against the same input fingerprint/oracle seed the writer started with—switching to the promoted oracle mid-run can fingerprint-block and lose mid-octave Energy cursor (exact-route Energy only persists completed octaves).
