@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "candidate_audit.json": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/04_Edges/candidate_audit.json",
+    "candidates.pkl": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/04_Edges/candidates.pkl",
+    "chosen_edges.pkl": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/04_Edges/chosen_edges.pkl",
+    "phase2_edges_split.json": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/04_Edges/phase2_edges_split.json",
+    "phase2_edges_split.json.sha256": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/04_Edges/phase2_edges_split.json.sha256"
+  },
+  "checkpoint": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/02_Output/python_results/checkpoints/checkpoint_edges.pkl",
+  "completed_at": "2026-09-05T21:45:46Z",
+  "stage": "edges"
+}

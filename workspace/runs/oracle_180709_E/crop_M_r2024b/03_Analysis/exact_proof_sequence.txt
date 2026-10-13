@@ -1,0 +1,5 @@
+Exact proof sequence (all stages passed)
+  energy: PASS
+  vertices: PASS
+  edges: PASS
+  network: PASS

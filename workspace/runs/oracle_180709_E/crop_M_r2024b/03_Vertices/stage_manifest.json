@@ -1,0 +1,10 @@
+{
+  "artifacts": {
+    "candidates.pkl": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Vertices/candidates.pkl",
+    "chosen_mask.pkl": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Vertices/chosen_mask.pkl",
+    "cropped_candidates.pkl": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Vertices/cropped_candidates.pkl"
+  },
+  "checkpoint": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/02_Output/python_results/checkpoints/checkpoint_vertices.pkl",
+  "completed_at": "2026-09-05T21:44:41Z",
+  "stage": "vertices"
+}

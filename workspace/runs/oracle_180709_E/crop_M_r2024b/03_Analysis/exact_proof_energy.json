@@ -1,0 +1,59 @@
+{
+  "dest_run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "energy_float_gate": {
+    "atol": 1e-09,
+    "denorm_threshold": 0.001,
+    "failed_voxels": 0,
+    "failures": [],
+    "max_abs_delta": 1e-10,
+    "max_abs_delta_on_scale_agreeing_mismatches": 2.1032064978498966e-11,
+    "max_ulps": 48,
+    "pass_rate": 1.0,
+    "passed": true,
+    "passed_voxels": 4194304,
+    "rtol": 1e-07,
+    "scale_agree_abs_delta_over_max_count": 0,
+    "scale_agree_denorm_escape_count": 1141,
+    "scale_agree_energy_exact_match_count": 437711,
+    "scale_agree_energy_ulp_over_max_count": 32031,
+    "scale_agree_tol_over_max_count": 0,
+    "scale_mismatch_count": 0,
+    "strict_floats": false,
+    "total_voxels": 4194304,
+    "ulp_stats_on_mismatches": {
+      "max_ulp": 140073,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 675688,
+        "2": 660926,
+        "3": 481417,
+        "4": 435721,
+        "5": 298166,
+        "6": 259330,
+        "7": 169334,
+        "8": 147569,
+        "9_plus": 628442
+      },
+      "ulp_p50": 4.0,
+      "ulp_p90": 12.0
+    },
+    "use_allclose": true
+  },
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": null,
+  "first_failing_stage": null,
+  "first_failure": null,
+  "matlab_batch_dir": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332",
+  "passed": true,
+  "report_scope": "exact route",
+  "source_run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "stage_summaries": {
+    "energy": {
+      "field_count": 4,
+      "passed": true
+    }
+  },
+  "stages": [
+    "energy"
+  ]
+}

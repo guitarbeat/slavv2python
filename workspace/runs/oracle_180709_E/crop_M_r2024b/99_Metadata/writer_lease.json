@@ -1,0 +1,12 @@
+{
+  "command": "/Volumes/LoveSSD/slavv2python/slavv_python/interface/cli/parity.py resume-exact-run --dest-run-root /Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b --dataset-root /Volumes/LoveSSD/slavv2python/workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06 --oracle-root /Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b --stop-after network --memory-safety-fraction 0.7 --n-jobs 1 --skip-preflight",
+  "ended_at": "2026-09-05T21:45:55Z",
+  "pid": 25091,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "d091389ce43b1a8288e5d0c496111722e7833937",
+  "stage": "network",
+  "started_at": "2026-09-05T17:49:58Z",
+  "status": "completed",
+  "updated_at": "2026-09-05T21:45:55Z"
+}

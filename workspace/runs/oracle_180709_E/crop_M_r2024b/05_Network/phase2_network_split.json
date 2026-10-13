@@ -1,0 +1,8 @@
+{
+  "adjacency_seconds": 1.5787148329836782,
+  "cycle_prune_seconds": 8.917006198316813e-06,
+  "finalize_seconds": 1.610706833016593,
+  "hair_prune_seconds": 1.0041985660791397e-05,
+  "strand_trace_seconds": 2.941998624999542,
+  "total_seconds": 6.148294125014218
+}

@@ -1,0 +1,23 @@
+{
+  "bootstrap_kind": "init-exact-run",
+  "created_at": "2026-09-05T17:41:55Z",
+  "dataset_hash": "0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+  "input_axis_permutation": [
+    2,
+    0,
+    1
+  ],
+  "oracle_id": "180709_E_crop_M_r2024b",
+  "oracle_size_of_image": [
+    64,
+    256,
+    256
+  ],
+  "selected_settings_paths": {
+    "edges": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332/settings/edges_260831-023332.mat",
+    "energy": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332/settings/energy_260831-023332.mat",
+    "network": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332/settings/network_260831-023332.mat",
+    "vertices": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332/settings/vertices_260831-023332.mat"
+  },
+  "stop_after": "preprocess"
+}

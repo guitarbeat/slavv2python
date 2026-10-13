@@ -1,0 +1,17 @@
+{
+  "artifact_hashes": {
+    "edges": "5f6e796a268e71320d54ee47a77d6ca2774a9f4c4949afd6ecb6983b248094c8",
+    "energy": "fc7729d5f93edbb2f9605d8adf35f5974d4ed205bd211c779c36528448bf3e5c",
+    "network": "45e5f7ce1ac0955055f617746d8bcd7f2b4132a7a9aeacebbeee5207a4a74991",
+    "vertices": "e2555f3f1637a3b8539bfe8020d9b07115aac5a499eb883c94bf4e4da5621083"
+  },
+  "input_fingerprint": null,
+  "oracle_id": "180709_E_crop_M_r2024b",
+  "oracle_manifest_hash": "23b83460a44854e38f5a8259b177fdf4291e981650dc0d122bf09afab5a68b8f",
+  "params_fingerprint": "9bad0f6630b184122129ab46e5422a6d7b02f757657598b23d8fb2ed8cb15c38",
+  "proof_passed": true,
+  "proof_report_hash": "293c7d4473c5bc835dcdb35364dec11e7b9e56d9e217e384c3fa4310d5a2b7c1",
+  "run_manifest_hash": "0ffa7d8c62ce546424b462709d12116e9b139490a10551e1f72b4042e2dde41b",
+  "schema_version": 1,
+  "source_commit": "d091389ce43b1a8288e5d0c496111722e7833937"
+}

@@ -1,0 +1,56 @@
+{
+  "fields": [
+    {
+      "field": "traces",
+      "kind": "sequence_field",
+      "matlab_len": 15511,
+      "python_len": 15511
+    },
+    {
+      "field": "scale_traces",
+      "kind": "sequence_field",
+      "matlab_len": 15511,
+      "python_len": 15511
+    },
+    {
+      "field": "energy_traces",
+      "kind": "sequence_field",
+      "matlab_len": 15511,
+      "python_len": 15511
+    },
+    {
+      "field": "energies",
+      "first_coordinate": [
+        0
+      ],
+      "first_fortran_linear_index": 0,
+      "kind": "numeric_mismatch",
+      "matlab_value": -0.8967215814864017,
+      "max_abs_delta": 1.2877661581534028e-07,
+      "max_ulp": 1422144117,
+      "mismatch_count": 15511,
+      "python_value": -0.8967215418815613,
+      "ulp_histogram": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9_plus": 15511
+      },
+      "ulp_p50": 219675508.0,
+      "ulp_p90": 526485041.0
+    },
+    {
+      "field": "bridge_edges",
+      "kind": "sequence_field",
+      "matlab_len": 5,
+      "python_len": 5
+    }
+  ],
+  "stage": "edges"
+}

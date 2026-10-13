@@ -1,0 +1,29 @@
+{
+  "dest_run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": null,
+  "first_failing_stage": null,
+  "first_failure": null,
+  "matlab_batch_dir": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332",
+  "network_adr0012_gate": {
+    "adr0012_evaluated": true,
+    "adr_bar": "ADR 0012 network topology (strand endpoint-pair + bifurcation multisets)",
+    "n_matlab_bifurcations": 5601,
+    "n_matlab_strand_pairs": 10722,
+    "n_python_bifurcations": 5601,
+    "n_python_strand_pairs": 10722,
+    "passed": true
+  },
+  "passed": true,
+  "report_scope": "exact route",
+  "source_run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "stage_summaries": {
+    "network": {
+      "field_count": 6,
+      "passed": true
+    }
+  },
+  "stages": [
+    "network"
+  ]
+}

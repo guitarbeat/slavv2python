@@ -1,0 +1,52 @@
+{
+  "analysis_dir": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Analysis",
+  "artifacts": {},
+  "command": "prove-exact",
+  "dataset_hash": "test-hash",
+  "exact_report": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Analysis/exact_proof.json",
+  "hashes_dir": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Analysis/hashes",
+  "kind": "parity_run",
+  "manifest_version": 1,
+  "normalized_dir": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/03_Analysis/normalized",
+  "oracle_id": "180709_E_crop_M_r2024b",
+  "oracle_root": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b",
+  "params_path": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b/99_Metadata/validated_params.json",
+  "python_commit": "d091389ce43b1a8288e5d0c496111722e7833937",
+  "retention": "promoted",
+  "run_id": "bb79f52f9086",
+  "run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "stage": "network",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": "2026-09-05T21:45:46Z",
+      "elapsed_seconds": 65.0,
+      "peak_memory_bytes": 798113792,
+      "status": "completed"
+    },
+    "energy": {
+      "completed_at": "2026-09-05T21:44:27Z",
+      "elapsed_seconds": 14413.0,
+      "peak_memory_bytes": 754745344,
+      "status": "completed"
+    },
+    "network": {
+      "completed_at": "2026-09-05T21:45:55Z",
+      "elapsed_seconds": 9.0,
+      "peak_memory_bytes": 783417344,
+      "status": "completed"
+    },
+    "vertices": {
+      "completed_at": "2026-09-05T21:44:41Z",
+      "elapsed_seconds": 14.760356187820435,
+      "peak_memory_bytes": 570621952,
+      "status": "completed"
+    }
+  },
+  "stages": {},
+  "status": "passed",
+  "timestamps": {
+    "completed_at": "2026-09-05T21:45:55Z",
+    "created_at": "2026-09-05T17:41:55Z",
+    "updated_at": "2026-09-05T23:09:14Z"
+  }
+}

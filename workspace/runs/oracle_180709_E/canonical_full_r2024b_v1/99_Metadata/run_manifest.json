@@ -1,0 +1,57 @@
+{
+  "current_stage": "energy",
+  "dataset_hash": "40dd7ea8d6ec3a47e4ffaf3de31e1f38f0f148e52e09e60bc616c2becb456cff",
+  "kind": "slavv_run",
+  "manifest_version": 1,
+  "matlab_source_version": null,
+  "oracle_id": null,
+  "params_fingerprint": "a767be26f74abc3082719ea7a0e8d918b5be84b04050ad67852b0ec0ff2ee614",
+  "promotion_state": "ephemeral",
+  "provenance": {
+    "image_shape": [
+      64,
+      512,
+      512
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "python_commit": "694733fb23b6951e02fe9b9135b83111dce4c384",
+  "retention": "disposable",
+  "run_id": "bdab340da1bf",
+  "run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    },
+    "energy": {
+      "completed_at": null,
+      "elapsed_seconds": 790.2676999568939,
+      "peak_memory_bytes": 242204672,
+      "status": "running"
+    },
+    "network": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    },
+    "vertices": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    }
+  },
+  "status": "running",
+  "target_stage": "network",
+  "timestamps": {
+    "completed_at": "2026-09-08T04:32:12Z",
+    "created_at": "2026-09-08T04:32:12Z",
+    "updated_at": "2026-09-08T04:45:22Z"
+  }
+}
