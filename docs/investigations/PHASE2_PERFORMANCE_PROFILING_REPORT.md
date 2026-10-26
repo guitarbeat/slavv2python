@@ -145,13 +145,15 @@ Based on this profiling evidence, Phase 2 optimizations should target the follow
 
 ---
 
-## 6. Post-Optimization Benchmarks: $10.45\times$ Speedup Validated on Full Volume
+## 6. Post-Optimization Benchmarks
+
+### 6.1 Edges Stage: $10.45\times$ Speedup Validated on Full Volume (ADR 0014)
 
 Following the profiling analysis, we implemented two high-priority optimizations under [ADR 0014](../adr/0014-phase2-optimization-regression-gates.md):
 1. **$O(\log N)$ Bisect Frontier Queue & $O(1)$ Presence-Checked Join Resets:** In `SortedFrontier` (`slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py`), replaced linear scans with binary search insertion preserving asymmetric MATLAB tie-breaking, and replaced 500M-element slice copies with $O(1)$ set checks.
 2. **Structuring Element Precomputation & Fast Caching:** Precomputed all scale structuring element geometry tables (`watershed_luts` and `watershed_unit_vectors`) prior to watershed loop entry, and vectorized offset generation via `np.ogrid`.
 
-### Benchmark Results on Canonical Full Volume (`180709_E`, 16.8M voxels, 59,408 vertices)
+#### Benchmark Results on Canonical Full Volume (`180709_E`, 16.8M voxels, 59,408 vertices)
 
 Extracted from [`workspace/reports/phase2_profiling/full_volume_edges_benchmark.json`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/reports/phase2_profiling/full_volume_edges_benchmark.json):
 
@@ -170,25 +172,51 @@ graph LR
     end
 ```
 
-### Exact Parity Certification
+#### Exact Parity Certification
 - **Candidate Traces:** $84,650$ candidates materialized.
 - **Connection Array:** $69,500 / 69,500$ connections.
 - **Parity Assertion:** `np.array_equal(edges.connections, expected_connections) == True` (**100% BIT-IDENTICAL TO ORACLE**).
 
 ---
 
+### 6.2 Energy Stage: 3D FFT & Pre-Indexed Symmetric IFFT Acceleration (ADR 0015)
+
+The Energy stage consumed 91.3% of pipeline runtime ($9,342.1\text{ s}$). Under [ADR 0015](../adr/0015-phase2-energy-fft-preindexed-symmetric-ifft.md), we eliminated repeated 300+ MB temporary allocations and accelerated FFT execution via:
+1. **Pre-Indexed Conjugate Symmetric IFFT:** Thread-safe `_SYMMETRIC_PARTNER_CACHE` pre-indexes reflection tuples $(iy, ix, iz)$ and $(py, px, pz)$ once per shape, avoiding dynamic indexing in every inverse FFT call.
+2. **Analytic Self-Partner Direct Indexing:** Proved that self-partner frequencies under cyclic reflection ($lin == plin$) exist solely at DC ($0$) and Nyquist ($N/2$) frequencies ($\le 8$ voxels in any 3D grid). Replaced 16.8M boolean mask scans with direct analytic coordinate tuples.
+3. **Thread-Aware `scipy.fft` Integration:** Multi-core SIMD-vectorized execution (`workers=-1` when serial, `workers=1` under Joblib parallel chunks).
+4. **Chunk Engine Short-Circuiting:** Evaluates diagonal curvatures first and skips 6 inverse FFTs ($c_3, c_4, c_5$ cross curvatures and $g_0, g_1, g_2$ gradients) when a chunk contains no candidate voxels.
+
+#### Micro-Benchmark Results (`(128, 128, 64)` chunk on Apple Silicon ARM64)
+
+| FFT Operation | NumPy Single-Core | SciPy 1-Worker | SciPy All Cores | Speedup Factor |
+| :--- | :--- | :--- | :--- | :--- |
+| **Forward 3D FFT (`fftn`)** | 8.94 ms | 3.93 ms | **1.13 ms** | **$7.92\times$ Speedup** |
+| **Inverse 3D FFT (`ifftn`)** | 8.70 ms | 5.78 ms | **1.51 ms** | **$5.75\times$ Speedup** |
+| **Symmetric IFFT (`_ifftn_matlab_symmetric`)** | 22.64 ms (original) | 13.50 ms | **8.37 ms** | **$2.71\times$ Speedup** |
+
+#### Parity Verification
+- **Unit Suite:** 146 passed, 0 failed (`tests/unit/pipeline/energy/`).
+- **Fixture Parity:** Stored MATLAB fixture `test_native_hessian_matlab_fixture.py` passes with `Max abs diff = 0.0`.
+
+---
+
 ## 7. Verification & Reproducibility
 
-- **Profiling Source Code:** [`scripts/profiling/profile_edges_detailed.py`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/scripts/profiling/profile_edges_detailed.py)
-- **Full Volume Benchmark Script:** [`scripts/profiling/benchmark_full_edges.py`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/scripts/profiling/benchmark_full_edges.py)
+- **Edges Profiling Source Code:** [`scripts/profiling/profile_edges_detailed.py`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/scripts/profiling/profile_edges_detailed.py)
+- **Edges Full Volume Benchmark Script:** [`scripts/profiling/benchmark_full_edges.py`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/scripts/profiling/benchmark_full_edges.py)
+- **Energy FFT Benchmark Script:** [`scripts/profiling/benchmark_energy_fft.py`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/scripts/profiling/benchmark_energy_fft.py)
 - **Raw Profiling Dumps:**
   - Crop Profiling Summary: [`workspace/reports/phase2_profiling/edges_detailed_profile.json`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/reports/phase2_profiling/edges_detailed_profile.json)
   - Full Volume Benchmark Summary: [`workspace/reports/phase2_profiling/full_volume_edges_benchmark.json`](file:///Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/reports/phase2_profiling/full_volume_edges_benchmark.json)
 - **Reproduce anytime via:**
   ```bash
-  # Crop Harness detailed profiling
+  # Crop Harness detailed Edges profiling
   uv run python scripts/profiling/profile_edges_detailed.py
 
-  # Full Volume benchmark & bit-identical parity check
+  # Full Volume Edges benchmark & bit-identical parity check
   uv run python scripts/profiling/benchmark_full_edges.py
+
+  # Energy FFT & Symmetric IFFT Acceleration benchmark
+  uv run python scripts/profiling/benchmark_energy_fft.py --iterations 20 --n-jobs 1
   ```

@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import gc
 import logging
+import threading
 from typing import Any, cast
 
 import numpy as np
+import scipy.fft
 from scipy.ndimage import map_coordinates
 from scipy.special import jv
 
@@ -331,7 +333,7 @@ def _matched_hessian_intermediates(
     image = image.astype(dtype, copy=False)
     original_shape = image.shape
     padded_image = _fourier_transform_input(image)
-    chunk_dft = np.fft.fftn(padded_image.astype(dtype, copy=False))
+    chunk_dft = scipy.fft.fftn(padded_image.astype(dtype, copy=False))
     pixel_freq_meshes = _pixel_frequency_meshes(padded_image.shape)
     matching_kernel_dft, derivative_weights = _matching_kernel_dft(
         pixel_freq_meshes,
@@ -350,21 +352,24 @@ def _matched_hessian_intermediates(
         _derivative_kernel_dft_single(
             pixel_freq_meshes, derivative_weights, 0, is_curvature=True
         ).astype(np.float64, copy=False)
-        * filtered_chunk_dft
+        * filtered_chunk_dft,
+        overwrite_input=True,
     )[: original_shape[0], : original_shape[1], : original_shape[2]]
 
     c1 = _ifftn_matlab_symmetric(
         _derivative_kernel_dft_single(
             pixel_freq_meshes, derivative_weights, 1, is_curvature=True
         ).astype(np.float64, copy=False)
-        * filtered_chunk_dft
+        * filtered_chunk_dft,
+        overwrite_input=True,
     )[: original_shape[0], : original_shape[1], : original_shape[2]]
 
     c2 = _ifftn_matlab_symmetric(
         _derivative_kernel_dft_single(
             pixel_freq_meshes, derivative_weights, 2, is_curvature=True
         ).astype(np.float64, copy=False)
-        * filtered_chunk_dft
+        * filtered_chunk_dft,
+        overwrite_input=True,
     )[: original_shape[0], : original_shape[1], : original_shape[2]]
 
     laplacian_chunk = c0 + c1 + c2
@@ -391,7 +396,8 @@ def _matched_hessian_intermediates(
             _derivative_kernel_dft_single(
                 pixel_freq_meshes, derivative_weights, i, is_curvature=True
             ).astype(np.float64, copy=False)
-            * filtered_chunk_dft
+            * filtered_chunk_dft,
+            overwrite_input=True,
         )[: original_shape[0], : original_shape[1], : original_shape[2]][valid_voxels].astype(
             dtype, copy=False
         )
@@ -402,7 +408,8 @@ def _matched_hessian_intermediates(
             _derivative_kernel_dft_single(
                 pixel_freq_meshes, derivative_weights, i, is_curvature=False
             ).astype(np.float64, copy=False)
-            * filtered_chunk_dft
+            * filtered_chunk_dft,
+            overwrite_input=True,
         )[: original_shape[0], : original_shape[1], : original_shape[2]][valid_voxels].astype(
             dtype, copy=False
         )
@@ -435,94 +442,122 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
     return cast("np.ndarray", np.pad(image, pad_width, mode="symmetric"))
 
 
-def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
+_PARTNER_CACHE_LOCK = threading.Lock()
+_SYMMETRIC_PARTNER_CACHE: dict[
+    tuple[int, int, int],
+    tuple[
+        tuple[np.ndarray, np.ndarray, np.ndarray],
+        tuple[np.ndarray, np.ndarray, np.ndarray],
+        tuple[np.ndarray, np.ndarray, np.ndarray],
+    ],
+] = {}
+_PIXEL_FREQ_MESH_CACHE: dict[
+    tuple[int, int, int],
+    tuple[np.ndarray, np.ndarray, np.ndarray],
+] = {}
+
+
+def _get_symmetric_partner_indices(
+    shape: tuple[int, int, int],
+) -> tuple[
+    tuple[np.ndarray, np.ndarray, np.ndarray],
+    tuple[np.ndarray, np.ndarray, np.ndarray],
+    tuple[np.ndarray, np.ndarray, np.ndarray],
+]:
+    """Retrieve or compute pre-calculated partner and self-partner indices for MATLAB symmetric IFFT.
+
+    Returns:
+        dest_idx: (iy, ix, iz) coordinates where lin > plin.
+        src_idx: (py, px, pz) conjugate coordinates to copy from.
+        self_idx: (sy, sx, sz) coordinates where lin == plin (to force zero imaginary part).
+    """
+    shape_key = (int(shape[0]), int(shape[1]), int(shape[2]))
+    cached = _SYMMETRIC_PARTNER_CACHE.get(shape_key)
+    if cached is not None:
+        return cached
+
+    with _PARTNER_CACHE_LOCK:
+        cached = _SYMMETRIC_PARTNER_CACHE.get(shape_key)
+        if cached is not None:
+            return cached
+
+        ny, nx, nz = shape_key
+        p_idx_y = (-np.arange(ny)) % ny
+        p_idx_x = (-np.arange(nx)) % nx
+        p_idx_z = (-np.arange(nz)) % nz
+
+        plin = (
+            p_idx_y[:, None, None] + ny * p_idx_x[None, :, None] + ny * nx * p_idx_z[None, None, :]
+        )
+        lin = (
+            np.arange(ny)[:, None, None]
+            + ny * np.arange(nx)[None, :, None]
+            + ny * nx * np.arange(nz)[None, None, :]
+        )
+
+        mask = lin > plin
+        flat_mask = mask.ravel(order="F")
+        masked_lin_flat = np.where(flat_mask)[0]
+
+        iy = (masked_lin_flat % ny).astype(np.int32)
+        tmp = masked_lin_flat // ny
+        ix = (tmp % nx).astype(np.int32)
+        iz = (tmp // nx).astype(np.int32)
+
+        py = ((-iy) % ny).astype(np.int32)
+        px = ((-ix) % nx).astype(np.int32)
+        pz = ((-iz) % nz).astype(np.int32)
+
+        y_self = [0] + ([ny // 2] if ny % 2 == 0 else [])
+        x_self = [0] + ([nx // 2] if nx % 2 == 0 else [])
+        z_self = [0] + ([nz // 2] if nz % 2 == 0 else [])
+        self_y = np.array([y for y in y_self for x in x_self for z in z_self], dtype=np.int32)
+        self_x = np.array([x for y in y_self for x in x_self for z in z_self], dtype=np.int32)
+        self_z = np.array([z for y in y_self for x in x_self for z in z_self], dtype=np.int32)
+
+        entry = ((iy, ix, iz), (py, px, pz), (self_y, self_x, self_z))
+        _SYMMETRIC_PARTNER_CACHE[shape_key] = entry
+        return entry
+
+
+def _ifftn_matlab_symmetric(
+    spectrum: np.ndarray,
+    workers: int | None = None,
+    overwrite_input: bool = False,
+) -> np.ndarray:
     """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift.
 
-    Memory-efficient implementation: avoids full 3D integer meshgrids by computing
-    partner subscripts only for the masked voxels, keeping peak allocation proportional
-    to mask.sum() rather than the full volume.  This prevents heap-fragmentation OOM
-    on large chunks where three full (Y,X,Z) int64 meshgrids would all be live at once.
+    Memory-efficient, pre-indexed implementation: utilizes precomputed partner indices
+    and scipy.fft with multi-threading support.
     """
     spectrum_arr = np.asarray(spectrum)
-    ny, nx, nz = spectrum_arr.shape
-    # Copy before building mask temporaries so a fragmented heap is not asked for both
-    # the spectrum duplicate and several full-volume index arrays at once.
-    symmetric_spectrum = np.array(spectrum_arr, copy=True)
+    shape = (int(spectrum_arr.shape[0]), int(spectrum_arr.shape[1]), int(spectrum_arr.shape[2]))
+    dest_idx, src_idx, self_idx = _get_symmetric_partner_indices(shape)
 
-    # 1-D partner-index arrays (cyclic flip: partner(i) = (-i) % N).
-    # Fortran (column-major) linear index of each voxel is:
-    #   lin(y,x,z) = y + ny*x + ny*nx*z
-    # Partner linear index:
-    #   plin(y,x,z) = py + ny*px + ny*nx*pz   where py=(-y)%ny, etc.
-    p_idx_y = (-np.arange(ny)) % ny  # shape (ny,)
-    p_idx_x = (-np.arange(nx)) % nx  # shape (nx,)
-    p_idx_z = (-np.arange(nz)) % nz  # shape (nz,)
+    if overwrite_input and spectrum_arr.dtype == np.complex128:
+        symmetric_spectrum = spectrum_arr
+    else:
+        symmetric_spectrum = np.array(spectrum_arr, copy=True)
 
-    # Fortran-order linear index for every voxel — compact 1-D arithmetic, no meshgrid.
-    #   lin(y,x,z)  = y  + ny*x  + ny*nx*z
-    #   plin(y,x,z) = py + ny*px + ny*nx*pz
-    # Broadcast over axes using outer products on the three 1-D vectors.
-    lin_y = np.arange(ny)
-    lin_x = np.arange(nx)
-    lin_z = np.arange(nz)
+    if dest_idx[0].size > 0:
+        symmetric_spectrum[dest_idx] = np.conj(symmetric_spectrum[src_idx])
 
-    # Compute partner linear index for each voxel via outer-product broadcasting.
-    # Each term has shape compatible with (ny, nx, nz):
-    #   plin = p_idx_y[:,None,None] + ny*p_idx_x[None,:,None] + ny*nx*p_idx_z[None,None,:]
-    plin = (
-        p_idx_y[:, None, None] + ny * p_idx_x[None, :, None] + ny * nx * p_idx_z[None, None, :]
-    )  # shape (ny, nx, nz), dtype int64
-    del p_idx_y, p_idx_x, p_idx_z
+    if self_idx[0].size > 0:
+        symmetric_spectrum[self_idx] = symmetric_spectrum[self_idx].real
 
-    # Own Fortran-order linear index.
-    lin = (
-        lin_y[:, None, None] + ny * lin_x[None, :, None] + ny * nx * lin_z[None, None, :]
-    )  # shape (ny, nx, nz), dtype int64
-    del lin_y, lin_x, lin_z
-
-    # Mask: voxels whose partner has a *smaller* linear index — these need overwriting.
-    mask = lin > plin  # shape (ny, nx, nz), bool
-    self_partner_mask = lin == plin  # shape (ny, nx, nz), bool
-    del lin, plin
-
-    if np.any(mask):
-        # Decode subscripts only for masked voxels — avoids full meshgrids.
-        flat_mask = mask.ravel(order="F")  # Fortran order matches lin computation
-        masked_lin_flat = np.where(flat_mask)[0]  # 1-D Fortran linear indices of masked voxels
-
-        # Decode (y, x, z) subscripts from Fortran linear index.
-        iy = masked_lin_flat % ny
-        tmp = masked_lin_flat // ny
-        ix = tmp % nx
-        iz = tmp // nx
-        del tmp, masked_lin_flat, flat_mask
-
-        # Compute partner subscripts for masked voxels only.
-        py = (-iy) % ny
-        px = (-ix) % nx
-        pz = (-iz) % nz
-
-        symmetric_spectrum[iy, ix, iz] = np.conj(spectrum_arr[py, px, pz])
-        del iy, ix, iz, py, px, pz
-
-    del mask
-
-    if np.any(self_partner_mask):
-        symmetric_spectrum[self_partner_mask] = symmetric_spectrum[self_partner_mask].real
-    del self_partner_mask
-
-    result = np.fft.ifftn(symmetric_spectrum).real
-    del symmetric_spectrum
+    result = scipy.fft.ifftn(symmetric_spectrum, workers=workers, overwrite_x=overwrite_input).real
     return cast("np.ndarray", result)
 
 
 def _pixel_frequency_meshes(
     shape: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pixel_frequencies = [np.fft.fftfreq(length) for length in shape]
-    y_mesh: np.ndarray
-    x_mesh: np.ndarray
-    z_mesh: np.ndarray
+    shape_key = (int(shape[0]), int(shape[1]), int(shape[2]))
+    cached = _PIXEL_FREQ_MESH_CACHE.get(shape_key)
+    if cached is not None:
+        return cached
+
+    pixel_frequencies = [scipy.fft.fftfreq(length) for length in shape_key]
     y_mesh, x_mesh, z_mesh = np.meshgrid(
         pixel_frequencies[0],
         pixel_frequencies[1],
@@ -530,7 +565,9 @@ def _pixel_frequency_meshes(
         indexing="ij",
         sparse=True,
     )
-    return y_mesh, x_mesh, z_mesh
+    res = (y_mesh, x_mesh, z_mesh)
+    _PIXEL_FREQ_MESH_CACHE[shape_key] = res
+    return res
 
 
 def _matching_kernel_dft(

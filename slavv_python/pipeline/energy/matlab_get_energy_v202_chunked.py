@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+import scipy.fft
 from joblib import Parallel, delayed
 
 try:
@@ -423,6 +424,7 @@ def compute_exact_parity_energy_single_octave(
     ensure_matlab_engine_float_backend_ready(config)
     if str(config.get("energy_float_backend", "numpy")).strip().lower() == "matlab_engine":
         n_jobs = 1
+    fft_workers = 1 if n_jobs > 1 else -1
     image_shape = np.asarray(image.shape, dtype=float)
     octave_at_scales = config["octave_at_scales"]
     microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
@@ -526,7 +528,9 @@ def compute_exact_parity_energy_single_octave(
         chunk_dft: np.ndarray | None = None
         pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
         if session is None:
-            chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
+            chunk_dft = scipy.fft.fftn(
+                padded_chunk.astype(np.float64, copy=False), workers=fft_workers
+            )
             pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
 
         w_count_z = int(z_write_counts[z_idx])
@@ -622,32 +626,48 @@ def compute_exact_parity_energy_single_octave(
                 del matching_kernel_dft
 
                 # All intermediates are [Y, X, Z] with Fortran order
-                # Compute derivative kernels one-by-one to minimize peak memory
+                # Compute diagonal curvature components first (Laplacian)
                 curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
-                for k_idx in range(6):
+                for k_idx in range(3):
                     k_dft = native_hessian._derivative_kernel_dft_single(
                         pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
                     )
-                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                    full_ifft = native_hessian._ifftn_matlab_symmetric(
+                        k_dft * filtered_chunk_dft, workers=fft_workers, overwrite_input=True
+                    )
                     curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
                     del k_dft, full_ifft
-
-                gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
-                for k_idx in range(3):
-                    k_dft = native_hessian._derivative_kernel_dft_single(
-                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
-                    )
-                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
-                    gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
-                    del k_dft, full_ifft
-
-                del filtered_chunk_dft
 
                 laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
                 valid_voxels = laplacian_chunk < 0
                 coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
 
                 if np.any(valid_voxels):
+                    # Compute cross curvatures only when valid voxels exist
+                    for k_idx in range(3, 6):
+                        k_dft = native_hessian._derivative_kernel_dft_single(
+                            pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
+                        )
+                        full_ifft = native_hessian._ifftn_matlab_symmetric(
+                            k_dft * filtered_chunk_dft, workers=fft_workers, overwrite_input=True
+                        )
+                        curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                        del k_dft, full_ifft
+
+                    # Compute directional gradients only when valid voxels exist
+                    gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
+                    for k_idx in range(3):
+                        k_dft = native_hessian._derivative_kernel_dft_single(
+                            pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
+                        )
+                        full_ifft = native_hessian._ifftn_matlab_symmetric(
+                            k_dft * filtered_chunk_dft, workers=fft_workers, overwrite_input=True
+                        )
+                        gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                        del k_dft, full_ifft
+
+                    del filtered_chunk_dft
+
                     grad_valid = np.stack(
                         [
                             gradient_local[0][valid_voxels],
@@ -672,10 +692,13 @@ def compute_exact_parity_energy_single_octave(
                         curvatures_valid,
                         energy_sign=float(config.get("energy_sign", -1.0)),
                     )
+                    del grad_valid, curvatures_valid, gradient_local
                     coarse_energy[valid_voxels] = energy_valid
+                    del energy_valid
+                else:
+                    del filtered_chunk_dft
 
-                    del grad_valid, curvatures_valid, energy_valid
-                del curvatures_local, gradient_local
+                del curvatures_local
 
                 coarse_energy[~np.isfinite(coarse_energy)] = np.inf
                 coarse_energy[coarse_energy >= 0] = np.inf
