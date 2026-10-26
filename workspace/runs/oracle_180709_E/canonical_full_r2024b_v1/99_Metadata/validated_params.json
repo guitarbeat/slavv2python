@@ -39,7 +39,7 @@
     1.9968800000000002
   ],
   "min_hair_length_in_microns": 0.0,
-  "n_jobs": 1,
+  "n_jobs": 6,
   "number_of_edges_per_vertex": 4,
   "numerical_aperture": 0.95,
   "pipeline_profile": "paper",

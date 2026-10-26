@@ -28,12 +28,15 @@ _DONE_RE = re.compile(r"Done\s+(\d+)\s+tasks.*?elapsed:\s+([0-9.]+)\s*(min|s)")
 
 
 def _parse_run_log(log_path: Path) -> list[tuple[int, float]]:
-    """Return (chunks_done, elapsed_seconds) points from joblib log lines."""
+    """Return (chunks_done, elapsed_seconds) points from joblib log lines for octave 1."""
     points: list[tuple[int, float]] = []
     text = log_path.read_text(encoding="utf-8", errors="ignore")
     for m in _DONE_RE.finditer(text):
+        chunks = int(m.group(1))
         secs = float(m.group(2)) * (60.0 if m.group(3) == "min" else 1.0)
-        points.append((int(m.group(1)), secs))
+        if points and chunks < points[-1][0]:
+            break  # Octave 1 completed; next octave begins
+        points.append((chunks, secs))
     return points
 
 
@@ -139,9 +142,9 @@ def figure_parity_composition(ulp: dict, out: Path) -> None:
     """Stacked composition of energy voxels: exact / within-tol / over-max."""
     total = int(ulp["total_voxels"])
     exact = int(ulp["scale_agree_energy_exact_match_count"])
-    within = int(ulp["scale_agree_energy_ulp_within_max_count"])
     over = int(ulp["scale_agree_energy_ulp_over_max_count"])
     scale_mm = int(ulp["scale_mismatch_count"])
+    within = int(ulp.get("scale_agree_energy_ulp_within_max_count", max(0, total - exact - over - scale_mm)))
     other = max(0, total - exact - within - over)
 
     fig, ax = plt.subplots(figsize=(8, 2.6))
@@ -194,7 +197,8 @@ def main() -> None:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     print(f"Figures -> {args.out_dir}")
 
-    ulp = json.loads(args.ulp_json.read_text(encoding="utf-8"))
+    raw_payload = json.loads(args.ulp_json.read_text(encoding="utf-8"))
+    ulp = raw_payload.get("energy_float_gate", raw_payload)
     figure_ulp_histogram(ulp, args.out_dir / "energy_ulp_histogram.png")
     figure_parity_composition(ulp, args.out_dir / "energy_parity_composition.png")
 

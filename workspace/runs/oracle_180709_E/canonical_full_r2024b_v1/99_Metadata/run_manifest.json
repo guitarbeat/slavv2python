@@ -1,57 +1,52 @@
 {
-  "current_stage": "energy",
-  "dataset_hash": "40dd7ea8d6ec3a47e4ffaf3de31e1f38f0f148e52e09e60bc616c2becb456cff",
-  "kind": "slavv_run",
+  "analysis_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/03_Analysis",
+  "artifacts": {},
+  "command": "prove-exact",
+  "dataset_hash": "test-hash",
+  "exact_report": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/03_Analysis/exact_proof.json",
+  "hashes_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/03_Analysis/hashes",
+  "kind": "parity_run",
   "manifest_version": 1,
-  "matlab_source_version": null,
-  "oracle_id": null,
-  "params_fingerprint": "a767be26f74abc3082719ea7a0e8d918b5be84b04050ad67852b0ec0ff2ee614",
-  "promotion_state": "ephemeral",
-  "provenance": {
-    "image_shape": [
-      64,
-      512,
-      512
-    ],
-    "layout": "structured",
-    "slavv_python": "pipeline",
-    "stop_after": "network"
-  },
-  "python_commit": "694733fb23b6951e02fe9b9135b83111dce4c384",
-  "retention": "disposable",
+  "normalized_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/03_Analysis/normalized",
+  "oracle_id": "180709_E_full_r2024b",
+  "oracle_root": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b",
+  "params_path": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/99_Metadata/validated_params.json",
+  "python_commit": "dd52403721c94c8099ccd1b4e62ac520e6e0f966",
+  "retention": "promoted",
   "run_id": "bdab340da1bf",
-  "run_root": "/Volumes/LoveSSD/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "run_root": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "stage": "network",
   "stage_metrics": {
     "edges": {
-      "completed_at": null,
-      "elapsed_seconds": 0.0,
-      "peak_memory_bytes": 0,
-      "status": "pending"
+      "completed_at": "2026-10-26T08:47:27Z",
+      "elapsed_seconds": 777.0,
+      "peak_memory_bytes": 2448752640,
+      "status": "completed"
     },
     "energy": {
-      "completed_at": null,
-      "elapsed_seconds": 790.2676999568939,
-      "peak_memory_bytes": 242204672,
-      "status": "running"
+      "completed_at": "2026-10-26T08:32:43Z",
+      "elapsed_seconds": 9342.074440956116,
+      "peak_memory_bytes": 2975629312,
+      "status": "completed"
     },
     "network": {
-      "completed_at": null,
-      "elapsed_seconds": 0.0,
-      "peak_memory_bytes": 0,
-      "status": "pending"
+      "completed_at": "2026-10-26T08:47:58Z",
+      "elapsed_seconds": 31.0,
+      "peak_memory_bytes": 1906294784,
+      "status": "completed"
     },
     "vertices": {
-      "completed_at": null,
-      "elapsed_seconds": 0.0,
-      "peak_memory_bytes": 0,
-      "status": "pending"
+      "completed_at": "2026-10-26T08:34:30Z",
+      "elapsed_seconds": 107.71271085739136,
+      "peak_memory_bytes": 2808283136,
+      "status": "completed"
     }
   },
-  "status": "running",
-  "target_stage": "network",
+  "stages": {},
+  "status": "passed",
   "timestamps": {
-    "completed_at": "2026-09-08T04:32:12Z",
+    "completed_at": "2026-10-26T08:47:58Z",
     "created_at": "2026-09-08T04:32:12Z",
-    "updated_at": "2026-09-08T04:45:22Z"
+    "updated_at": "2026-10-26T08:49:04Z"
   }
 }

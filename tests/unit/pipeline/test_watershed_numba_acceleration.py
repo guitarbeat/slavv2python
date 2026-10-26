@@ -338,3 +338,107 @@ def test_structuring_element_offsets_memoization():
     info2 = _construct_structuring_element_offsets_matlab_cached.cache_info()
     assert info2.hits == 1
     assert np.array_equal(offsets1, offsets2)
+
+
+def test_sorted_frontier_bisect_stateful_equivalence():
+    """Verify SortedFrontier bisect acceleration matches reference worst-to-best MATLAB order."""
+    from slavv_python.pipeline.edges.watershed.matlab_watershed_heap import SortedFrontier
+
+    np.random.seed(42)
+    energy_lookup = np.random.uniform(-10.0, 10.0, size=500)
+
+    # Reference implementation without bisect/cache
+    def reference_insert(original, next_loc, next_nrg, s_idx, is_clear):
+        target_energy = float(next_nrg)
+        if not original:
+            return [int(next_loc)], True
+        if s_idx == 1:
+            if float(energy_lookup[int(original[0])]) <= target_energy:
+                insert_at = 0
+            else:
+                insert_at = len(original)
+                for idx in range(len(original) - 1, -1, -1):
+                    if float(energy_lookup[int(original[idx])]) > target_energy:
+                        insert_at = idx + 1
+                        break
+        elif float(energy_lookup[int(original[-1])]) >= target_energy:
+            insert_at = len(original) if is_clear else len(original) - 1
+        else:
+            insert_at = len(original)
+            for idx, loc in enumerate(original):
+                if float(energy_lookup[int(loc)]) < target_energy:
+                    insert_at = idx
+                    break
+        orig = list(original)
+        if not is_clear:
+            if insert_at < len(orig):
+                orig.pop()
+                orig.insert(insert_at, int(next_loc))
+            else:
+                orig.append(int(next_loc))
+        else:
+            orig.insert(insert_at, int(next_loc))
+        return orig, True
+
+    def reference_reset(orig, next_locs, is_clear):
+        updated = list(orig)
+        next_locations = set(np.asarray(next_locs, dtype=np.int64).tolist())
+        locations_to_reset = sorted({int(loc) for loc in updated if int(loc) in next_locations})
+        if not is_clear:
+            if updated:
+                tail_location = int(updated[-1])
+                locations_to_reset = [loc for loc in locations_to_reset if loc != tail_location]
+                updated.pop()
+            is_clear = True
+
+        reset_indices: list[int] = []
+        for location in locations_to_reset:
+            for idx, available_location in enumerate(updated):
+                if int(available_location) == int(location):
+                    reset_indices.append(idx)
+                    break
+
+        for idx in sorted(set(reset_indices), reverse=True):
+            del updated[idx]
+        return updated, is_clear
+
+    for _run in range(25):
+        initial = np.random.randint(0, 500, size=np.random.randint(1, 15)).tolist()
+        initial.sort(key=lambda loc: -energy_lookup[loc])
+        ref_list = list(initial)
+        ref_clear = False
+
+        q = SortedFrontier(initial, energy_lookup)
+
+        for _ in range(150):
+            op = np.random.choice(["push", "pop", "peek", "discard", "remove", "begin_seed"])
+            if op == "push":
+                loc = int(np.random.randint(0, 500))
+                e = float(energy_lookup[loc])
+                s = int(np.random.choice([1, 2]))
+                ref_list, ref_clear = reference_insert(ref_list, loc, e, s, ref_clear)
+                q.push(loc, e, s)
+            elif op == "pop":
+                if ref_list:
+                    assert bool(q)
+                    assert ref_list.pop() == q.pop_best()
+            elif op == "peek":
+                if ref_list:
+                    assert ref_list[-1] == q.peek_best()
+            elif op == "discard":
+                if not ref_clear and ref_list:
+                    ref_list.pop()
+                ref_clear = True
+                q.discard_current_location_if_not_clear(0)
+            elif op == "remove":
+                n_t = np.random.randint(0, 4)
+                t = np.random.randint(0, 500, size=n_t)
+                ref_list, ref_clear = reference_reset(ref_list, t, ref_clear)
+                q.remove_first_occurrence(t)
+            elif op == "begin_seed":
+                ref_clear = False
+                q.begin_seed_loop()
+
+            assert q._available == ref_list
+            assert q._is_current_location_clear == ref_clear
+

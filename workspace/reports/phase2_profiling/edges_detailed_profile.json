@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "run_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/crop_M_r2024b",
+  "volume_shape": [
+    64,
+    256,
+    256
+  ],
+  "vertex_count": 13706,
+  "candidate_count": 19225,
+  "edge_count": 15511,
+  "spans": {
+    "discovery_seconds": 12.7481,
+    "selection_seconds": 5.9437,
+    "total_edges_seconds": 18.6917,
+    "discovery_pct": 68.2,
+    "selection_pct": 31.8
+  },
+  "discovery_category_breakdown": {
+    "numba_geometric_adjustments": 1.2135,
+    "numba_voxel_claiming": 0.5934,
+    "frontier_priority_queue": 0.0,
+    "strel_indexing_and_bounds": 0.8169,
+    "candidate_trace_assembly": 0.2445,
+    "other": 5.4243
+  },
+  "top_discovery_functions": [
+    {
+      "function": "discover_candidates",
+      "filename": "manager.py",
+      "line": 119,
+      "call_count": 1,
+      "total_time_seconds": 0.0001,
+      "cumulative_time_seconds": 12.748,
+      "pct_of_stage": 100.0
+    },
+    {
+      "function": "discover",
+      "filename": "discovery.py",
+      "line": 207,
+      "call_count": 1,
+      "total_time_seconds": 0.0002,
+      "cumulative_time_seconds": 12.7448,
+      "pct_of_stage": 99.97
+    },
+    {
+      "function": "generate_watershed_candidates",
+      "filename": "candidate_generation.py",
+      "line": 44,
+      "call_count": 1,
+      "total_time_seconds": 0.0065,
+      "cumulative_time_seconds": 12.7244,
+      "pct_of_stage": 99.81
+    },
+    {
+      "function": "_generate_edge_candidates_matlab_global_watershed",
+      "filename": "matlab_get_edges_by_watershed.py",
+      "line": 526,
+      "call_count": 1,
+      "total_time_seconds": 1.6621,
+      "cumulative_time_seconds": 12.7179,
+      "pct_of_stage": 99.76
+    },
+    {
+      "function": "_matlab_frontier_adjusted_neighbor_energies",
+      "filename": "matlab_get_edges_v300_geometry.py",
+      "line": 329,
+      "call_count": 100467,
+      "total_time_seconds": 0.0425,
+      "cumulative_time_seconds": 2.6305,
+      "pct_of_stage": 20.63
+    },
+    {
+      "function": "_matlab_frontier_adjusted_neighbor_energies_python",
+      "filename": "matlab_get_edges_v300_geometry.py",
+      "line": 98,
+      "call_count": 100467,
+      "total_time_seconds": 1.171,
+      "cumulative_time_seconds": 2.588,
+      "pct_of_stage": 20.3
+    },
+    {
+      "function": "_matlab_global_watershed_assemble_results",
+      "filename": "matlab_get_edges_by_watershed.py",
+      "line": 425,
+      "call_count": 1,
+      "total_time_seconds": 0.0227,
+      "cumulative_time_seconds": 1.3915,
+      "pct_of_stage": 10.92
+    },
+    {
+      "function": "clip",
+      "filename": "fromnumeric.py",
+      "line": 2207,
+      "call_count": 305571,
+      "total_time_seconds": 0.13,
+      "cumulative_time_seconds": 1.3427,
+      "pct_of_stage": 10.53
+    },
+    {
+      "function": "_wrapfunc",
+      "filename": "fromnumeric.py",
+      "line": 48,
+      "call_count": 305681,
+      "total_time_seconds": 0.1345,
+      "cumulative_time_seconds": 1.2152,
+      "pct_of_stage": 9.53
+    },
+    {
+      "function": "_wrapit",
+      "filename": "fromnumeric.py",
+      "line": 38,
+      "call_count": 305563,
+      "total_time_seconds": 0.198,
+      "cumulative_time_seconds": 1.0561,
+      "pct_of_stage": 8.28
+    },
+    {
+      "function": "claim_unowned_strel",
+      "filename": "matlab_watershed_heap.py",
+      "line": 607,
+      "call_count": 100467,
+      "total_time_seconds": 0.0327,
+      "cumulative_time_seconds": 1.0267,
+      "pct_of_stage": 8.05
+    },
+    {
+      "function": "_claim_unowned_strel_arrays",
+      "filename": "matlab_watershed_heap.py",
+      "line": 174,
+      "call_count": 100467,
+      "total_time_seconds": 0.5607,
+      "cumulative_time_seconds": 0.994,
+      "pct_of_stage": 7.8
+    },
+    {
+      "function": "<method 'count' of 'list' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 12435,
+      "total_time_seconds": 0.9566,
+      "cumulative_time_seconds": 0.9566,
+      "pct_of_stage": 7.5
+    },
+    {
+      "function": "_matlab_watershed_min_candidate_energies",
+      "filename": "matlab_indexing.py",
+      "line": 38,
+      "call_count": 328813,
+      "total_time_seconds": 0.4756,
+      "cumulative_time_seconds": 0.9318,
+      "pct_of_stage": 7.31
+    },
+    {
+      "function": "_matlab_global_watershed_current_strel",
+      "filename": "matlab_get_edges_by_watershed.py",
+      "line": 205,
+      "call_count": 100467,
+      "total_time_seconds": 0.3705,
+      "cumulative_time_seconds": 0.8695,
+      "pct_of_stage": 6.82
+    },
+    {
+      "function": "<method 'clip' of 'numpy.ndarray' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 305571,
+      "total_time_seconds": 0.063,
+      "cumulative_time_seconds": 0.7711,
+      "pct_of_stage": 6.05
+    },
+    {
+      "function": "remove_first_occurrence",
+      "filename": "matlab_watershed_heap.py",
+      "line": 358,
+      "call_count": 40382,
+      "total_time_seconds": 0.1535,
+      "cumulative_time_seconds": 0.7633,
+      "pct_of_stage": 5.99
+    },
+    {
+      "function": "_matlab_global_watershed_trace_half",
+      "filename": "matlab_get_edges_by_watershed.py",
+      "line": 359,
+      "call_count": 41424,
+      "total_time_seconds": 0.2218,
+      "cumulative_time_seconds": 0.7536,
+      "pct_of_stage": 5.91
+    },
+    {
+      "function": "_clip",
+      "filename": "_methods.py",
+      "line": 96,
+      "call_count": 305571,
+      "total_time_seconds": 0.491,
+      "cumulative_time_seconds": 0.7081,
+      "pct_of_stage": 5.55
+    },
+    {
+      "function": "<method 'index' of 'list' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 10395,
+      "total_time_seconds": 0.5827,
+      "cumulative_time_seconds": 0.5827,
+      "pct_of_stage": 4.57
+    },
+    {
+      "function": "_argmin_with_linear_index_tiebreak",
+      "filename": "matlab_indexing.py",
+      "line": 99,
+      "call_count": 114173,
+      "total_time_seconds": 0.0776,
+      "cumulative_time_seconds": 0.51,
+      "pct_of_stage": 4.0
+    },
+    {
+      "function": "sum",
+      "filename": "fromnumeric.py",
+      "line": 2304,
+      "call_count": 201033,
+      "total_time_seconds": 0.0914,
+      "cumulative_time_seconds": 0.4403,
+      "pct_of_stage": 3.45
+    },
+    {
+      "function": "any",
+      "filename": "fromnumeric.py",
+      "line": 2436,
+      "call_count": 286447,
+      "total_time_seconds": 0.0779,
+      "cumulative_time_seconds": 0.4067,
+      "pct_of_stage": 3.19
+    },
+    {
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 526525,
+      "total_time_seconds": 0.4012,
+      "cumulative_time_seconds": 0.4012,
+      "pct_of_stage": 3.15
+    },
+    {
+      "function": "_argmin_with_linear_index_tiebreak_python",
+      "filename": "matlab_indexing.py",
+      "line": 46,
+      "call_count": 114173,
+      "total_time_seconds": 0.3688,
+      "cumulative_time_seconds": 0.3757,
+      "pct_of_stage": 2.95
+    }
+  ],
+  "top_selection_functions": [
+    {
+      "function": "select_and_finalize_edge_set",
+      "filename": "selection_workflow.py",
+      "line": 28,
+      "call_count": 1,
+      "total_time_seconds": 0.0056,
+      "cumulative_time_seconds": 5.9425,
+      "pct_of_stage": 99.98
+    },
+    {
+      "function": "choose_edges_for_workflow",
+      "filename": "selection.py",
+      "line": 452,
+      "call_count": 1,
+      "total_time_seconds": 0.0041,
+      "cumulative_time_seconds": 4.4528,
+      "pct_of_stage": 74.92
+    },
+    {
+      "function": "_choose_edges_matlab_style",
+      "filename": "selection.py",
+      "line": 139,
+      "call_count": 1,
+      "total_time_seconds": 0.0691,
+      "cumulative_time_seconds": 4.4487,
+      "pct_of_stage": 74.85
+    },
+    {
+      "function": "prefilter_edge_indices_for_cleanup_matlab_style",
+      "filename": "finalize.py",
+      "line": 235,
+      "call_count": 1,
+      "total_time_seconds": 0.0306,
+      "cumulative_time_seconds": 2.7618,
+      "pct_of_stage": 46.47
+    },
+    {
+      "function": "_matlab_smooth_edges_v2",
+      "filename": "operations.py",
+      "line": 495,
+      "call_count": 2,
+      "total_time_seconds": 0.85,
+      "cumulative_time_seconds": 2.4231,
+      "pct_of_stage": 40.77
+    },
+    {
+      "function": "_matlab_precrop_resample_from_maps",
+      "filename": "finalize.py",
+      "line": 63,
+      "call_count": 2,
+      "total_time_seconds": 0.3452,
+      "cumulative_time_seconds": 2.0058,
+      "pct_of_stage": 33.75
+    },
+    {
+      "function": "finalize_edges_matlab_style",
+      "filename": "finalize.py",
+      "line": 352,
+      "call_count": 1,
+      "total_time_seconds": 0.0214,
+      "cumulative_time_seconds": 1.1914,
+      "pct_of_stage": 20.05
+    },
+    {
+      "function": "_matlab_resample_vectors_linf",
+      "filename": "finalize.py",
+      "line": 28,
+      "call_count": 38450,
+      "total_time_seconds": 0.2318,
+      "cumulative_time_seconds": 1.055,
+      "pct_of_stage": 17.75
+    },
+    {
+      "function": "_wrapfunc",
+      "filename": "fromnumeric.py",
+      "line": 48,
+      "call_count": 340192,
+      "total_time_seconds": 0.0794,
+      "cumulative_time_seconds": 0.6625,
+      "pct_of_stage": 11.15
+    },
+    {
+      "function": "clip",
+      "filename": "fromnumeric.py",
+      "line": 2207,
+      "call_count": 229612,
+      "total_time_seconds": 0.0824,
+      "cumulative_time_seconds": 0.6342,
+      "pct_of_stage": 10.67
+    },
+    {
+      "function": "<method 'clip' of 'numpy.ndarray' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 229612,
+      "total_time_seconds": 0.0378,
+      "cumulative_time_seconds": 0.4887,
+      "pct_of_stage": 8.22
+    },
+    {
+      "function": "_clip",
+      "filename": "_methods.py",
+      "line": 96,
+      "call_count": 229612,
+      "total_time_seconds": 0.3121,
+      "cumulative_time_seconds": 0.451,
+      "pct_of_stage": 7.59
+    },
+    {
+      "function": "interp",
+      "filename": "_function_base_impl.py",
+      "line": 1538,
+      "call_count": 365932,
+      "total_time_seconds": 0.1734,
+      "cumulative_time_seconds": 0.4162,
+      "pct_of_stage": 7.0
+    },
+    {
+      "function": "column_stack",
+      "filename": "_shape_base_impl.py",
+      "line": 625,
+      "call_count": 146372,
+      "total_time_seconds": 0.285,
+      "cumulative_time_seconds": 0.4118,
+      "pct_of_stage": 6.93
+    },
+    {
+      "function": "linspace",
+      "filename": "function_base.py",
+      "line": 27,
+      "call_count": 73186,
+      "total_time_seconds": 0.2324,
+      "cumulative_time_seconds": 0.3962,
+      "pct_of_stage": 6.67
+    },
+    {
+      "function": "_wrapreduction",
+      "filename": "fromnumeric.py",
+      "line": 66,
+      "call_count": 351740,
+      "total_time_seconds": 0.1509,
+      "cumulative_time_seconds": 0.3854,
+      "pct_of_stage": 6.48
+    },
+    {
+      "function": "_matlab_crop_edges_v200",
+      "filename": "finalize.py",
+      "line": 175,
+      "call_count": 1,
+      "total_time_seconds": 0.1283,
+      "cumulative_time_seconds": 0.3649,
+      "pct_of_stage": 6.14
+    },
+    {
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "filename": "~",
+      "line": 0,
+      "call_count": 574579,
+      "total_time_seconds": 0.3266,
+      "cumulative_time_seconds": 0.3266,
+      "pct_of_stage": 5.49
+    },
+    {
+      "function": "sum",
+      "filename": "fromnumeric.py",
+      "line": 2304,
+      "call_count": 208423,
+      "total_time_seconds": 0.0726,
+      "cumulative_time_seconds": 0.3064,
+      "pct_of_stage": 5.16
+    },
+    {
+      "function": "add_vertices_to_edges_matlab_style",
+      "filename": "bridge_insertion.py",
+      "line": 552,
+      "call_count": 1,
+      "total_time_seconds": 0.0156,
+      "cumulative_time_seconds": 0.2798,
+      "pct_of_stage": 4.71
+    }
+  ]
+}

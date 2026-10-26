@@ -1,0 +1,43 @@
+         23722895 function calls (23722779 primitive calls) in 12.748 seconds
+
+   Ordered by: cumulative time
+   List reduced from 263 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   12.748   12.748 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/manager.py:119(discover_candidates)
+        1    0.000    0.000   12.745   12.745 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/discovery.py:207(discover)
+        1    0.006    0.006   12.724   12.724 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/candidate_generation.py:44(generate_watershed_candidates)
+        1    1.662    1.662   12.718   12.718 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py:526(_generate_edge_candidates_matlab_global_watershed)
+   100467    0.043    0.000    2.631    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_v300_geometry.py:329(_matlab_frontier_adjusted_neighbor_energies)
+   100467    1.171    0.000    2.588    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_v300_geometry.py:98(_matlab_frontier_adjusted_neighbor_energies_python)
+        1    0.023    0.023    1.391    1.391 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py:425(_matlab_global_watershed_assemble_results)
+   305571    0.130    0.000    1.343    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2207(clip)
+   305681    0.135    0.000    1.215    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:48(_wrapfunc)
+   305563    0.198    0.000    1.056    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:38(_wrapit)
+   100467    0.033    0.000    1.027    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py:607(claim_unowned_strel)
+   100467    0.561    0.000    0.994    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py:174(_claim_unowned_strel_arrays)
+    12435    0.957    0.000    0.957    0.000 {method 'count' of 'list' objects}
+   328813    0.476    0.000    0.932    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_indexing.py:38(_matlab_watershed_min_candidate_energies)
+   100467    0.371    0.000    0.870    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py:205(_matlab_global_watershed_current_strel)
+   305571    0.063    0.000    0.771    0.000 {method 'clip' of 'numpy.ndarray' objects}
+    40382    0.153    0.000    0.763    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py:358(remove_first_occurrence)
+    41424    0.222    0.000    0.754    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py:359(_matlab_global_watershed_trace_half)
+   305571    0.491    0.000    0.708    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/_methods.py:96(_clip)
+    10395    0.583    0.000    0.583    0.000 {method 'index' of 'list' objects}
+   114173    0.078    0.000    0.510    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_indexing.py:99(_argmin_with_linear_index_tiebreak)
+   201033    0.091    0.000    0.440    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2304(sum)
+   286447    0.078    0.000    0.407    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2436(any)
+   526525    0.401    0.000    0.401    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+   114173    0.369    0.000    0.376    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_indexing.py:46(_argmin_with_linear_index_tiebreak_python)
+   214640    0.104    0.000    0.347    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_by_watershed.py:632(_trace_frontier_state)
+   201627    0.115    0.000    0.341    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:66(_wrapreduction)
+   286447    0.135    0.000    0.329    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:86(_wrapreduction_any_all)
+   100467    0.262    0.000    0.324    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_get_edges_v300_geometry.py:80(_matlab_frontier_size_tolerance)
+   328813    0.324    0.000    0.324    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/lib/_ufunclike_impl.py:62(isposinf)
+       99    0.000    0.000    0.322    0.003 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_calculate_linear_strel_range.py:140(build_matlab_global_watershed_lut)
+       99    0.007    0.000    0.322    0.003 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_calculate_linear_strel_range.py:76(_build_matlab_global_watershed_lut_cached)
+    73783    0.099    0.000    0.305    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_watershed_heap.py:293(push)
+       99    0.230    0.002    0.294    0.003 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/watershed/matlab_calculate_linear_strel_range.py:14(build_matlab_local_strel_geometry)
+  2242697    0.269    0.000    0.269    0.000 {built-in method numpy.asarray}
+
+

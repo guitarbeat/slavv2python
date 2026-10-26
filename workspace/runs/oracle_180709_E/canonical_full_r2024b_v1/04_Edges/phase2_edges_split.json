@@ -1,0 +1,24 @@
+{
+  "candidate_count": 84650,
+  "completed_at": "2026-10-26T08:47:20Z",
+  "discovery_completed_at": "2026-10-26T08:46:59Z",
+  "discovery_seconds": 748.7679925409611,
+  "discovery_strategy": "watershed",
+  "edge_count": 69500,
+  "exact_route": true,
+  "initialization_seconds": 0.0013792499667033553,
+  "precision": "float64",
+  "profile": "exact-route",
+  "schema_version": 1,
+  "selection_seconds": 15.210444875003304,
+  "spans": {
+    "edge_selection_seconds": 15.210444875003304,
+    "initialization_seconds": 0.0013792499667033553,
+    "watershed_discovery_seconds": 748.7679925409611
+  },
+  "stage": "edges",
+  "started_at": "2026-10-26T08:34:30Z",
+  "status": "completed",
+  "total_seconds": 763.9798166659311,
+  "writer_authorized": true
+}

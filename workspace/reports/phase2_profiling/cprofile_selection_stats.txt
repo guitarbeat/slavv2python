@@ -1,0 +1,33 @@
+         16950464 function calls (16950286 primitive calls) in 5.943 seconds
+
+   Ordered by: cumulative time
+   List reduced from 318 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.006    0.006    5.943    5.943 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/selection_workflow.py:28(select_and_finalize_edge_set)
+        1    0.004    0.004    4.453    4.453 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/selection.py:452(choose_edges_for_workflow)
+        1    0.069    0.069    4.449    4.449 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/selection.py:139(_choose_edges_matlab_style)
+        1    0.031    0.031    2.762    2.762 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/finalize.py:235(prefilter_edge_indices_for_cleanup_matlab_style)
+        2    0.850    0.425    2.423    1.212 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/network/operations.py:495(_matlab_smooth_edges_v2)
+        2    0.345    0.173    2.006    1.003 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/finalize.py:63(_matlab_precrop_resample_from_maps)
+        1    0.021    0.021    1.191    1.191 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/finalize.py:352(finalize_edges_matlab_style)
+    38450    0.232    0.000    1.055    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/finalize.py:28(_matlab_resample_vectors_linf)
+   340192    0.079    0.000    0.663    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:48(_wrapfunc)
+   229612    0.082    0.000    0.634    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2207(clip)
+   229612    0.038    0.000    0.489    0.000 {method 'clip' of 'numpy.ndarray' objects}
+   229612    0.312    0.000    0.451    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/_methods.py:96(_clip)
+   365932    0.173    0.000    0.416    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py:1538(interp)
+   146372    0.285    0.000    0.412    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/lib/_shape_base_impl.py:625(column_stack)
+    73186    0.232    0.000    0.396    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/function_base.py:27(linspace)
+   351740    0.151    0.000    0.385    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:66(_wrapreduction)
+        1    0.128    0.128    0.365    0.365 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/finalize.py:175(_matlab_crop_edges_v200)
+   574579    0.327    0.000    0.327    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+   208423    0.073    0.000    0.306    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2304(sum)
+        1    0.016    0.016    0.280    0.280 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/bridge_insertion.py:552(add_vertices_to_edges_matlab_style)
+        1    0.002    0.002    0.249    0.249 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/cleanup.py:87(prune_orphan_edges)
+   107922    0.203    0.000    0.235    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py:1402(diff)
+    16166    0.008    0.000    0.220    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/cleanup.py:238(_get_linear_trace_voxels)
+    15512    0.067    0.000    0.193    0.000 /Volumes/LoveSSD/NeuroVASC/repos/slavv2python/slavv_python/pipeline/edges/bridge_insertion.py:39(_matlab_linear_indices_from_points)
+  1499029    0.185    0.000    0.185    0.000 {built-in method numpy.asarray}
+
+

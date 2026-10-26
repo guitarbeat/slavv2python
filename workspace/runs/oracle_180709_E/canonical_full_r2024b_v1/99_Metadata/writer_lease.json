@@ -1,0 +1,12 @@
+{
+  "command": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/.venv/bin/slavv parity resume-exact-run --dest-run-root workspace/runs/oracle_180709_E/canonical_full_r2024b_v1 --oracle-root workspace/oracles/180709_E_full_r2024b --dataset-root workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353 --n-jobs auto --force-rerun-from energy --stop-after network --force --force-kill",
+  "ended_at": "2026-10-26T08:47:58Z",
+  "pid": 96759,
+  "run_id": null,
+  "schema_version": 1,
+  "source_commit": "dd52403721c94c8099ccd1b4e62ac520e6e0f966",
+  "stage": "network",
+  "started_at": "2026-10-26T05:57:01Z",
+  "status": "completed",
+  "updated_at": "2026-10-26T08:47:58Z"
+}

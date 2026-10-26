@@ -1,0 +1,7 @@
+Exact mismatch diagnosis: edges
+- traces: sequence_field
+- scale_traces: sequence_field
+- energy_traces: sequence_field
+- energies: numeric_mismatch
+  count=69500 first=[np.int64(0)] matlab=-0.8411078626794112 python=-0.8411079049110413 max_ulp=1424171945
+- bridge_edges: sequence_field

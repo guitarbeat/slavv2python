@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "run_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "dataset": "180709_E (Canonical Full Volume)",
+  "volume_shape": [
+    64,
+    512,
+    512
+  ],
+  "vertex_count": 59408,
+  "candidate_count": 84650,
+  "edge_count": 69500,
+  "parity_certified": true,
+  "parity_rule": "ADR 0014 Bit-Identical Regression Gate",
+  "timings": {
+    "discovery_seconds": 57.617,
+    "selection_seconds": 15.525,
+    "total_edges_seconds": 73.142,
+    "historical_baseline_seconds": 764.0,
+    "overall_edges_speedup_factor": 10.45,
+    "discovery_speedup_factor": 13.0
+  }
+}

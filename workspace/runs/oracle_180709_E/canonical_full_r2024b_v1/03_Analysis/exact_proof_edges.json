@@ -1,0 +1,41 @@
+{
+  "dest_run_root": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "edges_adr0012_gate": {
+    "adr0012_evaluated": false,
+    "adr0012_unavailable_reason": "MATLAB watershed ownership map unavailable \u2014 expected <matlab_batch_dir>/data/watershed_ownership_map.mat",
+    "adr_bar": "ADR 0012 spatial bars (ownership-map \u2265 60% + trace tolerance)",
+    "n_matlab_connections": 69500,
+    "n_python_connections": 69500
+  },
+  "exact_route_gate": "comparison_exact_network + python_native_hessian; energy.energy ULP\u226448 + strict scale_indices (ADR 0011)",
+  "first_failing_field_path": "edges.adr0012_gate",
+  "first_failing_stage": "edges",
+  "first_failure": {
+    "field_path": "edges.adr0012_gate",
+    "matlab_preview": "MATLAB watershed ownership map unavailable \u2014 expected <matlab_batch_dir>/data/watershed_ownership_map.mat",
+    "mismatch_type": "adr0012_not_evaluated",
+    "python_preview": "ADR 0012 spatial bars were not evaluated because ownership-map artifacts are missing or incompatible. This is not a spatial-bar failure and strict-field connection counts are informational only. Reason: MATLAB watershed ownership map unavailable \u2014 expected <matlab_batch_dir>/data/watershed_ownership_map.mat",
+    "stage": "edges"
+  },
+  "matlab_batch_dir": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b/01_Input/matlab_results/batch_260907-001109",
+  "mismatch_diagnosis": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/03_Analysis/exact_mismatch_edges.json",
+  "passed": false,
+  "report_scope": "exact route",
+  "source_run_root": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1",
+  "stage_summaries": {
+    "edges": {
+      "field_count": 9,
+      "first_failure": {
+        "field_path": "edges.adr0012_gate",
+        "matlab_preview": "MATLAB watershed ownership map unavailable \u2014 expected <matlab_batch_dir>/data/watershed_ownership_map.mat",
+        "mismatch_type": "adr0012_not_evaluated",
+        "python_preview": "ADR 0012 spatial bars were not evaluated because ownership-map artifacts are missing or incompatible. This is not a spatial-bar failure and strict-field connection counts are informational only. Reason: MATLAB watershed ownership map unavailable \u2014 expected <matlab_batch_dir>/data/watershed_ownership_map.mat",
+        "stage": "edges"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "edges"
+  ]
+}

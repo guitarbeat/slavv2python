@@ -7,7 +7,6 @@ MATLAB source: ``external/Vectorization-Public/source/energy_filter_V200.m``
 from __future__ import annotations
 
 import ctypes
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 

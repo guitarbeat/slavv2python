@@ -1,5 +1,6 @@
 {
   "approximating_PSF": true,
+  "bandpass_window": 0.0,
   "direction_method": "hessian",
   "direction_tolerance": 1.0,
   "discrete_tracing": false,
@@ -9,6 +10,7 @@
   "edge_number_tolerance": 4,
   "energy_method": "hessian",
   "energy_projection_mode": "matlab",
+  "energy_sign": -1.0,
   "energy_tolerance": 1.0,
   "energy_upper_bound": 0,
   "excitation_wavelength_in_microns": 0.95,
@@ -23,6 +25,7 @@
     0.916,
     1.9968800000000002
   ],
+  "min_hair_length_in_microns": 0.0,
   "number_of_edges_per_vertex": 4,
   "numerical_aperture": 0.95,
   "radius_of_largest_vessel_in_microns": 60,
@@ -30,6 +33,8 @@
   "radius_tolerance": 0.5,
   "sample_index_of_refraction": 1.33,
   "scales_per_octave": 6,
+  "sigma_per_influence_edges": 0.5,
+  "sigma_per_influence_vertices": 1.0,
   "space_strel_apothem": 1,
   "space_strel_apothem_edges": 1,
   "spherical_to_annular_ratio": 0.5,

@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "candidate_audit.json": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/04_Edges/candidate_audit.json",
+    "candidates.pkl": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/04_Edges/candidates.pkl",
+    "chosen_edges.pkl": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/04_Edges/chosen_edges.pkl",
+    "phase2_edges_split.json": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/04_Edges/phase2_edges_split.json",
+    "phase2_edges_split.json.sha256": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/04_Edges/phase2_edges_split.json.sha256"
+  },
+  "checkpoint": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/runs/oracle_180709_E/canonical_full_r2024b_v1/02_Output/python_results/checkpoints/checkpoint_edges.pkl",
+  "completed_at": "2026-10-26T08:47:27Z",
+  "stage": "edges"
+}

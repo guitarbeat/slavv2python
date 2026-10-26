@@ -6,6 +6,8 @@ MATLAB lineage: ``get_edges_by_watershed.m`` shared-state helpers.
 
 from __future__ import annotations
 
+import bisect
+import contextlib
 import heapq
 import os
 from typing import Any, cast
@@ -44,29 +46,29 @@ def _matlab_global_watershed_insert_available_location(
     """Insert ``next_location`` into MATLAB worst-to-best ``available_locations`` order."""
     is_clear = is_current_location_clear
     original = available_locations
-
-    target_energy = float(next_energy)
-
     if not original:
         return [int(next_location)], True
+
+    target_energy = float(next_energy)
+    target_neg = -target_energy
 
     if seed_idx == 1:
         if float(energy_lookup[int(original[0])]) <= target_energy:
             insert_at = 0
         else:
-            insert_at = len(original)
-            for idx in range(len(original) - 1, -1, -1):
-                if float(energy_lookup[int(original[idx])]) > target_energy:
-                    insert_at = idx + 1
-                    break
+            insert_at = bisect.bisect_left(
+                range(len(original)),
+                target_neg,
+                key=lambda i: -float(energy_lookup[int(original[i])]),
+            )
     elif float(energy_lookup[int(original[-1])]) >= target_energy:
         insert_at = len(original) if is_current_location_clear else len(original) - 1
     else:
-        insert_at = len(original)
-        for idx, loc in enumerate(original):
-            if float(energy_lookup[int(loc)]) < target_energy:
-                insert_at = idx
-                break
+        insert_at = bisect.bisect_right(
+            range(len(original)),
+            target_neg,
+            key=lambda i: -float(energy_lookup[int(original[i])]),
+        )
 
     if not is_current_location_clear:
         is_clear = True
@@ -97,30 +99,31 @@ def _matlab_global_watershed_reset_join_locations(
             available_locations.pop()
         return available_locations, True
 
-    next_locations = {int(x) for x in next_loc_arr}
-
+    tail = None
     if not is_clear:
-        tail_location = int(available_locations[-1])
-        working_list = available_locations[:-1]
+        tail = available_locations.pop()
         is_clear = True
-        reset_set = {loc for loc in working_list if loc in next_locations and loc != tail_location}
-    else:
-        working_list = available_locations
-        reset_set = {loc for loc in working_list if loc in next_locations}
 
-    if not reset_set:
-        return working_list, is_clear
+    next_set = {int(x) for x in next_loc_arr}
+    if tail is not None and tail in next_set:
+        next_set.remove(tail)
 
-    # Single-pass filter removing the first occurrence of each element in reset_set
-    updated: list[int] = []
-    seen_reset: set[int] = set()
-    for loc in working_list:
-        if loc in reset_set and loc not in seen_reset:
-            seen_reset.add(loc)
-        else:
-            updated.append(loc)
+    if not next_set:
+        return available_locations, is_clear
 
-    return updated, is_clear
+    indices: list[int] = []
+    for t in sorted(next_set):
+        with contextlib.suppress(ValueError):
+            indices.append(available_locations.index(t))
+
+    if not indices:
+        return available_locations, is_clear
+
+    indices.sort(reverse=True)
+    for idx in indices:
+        del available_locations[idx]
+
+    return available_locations, is_clear
 
 
 def _claim_unowned_strel_arrays_numba_impl(
@@ -234,11 +237,21 @@ def _claim_unowned_strel_arrays(
 
 
 class SortedFrontier:
-    """Faithful port of MATLAB ``available_locations`` (stable worst-to-best sorted array)."""
+    """Faithful port of MATLAB ``available_locations`` (stable worst-to-best sorted array).
+
+    Accelerated via $O(\\log N)$ binary search insertion (preserving exact MATLAB
+    asymmetric tie-breaking) and $O(1)$ presence-checked join resets (ADR 0014).
+    """
 
     def __init__(self, initial_locations: list[int], energy_lookup: np.ndarray):
         self._energy_lookup = energy_lookup
         self._available: list[int] = list(initial_locations)
+        self._neg_energies: list[float] = [
+            -float(energy_lookup[int(loc)]) for loc in self._available
+        ]
+        self._location_counts: dict[int, int] = {}
+        for loc in self._available:
+            self._location_counts[loc] = self._location_counts.get(loc, 0) + 1
         self._is_current_location_clear = False
 
     def begin_seed_loop(self) -> None:
@@ -262,7 +275,7 @@ class SortedFrontier:
             "is_current_location_clear": self._is_current_location_clear,
             "tail": [int(value) for value in self._available[-tail_count:]],
             "target_counts": {
-                str(int(target)): sum(1 for value in self._available if int(value) == int(target))
+                str(int(target)): self._location_counts.get(int(target), 0)
                 for target in sorted(target_set)
             },
         }
@@ -270,7 +283,12 @@ class SortedFrontier:
     def pop_best(self) -> int:
         if not self._available:
             raise KeyError("pop from an empty sorted frontier")
-        return int(self._available.pop())
+        loc = self._available.pop()
+        self._neg_energies.pop()
+        self._location_counts[loc] -= 1
+        if self._location_counts[loc] == 0:
+            del self._location_counts[loc]
+        return int(loc)
 
     def push(
         self,
@@ -281,23 +299,60 @@ class SortedFrontier:
         current_linear: int | None = None,
     ) -> None:
         del current_linear
-        self._available, self._is_current_location_clear = (
-            _matlab_global_watershed_insert_available_location(
-                self._available,
-                next_location=int(location),
-                next_energy=float(energy),
-                energy_lookup=self._energy_lookup,
-                seed_idx=int(seed_idx),
-                is_current_location_clear=self._is_current_location_clear,
+        loc_i = int(location)
+        target_neg = -float(energy)
+
+        if not self._available:
+            self._available.append(loc_i)
+            self._neg_energies.append(target_neg)
+            self._location_counts[loc_i] = self._location_counts.get(loc_i, 0) + 1
+            self._is_current_location_clear = True
+            return
+
+        if seed_idx == 1:
+            if self._neg_energies[0] >= target_neg:
+                insert_at = 0
+            else:
+                insert_at = bisect.bisect_left(self._neg_energies, target_neg)
+        elif self._neg_energies[-1] <= target_neg:
+            insert_at = (
+                len(self._available)
+                if self._is_current_location_clear
+                else len(self._available) - 1
             )
-        )
+        else:
+            insert_at = bisect.bisect_right(self._neg_energies, target_neg)
+
+        if not self._is_current_location_clear:
+            self._is_current_location_clear = True
+            if insert_at < len(self._available):
+                tail = self._available.pop()
+                self._neg_energies.pop()
+                self._location_counts[tail] -= 1
+                if self._location_counts[tail] == 0:
+                    del self._location_counts[tail]
+                self._available.insert(insert_at, loc_i)
+                self._neg_energies.insert(insert_at, target_neg)
+                self._location_counts[loc_i] = self._location_counts.get(loc_i, 0) + 1
+            else:
+                self._available.append(loc_i)
+                self._neg_energies.append(target_neg)
+                self._location_counts[loc_i] = self._location_counts.get(loc_i, 0) + 1
+        else:
+            self._available.insert(insert_at, loc_i)
+            self._neg_energies.insert(insert_at, target_neg)
+            self._location_counts[loc_i] = self._location_counts.get(loc_i, 0) + 1
 
     def discard_current_location_if_not_clear(self, current_linear: int) -> None:
         del current_linear
         if self._is_current_location_clear:
             return
         if self._available:
-            self._available.pop()
+            tail = self._available.pop()
+            self._neg_energies.pop()
+            self._location_counts[tail] -= 1
+            if self._location_counts[tail] == 0:
+                del self._location_counts[tail]
         self._is_current_location_clear = True
 
     def remove_first_occurrence(
@@ -307,13 +362,54 @@ class SortedFrontier:
         current_linear: int | None = None,
     ) -> None:
         del current_linear
-        self._available, self._is_current_location_clear = (
-            _matlab_global_watershed_reset_join_locations(
-                self._available,
-                next_vertex_locations=np.asarray(locations, dtype=np.int64),
-                is_current_location_clear=self._is_current_location_clear,
+        if not self._available:
+            self._is_current_location_clear = True
+            return
+
+        next_loc_arr = np.asarray(locations, dtype=np.int64).reshape(-1)
+        if next_loc_arr.size == 0:
+            if not self._is_current_location_clear:
+                tail = self._available.pop()
+                self._neg_energies.pop()
+                self._location_counts[tail] -= 1
+                if self._location_counts[tail] == 0:
+                    del self._location_counts[tail]
+                self._is_current_location_clear = True
+            return
+
+        tail = None
+        if not self._is_current_location_clear:
+            tail = self._available.pop()
+            self._neg_energies.pop()
+            self._location_counts[tail] -= 1
+            if self._location_counts[tail] == 0:
+                del self._location_counts[tail]
+            self._is_current_location_clear = True
+
+        if tail is not None:
+            targets_present = sorted(
+                {
+                    int(x)
+                    for x in next_loc_arr
+                    if int(x) in self._location_counts and int(x) != tail
+                }
             )
-        )
+        else:
+            targets_present = sorted(
+                {int(x) for x in next_loc_arr if int(x) in self._location_counts}
+            )
+
+        if not targets_present:
+            return
+
+        indices = sorted([self._available.index(t) for t in targets_present], reverse=True)
+        for idx in indices:
+            t = self._available[idx]
+            del self._available[idx]
+            del self._neg_energies[idx]
+            self._location_counts[t] -= 1
+            if self._location_counts[t] == 0:
+                del self._location_counts[t]
 
 
 def build_watershed_frontier(

@@ -1,0 +1,25 @@
+{
+  "dataset_hash": "771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "kind": "matlab_oracle",
+  "manifest_version": 1,
+  "matlab_batch_dir": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_full_r2024b/01_Input/matlab_results/batch_260907-001109",
+  "matlab_source_version": "MATLAB R2024b Update 9",
+  "normalized_artifacts": {
+    "edges": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b/03_Analysis/normalized/oracle/edges.pkl",
+    "energy": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b/03_Analysis/normalized/oracle/energy.pkl",
+    "network": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b/03_Analysis/normalized/oracle/network.pkl",
+    "vertices": "/Volumes/LoveSSD/NeuroVASC/repos/slavv2python/workspace/oracles/180709_E_full_r2024b/03_Analysis/normalized/oracle/vertices.pkl"
+  },
+  "oracle_id": "180709_E_full_r2024b",
+  "oracle_root": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_full_r2024b",
+  "raw_vector_hashes": {
+    "edges": "1bfe9c80281498076d27018a767480e753750194f720f58c34be3b70908d94aa",
+    "energy": "4bd945103ea579c1e79d9e3647e148787aecf6f29cc3b78b345d5cbe26b5f8a7",
+    "network": "cada21abfabd04fc757535126cb42a1f69477b475eaab26fc4c4b82eee33f15d",
+    "vertices": "9ce429f16e55457a1d89ad24a2907756b087dbb5a05a8eb75e8a6a06204430b9"
+  },
+  "timestamps": {
+    "created_at": "2026-09-08T04:30:58Z",
+    "updated_at": "2026-10-26T05:50:19Z"
+  }
+}

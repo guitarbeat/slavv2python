@@ -37,41 +37,22 @@
 - `v18` candidate traces for residual hub: claimed maxes **0.0** (extra) and **−0.238…** (oracle) — match MATLAB L846 claimed map; `v16` candidates still show original-field **−9.24 / −7.73**.
 - Energy/Vertices stage JSON archived from `canonical_full_v4` (lineage seed); checkpoints carried into `v18`.
 
-### R2024b cross-version reproduction (non-claim)
+### R2024b cross-version reproduction (completed)
 
-> **Boundary:** this run is an optional reproducibility check against the
-> already-certified full `180709_E` surface. It does not reopen Phase 1 and is
-> not a new parity claim until MATLAB vectors finish, are promoted to a fresh
-> R2024b oracle root, and all four evaluated proofs pass on a fresh Python run.
+> **Boundary:** this run is an independent cross-version reproducibility check against the
+> certified full `180709_E` surface. It does not reopen Phase 1 or replace the frozen
+> baseline `canonical_full_v18`.
 
-**Live checkpoint (2026-09-06 13:23 CDT):** launchd job
-`180709-e-r2024b-full` is running MATLAB R2024b Update 9 in **Energy** against
-source SHA-256
-`771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353`.
-The active MATLAB PID was `86473`; the fresh stream was
-`energy_260906-131602_180709_E_chunks_octave_2_of_6` with 15 durable artifacts.
-Refresh rather than reusing this PID/count:
+**Validated completion (2026-10-26):** MATLAB R2024b full-volume batch (`batch_260907-001109`) was promoted to structured oracle `workspace/oracles/180709_E_full_r2024b` and verified with `ensure-oracle-artifacts --stage all`. The corresponding Python reproduction run `canonical_full_r2024b_v1` was executed to 100% completion across all 4 stages:
 
-```bash
-uv run python scripts/parity/macos_matlab_job.py status
-```
+| Stage | Verdict | Evidence / Metrics | Notes |
+| :--- | :--- | :--- | :--- |
+| **Energy** | ✅ **PASS** (ADR 0011) | `canonical_full_r2024b_v1/03_Analysis/exact_proof_energy.json` | **0 scale mismatches** across all 16,777,216 voxels (pass rate 1.0); max abs delta on scale-agreeing: $2.72 \times 10^{-7}$. |
+| **Vertices** | ✅ **PASS** (ADR 0011) | `canonical_full_r2024b_v1/03_Analysis/exact_proof_vertices.json` | **59,408 vertices**, exact match on positions, scales, and rank-ramp energies. |
+| **Edges** | ✅ **EXACT MATCH** | `canonical_full_r2024b_v1/02_Output/python_results/checkpoints/checkpoint_edges.pkl` | **69,500 / 69,500 connections** (`np.array_equal == True`, 100.0% overlap in exact row order); trace energies allclose (max delta $1.45 \times 10^{-7}$). |
+| **Network** | ✅ **PASS** (ADR 0012) | `canonical_full_r2024b_v1/03_Analysis/exact_proof_network.json` | **25,371 bifurcations** (`np.array_equal == True`, bit-identical); **48,049 strand pairs** multiset match (`adr0012_evaluated: true`, `passed: true`). |
 
-The writer resumes `batch_260831-211917` serially (one process worker). Runtime
-control state and logs are local under
-`~/Library/Application Support/slavv2python/matlab-jobs/180709-e-r2024b-full/`;
-MATLAB output remains under `workspace/scratch/matlab_full_batches/`. Protected
-roots `workspace/oracles/180709_E_full_v2` and
-`workspace/runs/oracle_180709_E/canonical_full_v18` are never write targets.
-
-**Why launchd:** the earlier direct MATLAB process was terminated when the Dock
-force-quit the ChatGPT application coalition. Its stale JSON continued to say
-`running`, so a PID file alone was not reliable. The replacement LaunchAgent
-owns an independent supervisor and opens MATLAB through LaunchServices. Pause
-tracks the exact MATLAB PID, success requires a MATLAB-written result marker
-with the current attempt nonce, and operator-side status alone traverses the
-external volume. The pause-during-startup and same-root resume integration
-probes passed before this full writer launched. Runbook:
-[macos-launchd-matlab-batches.md](../../solutions/parity/macos-launchd-matlab-batches.md).
+**Release evidence:** `canonical_full_r2024b_v1/03_Analysis/release_evidence.json` persisted with `"proof_passed": true`.
 
 ### Frozen Phase 1 baseline (2026-08-17)
 
@@ -201,5 +182,6 @@ Curated index of solved problems under `docs/solutions/`. Search via YAML frontm
 | Curated vertices rank-ramp energies | [curated-vertices-rank-ramp-energies.md](../../solutions/integration-issues/curated-vertices-rank-ramp-energies.md) |
 | Crop Energy stretch leftover (tiny photos match; crop last digits do not) | [crop-energy-stretch-float-isolation.md](../../solutions/parity/crop-energy-stretch-float-isolation.md) |
 | MATLAB watershed env-var trace hooks (re-apply patch; do not commit into Vectorization-Public) | [matlab-watershed-env-trace-hooks.md](../../solutions/parity/matlab-watershed-env-trace-hooks.md) |
+| Phase 2 optimization regression gates (ADR 0014) | [0014-phase2-optimization-regression-gates.md](../../adr/0014-phase2-optimization-regression-gates.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._

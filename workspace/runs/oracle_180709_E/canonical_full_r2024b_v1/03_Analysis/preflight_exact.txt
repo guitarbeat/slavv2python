@@ -1,0 +1,5 @@
+Exact preflight report
+Status: PASS
+Force: memory gate override enabled
+Memory gate: required 0.64 GiB <= budget 3.29 GiB (pass)
+Run snapshot status: resume_blocked

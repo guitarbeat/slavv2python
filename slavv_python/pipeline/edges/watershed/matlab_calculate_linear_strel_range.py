@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -30,23 +30,24 @@ def build_matlab_local_strel_geometry(
     radii_pixels = np.maximum(radii_microns / np.asarray(microns_per_voxel, dtype=np.float64), 1.0)
     # Replicate MATLAB round() which uses round-half-up
     rounded_radii = np.floor(radii_pixels + 0.5).astype(np.int32, copy=False)
-    offsets: list[list[int]] = []
+
+    r0, r1, r2 = int(rounded_radii[0]), int(rounded_radii[1]), int(rounded_radii[2])
+    px0, px1, px2 = float(radii_pixels[0]), float(radii_pixels[1]), float(radii_pixels[2])
 
     # Preserve MATLAB's logical tie-breaking (smallest Y changes fastest) by making the Y dimension
-    # (index 0) the innermost loop. The internal grid is now [Y, X, Z].
-    for d2 in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):  # Z
-        for d1 in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):  # X
-            for d0 in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):  # Y
-                linf_distance = max(abs(d0), abs(d1), abs(d2))
-                radial_l2_distance_squared = (
-                    (float(d0) / float(radii_pixels[0])) ** 2
-                    + (float(d1) / float(radii_pixels[1])) ** 2
-                    + (float(d2) / float(radii_pixels[2])) ** 2
-                )
-                if radial_l2_distance_squared <= 1.0 or linf_distance <= 1:
-                    offsets.append([d0, d1, d2])
+    # (index 0) the innermost loop. The internal grid is [Y, X, Z].
+    d2_grid, d1_grid, d0_grid = np.ogrid[-r2 : r2 + 1, -r1 : r1 + 1, -r0 : r0 + 1]
 
-    offsets_array: Int32Array = np.asarray(offsets, dtype=np.int32)
+    linf = np.maximum(np.maximum(np.abs(d0_grid), np.abs(d1_grid)), np.abs(d2_grid))
+    radial_l2 = (d0_grid / px0) ** 2 + (d1_grid / px1) ** 2 + (d2_grid / px2) ** 2
+
+    mask = (radial_l2 <= 1.0) | (linf <= 1)
+
+    b_d2, b_d1, b_d0 = np.broadcast_arrays(d2_grid, d1_grid, d0_grid)
+    offsets_array: Int32Array = np.column_stack([b_d0[mask], b_d1[mask], b_d2[mask]]).astype(
+        np.int32
+    )
+
     relative_distances = offsets_array.astype(np.float64, copy=False) * np.asarray(
         microns_per_voxel,
         dtype=np.float64,
@@ -127,6 +128,15 @@ def _build_matlab_global_watershed_lut_cached(
     }
 
 
+_WATERSHED_LUT_FAST_CACHE: dict[tuple[Any, ...], dict[str, np.ndarray]] = {}
+
+
+def clear_matlab_global_watershed_lut_cache() -> None:
+    """Clear internal LUT caches."""
+    _WATERSHED_LUT_FAST_CACHE.clear()
+    _build_matlab_global_watershed_lut_cached.cache_clear()
+
+
 def build_matlab_global_watershed_lut(
     scale_index: int,
     *,
@@ -136,15 +146,31 @@ def build_matlab_global_watershed_lut(
     step_size_per_origin_radius: float,
 ) -> dict[str, np.ndarray]:
     """Build MATLAB watershed LUT fields for one scale exactly enough for parity checks."""
-    return _build_matlab_global_watershed_lut_cached(
-        int(scale_index),
-        size_of_image=size_of_image,
-        lumen_radius_microns_tuple=tuple(
-            np.asarray(lumen_radius_microns, dtype=np.float64).tolist()
-        ),
-        microns_per_voxel_tuple=tuple(np.asarray(microns_per_voxel, dtype=np.float64).tolist()),
-        step_size_per_origin_radius=float(step_size_per_origin_radius),
+    s_idx = int(scale_index)
+    radii_arr = np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)
+    mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64).reshape(-1)
+    radius_val = float(radii_arr[s_idx])
+    step_val = float(step_size_per_origin_radius)
+    cache_key = (
+        s_idx,
+        tuple(size_of_image),
+        radius_val,
+        (float(mpv_arr[0]), float(mpv_arr[1]), float(mpv_arr[2])),
+        step_val,
     )
+    cached = _WATERSHED_LUT_FAST_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    result = _build_matlab_global_watershed_lut_cached(
+        s_idx,
+        size_of_image=size_of_image,
+        lumen_radius_microns_tuple=tuple(radii_arr.tolist()),
+        microns_per_voxel_tuple=tuple(mpv_arr.tolist()),
+        step_size_per_origin_radius=step_val,
+    )
+    _WATERSHED_LUT_FAST_CACHE[cache_key] = result
+    return result
 
 
 _build_matlab_global_watershed_lut = build_matlab_global_watershed_lut

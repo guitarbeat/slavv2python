@@ -1,0 +1,25 @@
+{
+  "dataset_hash": "0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06",
+  "kind": "matlab_oracle",
+  "manifest_version": 1,
+  "matlab_batch_dir": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/01_Input/matlab_results/batch_260831-023332",
+  "matlab_source_version": null,
+  "normalized_artifacts": {
+    "edges": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/03_Analysis/normalized/oracle/edges.pkl",
+    "energy": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/03_Analysis/normalized/oracle/energy.pkl",
+    "network": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/03_Analysis/normalized/oracle/network.pkl",
+    "vertices": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b/03_Analysis/normalized/oracle/vertices.pkl"
+  },
+  "oracle_id": "180709_E_crop_M_r2024b",
+  "oracle_root": "/Volumes/LoveSSD/slavv2python/workspace/oracles/180709_E_crop_M_r2024b",
+  "raw_vector_hashes": {
+    "edges": "dcbec90a31cf0e44c0239d12cf2b1e478ca76ebab825260226db824109f1f11b",
+    "energy": "fab30749aca592bf97cb195cb05b833e69e9787b9c1263b1a38a7d35538af91a",
+    "network": "5c96ef9ccbe4faf7ad82c2c7b53680d3b43261fff8ef3624505fa3f452b1d402",
+    "vertices": "e225da1b0412ca151fa8f33220e0893f15d06ce515b6941fa49ea52f24542d7c"
+  },
+  "timestamps": {
+    "created_at": "2026-09-05T05:38:12Z",
+    "updated_at": "2026-09-05T05:38:12Z"
+  }
+}

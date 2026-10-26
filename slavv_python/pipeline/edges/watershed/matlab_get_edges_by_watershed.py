@@ -131,6 +131,7 @@ def _matlab_global_watershed_scale_pointer_map(
     lumen_radius_microns: np.ndarray,
     microns_per_voxel: np.ndarray,
     step_size_per_origin_radius: float,
+    lut_cache: list[dict[str, Any]] | None = None,
 ) -> np.ndarray:
     """Apply MATLAB's final pointer-map scaling by scale-specific strel length."""
     scaled_pointer_map = np.zeros(pointer_map.shape, dtype=np.float64)
@@ -142,15 +143,18 @@ def _matlab_global_watershed_scale_pointer_map(
     scale_indices = np.clip(scale_labels - 1, 0, len(lumen_radius_microns) - 1)
     unique_lengths: np.ndarray = np.zeros(len(lumen_radius_microns), dtype=np.float64)
     for i in range(len(lumen_radius_microns)):
-        unique_lengths[i] = len(
-            _build_matlab_global_watershed_lut(
-                i,
-                size_of_image=pointer_map.shape,
-                lumen_radius_microns=lumen_radius_microns,
-                microns_per_voxel=microns_per_voxel,
-                step_size_per_origin_radius=step_size_per_origin_radius,
-            )["linear_offsets"]
-        )
+        if lut_cache is not None and i < len(lut_cache):
+            unique_lengths[i] = len(lut_cache[i]["linear_offsets"])
+        else:
+            unique_lengths[i] = len(
+                _build_matlab_global_watershed_lut(
+                    i,
+                    size_of_image=pointer_map.shape,
+                    lumen_radius_microns=lumen_radius_microns,
+                    microns_per_voxel=microns_per_voxel,
+                    step_size_per_origin_radius=step_size_per_origin_radius,
+                )["linear_offsets"]
+            )
     strel_lengths = unique_lengths[scale_indices]
     scaled_pointer_map[pointer_mask] = (
         1000.0 / np.maximum(strel_lengths, 1.0) * pointer_map[pointer_mask].astype(np.float64)
@@ -206,6 +210,7 @@ def _matlab_global_watershed_current_strel(
     lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
     step_size_per_origin_radius: float,
+    lut_cache: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build the in-bounds MATLAB strel around one current location."""
     current_linear_int = int(current_linear)
@@ -219,13 +224,16 @@ def _matlab_global_watershed_current_strel(
     current_scale_index = int(
         np.clip(int(current_scale_label) - 1, 0, len(lumen_radius_microns) - 1)
     )
-    lut = _build_matlab_global_watershed_lut(
-        current_scale_index,
-        size_of_image=shape,
-        lumen_radius_microns=lumen_radius_microns,
-        microns_per_voxel=microns_per_voxel,
-        step_size_per_origin_radius=step_size_per_origin_radius,
-    )
+    if lut_cache is not None and 0 <= current_scale_index < len(lut_cache):
+        lut = lut_cache[current_scale_index]
+    else:
+        lut = _build_matlab_global_watershed_lut(
+            current_scale_index,
+            size_of_image=shape,
+            lumen_radius_microns=lumen_radius_microns,
+            microns_per_voxel=microns_per_voxel,
+            step_size_per_origin_radius=step_size_per_origin_radius,
+        )
     offsets = lut["local_subscripts"]
     linear_offsets_full = lut["linear_offsets"]
     pointer_indices_full = lut["pointer_indices"]
@@ -357,6 +365,7 @@ def _matlab_global_watershed_trace_half(
     lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
     step_size_per_origin_radius: float,
+    lut_cache: list[dict[str, Any]] | None = None,
 ) -> list[int]:
     """Trace one-half of a watershed edge from endpoint back to origin."""
     n_voxels = int(pointer_map.size)
@@ -380,13 +389,16 @@ def _matlab_global_watershed_trace_half(
         current_scale_index = int(
             np.clip(current_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
-        lut = _build_matlab_global_watershed_lut(
-            current_scale_index,
-            size_of_image=shape,
-            lumen_radius_microns=lumen_radius_microns,
-            microns_per_voxel=microns_per_voxel,
-            step_size_per_origin_radius=step_size_per_origin_radius,
-        )
+        if lut_cache is not None and 0 <= current_scale_index < len(lut_cache):
+            lut = lut_cache[current_scale_index]
+        else:
+            lut = _build_matlab_global_watershed_lut(
+                current_scale_index,
+                size_of_image=shape,
+                lumen_radius_microns=lumen_radius_microns,
+                microns_per_voxel=microns_per_voxel,
+                step_size_per_origin_radius=step_size_per_origin_radius,
+            )
         linear_offsets = np.asarray(lut["linear_offsets"], dtype=np.int64)
 
         if pointer_value > len(linear_offsets):
@@ -426,6 +438,7 @@ def _matlab_global_watershed_assemble_results(
     lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
     step_size_per_origin_radius: float,
+    lut_cache: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Finalize candidate traces, calculate metrics, and build the return payload."""
     number_of_vertices = len(vertex_positions)
@@ -483,6 +496,7 @@ def _matlab_global_watershed_assemble_results(
         lumen_radius_microns=lumen_radius_microns,
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
+        lut_cache=lut_cache,
     )
 
     # Transpose result maps back to physical [Z, Y, X] order for persistence
@@ -596,6 +610,21 @@ def _generate_edge_candidates_matlab_global_watershed(
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []
 
+    # Precompute structuring element LUTs and unit vectors for all scale indices (ADR 0014)
+    watershed_luts: list[dict[str, Any]] = [
+        _build_matlab_global_watershed_lut(
+            s,
+            size_of_image=shape,
+            lumen_radius_microns=lumen_radius_microns,
+            microns_per_voxel=mpv_matlab,
+            step_size_per_origin_radius=step_size_per_origin_radius,
+        )
+        for s in range(len(lumen_radius_microns))
+    ]
+    watershed_unit_vectors: list[np.ndarray] = [
+        np.asarray(lut["unit_vectors"], dtype=np.float64) for lut in watershed_luts
+    ]
+
     last_heartbeat_at = time.monotonic()
     iteration = 0
     frontier_trace_targets = active_tracer.frontier_state_targets()
@@ -645,6 +674,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=mpv_matlab,
             step_size_per_origin_radius=step_size_per_origin_radius,
+            lut_cache=watershed_luts,
         )
         current_scale_label_for_writing = current_strel.get(
             "scale_label_clipped", current_scale_label
@@ -661,15 +691,9 @@ def _generate_edge_candidates_matlab_global_watershed(
 
         current_forward_unit: np.ndarray | None = None
         if current_pointer_value > 0:
-            lut = _build_matlab_global_watershed_lut(
-                current_scale_index,
-                size_of_image=shape,
-                lumen_radius_microns=lumen_radius_microns,
-                microns_per_voxel=mpv_matlab,
-                step_size_per_origin_radius=step_size_per_origin_radius,
-            )
-            full_unit_vectors = np.asarray(lut["unit_vectors"], dtype=np.float64)
-            current_forward_unit = full_unit_vectors[current_pointer_value - 1]
+            current_forward_unit = watershed_unit_vectors[current_scale_index][
+                current_pointer_value - 1
+            ]
 
         adjusted = _matlab_frontier_adjusted_neighbor_energies(
             current_strel_energies,
@@ -823,6 +847,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                             # full-volume scale with large strels).
                             microns_per_voxel=mpv_matlab,
                             step_size_per_origin_radius=step_size_per_origin_radius,
+                            lut_cache=watershed_luts,
                         )
 
                         other_half_start = next_location
@@ -846,6 +871,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                             lumen_radius_microns=lumen_radius_microns,
                             microns_per_voxel=mpv_matlab,  # see half_1: match claim-path strel LUT
                             step_size_per_origin_radius=step_size_per_origin_radius,
+                            lut_cache=watershed_luts,
                         )
                         edge_halves.append((half_1, half_2))
                         edge_pairs.append((current_vertex_index, next_vertex_index))
@@ -906,6 +932,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         lumen_radius_microns=lumen_radius_microns,
         microns_per_voxel=mpv_matlab,
         step_size_per_origin_radius=step_size_per_origin_radius,
+        lut_cache=watershed_luts,
     )
 
 
