@@ -1,21 +1,22 @@
-# Phase 1 parity handoff and synthesis
+# Phase 1 Parity & Phase 2 Optimization Handoff and Synthesis
 
-**Last synthesized:** 2026-09-06 (Phase 1 CLOSED; optional R2024b full reproduction running under launchd)
+**Last synthesized:** 2026-10-26 (Phase 1 CLOSED; Phase 2 Edges 10.45x accelerated under ADR 0014; Energy FFT accelerated under ADR 0015; canonical_full_r2024b_v1 100% complete)
 
-This is the operator brief for the current exact-route effort. Do not use
-dated agent passovers, PID snapshots, or parallel-work checklists as current
-status. When findings [ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) changes, re-synthesize this file the same day.
+This is the operator brief for the current effort. Comprehensive handover document is available at [docs/HANDOVER.md](../docs/HANDOVER.md).
 
 ## Canonical records
 
 | Need | Source of truth |
 |---|---|
+| **Phase 2 Handover & Summary** | [docs/HANDOVER.md](../docs/HANDOVER.md) |
+| **Phase 2 Profiling & Bottlenecks** | [docs/investigations/PHASE2_PERFORMANCE_PROFILING_REPORT.md](../docs/investigations/PHASE2_PERFORMANCE_PROFILING_REPORT.md) |
+| **Phase 2 Edges Regression Gates** | [ADR 0014](../docs/adr/0014-phase2-optimization-regression-gates.md) |
+| **Phase 2 Energy FFT Acceleration** | [ADR 0015](../docs/adr/0015-phase2-energy-fft-preindexed-symmetric-ifft.md) |
 | **Live pass/fail, residual claim, proof paths** | [EXACT_PROOF_FINDINGS.md — ONE TRUTH](../docs/reference/core/EXACT_PROOF_FINDINGS.md#one-truth--phase-1-parity-validated-from-disk) |
 | Active work and checkboxes | [docs/TODO.md](../docs/TODO.md) |
 | Phase 1 requirements | [phase-1-exact-route-spec.md](../docs/plans/phase-1-exact-route-spec.md) |
-| Edges/Network bar + closure policy | [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md) (post-v6 addendum) |
+| Edges/Network bar + closure policy | [ADR 0012](../docs/adr/0012-edge-watershed-parity-bar.md) |
 | Claimed Trace Energy provenance | [ADR 0013](../docs/adr/0013-claimed-energy-trace-provenance.md) |
-| Run commands and evidence format | [PARITY_PRE_GATE.md](../docs/reference/workflow/PARITY_PRE_GATE.md), [PARITY_RUN_EVIDENCE.md](../docs/reference/workflow/PARITY_RUN_EVIDENCE.md) |
 | Doc authority map | [docs/README.md](../docs/README.md#documentation-authority-map-one-concept--one-home) |
 | Repository and parity guardrails | [AGENTS.md](../AGENTS.md) |
 
